@@ -1,0 +1,64 @@
+\hypertarget{classkpm_1_1BlockMatrix}{}\section{kpm\+:\+:Block\+Matrix$<$ T $>$ Class Template Reference}
+\label{classkpm_1_1BlockMatrix}\index{kpm\+::\+Block\+Matrix$<$ T $>$@{kpm\+::\+Block\+Matrix$<$ T $>$}}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Block\+Matrix} (const my\+Index rank, const my\+Index block\+\_\+rank)\hypertarget{classkpm_1_1BlockMatrix_a8886dba610d839ed58917f9129fbed48}{}\label{classkpm_1_1BlockMatrix_a8886dba610d839ed58917f9129fbed48}
+
+\item 
+unsigned long {\bfseries Block\+Rank} () const \hypertarget{classkpm_1_1BlockMatrix_a3c8b5a26281fbfb0cc187320adad8c05}{}\label{classkpm_1_1BlockMatrix_a3c8b5a26281fbfb0cc187320adad8c05}
+
+\item 
+unsigned long {\bfseries Block\+Num} () const \hypertarget{classkpm_1_1BlockMatrix_a6e0cc2e9fcb782bf005180d5b3e117c4}{}\label{classkpm_1_1BlockMatrix_a6e0cc2e9fcb782bf005180d5b3e117c4}
+
+\item 
+unsigned long {\bfseries Rank} () const \hypertarget{classkpm_1_1BlockMatrix_a13d947a022417018a35da95531a5b2f2}{}\label{classkpm_1_1BlockMatrix_a13d947a022417018a35da95531a5b2f2}
+
+\item 
+T $\ast$ {\bfseries begin\+Ptr} ()\hypertarget{classkpm_1_1BlockMatrix_ac584e0f474e1c6a15134eed9cf5b4287}{}\label{classkpm_1_1BlockMatrix_ac584e0f474e1c6a15134eed9cf5b4287}
+
+\item 
+T $\ast$ {\bfseries end\+Ptr} ()\hypertarget{classkpm_1_1BlockMatrix_ab7bebfcfaa6d1715cff3b3bee1915cb3}{}\label{classkpm_1_1BlockMatrix_ab7bebfcfaa6d1715cff3b3bee1915cb3}
+
+\item 
+void {\bfseries Set\+Mat\+Dim} (const my\+Index rank, const my\+Index block\+\_\+rank)\hypertarget{classkpm_1_1BlockMatrix_a95c886722fd9d5c3e412ef56d3191d5d}{}\label{classkpm_1_1BlockMatrix_a95c886722fd9d5c3e412ef56d3191d5d}
+
+\item 
+T {\bfseries operator()} (const my\+Index b\+Id, const my\+Index i, const my\+Index j) const \hypertarget{classkpm_1_1BlockMatrix_a7ae2d1741dc1ccf6a8e8fe05227cf27a}{}\label{classkpm_1_1BlockMatrix_a7ae2d1741dc1ccf6a8e8fe05227cf27a}
+
+\item 
+T \& {\bfseries operator()} (const my\+Index b\+Id, const my\+Index i, const my\+Index j)\hypertarget{classkpm_1_1BlockMatrix_a0c943ad0423d97b414a3f77b6c2ce299}{}\label{classkpm_1_1BlockMatrix_a0c943ad0423d97b414a3f77b6c2ce299}
+
+\item 
+void {\bfseries Multiply} (const kpm\+::real a, const kpm\+::complex $\ast$X, const kpm\+::real b, kpm\+::complex $\ast$Y) const \hypertarget{classkpm_1_1BlockMatrix_ac946dd0c12ce1c1152593351d8b33277}{}\label{classkpm_1_1BlockMatrix_ac946dd0c12ce1c1152593351d8b33277}
+
+\item 
+void {\bfseries Add\+Block} (const size\+\_\+t b\+Id, const \hyperlink{classkpm_1_1dense__matrix}{kpm\+::dense\+\_\+matrix}$<$ T $>$ \&Ab)\hypertarget{classkpm_1_1BlockMatrix_a49748728cf3a621e47996807b46e87d3}{}\label{classkpm_1_1BlockMatrix_a49748728cf3a621e47996807b46e87d3}
+
+\item 
+void {\bfseries scale} (real a, real b)\hypertarget{classkpm_1_1BlockMatrix_a14f396fb89f613b3b9858f327871fd71}{}\label{classkpm_1_1BlockMatrix_a14f396fb89f613b3b9858f327871fd71}
+
+\item 
+void {\bfseries Print} () const \hypertarget{classkpm_1_1BlockMatrix_ac9af5537765b49a837ef5f50f59eaa5c}{}\label{classkpm_1_1BlockMatrix_ac9af5537765b49a837ef5f50f59eaa5c}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ T $>$ {\bfseries data}\hypertarget{classkpm_1_1BlockMatrix_a3caed25e8c38aa5bc672d40c332216bb}{}\label{classkpm_1_1BlockMatrix_a3caed25e8c38aa5bc672d40c332216bb}
+
+\item 
+unsigned long {\bfseries rank\+\_\+}\hypertarget{classkpm_1_1BlockMatrix_aec1625a2f818575d803b038d54870d52}{}\label{classkpm_1_1BlockMatrix_aec1625a2f818575d803b038d54870d52}
+
+\item 
+unsigned long {\bfseries block\+\_\+rank\+\_\+}\hypertarget{classkpm_1_1BlockMatrix_ada333d244820a88bceeeec146a6fd18f}{}\label{classkpm_1_1BlockMatrix_ada333d244820a88bceeeec146a6fd18f}
+
+\item 
+unsigned long {\bfseries block\+\_\+num\+\_\+}\hypertarget{classkpm_1_1BlockMatrix_af4df6d6feeab8ff37cf4f65ab120df95}{}\label{classkpm_1_1BlockMatrix_af4df6d6feeab8ff37cf4f65ab120df95}
+
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/data/jgarcia/codes-\/fft/lin\+Q\+T/include/kpm\+\_\+block\+\_\+matrix.\+hpp\end{DoxyCompactItemize}
