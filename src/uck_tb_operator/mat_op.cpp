@@ -1,6 +1,23 @@
 
 #include "uck_tb_operator.hpp"
 
+
+
+void 
+UnitCellK_TBOp::AddEntry( 	const qt::integer r,
+							const qt::integer c,
+							const qt::complex v, 
+							const qt::real is0, 
+							const qt::real is1, 
+							const qt::real is2)
+	{
+		std::vector<qt::real> is(3); is[0]=is0; is[1]=is1; is[2]=is2;		
+		col.push_back(c);
+		row.push_back(r);
+		val.push_back(v);
+		ishift.push_back(is);
+	}
+	
 void 
 UnitCellK_TBOp::Rescale(const qt::real a, const qt::real b)
 {

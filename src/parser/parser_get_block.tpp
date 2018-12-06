@@ -1,80 +1,46 @@
-
-
-//This function tries to get the values from a block, if it fails it return false
 template <typename T>
 bool 
-parser::try_GetBlock(std::ifstream& infile, const std::string tag,  std::vector<T>& val)
+parser::GetBlock(std::ifstream& infile, const std::string tag, std::vector< std::vector<T> >& block,const int dim0,const int  dim1,  bool  optional=false  )
 {
+	infile.clear();
+	infile.seekg(0, std::ios::beg);
 	std::string begBlock="BEGIN_"+tag;
 	std::string endBlock="END_"+tag;
-	std::vector<std::string> toklist;
-	bool found_beg=false, found_end=false;
-	infile.clear();
 	std::string	line; //variable to store each line of the file
-	if ( infile ) // Check if file is valid
+
+	bool found_beg=false,found_end =false;
 	try
 	{
-		//Check if the beginning and end of the block are present
-		while	(  getline(infile , line ) )
-		{	
-			//Remove comments and spaces
-			line = TrimLine( line );
-			found_beg +=  line.find(begBlock, 0) 	!= std::string::npos ;
-			found_end +=  line.find(endBlock, 0) 	!= std::string::npos ;
-			if(  found_beg && found_end )
-				break;
-		}
-		infile.clear(); 
-		infile.seekg(0,std::ios::beg);
-		found_beg=false; found_end=false;
-		while	(  getline(infile , line ) )
-		{	
-			//Remove comments and spaces
-			std::string header = TrimLine( line );
-			//Get the tokens if is not beginning or end lnie
-			found_end +=  header.find(endBlock, 0) 	!= std::string::npos ;
-			if( found_beg && !found_end )
-				Tokenize( line, " ",  toklist );			
-			found_beg +=  header.find(begBlock, 0) 	!= std::string::npos ;
-			//Break before reaching eof
-			if(  found_beg && found_end )
-				break;
-		}
-		val = std::vector<T>( toklist.size()) ;
-		for(int i=0; i<toklist.size(); i++)
-			qt::str2val(toklist[i],val[i]);
-		return found_beg && found_end;
-	}
-	
+		if ( infile ) // Check if file is valid
+		while(!found_beg && getline(infile,line) )
+		{
+			found_beg = line.find(begBlock, 0)!= std::string::npos;
+			while( found_beg && !found_end && getline(infile,line) )
+			{
+				found_end = line.find(endBlock, 0)!= std::string::npos;
 
+				if ( !found_end )
+				{
+					std::vector<T> vec_val;	
+					std::string str	= TrimLine(line);  
+					if( !qt::str2vector(str,vec_val) ||  vec_val.size()!= dim1 ) 
+						return false;
+					//Pass the value to the block
+					block.push_back(vec_val);				
+				}
+			}
+		}
+	}
 	catch(std::ifstream::failure e)
-	{
-		std::cerr<<"GetBlock function could find the beginning or end of Block: "<<tag<<std::endl;
+	{//Reset to the begining of the file
 		infile.clear();
+		infile.seekg(0, std::ios::beg);
+	}
+
+	if( block.size() != dim0 )
 		return false;
-	}
-	return false;
-};
+							//reset the value before procedding
+			return true;	
 
-
-template <typename T>
-bool 
-parser::GetBlock(std::ifstream& infile, const std::string text, std::vector<T>& val, bool  optional=false  )
-{
-	infile.clear(); 
-	infile.seekg(0,std::ios::beg);
-
-	bool wasfound=try_GetBlock(infile,text,val);
-	if( !wasfound )
-	{
-		wasfound=true;
-		if( !optional)
-			std::cerr<<"Field: "<<text<<" not found in .CFG file"<<" aborting "<<std::endl;
-		
-	}
-
-	infile.clear(); 
-	infile.seekg(0,std::ios::beg);
-	
-	return wasfound;
+	return true;
 };

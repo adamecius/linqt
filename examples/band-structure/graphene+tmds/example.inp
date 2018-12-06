@@ -1,0 +1,16 @@
+label = graphene-QSHE
+suffix= 
+
+OPERATORS
+Hamiltonian = Ham
+Projections = Sx , Sy , Sz 
+
+NumbeOfKPaths = 4;
+BEGIN_KPATH
+1.	,0.		,0.		, 0.
+100.	,0.3333333	,0.6666666	, 0.
+100.	,0.5.		,0.5		, 0.
+100.	,0.666666	,0.3333333	, 0.
+END_KPATH
+
+

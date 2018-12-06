@@ -70,12 +70,12 @@ int main(int argc, char *argv[])
 
 	//Read K-POINT INFORMATION
 	std::vector<qt::dimension> kdim;
-	parser::GetBlock(configFile, "KPOINT", kdim );
+	parser::GetVector(configFile, "KPOINT", kdim ,3	);
 
 
 	//Read SUPERCELL INFORMATION
 	std::vector<qt::dimension> scdim;
-	parser::GetBlock(configFile, "SUPERCELL", scdim );
+	parser::GetVector(configFile, "SUPERCELL", scdim ,3 );
 	qt::real fft_norm = 1.0/scdim[0]/scdim[1]/scdim[2];
 
 

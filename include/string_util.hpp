@@ -39,28 +39,31 @@ namespace qt
 		std::string token("");
 		std::vector<std::string> token_array;
 
-		for(int i=0;i<line.size();i++)
-		if( isdigit(char(line[i])) || line[i]=='.' )
-			token+=line[i];
-		else if( token.size()!=0)
+		int i=0;
+		while( i <line.size())
 		{
+			for(i;i < line.size() ; i++) 
+			if( std::isdigit(char(line[i])) || line[i]=='.' || line[i]=='+' || line[i]=='-' )
+				token+=line[i];
+			else 
+				break;
 			token_array.push_back(token);
-			token="";
-		}	
-		vec=std::vector<T>(token_array.size() );
+			token="";		
+			i++;
+		}
 		
-		bool isSuccess=true;
-		for( int tk=0;tk<token_array.size();tk++)
+		//Array for the tokents
+		const int tkDim = token_array.size();
+		if( tkDim == 0 ) return  false;
+
+		vec=std::vector<T>(tkDim);
+		for( int tk=0;tk<tkDim;tk++)
 		{
 			std::istringstream ss(token_array[tk]);
-			while (!ss.eof())
-				isSuccess*=(bool)(ss >> vec[tk]);
+			ss >> vec[tk];
 		}
-		 
-	return isSuccess;
+	return true;
 	}
-
-
 }
 
 

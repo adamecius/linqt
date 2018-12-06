@@ -17,7 +17,7 @@ class UnitCellK_TBOp
 	// THE CONSTRUCTORS
 	public:
 
-	UnitCellK_TBOp(void){};	
+	UnitCellK_TBOp(const qt::integer _OpDim=1):OpDim_(_OpDim){};	
 
 	UnitCellK_TBOp(std::string inputName)
 	{
@@ -26,9 +26,20 @@ class UnitCellK_TBOp
 	// PUBLIC COMMON FUNCTIONS
 	public: 
 
+	//
+	void AddEntry( 	const qt::integer r, //row
+					const qt::integer c, //column
+					const qt::complex v, //value
+					const qt::real is0,//shift in i0 
+					const qt::real is1,//shift in i1 
+					const qt::real is2);//shift in i2
+
 	// This function add the k-depence
 	void Addk_dependence( const qt::real* k );
 
+
+	void writeOperator( std::string outputname );
+	
 	// This function read the operator from a file name inputName
 	bool readOperator( std::string inputName);
 
@@ -48,11 +59,46 @@ class UnitCellK_TBOp
 	void Multiply(	const qt::real a,const qt::complex* X, 
 					const qt::real b, qt::complex* Y) const;
 
+
 	// PUBLIC GETTERS FUNCTIONS
 	public: 
 
 	inline void
 	SetDim(const qt::dimension _OpDim){ OpDim_=_OpDim;  }
+
+	inline void
+	SetLatticeInfo(const qt::real _latConst, const std::vector< std::vector < qt::real > >_lat)
+	{
+		lat=_lat; rec=_lat; //initialize for the same size
+		latconst = _latConst ;
+		for(qt::index m=0; m<3 ; m++)
+		for(qt::index n=0; n<3 ; n++)
+			lat[m][n] = _latConst *lat[m][n];
+		
+		latVol =-lat[0][2]*lat[1][1]*lat[2][0] + 
+				 lat[0][1]*lat[1][2]*lat[2][0] +
+				 lat[0][2]*lat[1][0]*lat[2][1] - 
+				 lat[0][0]*lat[1][2]*lat[2][1] - 
+				 lat[0][1]*lat[1][0]*lat[2][2] +
+				 lat[0][0]*lat[1][1]*lat[2][2];
+
+	rec =_lat ; //Initialize with the same size
+	rec[0][0]=-lat[1][2]*lat[2][1] + lat[1][1]*lat[2][2]; 
+	rec[0][1]= lat[1][2]*lat[2][0] - lat[1][0]*lat[2][2]; 
+	rec[0][2]=-lat[1][1]*lat[2][0] + lat[1][0]*lat[2][1];
+
+	rec[1][0]= lat[0][2]*lat[2][1] - lat[0][1]*lat[2][2]; 
+	rec[1][1]=-lat[0][2]*lat[2][0] + lat[0][0]*lat[2][2]; 
+	rec[1][2]= lat[0][1]*lat[2][0] - lat[0][0]*lat[2][1];
+
+	rec[2][0]=-lat[0][2]*lat[1][1] + lat[0][1]*lat[1][2]; 
+	rec[2][1]= lat[0][2]*lat[1][0] - lat[0][0]*lat[1][2]; 
+	rec[2][2]=-lat[0][1]*lat[1][0] + lat[0][0]*lat[1][1];
+
+	for(qt::index m=0; m<3 ; m++)
+	for(qt::index n=0; n<3 ; n++)
+		rec[m][n]=rec[m][n]*2.0*M_PI/latVol;
+		  };
 	
 	inline qt::dimension
 	Dim()  const { return OpDim_;  }
@@ -80,6 +126,7 @@ class UnitCellK_TBOp
 	TBMat Op;
 	std::vector< qt::complex > val;
 	std::vector< qt::index > row, col;
+	std::vector< std::vector<qt::real> > ishift;
 	std::vector< std::vector<qt::real> > pos;
 	std::vector< std::vector<qt::real> > lat;
 	std::vector< std::vector<qt::real> > rec;

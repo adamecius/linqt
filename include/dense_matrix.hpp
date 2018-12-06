@@ -35,14 +35,6 @@ class dense_matrix
 		return data[ i*NumOfCols() + j ];
 	}
 
-/*
-	void scale(real a)
-	{
-		for( qt::index i=0; i < NumOfRows() ; i++)
-			for( qt::index j=0; j < NumOfCols() ; j++)
-					data[ i*NumOfCols() + j ] *= a;
-	}
-*/
 	void Print() const
 	{
 
@@ -55,6 +47,23 @@ class dense_matrix
 			std::cout<<std::endl;
 		}
 		std::cout<<std::endl;
+	}
+
+	inline
+	void Transpose() 
+	{
+		std::vector<T> dataT = data;
+		for( qt::index i=0; i < NumOfRows() ; i++)
+		for( qt::index j=0; j < NumOfCols() ; j++)
+			data[i*NumOfCols() + j ] =  dataT[ j*NumOfCols() + i ];
+	}
+
+	inline
+	void HermitianConjugate() 
+	{
+		Transpose();
+		for( qt::index i=0; i < data.size() ; i++)
+			data[i] = std::conj(data[i]);
 	}
 
 	inline

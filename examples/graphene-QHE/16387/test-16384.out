@@ -1,0 +1,51 @@
+The simulation started in:
+mié nov 28 20:58:13 CET 2018
+The program is running on 768 processes.
+
+KPM_OPTIONS
+Label  = graphene+vz+iso
+Suffix = Dim16384And2.8M4
+EnergyShift = 0
+EnergyScale = 22 (should be >0 )
+CutOff = 0.9 (should be >0 )
+MaxMom = 1024 (should be >0 )
+
+OPERATORS
+The total number of orbitals per cell is: 4
+The Hamiltonian label is Ham
+
+
+The algorithm is going to compute: 1024 Chebyshev moments for the Density of states
+RANDOM_VECTOR
+The sampling number is 1
+The random seed is 4323
+GEOMETRICAL_INFO
+NUMBER OF ORBITALS: 4
+NUMBER OF KPOINTS: 1 x 1 x 1
+SUPERCELL DIMENSIONS=16384 x 16384 x 1
+LAT_VECTORS [ LatConst ] 
+1.5 -0.866025 0
+1.5 0.866025 0
+0 0 1
+REC_LAT_VECTORS (2pi/LatConst )
+0.333333 -0.577351 0
+0.333333 0.577351 -0
+-0 0 1
+
+FFTW_STATUS
+The dim0= 16384 was splitted into local_dim0=22
+The number of elements to be used by FFT is: 1441792
+While the local dimension is:1441792
+The memory cost for a single MPI-FFT will be: 22 MB
+
+Attemping to read plan wisdow from : graphene+vz+iso.MPI_FFTWIS
+Saving plan wisdow in : graphene+vz+iso.MPI_FFTWIS
+Computing the moments for the k-shift: 
+0 0 0
+Creating a matrix with 360448 blocks with dimension: 4x4
+at each of the 768 nodes.
+The simulation ended in:
+mié nov 28 21:21:38 CET 2018
+And last:
+23 minutes and 25 seconds
+elapsed.
