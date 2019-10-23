@@ -1,0 +1,61 @@
+\hypertarget{mpi__util_8hpp}{\section{/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/include/mpi\+\_\+util.hpp File Reference}
+\label{mpi__util_8hpp}\index{/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/include/mpi\+\_\+util.\+hpp@{/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/include/mpi\+\_\+util.\+hpp}}
+}
+{\ttfamily \#include \char`\"{}mpi.\+h\char`\"{}}\\*
+{\ttfamily \#include $<$cmath$>$}\\*
+{\ttfamily \#include $<$iostream$>$}\\*
+{\ttfamily \#include $<$string$>$}\\*
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classNumCal_1_1cout__class}{Num\+Cal\+::cout\+\_\+class}
+\item 
+class \hyperlink{classNumCal_1_1cerr__class}{Num\+Cal\+::cerr\+\_\+class}
+\end{DoxyCompactItemize}
+\subsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+ \hyperlink{namespaceNumCal}{Num\+Cal}
+\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{mpi__util_8hpp_a780f39e5ce1ec856f71c8329db6f7ce9}{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T}()~M\+P\+I\+::\+Init ()
+\item 
+\#define \hyperlink{mpi__util_8hpp_a6bbbec00d5cf914bf3b8eb6b7359ce8f}{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E}()~M\+P\+I\+::\+Finalize ( )
+\item 
+\#define \hyperlink{mpi__util_8hpp_ac1b3e3d6892a03ab0b30207236b16c6f}{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K}()~M\+P\+I\+::\+C\+O\+M\+M\+\_\+\+W\+O\+R\+L\+D.\+Get\+\_\+rank ( )
+\item 
+\#define \hyperlink{mpi__util_8hpp_a7010754118e576a06b9f9ebc8c8667ab}{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C}()~M\+P\+I\+::\+C\+O\+M\+M\+\_\+\+W\+O\+R\+L\+D.\+Get\+\_\+size ( )
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{mpi__util_8hpp_a6bbbec00d5cf914bf3b8eb6b7359ce8f}{\index{mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}!N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E}}
+\index{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E}!mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}}
+\subsubsection[{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E}]{\setlength{\rightskip}{0pt plus 5cm}\#define N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+F\+I\+N\+A\+L\+I\+Z\+E(
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)~M\+P\+I\+::\+Finalize ( )}}\label{mpi__util_8hpp_a6bbbec00d5cf914bf3b8eb6b7359ce8f}
+\hypertarget{mpi__util_8hpp_a7010754118e576a06b9f9ebc8c8667ab}{\index{mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}!N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C}}
+\index{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C}!mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}}
+\subsubsection[{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C}]{\setlength{\rightskip}{0pt plus 5cm}\#define N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+P\+R\+O\+C(
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)~M\+P\+I\+::\+C\+O\+M\+M\+\_\+\+W\+O\+R\+L\+D.\+Get\+\_\+size ( )}}\label{mpi__util_8hpp_a7010754118e576a06b9f9ebc8c8667ab}
+\hypertarget{mpi__util_8hpp_ac1b3e3d6892a03ab0b30207236b16c6f}{\index{mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}!N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K}}
+\index{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K}!mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}}
+\subsubsection[{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K}]{\setlength{\rightskip}{0pt plus 5cm}\#define N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+G\+E\+T\+R\+A\+N\+K(
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)~M\+P\+I\+::\+C\+O\+M\+M\+\_\+\+W\+O\+R\+L\+D.\+Get\+\_\+rank ( )}}\label{mpi__util_8hpp_ac1b3e3d6892a03ab0b30207236b16c6f}
+\hypertarget{mpi__util_8hpp_a780f39e5ce1ec856f71c8329db6f7ce9}{\index{mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}!N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T}}
+\index{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T@{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T}!mpi\+\_\+util.\+hpp@{mpi\+\_\+util.\+hpp}}
+\subsubsection[{N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T}]{\setlength{\rightskip}{0pt plus 5cm}\#define N\+U\+M\+C\+A\+L\+\_\+\+M\+P\+I\+\_\+\+I\+N\+I\+T(
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)~M\+P\+I\+::\+Init ()}}\label{mpi__util_8hpp_a780f39e5ce1ec856f71c8329db6f7ce9}

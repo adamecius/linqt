@@ -1,0 +1,513 @@
+\hypertarget{classNumCal_1_1Lattice}{\section{Num\+Cal\+:\+:Lattice Class Reference}
+\label{classNumCal_1_1Lattice}\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+}
+
+
+A multi-\/purpose tight-\/binding lattice class.  
+
+
+
+
+{\ttfamily \#include $<$lattice.\+hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classNumCal_1_1Lattice_a2e6c128581ceefebc192931cade39a16}{Lattice} (const std\+::string \+\_\+config\+\_\+filename)
+\begin{DoxyCompactList}\small\item\em The Main constructor. \end{DoxyCompactList}\item 
+std\+::string \hyperlink{classNumCal_1_1Lattice_aaf8e70c4bbd604a11d1e3238c136ddd8}{Label} () const 
+\begin{DoxyCompactList}\small\item\em Returns the \hyperlink{classNumCal_1_1Lattice}{Lattice} Label. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_adde86747cce019e4f8a0920a27cd13bb}{Total\+Of\+Orbitals} () const 
+\begin{DoxyCompactList}\small\item\em Returns the Total number of sites. \end{DoxyCompactList}\item 
+std\+::vector$<$ \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} $>$ \hyperlink{classNumCal_1_1Lattice_aed4b75342080f04b580eda4a0ed374c2}{Lattice\+Vector} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i) const 
+\begin{DoxyCompactList}\small\item\em Returns the ith-\/lattice vector. \end{DoxyCompactList}\item 
+std\+::vector$<$ \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} $>$ \hyperlink{classNumCal_1_1Lattice_a332fbad7d9bd9c2d641712bd7e885fb7}{Reciprocal\+Lattice\+Vector} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i) const 
+\begin{DoxyCompactList}\small\item\em Returns the ith-\/reciprocal lattice vector. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a5f516278aa056221ee646c9fbdd3812e}{Cells\+In\+Dir} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i) const 
+\begin{DoxyCompactList}\small\item\em Returns the total number of cells in the direction of the ith-\/lattice vector. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_ab1d968adc1de105969607ed081da6075}{Orbital\+Number} () const 
+\begin{DoxyCompactList}\small\item\em Returns the total number of orbitals per unit cell. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_afbbb05a9bccb38017cc2a594e526e7fe}{Spin\+Number} () const 
+\begin{DoxyCompactList}\small\item\em Returns the Spin number. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a203d44aacacae07b88e9bb66f284963b}{Coordination\+Number} () const 
+\begin{DoxyCompactList}\small\item\em Returns the coordination number. \end{DoxyCompactList}\item 
+bool \hyperlink{classNumCal_1_1Lattice_a419fb070cfe453c42f6051321b794607}{Is\+Hamiltonian\+Setted} () const 
+\begin{DoxyCompactList}\small\item\em Returns a boolean indicating if the hamiltonian is setted or not. \end{DoxyCompactList}\item 
+\hyperlink{classIrregularHamiltonian}{Irregular\+Hamiltonian} \& \hyperlink{classNumCal_1_1Lattice_a2d7c6553ec30511cb0e17d64beed0424}{Irreg\+Ham} ()
+\begin{DoxyCompactList}\small\item\em Returns the irregular part of the Hamiltonian. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \hyperlink{classNumCal_1_1Lattice_a8223586b6d642d4436babb7c89f8d424}{Volume} () const 
+\begin{DoxyCompactList}\small\item\em returns the volume of the sample \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \hyperlink{classNumCal_1_1Lattice_a080294bd34727c5e4e536000cc379f01}{Set\+Volume} ()
+\begin{DoxyCompactList}\small\item\em Set the volume of the sample. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1Lattice_aaf21bd2f08683035f260ea4de09b4504}{Set\+Reciprocal\+Lattice\+Vectors} ()
+\begin{DoxyCompactList}\small\item\em Set the reciprocal lattice vectors. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a94dd319f6adc6e820a5696c504216501}{Indexes\+To\+Index} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i0, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i1, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i2, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} o0, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} s0)
+\begin{DoxyCompactList}\small\item\em Convert the lattice indexes into the site index. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1Lattice_ae39ddbe109d0e01e9c087a4e7accd0b7}{Index\+To\+Indexes} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} k0, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \&i0, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \&i1, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \&i2, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \&o0, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \&s0)
+\begin{DoxyCompactList}\small\item\em Convert the site index into the lattice indexes. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a35f73beef133e11d844a6632e582af65}{Cell\+Index} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i0, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i1, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i2)
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_af9b5d4ab5059d7e5bb3225d822881d9f}{Inner\+Cell\+Index} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} o0, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} s0)
+\item 
+void \hyperlink{classNumCal_1_1Lattice_a9ec7fb19af2909219b0d82cdf26097a5}{Reserve\+Irr\+Ham\+Space} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \+\_\+stimated\+\_\+entries)
+\begin{DoxyCompactList}\small\item\em Reserve a estimated memory for the irregular part of the hamiltonian. \end{DoxyCompactList}\item 
+bool \hyperlink{classNumCal_1_1Lattice_a6d68441bc15c6876230d3fac7bcdc26e}{Set\+Total\+Hamiltonian} ()
+\begin{DoxyCompactList}\small\item\em Initialize the final version of the hamiltonian in the memory. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1Lattice_a185a049be64061e61af9cf8aa98835db}{Rescale\+Hamiltonian} (const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \+\_\+\+Emin, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \+\_\+\+Emax, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \+\_\+cutoff)
+\begin{DoxyCompactList}\small\item\em Rescale the Hamiltonian between (-\/cutoff, cutoff) \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1Lattice_ab7c36dff03f863c8ddc416b66dba9a73}{Print\+Irregular\+Onsite\+Profile} (std\+::string output)
+\begin{DoxyCompactList}\small\item\em Priknt disorder onsite. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1Lattice_a18e3c9f1f34f92de89609af54d5b35c4}{Read\+Hopping\+List} ()
+\begin{DoxyCompactList}\small\item\em Read the list of hoppings from the hopping file. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1Lattice_ac3faf5a66101d7fbbdf208d50707a16f}{Apply\+Hamiltonian} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} mem\+Sep, const \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} alpha, const \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$x, const \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} beta, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$y)
+\item 
+void \hyperlink{classNumCal_1_1Lattice_ac9688b079c290ea2562a2c22c956ee38}{Apply\+Velocity} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} mem\+Sep, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} dir, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$x, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$y)
+\item 
+void \hyperlink{classNumCal_1_1Lattice_a309264d8e819fbdda3ca043aaccec793}{Apply\+Spin\+Z\+\_\+\+Velocity} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} mem\+Sep, \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} dir, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$x, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$y)
+\item 
+void \hyperlink{classNumCal_1_1Lattice_ae18a5984df3d9300f56b06c769a208db}{Proj\+K\+Circle} (const std\+::vector$<$ \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} $>$ K, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} R\+K, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$x)
+\item 
+void \hyperlink{classNumCal_1_1Lattice_aad6fc09875728b3dab9784b550e1cd53}{Apply\+Proj\+Valley\+\_\+\+Velocity} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} mem\+Sep, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \+\_\+vidx, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} scal\+R, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} dir, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$x, \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $\ast$y)
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \hyperlink{classNumCal_1_1Lattice_a02548b1f44c555055434abadfbc8ae24}{Lattice\+Index\+Difference} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i0, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i1, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} i2, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} iidx, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} j0, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} j1, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} j2, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} jidx, const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} iv)
+\item 
+void \hyperlink{classNumCal_1_1Lattice_a37ce0f5bd308163d2fb1d4f905c039e0}{Print\+Hopping\+List} ()
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ std\+::vector$<$ \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} $>$ $>$ \hyperlink{classNumCal_1_1Lattice_a9582cb6c2426ac63351a3e22a75f0c65}{lat\+\_\+}
+\item 
+std\+::vector$<$ std\+::vector$<$ \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} $>$ $>$ \hyperlink{classNumCal_1_1Lattice_ade9b12a91ec5680d176e0daa9acdd4ab}{rec\+\_\+lat\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real} \hyperlink{classNumCal_1_1Lattice_aa21f4eee7d70942ab703f78fc052ed9e}{volume\+\_\+}
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \hyperlink{classNumCal_1_1Lattice_a60a503c33b250c2027631074e5ab056b}{label\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a9fad149348681fccd17f2b714d18a329}{spin\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a97e5bc1dcbe0fa95bd53fa24136196e1}{norb\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} \hyperlink{classNumCal_1_1Lattice_a937648512bc88fd0376691695ba5ba4e}{coord\+\_\+}
+\item 
+std\+::vector$<$ \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer} $>$ \hyperlink{classNumCal_1_1Lattice_a19d0ca05d4b275d95e174b31e4ed1ae9}{nsite\+\_\+}
+\item 
+bool \hyperlink{classNumCal_1_1Lattice_a0df17f2217a05e898cd5266f13870238}{hamiltonian\+\_\+setted\+\_\+}
+\item 
+\hyperlink{classIrregularHamiltonian}{Irregular\+Hamiltonian} \hyperlink{classNumCal_1_1Lattice_a552a40694e5723cb1f96c810457f112b}{Hirr\+\_\+}
+\item 
+\hyperlink{classHoppingList}{Hopping\+List} \hyperlink{classNumCal_1_1Lattice_a27444d56d3a84b86396d99745259f748}{hop\+\_\+list\+\_\+}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+A multi-\/purpose tight-\/binding lattice class. 
+
+This class is aimed to served as a multipurpose tight-\/binding lattice class, which can be used to store different model for tight-\/binding Hamiltonians of solid-\/state systems. This class read the hoppings from a .hop file and construct a regular hopping
+
+It st geometrical properties, hoppings and other variables. It serve as a host of the irregular and regular part of the hamiltonian also.
+
+\begin{DoxyNote}{Note}
+This class is still in development process, use it at your own risk!
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classNumCal_1_1Lattice_a2e6c128581ceefebc192931cade39a16}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Lattice@{Lattice}}
+\index{Lattice@{Lattice}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Lattice}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::\+Lattice\+::\+Lattice (
+\begin{DoxyParamCaption}
+\item[{const std\+::string}]{\+\_\+config\+\_\+filename}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a2e6c128581ceefebc192931cade39a16}
+
+
+The Main constructor. 
+
+This constructor will try to open the file \+\_\+config\+\_\+filename and will read the following parameters\+:~\newline
+The label given to the simulation.~\newline
+The lattice vectors\+: lat0, lat1, lat2.~\newline
+The number of unit cells in lat\+\_\+0 direction~\newline
+The number of unit cells in lat\+\_\+1 direction~\newline
+The number of unit cells in lat\+\_\+2 direction~\newline
+The number of orbital per unit cell.~\newline
+The total spin number of the simulation The coordination number.~\newline
+Look for the line lattice\+\_\+info 
+
+\subsection{Member Function Documentation}
+\hypertarget{classNumCal_1_1Lattice_ac3faf5a66101d7fbbdf208d50707a16f}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Apply\+Hamiltonian@{Apply\+Hamiltonian}}
+\index{Apply\+Hamiltonian@{Apply\+Hamiltonian}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Apply\+Hamiltonian}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Apply\+Hamiltonian (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{mem\+Sep, }
+\item[{const {\bf scalar}}]{alpha, }
+\item[{const {\bf scalar} $\ast$}]{x, }
+\item[{const {\bf scalar}}]{beta, }
+\item[{{\bf scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_ac3faf5a66101d7fbbdf208d50707a16f}
+\hypertarget{classNumCal_1_1Lattice_aad6fc09875728b3dab9784b550e1cd53}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Apply\+Proj\+Valley\+\_\+\+Velocity@{Apply\+Proj\+Valley\+\_\+\+Velocity}}
+\index{Apply\+Proj\+Valley\+\_\+\+Velocity@{Apply\+Proj\+Valley\+\_\+\+Velocity}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Apply\+Proj\+Valley\+\_\+\+Velocity}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Apply\+Proj\+Valley\+\_\+\+Velocity (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{mem\+Sep, }
+\item[{const {\bf integer}}]{\+\_\+vidx, }
+\item[{const {\bf real}}]{scal\+R, }
+\item[{const {\bf integer}}]{dir, }
+\item[{{\bf scalar} $\ast$}]{x, }
+\item[{{\bf scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_aad6fc09875728b3dab9784b550e1cd53}
+Apply the velocity operator to this new x vector \hypertarget{classNumCal_1_1Lattice_a309264d8e819fbdda3ca043aaccec793}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Apply\+Spin\+Z\+\_\+\+Velocity@{Apply\+Spin\+Z\+\_\+\+Velocity}}
+\index{Apply\+Spin\+Z\+\_\+\+Velocity@{Apply\+Spin\+Z\+\_\+\+Velocity}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Apply\+Spin\+Z\+\_\+\+Velocity}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Apply\+Spin\+Z\+\_\+\+Velocity (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{mem\+Sep, }
+\item[{{\bf integer}}]{dir, }
+\item[{{\bf scalar} $\ast$}]{x, }
+\item[{{\bf scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a309264d8e819fbdda3ca043aaccec793}
+\hypertarget{classNumCal_1_1Lattice_ac9688b079c290ea2562a2c22c956ee38}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Apply\+Velocity@{Apply\+Velocity}}
+\index{Apply\+Velocity@{Apply\+Velocity}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Apply\+Velocity}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Apply\+Velocity (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{mem\+Sep, }
+\item[{{\bf integer}}]{dir, }
+\item[{{\bf scalar} $\ast$}]{x, }
+\item[{{\bf scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_ac9688b079c290ea2562a2c22c956ee38}
+\hypertarget{classNumCal_1_1Lattice_a35f73beef133e11d844a6632e582af65}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Cell\+Index@{Cell\+Index}}
+\index{Cell\+Index@{Cell\+Index}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Cell\+Index}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Cell\+Index (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{i0, }
+\item[{const {\bf integer}}]{i1, }
+\item[{const {\bf integer}}]{i2}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a35f73beef133e11d844a6632e582af65}
+\hypertarget{classNumCal_1_1Lattice_a5f516278aa056221ee646c9fbdd3812e}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Cells\+In\+Dir@{Cells\+In\+Dir}}
+\index{Cells\+In\+Dir@{Cells\+In\+Dir}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Cells\+In\+Dir}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Cells\+In\+Dir (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{i}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a5f516278aa056221ee646c9fbdd3812e}
+
+
+Returns the total number of cells in the direction of the ith-\/lattice vector. 
+
+\hypertarget{classNumCal_1_1Lattice_a203d44aacacae07b88e9bb66f284963b}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Coordination\+Number@{Coordination\+Number}}
+\index{Coordination\+Number@{Coordination\+Number}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Coordination\+Number}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Coordination\+Number (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a203d44aacacae07b88e9bb66f284963b}
+
+
+Returns the coordination number. 
+
+\hypertarget{classNumCal_1_1Lattice_a94dd319f6adc6e820a5696c504216501}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Indexes\+To\+Index@{Indexes\+To\+Index}}
+\index{Indexes\+To\+Index@{Indexes\+To\+Index}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Indexes\+To\+Index}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Indexes\+To\+Index (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{i0, }
+\item[{const {\bf integer}}]{i1, }
+\item[{const {\bf integer}}]{i2, }
+\item[{const {\bf integer}}]{o0, }
+\item[{const {\bf integer}}]{s0}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a94dd319f6adc6e820a5696c504216501}
+
+
+Convert the lattice indexes into the site index. 
+
+\hypertarget{classNumCal_1_1Lattice_ae39ddbe109d0e01e9c087a4e7accd0b7}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Index\+To\+Indexes@{Index\+To\+Indexes}}
+\index{Index\+To\+Indexes@{Index\+To\+Indexes}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Index\+To\+Indexes}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Index\+To\+Indexes (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{k0, }
+\item[{{\bf my\+::integer} \&}]{i0, }
+\item[{{\bf my\+::integer} \&}]{i1, }
+\item[{{\bf my\+::integer} \&}]{i2, }
+\item[{{\bf my\+::integer} \&}]{o0, }
+\item[{{\bf my\+::integer} \&}]{s0}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Lattice_ae39ddbe109d0e01e9c087a4e7accd0b7}
+
+
+Convert the site index into the lattice indexes. 
+
+\hypertarget{classNumCal_1_1Lattice_af9b5d4ab5059d7e5bb3225d822881d9f}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Inner\+Cell\+Index@{Inner\+Cell\+Index}}
+\index{Inner\+Cell\+Index@{Inner\+Cell\+Index}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Inner\+Cell\+Index}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Inner\+Cell\+Index (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{o0, }
+\item[{const {\bf integer}}]{s0}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_af9b5d4ab5059d7e5bb3225d822881d9f}
+\hypertarget{classNumCal_1_1Lattice_a2d7c6553ec30511cb0e17d64beed0424}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Irreg\+Ham@{Irreg\+Ham}}
+\index{Irreg\+Ham@{Irreg\+Ham}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Irreg\+Ham}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Irregular\+Hamiltonian}\& Num\+Cal\+::\+Lattice\+::\+Irreg\+Ham (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a2d7c6553ec30511cb0e17d64beed0424}
+
+
+Returns the irregular part of the Hamiltonian. 
+
+\hypertarget{classNumCal_1_1Lattice_a419fb070cfe453c42f6051321b794607}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Is\+Hamiltonian\+Setted@{Is\+Hamiltonian\+Setted}}
+\index{Is\+Hamiltonian\+Setted@{Is\+Hamiltonian\+Setted}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Is\+Hamiltonian\+Setted}]{\setlength{\rightskip}{0pt plus 5cm}bool Num\+Cal\+::\+Lattice\+::\+Is\+Hamiltonian\+Setted (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a419fb070cfe453c42f6051321b794607}
+
+
+Returns a boolean indicating if the hamiltonian is setted or not. 
+
+\hypertarget{classNumCal_1_1Lattice_aaf8e70c4bbd604a11d1e3238c136ddd8}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Label@{Label}}
+\index{Label@{Label}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Label}]{\setlength{\rightskip}{0pt plus 5cm}std\+::string Num\+Cal\+::\+Lattice\+::\+Label (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_aaf8e70c4bbd604a11d1e3238c136ddd8}
+
+
+Returns the \hyperlink{classNumCal_1_1Lattice}{Lattice} Label. 
+
+\hypertarget{classNumCal_1_1Lattice_a02548b1f44c555055434abadfbc8ae24}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Lattice\+Index\+Difference@{Lattice\+Index\+Difference}}
+\index{Lattice\+Index\+Difference@{Lattice\+Index\+Difference}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Lattice\+Index\+Difference}]{\setlength{\rightskip}{0pt plus 5cm}{\bf real} Num\+Cal\+::\+Lattice\+::\+Lattice\+Index\+Difference (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{i0, }
+\item[{const {\bf integer}}]{i1, }
+\item[{const {\bf integer}}]{i2, }
+\item[{const {\bf integer}}]{iidx, }
+\item[{const {\bf integer}}]{j0, }
+\item[{const {\bf integer}}]{j1, }
+\item[{const {\bf integer}}]{j2, }
+\item[{const {\bf integer}}]{jidx, }
+\item[{const {\bf integer}}]{iv}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a02548b1f44c555055434abadfbc8ae24}
+\hypertarget{classNumCal_1_1Lattice_aed4b75342080f04b580eda4a0ed374c2}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Lattice\+Vector@{Lattice\+Vector}}
+\index{Lattice\+Vector@{Lattice\+Vector}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Lattice\+Vector}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<${\bf real}$>$ Num\+Cal\+::\+Lattice\+::\+Lattice\+Vector (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{i}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_aed4b75342080f04b580eda4a0ed374c2}
+
+
+Returns the ith-\/lattice vector. 
+
+\hypertarget{classNumCal_1_1Lattice_ab1d968adc1de105969607ed081da6075}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Orbital\+Number@{Orbital\+Number}}
+\index{Orbital\+Number@{Orbital\+Number}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Orbital\+Number}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Orbital\+Number (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_ab1d968adc1de105969607ed081da6075}
+
+
+Returns the total number of orbitals per unit cell. 
+
+\hypertarget{classNumCal_1_1Lattice_a37ce0f5bd308163d2fb1d4f905c039e0}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Print\+Hopping\+List@{Print\+Hopping\+List}}
+\index{Print\+Hopping\+List@{Print\+Hopping\+List}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Print\+Hopping\+List}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Print\+Hopping\+List (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a37ce0f5bd308163d2fb1d4f905c039e0}
+\hypertarget{classNumCal_1_1Lattice_ab7c36dff03f863c8ddc416b66dba9a73}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Print\+Irregular\+Onsite\+Profile@{Print\+Irregular\+Onsite\+Profile}}
+\index{Print\+Irregular\+Onsite\+Profile@{Print\+Irregular\+Onsite\+Profile}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Print\+Irregular\+Onsite\+Profile}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Print\+Irregular\+Onsite\+Profile (
+\begin{DoxyParamCaption}
+\item[{std\+::string}]{output}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Lattice_ab7c36dff03f863c8ddc416b66dba9a73}
+
+
+Priknt disorder onsite. 
+
+\hypertarget{classNumCal_1_1Lattice_ae18a5984df3d9300f56b06c769a208db}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Proj\+K\+Circle@{Proj\+K\+Circle}}
+\index{Proj\+K\+Circle@{Proj\+K\+Circle}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Proj\+K\+Circle}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Proj\+K\+Circle (
+\begin{DoxyParamCaption}
+\item[{const std\+::vector$<$ {\bf real} $>$}]{K, }
+\item[{const {\bf real}}]{R\+K, }
+\item[{{\bf scalar} $\ast$}]{x}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_ae18a5984df3d9300f56b06c769a208db}
+Allocate the memory for the 3\+D-\/arra
+
+Pass the information from the linear vector to the 3\+D array
+
+Perform the inverse fourier transform
+
+Pass the information back to the linear array \hypertarget{classNumCal_1_1Lattice_a18e3c9f1f34f92de89609af54d5b35c4}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Read\+Hopping\+List@{Read\+Hopping\+List}}
+\index{Read\+Hopping\+List@{Read\+Hopping\+List}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Read\+Hopping\+List}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Read\+Hopping\+List (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Lattice_a18e3c9f1f34f92de89609af54d5b35c4}
+
+
+Read the list of hoppings from the hopping file. 
+
+\hypertarget{classNumCal_1_1Lattice_a332fbad7d9bd9c2d641712bd7e885fb7}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Reciprocal\+Lattice\+Vector@{Reciprocal\+Lattice\+Vector}}
+\index{Reciprocal\+Lattice\+Vector@{Reciprocal\+Lattice\+Vector}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Reciprocal\+Lattice\+Vector}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<${\bf real}$>$ Num\+Cal\+::\+Lattice\+::\+Reciprocal\+Lattice\+Vector (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{i}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a332fbad7d9bd9c2d641712bd7e885fb7}
+
+
+Returns the ith-\/reciprocal lattice vector. 
+
+\hypertarget{classNumCal_1_1Lattice_a185a049be64061e61af9cf8aa98835db}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Rescale\+Hamiltonian@{Rescale\+Hamiltonian}}
+\index{Rescale\+Hamiltonian@{Rescale\+Hamiltonian}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Rescale\+Hamiltonian}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Rescale\+Hamiltonian (
+\begin{DoxyParamCaption}
+\item[{const {\bf real}}]{\+\_\+\+Emin, }
+\item[{const {\bf real}}]{\+\_\+\+Emax, }
+\item[{const {\bf real}}]{\+\_\+cutoff}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Lattice_a185a049be64061e61af9cf8aa98835db}
+
+
+Rescale the Hamiltonian between (-\/cutoff, cutoff) 
+
+This function is of special interest for the K\+P\+M method. It is important to notice that it rescale both the regular and irregular hamiltonian and both have to be setted. \hypertarget{classNumCal_1_1Lattice_a9ec7fb19af2909219b0d82cdf26097a5}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Reserve\+Irr\+Ham\+Space@{Reserve\+Irr\+Ham\+Space}}
+\index{Reserve\+Irr\+Ham\+Space@{Reserve\+Irr\+Ham\+Space}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Reserve\+Irr\+Ham\+Space}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Reserve\+Irr\+Ham\+Space (
+\begin{DoxyParamCaption}
+\item[{const {\bf integer}}]{\+\_\+stimated\+\_\+entries}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a9ec7fb19af2909219b0d82cdf26097a5}
+
+
+Reserve a estimated memory for the irregular part of the hamiltonian. 
+
+\hypertarget{classNumCal_1_1Lattice_aaf21bd2f08683035f260ea4de09b4504}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Set\+Reciprocal\+Lattice\+Vectors@{Set\+Reciprocal\+Lattice\+Vectors}}
+\index{Set\+Reciprocal\+Lattice\+Vectors@{Set\+Reciprocal\+Lattice\+Vectors}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Set\+Reciprocal\+Lattice\+Vectors}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Lattice\+::\+Set\+Reciprocal\+Lattice\+Vectors (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Lattice_aaf21bd2f08683035f260ea4de09b4504}
+
+
+Set the reciprocal lattice vectors. 
+
+\hypertarget{classNumCal_1_1Lattice_a6d68441bc15c6876230d3fac7bcdc26e}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Set\+Total\+Hamiltonian@{Set\+Total\+Hamiltonian}}
+\index{Set\+Total\+Hamiltonian@{Set\+Total\+Hamiltonian}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Set\+Total\+Hamiltonian}]{\setlength{\rightskip}{0pt plus 5cm}bool Num\+Cal\+::\+Lattice\+::\+Set\+Total\+Hamiltonian (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a6d68441bc15c6876230d3fac7bcdc26e}
+
+
+Initialize the final version of the hamiltonian in the memory. 
+
+\hypertarget{classNumCal_1_1Lattice_a080294bd34727c5e4e536000cc379f01}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Set\+Volume@{Set\+Volume}}
+\index{Set\+Volume@{Set\+Volume}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Set\+Volume}]{\setlength{\rightskip}{0pt plus 5cm}{\bf real} Num\+Cal\+::\+Lattice\+::\+Set\+Volume (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Lattice_a080294bd34727c5e4e536000cc379f01}
+
+
+Set the volume of the sample. 
+
+\hypertarget{classNumCal_1_1Lattice_afbbb05a9bccb38017cc2a594e526e7fe}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Spin\+Number@{Spin\+Number}}
+\index{Spin\+Number@{Spin\+Number}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Spin\+Number}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Spin\+Number (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_afbbb05a9bccb38017cc2a594e526e7fe}
+
+
+Returns the Spin number. 
+
+\hypertarget{classNumCal_1_1Lattice_adde86747cce019e4f8a0920a27cd13bb}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Total\+Of\+Orbitals@{Total\+Of\+Orbitals}}
+\index{Total\+Of\+Orbitals@{Total\+Of\+Orbitals}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Total\+Of\+Orbitals}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::\+Total\+Of\+Orbitals (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_adde86747cce019e4f8a0920a27cd13bb}
+
+
+Returns the Total number of sites. 
+
+\hypertarget{classNumCal_1_1Lattice_a8223586b6d642d4436babb7c89f8d424}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Volume@{Volume}}
+\index{Volume@{Volume}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Volume}]{\setlength{\rightskip}{0pt plus 5cm}{\bf real} Num\+Cal\+::\+Lattice\+::\+Volume (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Lattice_a8223586b6d642d4436babb7c89f8d424}
+
+
+returns the volume of the sample 
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classNumCal_1_1Lattice_a937648512bc88fd0376691695ba5ba4e}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!coord\+\_\+@{coord\+\_\+}}
+\index{coord\+\_\+@{coord\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{coord\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::coord\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a937648512bc88fd0376691695ba5ba4e}
+\hypertarget{classNumCal_1_1Lattice_a0df17f2217a05e898cd5266f13870238}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!hamiltonian\+\_\+setted\+\_\+@{hamiltonian\+\_\+setted\+\_\+}}
+\index{hamiltonian\+\_\+setted\+\_\+@{hamiltonian\+\_\+setted\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{hamiltonian\+\_\+setted\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}bool Num\+Cal\+::\+Lattice\+::hamiltonian\+\_\+setted\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a0df17f2217a05e898cd5266f13870238}
+\hypertarget{classNumCal_1_1Lattice_a552a40694e5723cb1f96c810457f112b}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!Hirr\+\_\+@{Hirr\+\_\+}}
+\index{Hirr\+\_\+@{Hirr\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{Hirr\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Irregular\+Hamiltonian} Num\+Cal\+::\+Lattice\+::\+Hirr\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a552a40694e5723cb1f96c810457f112b}
+\hypertarget{classNumCal_1_1Lattice_a27444d56d3a84b86396d99745259f748}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!hop\+\_\+list\+\_\+@{hop\+\_\+list\+\_\+}}
+\index{hop\+\_\+list\+\_\+@{hop\+\_\+list\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{hop\+\_\+list\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Hopping\+List} Num\+Cal\+::\+Lattice\+::hop\+\_\+list\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a27444d56d3a84b86396d99745259f748}
+\hypertarget{classNumCal_1_1Lattice_a60a503c33b250c2027631074e5ab056b}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!label\+\_\+@{label\+\_\+}}
+\index{label\+\_\+@{label\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{label\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}std\+::string Num\+Cal\+::\+Lattice\+::label\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a60a503c33b250c2027631074e5ab056b}
+\hypertarget{classNumCal_1_1Lattice_a9582cb6c2426ac63351a3e22a75f0c65}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!lat\+\_\+@{lat\+\_\+}}
+\index{lat\+\_\+@{lat\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{lat\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$std\+::vector$<${\bf real}$>$ $>$ Num\+Cal\+::\+Lattice\+::lat\+\_\+}}\label{classNumCal_1_1Lattice_a9582cb6c2426ac63351a3e22a75f0c65}
+\hypertarget{classNumCal_1_1Lattice_a97e5bc1dcbe0fa95bd53fa24136196e1}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!norb\+\_\+@{norb\+\_\+}}
+\index{norb\+\_\+@{norb\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{norb\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::norb\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a97e5bc1dcbe0fa95bd53fa24136196e1}
+\hypertarget{classNumCal_1_1Lattice_a19d0ca05d4b275d95e174b31e4ed1ae9}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!nsite\+\_\+@{nsite\+\_\+}}
+\index{nsite\+\_\+@{nsite\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{nsite\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<${\bf integer}$>$ Num\+Cal\+::\+Lattice\+::nsite\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a19d0ca05d4b275d95e174b31e4ed1ae9}
+\hypertarget{classNumCal_1_1Lattice_ade9b12a91ec5680d176e0daa9acdd4ab}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!rec\+\_\+lat\+\_\+@{rec\+\_\+lat\+\_\+}}
+\index{rec\+\_\+lat\+\_\+@{rec\+\_\+lat\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{rec\+\_\+lat\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$std\+::vector$<${\bf real}$>$ $>$ Num\+Cal\+::\+Lattice\+::rec\+\_\+lat\+\_\+}}\label{classNumCal_1_1Lattice_ade9b12a91ec5680d176e0daa9acdd4ab}
+\hypertarget{classNumCal_1_1Lattice_a9fad149348681fccd17f2b714d18a329}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!spin\+\_\+@{spin\+\_\+}}
+\index{spin\+\_\+@{spin\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{spin\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf integer} Num\+Cal\+::\+Lattice\+::spin\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Lattice_a9fad149348681fccd17f2b714d18a329}
+\hypertarget{classNumCal_1_1Lattice_aa21f4eee7d70942ab703f78fc052ed9e}{\index{Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}!volume\+\_\+@{volume\+\_\+}}
+\index{volume\+\_\+@{volume\+\_\+}!Num\+Cal\+::\+Lattice@{Num\+Cal\+::\+Lattice}}
+\subsubsection[{volume\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf real} Num\+Cal\+::\+Lattice\+::volume\+\_\+}}\label{classNumCal_1_1Lattice_aa21f4eee7d70942ab703f78fc052ed9e}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/lattice/\hyperlink{lattice_8hpp}{lattice.\+hpp}\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/lattice/\hyperlink{lattice_8cpp}{lattice.\+cpp}\end{DoxyCompactItemize}

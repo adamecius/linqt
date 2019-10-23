@@ -1,0 +1,126 @@
+\hypertarget{classKPMLinalg}{\section{K\+P\+M\+Linalg Class Reference}
+\label{classKPMLinalg}\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+}
+
+
+{\ttfamily \#include $<$kpm\+\_\+linalg.\+hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classKPMLinalg_acff81426f0aeee30394be706a6e46935}{K\+P\+M\+Linalg} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+shift)
+\begin{DoxyCompactList}\small\item\em The Main constructor. \end{DoxyCompactList}\item 
+\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} \hyperlink{classKPMLinalg_abb6030c99d8057a7aa11fbce306b9b57}{dot} (const \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x, const \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$y)
+\item 
+void \hyperlink{classKPMLinalg_a0f8a1454920849639565fbb0adb1482d}{scale} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} alpha, \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x)
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classKPMLinalg_a6ab17fb92464d4209fc81ead7802c22b}{nrm2} (const \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x)
+\item 
+void \hyperlink{classKPMLinalg_ace41c2567adb04803e03ab62cf5818cc}{normalize} (\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x)
+\item 
+void \hyperlink{classKPMLinalg_abe74d250559b3c5d13640dc7a4af1f54}{axpy} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} alpha, const \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x, \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$y)
+\item 
+void \hyperlink{classKPMLinalg_afa205542a571b92d90ba32d12934baf5}{swap} (\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x, \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$y)
+\item 
+void \hyperlink{classKPMLinalg_ae381d126d8238bee08b1727d11e43133}{copy} (\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x, \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$y)
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classKPMLinalg_a5cd6b3a04889819907467b1ca6d91ffd}{shift}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classKPMLinalg_a827e818eefc60d764fc5ab37dc8c5c15}{dim}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classKPMLinalg_a000e78c76f8988c9df5659f8e28817ed}{eff\+\_\+dim}
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classKPMLinalg_acff81426f0aeee30394be706a6e46935}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{K\+P\+M\+Linalg}]{\setlength{\rightskip}{0pt plus 5cm}K\+P\+M\+Linalg\+::\+K\+P\+M\+Linalg (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+dim, }
+\item[{const {\bf my\+::integer}}]{\+\_\+shift}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classKPMLinalg_acff81426f0aeee30394be706a6e46935}
+
+
+The Main constructor. 
+
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classKPMLinalg_abe74d250559b3c5d13640dc7a4af1f54}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!axpy@{axpy}}
+\index{axpy@{axpy}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{axpy}]{\setlength{\rightskip}{0pt plus 5cm}void K\+P\+M\+Linalg\+::axpy (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{alpha, }
+\item[{const {\bf my\+::scalar} $\ast$}]{x, }
+\item[{{\bf my\+::scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_abe74d250559b3c5d13640dc7a4af1f54}
+\hypertarget{classKPMLinalg_ae381d126d8238bee08b1727d11e43133}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!copy@{copy}}
+\index{copy@{copy}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{copy}]{\setlength{\rightskip}{0pt plus 5cm}void K\+P\+M\+Linalg\+::copy (
+\begin{DoxyParamCaption}
+\item[{{\bf my\+::scalar} $\ast$}]{x, }
+\item[{{\bf my\+::scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_ae381d126d8238bee08b1727d11e43133}
+\hypertarget{classKPMLinalg_abb6030c99d8057a7aa11fbce306b9b57}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!dot@{dot}}
+\index{dot@{dot}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{dot}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::scalar} K\+P\+M\+Linalg\+::dot (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::scalar} $\ast$}]{x, }
+\item[{const {\bf my\+::scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_abb6030c99d8057a7aa11fbce306b9b57}
+\hypertarget{classKPMLinalg_ace41c2567adb04803e03ab62cf5818cc}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!normalize@{normalize}}
+\index{normalize@{normalize}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{normalize}]{\setlength{\rightskip}{0pt plus 5cm}void K\+P\+M\+Linalg\+::normalize (
+\begin{DoxyParamCaption}
+\item[{{\bf my\+::scalar} $\ast$}]{x}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_ace41c2567adb04803e03ab62cf5818cc}
+\hypertarget{classKPMLinalg_a6ab17fb92464d4209fc81ead7802c22b}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!nrm2@{nrm2}}
+\index{nrm2@{nrm2}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{nrm2}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} K\+P\+M\+Linalg\+::nrm2 (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::scalar} $\ast$}]{x}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_a6ab17fb92464d4209fc81ead7802c22b}
+\hypertarget{classKPMLinalg_a0f8a1454920849639565fbb0adb1482d}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!scale@{scale}}
+\index{scale@{scale}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{scale}]{\setlength{\rightskip}{0pt plus 5cm}void K\+P\+M\+Linalg\+::scale (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{alpha, }
+\item[{{\bf my\+::scalar} $\ast$}]{x}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_a0f8a1454920849639565fbb0adb1482d}
+\hypertarget{classKPMLinalg_afa205542a571b92d90ba32d12934baf5}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!swap@{swap}}
+\index{swap@{swap}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{swap}]{\setlength{\rightskip}{0pt plus 5cm}void K\+P\+M\+Linalg\+::swap (
+\begin{DoxyParamCaption}
+\item[{{\bf my\+::scalar} $\ast$}]{x, }
+\item[{{\bf my\+::scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)}}\label{classKPMLinalg_afa205542a571b92d90ba32d12934baf5}
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classKPMLinalg_a827e818eefc60d764fc5ab37dc8c5c15}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!dim@{dim}}
+\index{dim@{dim}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{dim}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} K\+P\+M\+Linalg\+::dim\hspace{0.3cm}{\ttfamily [private]}}}\label{classKPMLinalg_a827e818eefc60d764fc5ab37dc8c5c15}
+\hypertarget{classKPMLinalg_a000e78c76f8988c9df5659f8e28817ed}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!eff\+\_\+dim@{eff\+\_\+dim}}
+\index{eff\+\_\+dim@{eff\+\_\+dim}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{eff\+\_\+dim}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} K\+P\+M\+Linalg\+::eff\+\_\+dim\hspace{0.3cm}{\ttfamily [private]}}}\label{classKPMLinalg_a000e78c76f8988c9df5659f8e28817ed}
+\hypertarget{classKPMLinalg_a5cd6b3a04889819907467b1ca6d91ffd}{\index{K\+P\+M\+Linalg@{K\+P\+M\+Linalg}!shift@{shift}}
+\index{shift@{shift}!K\+P\+M\+Linalg@{K\+P\+M\+Linalg}}
+\subsubsection[{shift}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} K\+P\+M\+Linalg\+::shift\hspace{0.3cm}{\ttfamily [private]}}}\label{classKPMLinalg_a5cd6b3a04889819907467b1ca6d91ffd}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/kpm/\hyperlink{kpm__linalg_8hpp}{kpm\+\_\+linalg.\+hpp}\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/kpm/\hyperlink{kpm__linalg_8cpp}{kpm\+\_\+linalg.\+cpp}\end{DoxyCompactItemize}

@@ -1,0 +1,110 @@
+\hypertarget{namespaceNumCal}{\section{Num\+Cal Namespace Reference}
+\label{namespaceNumCal}\index{Num\+Cal@{Num\+Cal}}
+}
+\subsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+ \hyperlink{namespaceNumCal_1_1kpm}{kpm}
+\item 
+ \hyperlink{namespaceNumCal_1_1lattice__io}{lattice\+\_\+io}
+\item 
+ \hyperlink{namespaceNumCal_1_1stringUtil}{string\+Util}
+\end{DoxyCompactItemize}
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classNumCal_1_1cerr__class}{cerr\+\_\+class}
+\item 
+class \hyperlink{classNumCal_1_1ChebyshevSet}{Chebyshev\+Set}
+\item 
+class \hyperlink{classNumCal_1_1cout__class}{cout\+\_\+class}
+\item 
+class \hyperlink{classNumCal_1_1Kpm}{Kpm}
+\begin{DoxyCompactList}\small\item\em Set of approximation based on K\+P\+M. \end{DoxyCompactList}\item 
+class \hyperlink{classNumCal_1_1Lattice}{Lattice}
+\begin{DoxyCompactList}\small\item\em A multi-\/purpose tight-\/binding lattice class. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{types__definitions_8hpp_afcf02aefd75cea1c0178a18bbfcb3d1a}{external\+\_\+real} \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{real}
+\item 
+typedef unsigned long \hyperlink{namespaceNumCal_aa3e2bbd7c48c91db220faeb896cd15a4}{size\+\_\+t}
+\item 
+typedef int \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{integer}
+\item 
+typedef \hyperlink{types__definitions_8hpp_a4c933564179b32b78cb338ca417616a8}{external\+\_\+complex} \hyperlink{namespaceNumCal_a04c5555bf4fddc076c41cc9440db4645}{complex}
+\item 
+typedef \hyperlink{types__definitions_8hpp_af5c52aebac57703de05e631d36a8ef2e}{external\+\_\+scalar} \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar}
+\item 
+typedef \hyperlink{types__definitions_8hpp_aea218327e998c8c8c583f91564afd1b4}{external\+\_\+vector} \hyperlink{namespaceNumCal_a271636c96b503821b7d9017cb419928a}{vector}
+\item 
+typedef \hyperlink{types__definitions_8hpp_ac4a55bdf0574672fe1bf23fe295feaf4}{external\+\_\+dvector} \hyperlink{namespaceNumCal_a455906c1d5486d136db3a82f48ed412d}{dvector}
+\item 
+typedef Eigen\+::\+Sparse\+Matrix\\*
+$<$ \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar}, Eigen\+::\+Row\+Major, \\*
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} $>$ \hyperlink{namespaceNumCal_a7250a9391da84db7147d9e05c8d3f137}{Sp\+Mat}
+\item 
+typedef Eigen\+::\+Triplet$<$ \hyperlink{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{scalar} $>$ \hyperlink{namespaceNumCal_a79ecf3f91c119611dbbd9194c2511bec}{sp\+Entry}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{namespaceNumCal_a50e18f1f5b68be5796103ee981c836e5}{Add\+Anderson\+Disorder} (\hyperlink{classNumCal_1_1Lattice}{Lattice} \&\+\_\+lat, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} W)
+\item 
+void \hyperlink{namespaceNumCal_ae2d5d31cf01e9a644fcc8083389c7345}{Add\+Charged\+Puddles} (\hyperlink{classNumCal_1_1Lattice}{Lattice} \&\+\_\+lat, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} p, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} U, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} Rc)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+In this class we will include everything needed to perform a calculation using the Kernel Polynomial Method 
+
+\subsection{Typedef Documentation}
+\hypertarget{namespaceNumCal_a04c5555bf4fddc076c41cc9440db4645}{\index{Num\+Cal@{Num\+Cal}!complex@{complex}}
+\index{complex@{complex}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{complex}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf external\+\_\+complex} {\bf Num\+Cal\+::complex}}}\label{namespaceNumCal_a04c5555bf4fddc076c41cc9440db4645}
+\hypertarget{namespaceNumCal_a455906c1d5486d136db3a82f48ed412d}{\index{Num\+Cal@{Num\+Cal}!dvector@{dvector}}
+\index{dvector@{dvector}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{dvector}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf external\+\_\+dvector} {\bf Num\+Cal\+::dvector}}}\label{namespaceNumCal_a455906c1d5486d136db3a82f48ed412d}
+\hypertarget{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{\index{Num\+Cal@{Num\+Cal}!integer@{integer}}
+\index{integer@{integer}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{integer}]{\setlength{\rightskip}{0pt plus 5cm}typedef int {\bf Num\+Cal\+::integer}}}\label{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}
+\hypertarget{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{\index{Num\+Cal@{Num\+Cal}!real@{real}}
+\index{real@{real}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{real}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf external\+\_\+real} {\bf Num\+Cal\+::real}}}\label{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}
+\hypertarget{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}{\index{Num\+Cal@{Num\+Cal}!scalar@{scalar}}
+\index{scalar@{scalar}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{scalar}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf external\+\_\+scalar} {\bf Num\+Cal\+::scalar}}}\label{namespaceNumCal_a45f8f32ea0c2b926caa1ad763bd77c96}
+\hypertarget{namespaceNumCal_aa3e2bbd7c48c91db220faeb896cd15a4}{\index{Num\+Cal@{Num\+Cal}!size\+\_\+t@{size\+\_\+t}}
+\index{size\+\_\+t@{size\+\_\+t}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{size\+\_\+t}]{\setlength{\rightskip}{0pt plus 5cm}typedef unsigned long {\bf Num\+Cal\+::size\+\_\+t}}}\label{namespaceNumCal_aa3e2bbd7c48c91db220faeb896cd15a4}
+\hypertarget{namespaceNumCal_a79ecf3f91c119611dbbd9194c2511bec}{\index{Num\+Cal@{Num\+Cal}!sp\+Entry@{sp\+Entry}}
+\index{sp\+Entry@{sp\+Entry}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{sp\+Entry}]{\setlength{\rightskip}{0pt plus 5cm}typedef Eigen\+::\+Triplet$<${\bf scalar}$>$ {\bf Num\+Cal\+::sp\+Entry}}}\label{namespaceNumCal_a79ecf3f91c119611dbbd9194c2511bec}
+\hypertarget{namespaceNumCal_a7250a9391da84db7147d9e05c8d3f137}{\index{Num\+Cal@{Num\+Cal}!Sp\+Mat@{Sp\+Mat}}
+\index{Sp\+Mat@{Sp\+Mat}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{Sp\+Mat}]{\setlength{\rightskip}{0pt plus 5cm}typedef Eigen\+::\+Sparse\+Matrix$<$ {\bf scalar},Eigen\+::\+Row\+Major, {\bf my\+::integer} $>$ {\bf Num\+Cal\+::\+Sp\+Mat}}}\label{namespaceNumCal_a7250a9391da84db7147d9e05c8d3f137}
+\hypertarget{namespaceNumCal_a271636c96b503821b7d9017cb419928a}{\index{Num\+Cal@{Num\+Cal}!vector@{vector}}
+\index{vector@{vector}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{vector}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf external\+\_\+vector} {\bf Num\+Cal\+::vector}}}\label{namespaceNumCal_a271636c96b503821b7d9017cb419928a}
+
+
+\subsection{Function Documentation}
+\hypertarget{namespaceNumCal_a50e18f1f5b68be5796103ee981c836e5}{\index{Num\+Cal@{Num\+Cal}!Add\+Anderson\+Disorder@{Add\+Anderson\+Disorder}}
+\index{Add\+Anderson\+Disorder@{Add\+Anderson\+Disorder}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{Add\+Anderson\+Disorder}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Add\+Anderson\+Disorder (
+\begin{DoxyParamCaption}
+\item[{Lattice \&}]{\+\_\+lat, }
+\item[{const {\bf my\+::real}}]{W}
+\end{DoxyParamCaption}
+)}}\label{namespaceNumCal_a50e18f1f5b68be5796103ee981c836e5}
+\hypertarget{namespaceNumCal_ae2d5d31cf01e9a644fcc8083389c7345}{\index{Num\+Cal@{Num\+Cal}!Add\+Charged\+Puddles@{Add\+Charged\+Puddles}}
+\index{Add\+Charged\+Puddles@{Add\+Charged\+Puddles}!Num\+Cal@{Num\+Cal}}
+\subsubsection[{Add\+Charged\+Puddles}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Add\+Charged\+Puddles (
+\begin{DoxyParamCaption}
+\item[{Lattice \&}]{\+\_\+lat, }
+\item[{const {\bf my\+::real}}]{p, }
+\item[{const {\bf my\+::real}}]{U, }
+\item[{const {\bf my\+::real}}]{Rc}
+\end{DoxyParamCaption}
+)}}\label{namespaceNumCal_ae2d5d31cf01e9a644fcc8083389c7345}
+If the number of slots for impurities is smaller than the current number of impurities in the system, a push\+\_\+back must be done. Else, only an assigment should be done

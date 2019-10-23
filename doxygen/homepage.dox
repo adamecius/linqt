@@ -1,0 +1,29 @@
+/*! \mainpage TB-NumCal
+ *
+ * \section intro_sec Introduction
+ *
+ * TB-NumCal is a program aimed to perform different types of 
+ * numerical calculations in tight-binding models. In the core
+ * of the program we use mainly the Kernel Polynomial method 
+ * to compute different spectral quantities such as the conductivity tensor,
+ * the non-equilibrium spin-density or the density of states. Although 
+ * a complementary approach, the Time-Evolution method is 
+ * also implemented.
+ * 
+ * The program is designed to work using both MPI and OpenMP paradigms of parallelism.
+ * Although the parallelism works different in each approach for the sake of performance. 
+ * Instead of OpenMP the program can benefit from the plataform CUDA for GPU calculations,
+ * which in many case result in a noticeable increasement in speed. 
+ *    
+ * \section install_sec Installation
+ *
+ * The installation process is very simple, however, for optimal performance some tuning must 
+ * be performed. For the moment, the program is entirely tested within Intel Parallel 2016, 
+ * therefore the variables  INTEL_HOME, MPI_HOME, OMP_HOME and CUDA_HOME should be set in the arch_make file. 
+ * For now the INTEL_HOME variable is mandatory, but if  MPI_HOME, OMP_HOME or CUDA_HOME is not set, then
+ * the compilation will be performed  excluding this options of parallelism, if both CUDA and OMP are set,  
+ * CUDA takes priority over OMP.
+ * 
+ */
+  ///\subsection step1 Step 1: Opening the box
+ 

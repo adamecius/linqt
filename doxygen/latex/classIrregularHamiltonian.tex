@@ -1,0 +1,156 @@
+\hypertarget{classIrregularHamiltonian}{\section{Irregular\+Hamiltonian Class Reference}
+\label{classIrregularHamiltonian}\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+}
+
+
+Defines the types of the program.  
+
+
+
+
+{\ttfamily \#include $<$irregular\+\_\+hamiltonian.\+hpp$>$}
+
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{namespacesparse_a841919761b2e35cc4d59f636ab10a07b}{sparse\+::\+Entry} \hyperlink{classIrregularHamiltonian_ac7037c4beb0bd21bfa728132c3235b61}{Hopping}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classIrregularHamiltonian_a92dea0ba1bf2d3aa4ad1b77656faf0c1}{Irregular\+Hamiltonian} ()
+\begin{DoxyCompactList}\small\item\em The default constructor. \end{DoxyCompactList}\item 
+\hyperlink{classIrregularHamiltonian_a483ff008316f96f2ab4f956c472f37c8}{Irregular\+Hamiltonian} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} ncol\+\_\+, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} nrow\+\_\+)
+\begin{DoxyCompactList}\small\item\em The initialization constructor constructor. \end{DoxyCompactList}\item 
+void \hyperlink{classIrregularHamiltonian_a9433ba6be0cd6b72793324200b32b461}{Reserve} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+size)
+\item 
+void \hyperlink{classIrregularHamiltonian_a414ca4481117e4c90c32bccbc719dfaa}{Rescale} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+Emin, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+Emax, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+cutoff)
+\begin{DoxyCompactList}\small\item\em This function rescale the hamiltonian, between the , (-\/alpha,alpha) \end{DoxyCompactList}\item 
+void \hyperlink{classIrregularHamiltonian_a8ddcd83632d729d430253fa338a661a6}{Set\+Hopping} (const \hyperlink{classIrregularHamiltonian_ac7037c4beb0bd21bfa728132c3235b61}{Hopping} \+\_\+hop)
+\begin{DoxyCompactList}\small\item\em Set a hopping of the Hamiltonian. \end{DoxyCompactList}\item 
+void \hyperlink{classIrregularHamiltonian_a2d82fd0d2a739a66c67dff9e12aabd2a}{Multiply} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} mem\+Sep, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} dim, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} alpha, const \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$x, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} beta, \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$y)
+\begin{DoxyCompactList}\small\item\em This function rescale the hamiltonian, between the , (-\/alpha,alpha) \end{DoxyCompactList}\item 
+void \hyperlink{classIrregularHamiltonian_a363880d9a79e5b120a5988c00b40c6dc}{Refine} ()
+\item 
+\hyperlink{classmy_1_1SparseMatrix}{my\+::\+Sparse\+Matrix} \& \hyperlink{classIrregularHamiltonian_a848ab690df366e151cd84a66111299dd}{Matrix} ()
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classmy_1_1SparseMatrix}{my\+::\+Sparse\+Matrix} \hyperlink{classIrregularHamiltonian_ab8a68c2c78e2a7e7b308b17bb2977fc4}{Hamiltonian\+\_\+}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Defines the types of the program. 
+
+Defines the Sparse\+Matrix class The Irregular Hamiltonian Class
+
+This class is the responsible of store the irregular part of a Hamiltonian in a sparse matrix format. It also contain the implementation of the Hamiltonian$\ast$\+Vector product which is extensively used in iterative programs and also contain the implementation used to rescale the spectrum between (-\/alpha,alpha) interval 
+
+\subsection{Member Typedef Documentation}
+\hypertarget{classIrregularHamiltonian_ac7037c4beb0bd21bfa728132c3235b61}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Hopping@{Hopping}}
+\index{Hopping@{Hopping}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Hopping}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf sparse\+::\+Entry} {\bf Irregular\+Hamiltonian\+::\+Hopping}}}\label{classIrregularHamiltonian_ac7037c4beb0bd21bfa728132c3235b61}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classIrregularHamiltonian_a92dea0ba1bf2d3aa4ad1b77656faf0c1}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Irregular\+Hamiltonian}]{\setlength{\rightskip}{0pt plus 5cm}Irregular\+Hamiltonian\+::\+Irregular\+Hamiltonian (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classIrregularHamiltonian_a92dea0ba1bf2d3aa4ad1b77656faf0c1}
+
+
+The default constructor. 
+
+\hypertarget{classIrregularHamiltonian_a483ff008316f96f2ab4f956c472f37c8}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Irregular\+Hamiltonian}]{\setlength{\rightskip}{0pt plus 5cm}Irregular\+Hamiltonian\+::\+Irregular\+Hamiltonian (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{ncol\+\_\+, }
+\item[{const {\bf my\+::integer}}]{nrow\+\_\+}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classIrregularHamiltonian_a483ff008316f96f2ab4f956c472f37c8}
+
+
+The initialization constructor constructor. 
+
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classIrregularHamiltonian_a848ab690df366e151cd84a66111299dd}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Matrix}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::\+Sparse\+Matrix}\& Irregular\+Hamiltonian\+::\+Matrix (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classIrregularHamiltonian_a848ab690df366e151cd84a66111299dd}
+\hypertarget{classIrregularHamiltonian_a2d82fd0d2a739a66c67dff9e12aabd2a}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Multiply@{Multiply}}
+\index{Multiply@{Multiply}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Multiply}]{\setlength{\rightskip}{0pt plus 5cm}void Irregular\+Hamiltonian\+::\+Multiply (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{mem\+Sep, }
+\item[{const {\bf my\+::integer}}]{dim, }
+\item[{const {\bf my\+::real}}]{alpha, }
+\item[{const {\bf my\+::scalar} $\ast$}]{x, }
+\item[{const {\bf my\+::real}}]{beta, }
+\item[{{\bf my\+::scalar} $\ast$}]{y}
+\end{DoxyParamCaption}
+)}}\label{classIrregularHamiltonian_a2d82fd0d2a739a66c67dff9e12aabd2a}
+
+
+This function rescale the hamiltonian, between the , (-\/alpha,alpha) 
+
+\hypertarget{classIrregularHamiltonian_a363880d9a79e5b120a5988c00b40c6dc}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Refine@{Refine}}
+\index{Refine@{Refine}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Refine}]{\setlength{\rightskip}{0pt plus 5cm}void Irregular\+Hamiltonian\+::\+Refine (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classIrregularHamiltonian_a363880d9a79e5b120a5988c00b40c6dc}
+\hypertarget{classIrregularHamiltonian_a414ca4481117e4c90c32bccbc719dfaa}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Rescale@{Rescale}}
+\index{Rescale@{Rescale}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Rescale}]{\setlength{\rightskip}{0pt plus 5cm}void Irregular\+Hamiltonian\+::\+Rescale (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{\+\_\+\+Emin, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+Emax, }
+\item[{const {\bf my\+::real}}]{\+\_\+cutoff}
+\end{DoxyParamCaption}
+)}}\label{classIrregularHamiltonian_a414ca4481117e4c90c32bccbc719dfaa}
+
+
+This function rescale the hamiltonian, between the , (-\/alpha,alpha) 
+
+\hypertarget{classIrregularHamiltonian_a9433ba6be0cd6b72793324200b32b461}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Reserve@{Reserve}}
+\index{Reserve@{Reserve}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Reserve}]{\setlength{\rightskip}{0pt plus 5cm}void Irregular\+Hamiltonian\+::\+Reserve (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+size}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classIrregularHamiltonian_a9433ba6be0cd6b72793324200b32b461}
+\hypertarget{classIrregularHamiltonian_a8ddcd83632d729d430253fa338a661a6}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Set\+Hopping@{Set\+Hopping}}
+\index{Set\+Hopping@{Set\+Hopping}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Set\+Hopping}]{\setlength{\rightskip}{0pt plus 5cm}void Irregular\+Hamiltonian\+::\+Set\+Hopping (
+\begin{DoxyParamCaption}
+\item[{const {\bf Hopping}}]{\+\_\+hop}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classIrregularHamiltonian_a8ddcd83632d729d430253fa338a661a6}
+
+
+Set a hopping of the Hamiltonian. 
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classIrregularHamiltonian_ab8a68c2c78e2a7e7b308b17bb2977fc4}{\index{Irregular\+Hamiltonian@{Irregular\+Hamiltonian}!Hamiltonian\+\_\+@{Hamiltonian\+\_\+}}
+\index{Hamiltonian\+\_\+@{Hamiltonian\+\_\+}!Irregular\+Hamiltonian@{Irregular\+Hamiltonian}}
+\subsubsection[{Hamiltonian\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::\+Sparse\+Matrix} Irregular\+Hamiltonian\+::\+Hamiltonian\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classIrregularHamiltonian_ab8a68c2c78e2a7e7b308b17bb2977fc4}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/lattice/\hyperlink{irregular__hamiltonian_8hpp}{irregular\+\_\+hamiltonian.\+hpp}\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/lattice/\hyperlink{irregular__hamiltonian_8cpp}{irregular\+\_\+hamiltonian.\+cpp}\end{DoxyCompactItemize}

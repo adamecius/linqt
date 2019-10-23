@@ -1,0 +1,27 @@
+var classRegularHamiltonian =
+[
+    [ "RegularHamiltonian", "classRegularHamiltonian.html#a334e4a636fad634fd36921c045611c1d", null ],
+    [ "RegularHamiltonian", "classRegularHamiltonian.html#a043c6a42682d1cac7a4505e91b2bff79", null ],
+    [ "RegularHamiltonian", "classRegularHamiltonian.html#a357f235a1c4c69e2370e59b4aad35eea", null ],
+    [ "Multiply", "classRegularHamiltonian.html#a8107628da44cb22e0dbafd7c833264ef", null ],
+    [ "Rescale", "classRegularHamiltonian.html#a47b8742fc581e4bafd1e1f2a5672e603", null ],
+    [ "SetLatticeIndex", "classRegularHamiltonian.html#a18a7c9772e589fcae0cf941a9e9cf070", null ],
+    [ "SetParameters", "classRegularHamiltonian.html#a6ca575fbf813fdfc9fabe85ba85d22e6", null ],
+    [ "SpinZ_Velocity", "classRegularHamiltonian.html#a21f04c3c51e45a27d4869136d5153cda", null ],
+    [ "Velocity", "classRegularHamiltonian.html#a1b337987086f6768ed170f072528666a", null ],
+    [ "E0", "classRegularHamiltonian.html#aa94597b108f82d45bf1e3ef50e49f4d0", null ],
+    [ "idx", "classRegularHamiltonian.html#ad2699734f37e05424ed1bcaa4adab7a8", null ],
+    [ "ncol_", "classRegularHamiltonian.html#af84eeb786892d31fc597967eba96f1b4", null ],
+    [ "nrow_", "classRegularHamiltonian.html#a85330e40f5f04e0fb16a1945c9c29893", null ],
+    [ "t1", "classRegularHamiltonian.html#a6bb02c84740c615ab68f8e45c4896f18", null ],
+    [ "t2", "classRegularHamiltonian.html#a95c0ed7db6037765834f08eb9e913e0a", null ],
+    [ "v_E0", "classRegularHamiltonian.html#a1f88512c8e177ab87900f43e1c8b6069", null ],
+    [ "v_t1", "classRegularHamiltonian.html#ab368f7c42db9958adf3c04f4588f087b", null ],
+    [ "v_t2", "classRegularHamiltonian.html#aef4b5d2fa532fd8a6cc2ebfeacfa8fff", null ],
+    [ "v_VI", "classRegularHamiltonian.html#aba0b0806e534a5e2fadaf99bca63e9de", null ],
+    [ "v_VPIA", "classRegularHamiltonian.html#a1bf32223bcb7b89fdd1cca8f766120ae", null ],
+    [ "v_VR", "classRegularHamiltonian.html#aeb33cb80d6399419e5cede26257b25a6", null ],
+    [ "VI", "classRegularHamiltonian.html#a4953686d0043f14e913407db828b5e8b", null ],
+    [ "VPIA", "classRegularHamiltonian.html#a5000d0af5d0437a92085990322e233ba", null ],
+    [ "VR", "classRegularHamiltonian.html#a0c1f3be7d09aa3aa214a94020834f9b3", null ]
+];

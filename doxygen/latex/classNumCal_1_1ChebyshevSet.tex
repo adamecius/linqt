@@ -1,0 +1,231 @@
+\hypertarget{classNumCal_1_1ChebyshevSet}{\section{Num\+Cal\+:\+:Chebyshev\+Set Class Reference}
+\label{classNumCal_1_1ChebyshevSet}\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+}
+
+
+{\ttfamily \#include $<$chebyshev\+\_\+set.\+hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classNumCal_1_1ChebyshevSet_add89be1a33c1617e41e941d1f5e2c7c9}{Chebyshev\+Set} ()
+\begin{DoxyCompactList}\small\item\em The Null Constructor. \end{DoxyCompactList}\item 
+\hyperlink{classNumCal_1_1ChebyshevSet_aa16001d1c72565f061b2658d8c513a7d}{Chebyshev\+Set} (const std\+::string \+\_\+set\+Label, \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+vec\+Dim)
+\begin{DoxyCompactList}\small\item\em The Main constructor. \end{DoxyCompactList}\item 
+\hyperlink{classNumCal_1_1ChebyshevSet_a084680552a47439398c938e7965cb5db}{$\sim$\+Chebyshev\+Set} ()
+\item 
+void \hyperlink{classNumCal_1_1ChebyshevSet_ae041ef43a4ef539403c3205d7dbb07db}{Set\+Num\+Of\+Sets} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+set\+\_\+num)
+\item 
+std\+::string \hyperlink{classNumCal_1_1ChebyshevSet_af4b6d26460aa678519a7678caf322003}{Label} () const 
+\begin{DoxyCompactList}\small\item\em Gets the label of the set. \end{DoxyCompactList}\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classNumCal_1_1ChebyshevSet_abcf6cbf670bd2768adc8f35b4b44bcf8}{Dimension} () const 
+\begin{DoxyCompactList}\small\item\em Gets the dimension of the vector space. \end{DoxyCompactList}\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classNumCal_1_1ChebyshevSet_a345e815f911c44fd07a88392b2cb7dd1}{Num\+Of\+Sets} () const 
+\begin{DoxyCompactList}\small\item\em Gets the total number of Chebyshev sets. \end{DoxyCompactList}\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classNumCal_1_1ChebyshevSet_ac3f3d1c342654b271f6ae2d0810d3ab9}{Mem\+Sep} () const 
+\begin{DoxyCompactList}\small\item\em Returns the Memory\+Separation for the sets. \end{DoxyCompactList}\item 
+\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$\& \hyperlink{classNumCal_1_1ChebyshevSet_a5fbbe31b3dba2cf8ee37f6fe91552bb3}{Cheb\+Vec} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} i, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} j)
+\begin{DoxyCompactList}\small\item\em Returns the jth vector of the ith set. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1ChebyshevSet_a0d2a516512c91bfd5a63500848c925b8}{Chebyshev\+Iteration} (\hyperlink{classNumCal_1_1Lattice}{Lattice} \&lat, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} set\+\_\+id, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} n)
+\begin{DoxyCompactList}\small\item\em The Chebyshev Iteration Function. \end{DoxyCompactList}\item 
+void \hyperlink{classNumCal_1_1ChebyshevSet_aefe3d2d562bff549628793f26d56e105}{Swap} (\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} set\+\_\+id, \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} vec\+\_\+id0, \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} vec\+\_\+id1)
+\item 
+void \hyperlink{classNumCal_1_1ChebyshevSet_ae4fc320b558a0f0200ae01917eefce72}{Print\+Vector} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} set\+\_\+id, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} Cheb\+Vec\+I\+D\+X)
+\item 
+void \hyperlink{classNumCal_1_1ChebyshevSet_ad355256a1dec051aba287cd40a93097e}{Print\+Set\+Load} ()
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+const std\+::string \hyperlink{classNumCal_1_1ChebyshevSet_a1a42d6754802e8ceca50684cd13ac381}{set\+Label\+\_\+}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classNumCal_1_1ChebyshevSet_a723ec8b3618b04a2cdb12eedf73199c9}{vec\+Dim\+\_\+}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classNumCal_1_1ChebyshevSet_a7d36e4b9044a93b700490fdfdcf21c4d}{num\+\_\+cheb\+\_\+set\+\_\+}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classNumCal_1_1ChebyshevSet_a07ae814a2a669d366e064aa4b1f1b133}{trunc\+\_\+order\+\_\+}
+\item 
+std\+::vector$<$ std\+::vector\\*
+$<$ \hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$ $>$ $>$ \hyperlink{classNumCal_1_1ChebyshevSet_a2e80e1a4ddf850fb43fcadb98983de76}{Cheb\+Vecs\+\_\+}
+\item 
+\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$ \hyperlink{classNumCal_1_1ChebyshevSet_a3566eaf28aa3298ddc94280df32a3106}{Chebt\+\_\+}
+\item 
+\hyperlink{namespacemy_a12d9dde7e2fb58fbd11051705c382a86}{my\+::scalar} $\ast$ \hyperlink{classNumCal_1_1ChebyshevSet_a106d0e93b07c828aa1de70e09f9258ff}{linear\+Mem\+Block\+\_\+}
+\item 
+\hyperlink{namespacemy_ac9e2c9fc46dc44ed285976e482ee6ef4}{my\+::size\+\_\+t} \hyperlink{classNumCal_1_1ChebyshevSet_a88d4a56049c380a3263f5802c08efab8}{memory\+Size\+\_\+}
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classNumCal_1_1ChebyshevSet_add89be1a33c1617e41e941d1f5e2c7c9}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Chebyshev\+Set@{Chebyshev\+Set}}
+\index{Chebyshev\+Set@{Chebyshev\+Set}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Chebyshev\+Set}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::\+Chebyshev\+Set\+::\+Chebyshev\+Set (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_add89be1a33c1617e41e941d1f5e2c7c9}
+
+
+The Null Constructor. 
+
+\hypertarget{classNumCal_1_1ChebyshevSet_aa16001d1c72565f061b2658d8c513a7d}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Chebyshev\+Set@{Chebyshev\+Set}}
+\index{Chebyshev\+Set@{Chebyshev\+Set}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Chebyshev\+Set}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::\+Chebyshev\+Set\+::\+Chebyshev\+Set (
+\begin{DoxyParamCaption}
+\item[{const std\+::string}]{\+\_\+set\+Label, }
+\item[{{\bf my\+::integer}}]{\+\_\+vec\+Dim}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_aa16001d1c72565f061b2658d8c513a7d}
+
+
+The Main constructor. 
+
+Take as parameters\+:~\newline
+The label of the set The dimension of the vector space.~\newline
+The linear memory blocks tries to allocate the appropiate ammount of memory \hypertarget{classNumCal_1_1ChebyshevSet_a084680552a47439398c938e7965cb5db}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!````~Chebyshev\+Set@{$\sim$\+Chebyshev\+Set}}
+\index{````~Chebyshev\+Set@{$\sim$\+Chebyshev\+Set}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{$\sim$\+Chebyshev\+Set}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::\+Chebyshev\+Set\+::$\sim$\+Chebyshev\+Set (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_a084680552a47439398c938e7965cb5db}
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classNumCal_1_1ChebyshevSet_a5fbbe31b3dba2cf8ee37f6fe91552bb3}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Cheb\+Vec@{Cheb\+Vec}}
+\index{Cheb\+Vec@{Cheb\+Vec}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Cheb\+Vec}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::scalar}$\ast$\& Num\+Cal\+::\+Chebyshev\+Set\+::\+Cheb\+Vec (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{i, }
+\item[{const {\bf my\+::integer}}]{j}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_a5fbbe31b3dba2cf8ee37f6fe91552bb3}
+
+
+Returns the jth vector of the ith set. 
+
+\hypertarget{classNumCal_1_1ChebyshevSet_a0d2a516512c91bfd5a63500848c925b8}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Chebyshev\+Iteration@{Chebyshev\+Iteration}}
+\index{Chebyshev\+Iteration@{Chebyshev\+Iteration}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Chebyshev\+Iteration}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Chebyshev\+Set\+::\+Chebyshev\+Iteration (
+\begin{DoxyParamCaption}
+\item[{{\bf Lattice} \&}]{lat, }
+\item[{const {\bf my\+::integer}}]{set\+\_\+id, }
+\item[{const {\bf my\+::integer}}]{n}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_a0d2a516512c91bfd5a63500848c925b8}
+
+
+The Chebyshev Iteration Function. 
+
+This functions compute the iteration of the Chebyshev vectors following the rule\+:~\newline
+T\+\_\+\{n\}(x)= 2x T\+\_\+\{n-\/1\}(x) -\/ T\+\_\+\{n-\/2\}(x) It takes as parameters\+:~\newline
+The lattice vector used to extract the regular and irregular part of the Hamiltonian~\newline
+The set id of of the set where the iteration will be performed The Chebyshev truncation order~\newline
+Initialize the truncation order in a default value 100 ~\newline
+\hypertarget{classNumCal_1_1ChebyshevSet_abcf6cbf670bd2768adc8f35b4b44bcf8}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Dimension@{Dimension}}
+\index{Dimension@{Dimension}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Dimension}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Num\+Cal\+::\+Chebyshev\+Set\+::\+Dimension (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_abcf6cbf670bd2768adc8f35b4b44bcf8}
+
+
+Gets the dimension of the vector space. 
+
+\hypertarget{classNumCal_1_1ChebyshevSet_af4b6d26460aa678519a7678caf322003}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Label@{Label}}
+\index{Label@{Label}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Label}]{\setlength{\rightskip}{0pt plus 5cm}std\+::string Num\+Cal\+::\+Chebyshev\+Set\+::\+Label (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_af4b6d26460aa678519a7678caf322003}
+
+
+Gets the label of the set. 
+
+\hypertarget{classNumCal_1_1ChebyshevSet_ac3f3d1c342654b271f6ae2d0810d3ab9}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Mem\+Sep@{Mem\+Sep}}
+\index{Mem\+Sep@{Mem\+Sep}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Mem\+Sep}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Num\+Cal\+::\+Chebyshev\+Set\+::\+Mem\+Sep (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_ac3f3d1c342654b271f6ae2d0810d3ab9}
+
+
+Returns the Memory\+Separation for the sets. 
+
+\hypertarget{classNumCal_1_1ChebyshevSet_a345e815f911c44fd07a88392b2cb7dd1}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Num\+Of\+Sets@{Num\+Of\+Sets}}
+\index{Num\+Of\+Sets@{Num\+Of\+Sets}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Num\+Of\+Sets}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Num\+Cal\+::\+Chebyshev\+Set\+::\+Num\+Of\+Sets (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_a345e815f911c44fd07a88392b2cb7dd1}
+
+
+Gets the total number of Chebyshev sets. 
+
+\hypertarget{classNumCal_1_1ChebyshevSet_ad355256a1dec051aba287cd40a93097e}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Print\+Set\+Load@{Print\+Set\+Load}}
+\index{Print\+Set\+Load@{Print\+Set\+Load}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Print\+Set\+Load}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Chebyshev\+Set\+::\+Print\+Set\+Load (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_ad355256a1dec051aba287cd40a93097e}
+\hypertarget{classNumCal_1_1ChebyshevSet_ae4fc320b558a0f0200ae01917eefce72}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Print\+Vector@{Print\+Vector}}
+\index{Print\+Vector@{Print\+Vector}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Print\+Vector}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Chebyshev\+Set\+::\+Print\+Vector (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{set\+\_\+id, }
+\item[{const {\bf my\+::integer}}]{Cheb\+Vec\+I\+D\+X}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_ae4fc320b558a0f0200ae01917eefce72}
+\hypertarget{classNumCal_1_1ChebyshevSet_ae041ef43a4ef539403c3205d7dbb07db}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Set\+Num\+Of\+Sets@{Set\+Num\+Of\+Sets}}
+\index{Set\+Num\+Of\+Sets@{Set\+Num\+Of\+Sets}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Set\+Num\+Of\+Sets}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Chebyshev\+Set\+::\+Set\+Num\+Of\+Sets (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+set\+\_\+num}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_ae041ef43a4ef539403c3205d7dbb07db}
+\hypertarget{classNumCal_1_1ChebyshevSet_aefe3d2d562bff549628793f26d56e105}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Swap@{Swap}}
+\index{Swap@{Swap}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Swap}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Chebyshev\+Set\+::\+Swap (
+\begin{DoxyParamCaption}
+\item[{{\bf my\+::integer}}]{set\+\_\+id, }
+\item[{{\bf my\+::integer}}]{vec\+\_\+id0, }
+\item[{{\bf my\+::integer}}]{vec\+\_\+id1}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1ChebyshevSet_aefe3d2d562bff549628793f26d56e105}
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classNumCal_1_1ChebyshevSet_a3566eaf28aa3298ddc94280df32a3106}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Chebt\+\_\+@{Chebt\+\_\+}}
+\index{Chebt\+\_\+@{Chebt\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Chebt\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::scalar}$\ast$ Num\+Cal\+::\+Chebyshev\+Set\+::\+Chebt\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a3566eaf28aa3298ddc94280df32a3106}
+\hypertarget{classNumCal_1_1ChebyshevSet_a2e80e1a4ddf850fb43fcadb98983de76}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!Cheb\+Vecs\+\_\+@{Cheb\+Vecs\+\_\+}}
+\index{Cheb\+Vecs\+\_\+@{Cheb\+Vecs\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{Cheb\+Vecs\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$ std\+::vector$<$ {\bf my\+::scalar}$\ast$ $>$ $>$ Num\+Cal\+::\+Chebyshev\+Set\+::\+Cheb\+Vecs\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a2e80e1a4ddf850fb43fcadb98983de76}
+\hypertarget{classNumCal_1_1ChebyshevSet_a106d0e93b07c828aa1de70e09f9258ff}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!linear\+Mem\+Block\+\_\+@{linear\+Mem\+Block\+\_\+}}
+\index{linear\+Mem\+Block\+\_\+@{linear\+Mem\+Block\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{linear\+Mem\+Block\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::scalar}$\ast$ Num\+Cal\+::\+Chebyshev\+Set\+::linear\+Mem\+Block\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a106d0e93b07c828aa1de70e09f9258ff}
+\hypertarget{classNumCal_1_1ChebyshevSet_a88d4a56049c380a3263f5802c08efab8}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!memory\+Size\+\_\+@{memory\+Size\+\_\+}}
+\index{memory\+Size\+\_\+@{memory\+Size\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{memory\+Size\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::size\+\_\+t} Num\+Cal\+::\+Chebyshev\+Set\+::memory\+Size\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a88d4a56049c380a3263f5802c08efab8}
+\hypertarget{classNumCal_1_1ChebyshevSet_a7d36e4b9044a93b700490fdfdcf21c4d}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!num\+\_\+cheb\+\_\+set\+\_\+@{num\+\_\+cheb\+\_\+set\+\_\+}}
+\index{num\+\_\+cheb\+\_\+set\+\_\+@{num\+\_\+cheb\+\_\+set\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{num\+\_\+cheb\+\_\+set\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Num\+Cal\+::\+Chebyshev\+Set\+::num\+\_\+cheb\+\_\+set\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a7d36e4b9044a93b700490fdfdcf21c4d}
+\hypertarget{classNumCal_1_1ChebyshevSet_a1a42d6754802e8ceca50684cd13ac381}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!set\+Label\+\_\+@{set\+Label\+\_\+}}
+\index{set\+Label\+\_\+@{set\+Label\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{set\+Label\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}const std\+::string Num\+Cal\+::\+Chebyshev\+Set\+::set\+Label\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a1a42d6754802e8ceca50684cd13ac381}
+\hypertarget{classNumCal_1_1ChebyshevSet_a07ae814a2a669d366e064aa4b1f1b133}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!trunc\+\_\+order\+\_\+@{trunc\+\_\+order\+\_\+}}
+\index{trunc\+\_\+order\+\_\+@{trunc\+\_\+order\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{trunc\+\_\+order\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Num\+Cal\+::\+Chebyshev\+Set\+::trunc\+\_\+order\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a07ae814a2a669d366e064aa4b1f1b133}
+\hypertarget{classNumCal_1_1ChebyshevSet_a723ec8b3618b04a2cdb12eedf73199c9}{\index{Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}!vec\+Dim\+\_\+@{vec\+Dim\+\_\+}}
+\index{vec\+Dim\+\_\+@{vec\+Dim\+\_\+}!Num\+Cal\+::\+Chebyshev\+Set@{Num\+Cal\+::\+Chebyshev\+Set}}
+\subsubsection[{vec\+Dim\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Num\+Cal\+::\+Chebyshev\+Set\+::vec\+Dim\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1ChebyshevSet_a723ec8b3618b04a2cdb12eedf73199c9}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/kpm/\hyperlink{chebyshev__set_8hpp}{chebyshev\+\_\+set.\+hpp}\end{DoxyCompactItemize}

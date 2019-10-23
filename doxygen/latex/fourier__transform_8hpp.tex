@@ -1,0 +1,40 @@
+\hypertarget{fourier__transform_8hpp}{\section{/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/fourier/fourier\+\_\+transform.hpp File Reference}
+\label{fourier__transform_8hpp}\index{/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/fourier/fourier\+\_\+transform.\+hpp@{/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/fourier/fourier\+\_\+transform.\+hpp}}
+}
+{\ttfamily \#include $<$vector$>$}\\*
+{\ttfamily \#include $<$iostream$>$}\\*
+{\ttfamily \#include $<$cstdio$>$}\\*
+{\ttfamily \#include $<$cstdlib$>$}\\*
+{\ttfamily \#include \char`\"{}types\+\_\+definitions.\+hpp\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}mkl\+\_\+types.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}mkl.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}mkl\+\_\+service.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}mkl\+\_\+dfti.\+h\char`\"{}}\\*
+\subsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+ \hyperlink{namespacemkl}{mkl}
+\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{fourier__transform_8hpp_a1fa119034fee07a6d5449926cbb7915a}{M\+K\+L\+\_\+\+Complex16}~std\+::complex$<$double$>$
+\item 
+\#define \hyperlink{fourier__transform_8hpp_a0b45f62ef34311fdb79b8de82d75c0d3}{M\+K\+L\+\_\+\+Complex8}~std\+::complex$<$float$>$
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{namespacemkl_a122f328e6079ba392e8a44c1de72ca7f}{mkl\+::direct\+\_\+\+F\+F\+T} (D\+F\+T\+I\+\_\+\+D\+E\+S\+C\+R\+I\+P\+T\+O\+R\+\_\+\+H\+A\+N\+D\+L\+E \&dft\+\_\+handle, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim0, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim1, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim2, std\+::complex$<$ float $>$ $\ast$\+\_\+\+A)
+\item 
+void \hyperlink{namespacemkl_ad2c0764c53d2daac345314013c579080}{mkl\+::inverse\+\_\+\+F\+F\+T} (D\+F\+T\+I\+\_\+\+D\+E\+S\+C\+R\+I\+P\+T\+O\+R\+\_\+\+H\+A\+N\+D\+L\+E \&dft\+\_\+handle, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim0, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim1, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+dim2, std\+::complex$<$ float $>$ $\ast$\+\_\+\+A)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{fourier__transform_8hpp_a1fa119034fee07a6d5449926cbb7915a}{\index{fourier\+\_\+transform.\+hpp@{fourier\+\_\+transform.\+hpp}!M\+K\+L\+\_\+\+Complex16@{M\+K\+L\+\_\+\+Complex16}}
+\index{M\+K\+L\+\_\+\+Complex16@{M\+K\+L\+\_\+\+Complex16}!fourier\+\_\+transform.\+hpp@{fourier\+\_\+transform.\+hpp}}
+\subsubsection[{M\+K\+L\+\_\+\+Complex16}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\+K\+L\+\_\+\+Complex16~std\+::complex$<$double$>$}}\label{fourier__transform_8hpp_a1fa119034fee07a6d5449926cbb7915a}
+\hypertarget{fourier__transform_8hpp_a0b45f62ef34311fdb79b8de82d75c0d3}{\index{fourier\+\_\+transform.\+hpp@{fourier\+\_\+transform.\+hpp}!M\+K\+L\+\_\+\+Complex8@{M\+K\+L\+\_\+\+Complex8}}
+\index{M\+K\+L\+\_\+\+Complex8@{M\+K\+L\+\_\+\+Complex8}!fourier\+\_\+transform.\+hpp@{fourier\+\_\+transform.\+hpp}}
+\subsubsection[{M\+K\+L\+\_\+\+Complex8}]{\setlength{\rightskip}{0pt plus 5cm}\#define M\+K\+L\+\_\+\+Complex8~std\+::complex$<$float$>$}}\label{fourier__transform_8hpp_a0b45f62ef34311fdb79b8de82d75c0d3}

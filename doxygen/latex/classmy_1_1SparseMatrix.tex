@@ -1,0 +1,157 @@
+\hypertarget{classmy_1_1SparseMatrix}{\section{my\+:\+:Sparse\+Matrix Class Reference}
+\label{classmy_1_1SparseMatrix}\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+}
+
+
+The Sparse Matrix Class. Inheritated from \hyperlink{namespacesparse_af3fe1ceb08995f6d08e5f96fbbe021bf}{sparse\+::\+Eigen\+Mat}.  
+
+
+
+
+{\ttfamily \#include $<$sparse\+\_\+matrix.\+hpp$>$}
+
+Inheritance diagram for my\+:\+:Sparse\+Matrix\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classmy_1_1SparseMatrix}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classmy_1_1SparseMatrix_a6d2ae114334791f63a3e44a96047285f}{Sparse\+Matrix} ()
+\begin{DoxyCompactList}\small\item\em The Null constructor. \end{DoxyCompactList}\item 
+\hyperlink{classmy_1_1SparseMatrix_a1de5bf243a6a7810cfc1a4395f304067}{Sparse\+Matrix} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+ncol, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+nrow)
+\begin{DoxyCompactList}\small\item\em The Default constructor. \end{DoxyCompactList}\item 
+void \hyperlink{classmy_1_1SparseMatrix_a9055b71f0d6dbe001608977acf951c60}{Reserve} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+size)
+\begin{DoxyCompactList}\small\item\em Reserve an stimated ammount of memory for the sparse matrix. \end{DoxyCompactList}\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classmy_1_1SparseMatrix_a63704d3902b5640a64a7d25afcd28d85}{Num\+Raw\+Entries} () const 
+\begin{DoxyCompactList}\small\item\em Returns the total number of raw entries in the matrix. \end{DoxyCompactList}\item 
+void \hyperlink{classmy_1_1SparseMatrix_a99dd255132d7af8e313723f91f08cf80}{Add\+New\+Raw\+Entry} (const \hyperlink{namespacesparse_a841919761b2e35cc4d59f636ab10a07b}{sparse\+::\+Entry} \+\_\+triplet)
+\begin{DoxyCompactList}\small\item\em Add a new Raw entry in the matrix. \end{DoxyCompactList}\item 
+void \hyperlink{classmy_1_1SparseMatrix_a1f3d02071e55da946a9a26a65615aa8f}{Set\+From\+Raw\+Entries} ()
+\begin{DoxyCompactList}\small\item\em Set the sparse matrix using the raw\+\_\+entries. \end{DoxyCompactList}\item 
+\hyperlink{namespacesparse_a841919761b2e35cc4d59f636ab10a07b}{sparse\+::\+Entry} \hyperlink{classmy_1_1SparseMatrix_a0dbde5c277c46a89b62e48fb67d4db0a}{Raw\+Entry} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+idx) const 
+\item 
+\hyperlink{namespacesparse_a841919761b2e35cc4d59f636ab10a07b}{sparse\+::\+Entry} \& \hyperlink{classmy_1_1SparseMatrix_adf8d262ff470f14d838eecad0665b6e9}{Raw\+Entry} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+idx)
+\item 
+bool \hyperlink{classmy_1_1SparseMatrix_a441853d16d18e7f1e719c1d88258e637}{Is\+Set} () const 
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ \hyperlink{namespacesparse_a841919761b2e35cc4d59f636ab10a07b}{sparse\+::\+Entry} $>$ \hyperlink{classmy_1_1SparseMatrix_a00427b5f489a6d2c5dd42e59439c2782}{mat\+Entry\+\_\+}
+\item 
+bool \hyperlink{classmy_1_1SparseMatrix_a19cd30efa5d59bf9cc1b6343e5acc392}{matrix\+\_\+is\+\_\+set\+\_\+}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The Sparse Matrix Class. Inheritated from \hyperlink{namespacesparse_af3fe1ceb08995f6d08e5f96fbbe021bf}{sparse\+::\+Eigen\+Mat}. 
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classmy_1_1SparseMatrix_a6d2ae114334791f63a3e44a96047285f}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Sparse\+Matrix@{Sparse\+Matrix}}
+\index{Sparse\+Matrix@{Sparse\+Matrix}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Sparse\+Matrix}]{\setlength{\rightskip}{0pt plus 5cm}my\+::\+Sparse\+Matrix\+::\+Sparse\+Matrix (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a6d2ae114334791f63a3e44a96047285f}
+
+
+The Null constructor. 
+
+\hypertarget{classmy_1_1SparseMatrix_a1de5bf243a6a7810cfc1a4395f304067}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Sparse\+Matrix@{Sparse\+Matrix}}
+\index{Sparse\+Matrix@{Sparse\+Matrix}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Sparse\+Matrix}]{\setlength{\rightskip}{0pt plus 5cm}my\+::\+Sparse\+Matrix\+::\+Sparse\+Matrix (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+ncol, }
+\item[{const {\bf my\+::integer}}]{\+\_\+nrow}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a1de5bf243a6a7810cfc1a4395f304067}
+
+
+The Default constructor. 
+
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classmy_1_1SparseMatrix_a99dd255132d7af8e313723f91f08cf80}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Add\+New\+Raw\+Entry@{Add\+New\+Raw\+Entry}}
+\index{Add\+New\+Raw\+Entry@{Add\+New\+Raw\+Entry}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Add\+New\+Raw\+Entry}]{\setlength{\rightskip}{0pt plus 5cm}void my\+::\+Sparse\+Matrix\+::\+Add\+New\+Raw\+Entry (
+\begin{DoxyParamCaption}
+\item[{const {\bf sparse\+::\+Entry}}]{\+\_\+triplet}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a99dd255132d7af8e313723f91f08cf80}
+
+
+Add a new Raw entry in the matrix. 
+
+This method will append a new entry to the entry list, not making any check on the previous entries \hypertarget{classmy_1_1SparseMatrix_a441853d16d18e7f1e719c1d88258e637}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Is\+Set@{Is\+Set}}
+\index{Is\+Set@{Is\+Set}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Is\+Set}]{\setlength{\rightskip}{0pt plus 5cm}bool my\+::\+Sparse\+Matrix\+::\+Is\+Set (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a441853d16d18e7f1e719c1d88258e637}
+\hypertarget{classmy_1_1SparseMatrix_a63704d3902b5640a64a7d25afcd28d85}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Num\+Raw\+Entries@{Num\+Raw\+Entries}}
+\index{Num\+Raw\+Entries@{Num\+Raw\+Entries}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Num\+Raw\+Entries}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} my\+::\+Sparse\+Matrix\+::\+Num\+Raw\+Entries (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a63704d3902b5640a64a7d25afcd28d85}
+
+
+Returns the total number of raw entries in the matrix. 
+
+Returns the total number of raw entries in the matrix. This method will count repeated and non-\/zero entries \hypertarget{classmy_1_1SparseMatrix_a0dbde5c277c46a89b62e48fb67d4db0a}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Raw\+Entry@{Raw\+Entry}}
+\index{Raw\+Entry@{Raw\+Entry}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Raw\+Entry}]{\setlength{\rightskip}{0pt plus 5cm}{\bf sparse\+::\+Entry} my\+::\+Sparse\+Matrix\+::\+Raw\+Entry (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+idx}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a0dbde5c277c46a89b62e48fb67d4db0a}
+\hypertarget{classmy_1_1SparseMatrix_adf8d262ff470f14d838eecad0665b6e9}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Raw\+Entry@{Raw\+Entry}}
+\index{Raw\+Entry@{Raw\+Entry}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Raw\+Entry}]{\setlength{\rightskip}{0pt plus 5cm}{\bf sparse\+::\+Entry}\& my\+::\+Sparse\+Matrix\+::\+Raw\+Entry (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+idx}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_adf8d262ff470f14d838eecad0665b6e9}
+\hypertarget{classmy_1_1SparseMatrix_a9055b71f0d6dbe001608977acf951c60}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Reserve@{Reserve}}
+\index{Reserve@{Reserve}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Reserve}]{\setlength{\rightskip}{0pt plus 5cm}void my\+::\+Sparse\+Matrix\+::\+Reserve (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+size}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a9055b71f0d6dbe001608977acf951c60}
+
+
+Reserve an stimated ammount of memory for the sparse matrix. 
+
+\hypertarget{classmy_1_1SparseMatrix_a1f3d02071e55da946a9a26a65615aa8f}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!Set\+From\+Raw\+Entries@{Set\+From\+Raw\+Entries}}
+\index{Set\+From\+Raw\+Entries@{Set\+From\+Raw\+Entries}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{Set\+From\+Raw\+Entries}]{\setlength{\rightskip}{0pt plus 5cm}void my\+::\+Sparse\+Matrix\+::\+Set\+From\+Raw\+Entries (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classmy_1_1SparseMatrix_a1f3d02071e55da946a9a26a65615aa8f}
+
+
+Set the sparse matrix using the raw\+\_\+entries. 
+
+The list of entries after this operation is destroyed 
+
+\subsection{Member Data Documentation}
+\hypertarget{classmy_1_1SparseMatrix_a00427b5f489a6d2c5dd42e59439c2782}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!mat\+Entry\+\_\+@{mat\+Entry\+\_\+}}
+\index{mat\+Entry\+\_\+@{mat\+Entry\+\_\+}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{mat\+Entry\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<${\bf sparse\+::\+Entry}$>$ my\+::\+Sparse\+Matrix\+::mat\+Entry\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classmy_1_1SparseMatrix_a00427b5f489a6d2c5dd42e59439c2782}
+\hypertarget{classmy_1_1SparseMatrix_a19cd30efa5d59bf9cc1b6343e5acc392}{\index{my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}!matrix\+\_\+is\+\_\+set\+\_\+@{matrix\+\_\+is\+\_\+set\+\_\+}}
+\index{matrix\+\_\+is\+\_\+set\+\_\+@{matrix\+\_\+is\+\_\+set\+\_\+}!my\+::\+Sparse\+Matrix@{my\+::\+Sparse\+Matrix}}
+\subsubsection[{matrix\+\_\+is\+\_\+set\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}bool my\+::\+Sparse\+Matrix\+::matrix\+\_\+is\+\_\+set\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classmy_1_1SparseMatrix_a19cd30efa5d59bf9cc1b6343e5acc392}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/include/\hyperlink{sparse__matrix_8hpp}{sparse\+\_\+matrix.\+hpp}\end{DoxyCompactItemize}

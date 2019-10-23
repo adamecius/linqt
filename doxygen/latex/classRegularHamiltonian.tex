@@ -1,0 +1,248 @@
+\hypertarget{classRegularHamiltonian}{}\section{Regular\+Hamiltonian Class Reference}
+\label{classRegularHamiltonian}\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+
+
+Define the different types of the program.  
+
+
+
+
+{\ttfamily \#include $<$regular\+\_\+hamiltonian.\+hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classRegularHamiltonian_a334e4a636fad634fd36921c045611c1d}{Regular\+Hamiltonian} ()
+\begin{DoxyCompactList}\small\item\em The Null constructor. \end{DoxyCompactList}\item 
+\hyperlink{classRegularHamiltonian_a043c6a42682d1cac7a4505e91b2bff79}{Regular\+Hamiltonian} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+ncol, const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \+\_\+nrow)
+\begin{DoxyCompactList}\small\item\em The default constructor. \end{DoxyCompactList}\item 
+\hyperlink{classRegularHamiltonian_a357f235a1c4c69e2370e59b4aad35eea}{Regular\+Hamiltonian} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+E0a, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+E0b, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+t1, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+t2, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+VR, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+Ia, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+Ib, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+P\+I\+Aa, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+P\+I\+Ab)
+\item 
+void \hyperlink{classRegularHamiltonian_a47b8742fc581e4bafd1e1f2a5672e603}{Rescale} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+Emin, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+Emax, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+cutoff)
+\item 
+void \hyperlink{classRegularHamiltonian_a8107628da44cb22e0dbafd7c833264ef}{Multiply} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} alpha, const \hyperlink{namespacemy_ae5357c26097990af91eec62b547ff125}{my\+::vector} \&x, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} beta, \hyperlink{namespacemy_ae5357c26097990af91eec62b547ff125}{my\+::vector} \&y)
+\item 
+void \hyperlink{classRegularHamiltonian_a1b337987086f6768ed170f072528666a}{Velocity} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} iv, const \hyperlink{namespacemy_ae5357c26097990af91eec62b547ff125}{my\+::vector} \&x, \hyperlink{namespacemy_ae5357c26097990af91eec62b547ff125}{my\+::vector} \&y)
+\item 
+void \hyperlink{classRegularHamiltonian_a21f04c3c51e45a27d4869136d5153cda}{Spin\+Z\+\_\+\+Velocity} (const \hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} iv, const \hyperlink{namespacemy_ae5357c26097990af91eec62b547ff125}{my\+::vector} \&x, \hyperlink{namespacemy_ae5357c26097990af91eec62b547ff125}{my\+::vector} \&y)
+\item 
+void \hyperlink{classRegularHamiltonian_a6ca575fbf813fdfc9fabe85ba85d22e6}{Set\+Parameters} (const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+E0a, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+E0b, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+t1, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+t2, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+VR, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+Ia, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+Ib, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+P\+I\+Aa, const \hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \+\_\+\+V\+P\+I\+Ab)
+\begin{DoxyCompactList}\small\item\em This method set the parameters of the regular part of the hamiltonian. \end{DoxyCompactList}\item 
+void \hyperlink{classRegularHamiltonian_a18a7c9772e589fcae0cf941a9e9cf070}{Set\+Lattice\+Index} (const \hyperlink{classLatticeIndex}{Lattice\+Index} \+\_\+idx)
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a6bb02c84740c615ab68f8e45c4896f18}{t1}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a95c0ed7db6037765834f08eb9e913e0a}{t2}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a0c1f3be7d09aa3aa214a94020834f9b3}{VR}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_aa94597b108f82d45bf1e3ef50e49f4d0}{E0} \mbox{[}2\mbox{]}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a4953686d0043f14e913407db828b5e8b}{VI} \mbox{[}2\mbox{]}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a5000d0af5d0437a92085990322e233ba}{V\+P\+IA} \mbox{[}2\mbox{]}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_ab368f7c42db9958adf3c04f4588f087b}{v\+\_\+t1}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_aef4b5d2fa532fd8a6cc2ebfeacfa8fff}{v\+\_\+t2}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_aeb33cb80d6399419e5cede26257b25a6}{v\+\_\+\+VR}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a1f88512c8e177ab87900f43e1c8b6069}{v\+\_\+\+E0} \mbox{[}2\mbox{]}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_aba0b0806e534a5e2fadaf99bca63e9de}{v\+\_\+\+VI} \mbox{[}2\mbox{]}
+\item 
+\hyperlink{namespacemy_ad61baeaeda728a4c48dd64f93e44a46c}{my\+::real} \hyperlink{classRegularHamiltonian_a1bf32223bcb7b89fdd1cca8f766120ae}{v\+\_\+\+V\+P\+IA} \mbox{[}2\mbox{]}
+\item 
+\hyperlink{classLatticeIndex}{Lattice\+Index} \hyperlink{classRegularHamiltonian_ad2699734f37e05424ed1bcaa4adab7a8}{idx}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classRegularHamiltonian_af84eeb786892d31fc597967eba96f1b4}{ncol\+\_\+}
+\item 
+\hyperlink{namespacemy_a42365393c537edae1e89d20ff90d1923}{my\+::integer} \hyperlink{classRegularHamiltonian_a85330e40f5f04e0fb16a1945c9c29893}{nrow\+\_\+}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Define the different types of the program. 
+
+A class for a regular on-\/the-\/fly hamiltonian matrix.
+
+Defines the index object Defines the lattice geometry
+
+This class is used to store the regular part of the Hamiltonian. It bassically store only the energy parameters, and generate the initial and final index states on the fly. The operations are C\+PU intensive, but R\+AM friendly.  Generalize this class for a general matrix
+
+\begin{DoxyNote}{Note}
+This class is still in development process, use it at your own risk!
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Regular\+Hamiltonian()}{RegularHamiltonian()}}]{\setlength{\rightskip}{0pt plus 5cm}Regular\+Hamiltonian\+::\+Regular\+Hamiltonian (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}\hypertarget{classRegularHamiltonian_a334e4a636fad634fd36921c045611c1d}{}\label{classRegularHamiltonian_a334e4a636fad634fd36921c045611c1d}
+
+
+The Null constructor. 
+
+Set all the regular parameters to zero, except the nearest neighbor hopping \index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Regular\+Hamiltonian(const my\+::integer \+\_\+ncol, const my\+::integer \+\_\+nrow)}{RegularHamiltonian(const my::integer _ncol, const my::integer _nrow)}}]{\setlength{\rightskip}{0pt plus 5cm}Regular\+Hamiltonian\+::\+Regular\+Hamiltonian (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{\+\_\+ncol, }
+\item[{const {\bf my\+::integer}}]{\+\_\+nrow}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}\hypertarget{classRegularHamiltonian_a043c6a42682d1cac7a4505e91b2bff79}{}\label{classRegularHamiltonian_a043c6a42682d1cac7a4505e91b2bff79}
+
+
+The default constructor. 
+
+Take as parameters\+:~\newline
+The number of columns of the lattice vector directions lat0, lat1, lat2.~\newline
+The coordination number.~\newline
+The number of orbital per Super\+Cell.~\newline
+The total spin number.~\newline
+ It also initialize the regular and irregular Hamiltonians. \index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Regular\+Hamiltonian(const my\+::real \+\_\+\+E0a, const my\+::real \+\_\+\+E0b, const my\+::real \+\_\+t1, const my\+::real \+\_\+t2, const my\+::real \+\_\+\+V\+R, const my\+::real \+\_\+\+V\+Ia, const my\+::real \+\_\+\+V\+Ib, const my\+::real \+\_\+\+V\+P\+I\+Aa, const my\+::real \+\_\+\+V\+P\+I\+Ab)}{RegularHamiltonian(const my::real _E0a, const my::real _E0b, const my::real _t1, const my::real _t2, const my::real _VR, const my::real _VIa, const my::real _VIb, const my::real _VPIAa, const my::real _VPIAb)}}]{\setlength{\rightskip}{0pt plus 5cm}Regular\+Hamiltonian\+::\+Regular\+Hamiltonian (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{\+\_\+\+E0a, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+E0b, }
+\item[{const {\bf my\+::real}}]{\+\_\+t1, }
+\item[{const {\bf my\+::real}}]{\+\_\+t2, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+VR, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+Ia, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+Ib, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+P\+I\+Aa, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+P\+I\+Ab}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}\hypertarget{classRegularHamiltonian_a357f235a1c4c69e2370e59b4aad35eea}{}\label{classRegularHamiltonian_a357f235a1c4c69e2370e59b4aad35eea}
+
+
+\subsection{Member Function Documentation}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Multiply@{Multiply}}
+\index{Multiply@{Multiply}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Multiply(const my\+::real alpha, const my\+::vector \&x, const my\+::real beta, my\+::vector \&y)}{Multiply(const my::real alpha, const my::vector &x, const my::real beta, my::vector &y)}}]{\setlength{\rightskip}{0pt plus 5cm}void Regular\+Hamiltonian\+::\+Multiply (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{alpha, }
+\item[{const {\bf my\+::vector} \&}]{x, }
+\item[{const {\bf my\+::real}}]{beta, }
+\item[{{\bf my\+::vector} \&}]{y}
+\end{DoxyParamCaption}
+)}\hypertarget{classRegularHamiltonian_a8107628da44cb22e0dbafd7c833264ef}{}\label{classRegularHamiltonian_a8107628da44cb22e0dbafd7c833264ef}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Rescale@{Rescale}}
+\index{Rescale@{Rescale}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Rescale(const my\+::real \+\_\+\+Emin, const my\+::real \+\_\+\+Emax, const my\+::real \+\_\+cutoff)}{Rescale(const my::real _Emin, const my::real _Emax, const my::real _cutoff)}}]{\setlength{\rightskip}{0pt plus 5cm}void Regular\+Hamiltonian\+::\+Rescale (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{\+\_\+\+Emin, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+Emax, }
+\item[{const {\bf my\+::real}}]{\+\_\+cutoff}
+\end{DoxyParamCaption}
+)}\hypertarget{classRegularHamiltonian_a47b8742fc581e4bafd1e1f2a5672e603}{}\label{classRegularHamiltonian_a47b8742fc581e4bafd1e1f2a5672e603}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Set\+Lattice\+Index@{Set\+Lattice\+Index}}
+\index{Set\+Lattice\+Index@{Set\+Lattice\+Index}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Set\+Lattice\+Index(const Lattice\+Index \+\_\+idx)}{SetLatticeIndex(const LatticeIndex _idx)}}]{\setlength{\rightskip}{0pt plus 5cm}void Regular\+Hamiltonian\+::\+Set\+Lattice\+Index (
+\begin{DoxyParamCaption}
+\item[{const {\bf Lattice\+Index}}]{\+\_\+idx}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}\hypertarget{classRegularHamiltonian_a18a7c9772e589fcae0cf941a9e9cf070}{}\label{classRegularHamiltonian_a18a7c9772e589fcae0cf941a9e9cf070}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Set\+Parameters@{Set\+Parameters}}
+\index{Set\+Parameters@{Set\+Parameters}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Set\+Parameters(const my\+::real \+\_\+\+E0a, const my\+::real \+\_\+\+E0b, const my\+::real \+\_\+t1, const my\+::real \+\_\+t2, const my\+::real \+\_\+\+V\+R, const my\+::real \+\_\+\+V\+Ia, const my\+::real \+\_\+\+V\+Ib, const my\+::real \+\_\+\+V\+P\+I\+Aa, const my\+::real \+\_\+\+V\+P\+I\+Ab)}{SetParameters(const my::real _E0a, const my::real _E0b, const my::real _t1, const my::real _t2, const my::real _VR, const my::real _VIa, const my::real _VIb, const my::real _VPIAa, const my::real _VPIAb)}}]{\setlength{\rightskip}{0pt plus 5cm}void Regular\+Hamiltonian\+::\+Set\+Parameters (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::real}}]{\+\_\+\+E0a, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+E0b, }
+\item[{const {\bf my\+::real}}]{\+\_\+t1, }
+\item[{const {\bf my\+::real}}]{\+\_\+t2, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+VR, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+Ia, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+Ib, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+P\+I\+Aa, }
+\item[{const {\bf my\+::real}}]{\+\_\+\+V\+P\+I\+Ab}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}\hypertarget{classRegularHamiltonian_a6ca575fbf813fdfc9fabe85ba85d22e6}{}\label{classRegularHamiltonian_a6ca575fbf813fdfc9fabe85ba85d22e6}
+
+
+This method set the parameters of the regular part of the hamiltonian. 
+
+For now it is system specific, and it is defined in terms of the honeycomb lattice\+: E0a (Onsite-\/\+Energy in sublattice A) E0b (Onsite-\/\+Energy in sublattice B) t1 ( Nearest neighbo hopping) t2 ( Next Nearest neighbo hopping) VR ( Rashba coupling strenght ) V\+Ia ( Sublattice A intrinsic ) V\+Ib ( Sublattice B intrinsic ) V\+P\+I\+Aa( Sublattice A P\+I\+A ) V\+P\+I\+Ab( V\+P\+I\+Aa( Sublattice B P\+I\+A ) \index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Spin\+Z\+\_\+\+Velocity@{Spin\+Z\+\_\+\+Velocity}}
+\index{Spin\+Z\+\_\+\+Velocity@{Spin\+Z\+\_\+\+Velocity}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Spin\+Z\+\_\+\+Velocity(const my\+::integer iv, const my\+::vector \&x, my\+::vector \&y)}{SpinZ_Velocity(const my::integer iv, const my::vector &x, my::vector &y)}}]{\setlength{\rightskip}{0pt plus 5cm}void Regular\+Hamiltonian\+::\+Spin\+Z\+\_\+\+Velocity (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{iv, }
+\item[{const {\bf my\+::vector} \&}]{x, }
+\item[{{\bf my\+::vector} \&}]{y}
+\end{DoxyParamCaption}
+)}\hypertarget{classRegularHamiltonian_a21f04c3c51e45a27d4869136d5153cda}{}\label{classRegularHamiltonian_a21f04c3c51e45a27d4869136d5153cda}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!Velocity@{Velocity}}
+\index{Velocity@{Velocity}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{Velocity(const my\+::integer iv, const my\+::vector \&x, my\+::vector \&y)}{Velocity(const my::integer iv, const my::vector &x, my::vector &y)}}]{\setlength{\rightskip}{0pt plus 5cm}void Regular\+Hamiltonian\+::\+Velocity (
+\begin{DoxyParamCaption}
+\item[{const {\bf my\+::integer}}]{iv, }
+\item[{const {\bf my\+::vector} \&}]{x, }
+\item[{{\bf my\+::vector} \&}]{y}
+\end{DoxyParamCaption}
+)}\hypertarget{classRegularHamiltonian_a1b337987086f6768ed170f072528666a}{}\label{classRegularHamiltonian_a1b337987086f6768ed170f072528666a}
+
+
+\subsection{Member Data Documentation}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!E0@{E0}}
+\index{E0@{E0}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{E0}{E0}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::\+E0\mbox{[}2\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_aa94597b108f82d45bf1e3ef50e49f4d0}{}\label{classRegularHamiltonian_aa94597b108f82d45bf1e3ef50e49f4d0}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!idx@{idx}}
+\index{idx@{idx}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{idx}{idx}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Lattice\+Index} Regular\+Hamiltonian\+::idx\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_ad2699734f37e05424ed1bcaa4adab7a8}{}\label{classRegularHamiltonian_ad2699734f37e05424ed1bcaa4adab7a8}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!ncol\+\_\+@{ncol\+\_\+}}
+\index{ncol\+\_\+@{ncol\+\_\+}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{ncol\+\_\+}{ncol_}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Regular\+Hamiltonian\+::ncol\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_af84eeb786892d31fc597967eba96f1b4}{}\label{classRegularHamiltonian_af84eeb786892d31fc597967eba96f1b4}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!nrow\+\_\+@{nrow\+\_\+}}
+\index{nrow\+\_\+@{nrow\+\_\+}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{nrow\+\_\+}{nrow_}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::integer} Regular\+Hamiltonian\+::nrow\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a85330e40f5f04e0fb16a1945c9c29893}{}\label{classRegularHamiltonian_a85330e40f5f04e0fb16a1945c9c29893}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!t1@{t1}}
+\index{t1@{t1}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{t1}{t1}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::t1\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a6bb02c84740c615ab68f8e45c4896f18}{}\label{classRegularHamiltonian_a6bb02c84740c615ab68f8e45c4896f18}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!t2@{t2}}
+\index{t2@{t2}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{t2}{t2}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::t2\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a95c0ed7db6037765834f08eb9e913e0a}{}\label{classRegularHamiltonian_a95c0ed7db6037765834f08eb9e913e0a}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!v\+\_\+\+E0@{v\+\_\+\+E0}}
+\index{v\+\_\+\+E0@{v\+\_\+\+E0}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{v\+\_\+\+E0}{v_E0}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::v\+\_\+\+E0\mbox{[}2\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a1f88512c8e177ab87900f43e1c8b6069}{}\label{classRegularHamiltonian_a1f88512c8e177ab87900f43e1c8b6069}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!v\+\_\+t1@{v\+\_\+t1}}
+\index{v\+\_\+t1@{v\+\_\+t1}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{v\+\_\+t1}{v_t1}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::v\+\_\+t1\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_ab368f7c42db9958adf3c04f4588f087b}{}\label{classRegularHamiltonian_ab368f7c42db9958adf3c04f4588f087b}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!v\+\_\+t2@{v\+\_\+t2}}
+\index{v\+\_\+t2@{v\+\_\+t2}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{v\+\_\+t2}{v_t2}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::v\+\_\+t2\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_aef4b5d2fa532fd8a6cc2ebfeacfa8fff}{}\label{classRegularHamiltonian_aef4b5d2fa532fd8a6cc2ebfeacfa8fff}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!v\+\_\+\+VI@{v\+\_\+\+VI}}
+\index{v\+\_\+\+VI@{v\+\_\+\+VI}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{v\+\_\+\+VI}{v_VI}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::v\+\_\+\+VI\mbox{[}2\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_aba0b0806e534a5e2fadaf99bca63e9de}{}\label{classRegularHamiltonian_aba0b0806e534a5e2fadaf99bca63e9de}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!v\+\_\+\+V\+P\+IA@{v\+\_\+\+V\+P\+IA}}
+\index{v\+\_\+\+V\+P\+IA@{v\+\_\+\+V\+P\+IA}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{v\+\_\+\+V\+P\+IA}{v_VPIA}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::v\+\_\+\+V\+P\+IA\mbox{[}2\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a1bf32223bcb7b89fdd1cca8f766120ae}{}\label{classRegularHamiltonian_a1bf32223bcb7b89fdd1cca8f766120ae}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!v\+\_\+\+VR@{v\+\_\+\+VR}}
+\index{v\+\_\+\+VR@{v\+\_\+\+VR}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{v\+\_\+\+VR}{v_VR}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::v\+\_\+\+VR\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_aeb33cb80d6399419e5cede26257b25a6}{}\label{classRegularHamiltonian_aeb33cb80d6399419e5cede26257b25a6}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!VI@{VI}}
+\index{VI@{VI}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{VI}{VI}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::\+VI\mbox{[}2\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a4953686d0043f14e913407db828b5e8b}{}\label{classRegularHamiltonian_a4953686d0043f14e913407db828b5e8b}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!V\+P\+IA@{V\+P\+IA}}
+\index{V\+P\+IA@{V\+P\+IA}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{V\+P\+IA}{VPIA}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::\+V\+P\+IA\mbox{[}2\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a5000d0af5d0437a92085990322e233ba}{}\label{classRegularHamiltonian_a5000d0af5d0437a92085990322e233ba}
+\index{Regular\+Hamiltonian@{Regular\+Hamiltonian}!VR@{VR}}
+\index{VR@{VR}!Regular\+Hamiltonian@{Regular\+Hamiltonian}}
+\subsubsection[{\texorpdfstring{VR}{VR}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf my\+::real} Regular\+Hamiltonian\+::\+VR\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classRegularHamiltonian_a0c1f3be7d09aa3aa214a94020834f9b3}{}\label{classRegularHamiltonian_a0c1f3be7d09aa3aa214a94020834f9b3}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/tmp/\+T\+B-\/\+Quantum\+Transp/include/\hyperlink{regular__hamiltonian_8hpp}{regular\+\_\+hamiltonian.\+hpp}\item 
+/tmp/\+T\+B-\/\+Quantum\+Transp/src/\hyperlink{regular__hamiltonian_8cpp}{regular\+\_\+hamiltonian.\+cpp}\end{DoxyCompactItemize}

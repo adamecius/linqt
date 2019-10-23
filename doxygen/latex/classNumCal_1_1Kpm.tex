@@ -1,0 +1,280 @@
+\hypertarget{classNumCal_1_1Kpm}{\section{Num\+Cal\+:\+:Kpm Class Reference}
+\label{classNumCal_1_1Kpm}\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+}
+
+
+Set of approximation based on K\+P\+M.  
+
+
+
+
+{\ttfamily \#include $<$kpm.\+hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classNumCal_1_1Kpm_acf83fa2ec653af132be07bb6c051fb73}{Kpm} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{Num\+Cal\+::integer} \+\_\+dim, const std\+::string \+\_\+config\+\_\+filename)
+\begin{DoxyCompactList}\small\item\em The Main constructor. \end{DoxyCompactList}\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_a517de39295cd1ea3cbc0e82ae9d98c77}{Enorm\+To\+En} (const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} Enorm) const 
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_aa2e2741cf305dd5a80fe0adac014b65b}{En\+To\+Enorm} (const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} En) const 
+\item 
+void \hyperlink{classNumCal_1_1Kpm_ae5baa0e8d9a4dd8559b3873cd52b7bee}{Set\+Trunc\+Order} (const \hyperlink{namespaceNumCal_aa3e2bbd7c48c91db220faeb896cd15a4}{Num\+Cal\+::size\+\_\+t} \+\_\+trunc\+\_\+order)
+\item 
+void \hyperlink{classNumCal_1_1Kpm_a2427f17b0ca2959c046e4613a474b18e}{Set\+Bounds} (const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \+\_\+min\+\_\+bound, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \+\_\+max\+\_\+bound, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \+\_\+cutoff)
+\item 
+\hyperlink{namespaceNumCal_aa3e2bbd7c48c91db220faeb896cd15a4}{Num\+Cal\+::size\+\_\+t} \hyperlink{classNumCal_1_1Kpm_af8959c2052a3060ccba9196038dc9408}{Trunc\+Order} () const 
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_af5d91eca3075d8991325e0a761e3c71e}{Min\+Bound} () const 
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_a97c32cbaa01288e38c78d1df67ad2f33}{Max\+Bound} () const 
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_ae80238c3253e5f8be4365cb460a1b3e9}{Cut\+Off} () const 
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_a0b8280f98a1fa863991a7aa2c48fd79c}{Energy\+Factor} () const 
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{Num\+Cal\+::integer} \hyperlink{classNumCal_1_1Kpm_ad13e93e7a6c5bf93fca2b779a85b1317}{Vec\+Dim} () const 
+\item 
+void \hyperlink{classNumCal_1_1Kpm_ad61220cb1d97c7aad33bbbecc6c28d96}{Set\+Random\+Seed} (unsigned int \+\_\+seed)
+\item 
+unsigned int \hyperlink{classNumCal_1_1Kpm_a0d1f3e0d12ed40e124d75ee1fb595e1a}{Random\+Seed} ()
+\item 
+void \hyperlink{classNumCal_1_1Kpm_a9159dc54cfc4381f499b436fbc789423}{Conductivity\+Moments} (\hyperlink{classNumCal_1_1Lattice}{Lattice} \+\_\+lattice, std\+::string \+\_\+cond\+Mom\+X\+X\+File, std\+::string \+\_\+cond\+Mom\+X\+Y\+File)
+\item 
+void \hyperlink{classNumCal_1_1Kpm_a794390bb25114083062775f31a2f3f56}{Valley\+Conductivity\+Moments} (const \hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{Num\+Cal\+::integer} vindex, const \hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} R\+Kscal, \hyperlink{classNumCal_1_1Lattice}{Lattice} \+\_\+lattice, std\+::string \+\_\+cond\+Mom\+X\+X\+File, std\+::string \+\_\+cond\+Mom\+X\+Y\+File)
+\item 
+void \hyperlink{classNumCal_1_1Kpm_aec192ebcd8126f53927d53265e47095e}{D\+O\+S\+Moments} (\hyperlink{classNumCal_1_1Lattice}{Lattice} \+\_\+lattice, std\+::string \+\_\+dos\+Mom\+File)
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{Num\+Cal\+::integer} \hyperlink{classNumCal_1_1Kpm_a4ac4a7a755edc98dcecbe0871b331d60}{vec\+Dim\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ae1031b42812e871d8f5bd9b7b15fc7d8}{Num\+Cal\+::integer} \hyperlink{classNumCal_1_1Kpm_a9306617bc9ed19bee31a900d916601f2}{trunc\+\_\+order\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_a18eba97bab8e60ce25886f2b0445f040}{min\+\_\+bound\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_a6aff2cd50b5f91123c5638f9f5f8b674}{max\+\_\+bound\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_a642a669599d105532db6f7381ae03a7f}{cutoff\+\_\+}
+\item 
+\hyperlink{namespaceNumCal_ac10564761316cff6fb75fe8bfccd6def}{Num\+Cal\+::real} \hyperlink{classNumCal_1_1Kpm_af400f702eb1525f25a4eca3b896f69e9}{scale\+\_\+factor\+\_\+}
+\item 
+Num\+Cal\+::random\+::uniform\+\_\+real\+\_\+dist \hyperlink{classNumCal_1_1Kpm_acee26c7b6af3442b38556d761c172038}{distribution}
+\item 
+Num\+Cal\+::random\+::generator \hyperlink{classNumCal_1_1Kpm_a9b09edf906b41f5c4109e7df953e8000}{generator}
+\item 
+unsigned int \hyperlink{classNumCal_1_1Kpm_a1ffffb62aa49a0428a7959889607c873}{seed\+\_\+}
+\item 
+\hyperlink{classNumCal_1_1ChebyshevSet}{Chebyshev\+Set} \hyperlink{classNumCal_1_1Kpm_af2c38bda650ee0c6127efc49f508e08b}{cheb\+Set}
+\item 
+\hyperlink{classKPMLinalg}{K\+P\+M\+Linalg} \hyperlink{classNumCal_1_1Kpm_a5bbe79f73705e403ec18880b29197d9f}{linalg}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Set of approximation based on K\+P\+M. 
+
+This class is aimed to be used as a container of the different sets of approximations done within the Kernel Polynomial method approximation
+
+\begin{DoxyNote}{Note}
+This class is still in development process, use it at your own risk!
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classNumCal_1_1Kpm_acf83fa2ec653af132be07bb6c051fb73}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Kpm@{Kpm}}
+\index{Kpm@{Kpm}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Kpm}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::\+Kpm\+::\+Kpm (
+\begin{DoxyParamCaption}
+\item[{const {\bf Num\+Cal\+::integer}}]{\+\_\+dim, }
+\item[{const std\+::string}]{\+\_\+config\+\_\+filename}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_acf83fa2ec653af132be07bb6c051fb73}
+
+
+The Main constructor. 
+
+This constructor will receive the dimension of the working Hilber space and will try to open the file \+\_\+config\+\_\+filename. If succeed will read the following parameters\+:~\newline
+Truncation Order.~\newline
+Minimal Bound~\newline
+Maximal Bound~\newline
+Cut\+Off~\newline
+Look for the line kpm\+\_\+infor 
+
+\subsection{Member Function Documentation}
+\hypertarget{classNumCal_1_1Kpm_a9159dc54cfc4381f499b436fbc789423}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Conductivity\+Moments@{Conductivity\+Moments}}
+\index{Conductivity\+Moments@{Conductivity\+Moments}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Conductivity\+Moments}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Kpm\+::\+Conductivity\+Moments (
+\begin{DoxyParamCaption}
+\item[{{\bf Lattice}}]{\+\_\+lattice, }
+\item[{std\+::string}]{\+\_\+cond\+Mom\+X\+X\+File, }
+\item[{std\+::string}]{\+\_\+cond\+Mom\+X\+Y\+File}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Kpm_a9159dc54cfc4381f499b436fbc789423}
+Get the id of the process
+
+Get the total number of processes
+
+Distribute the moments between the processes
+
+Needs to be fixed for chebyshev sets
+
+Iterate the vector until the moment corresponding to the process \hypertarget{classNumCal_1_1Kpm_ae80238c3253e5f8be4365cb460a1b3e9}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Cut\+Off@{Cut\+Off}}
+\index{Cut\+Off@{Cut\+Off}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Cut\+Off}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::\+Cut\+Off (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_ae80238c3253e5f8be4365cb460a1b3e9}
+\hypertarget{classNumCal_1_1Kpm_aec192ebcd8126f53927d53265e47095e}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!D\+O\+S\+Moments@{D\+O\+S\+Moments}}
+\index{D\+O\+S\+Moments@{D\+O\+S\+Moments}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{D\+O\+S\+Moments}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Kpm\+::\+D\+O\+S\+Moments (
+\begin{DoxyParamCaption}
+\item[{{\bf Lattice}}]{\+\_\+lattice, }
+\item[{std\+::string}]{\+\_\+dos\+Mom\+File}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Kpm_aec192ebcd8126f53927d53265e47095e}
+\hypertarget{classNumCal_1_1Kpm_a0b8280f98a1fa863991a7aa2c48fd79c}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Energy\+Factor@{Energy\+Factor}}
+\index{Energy\+Factor@{Energy\+Factor}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Energy\+Factor}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::\+Energy\+Factor (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_a0b8280f98a1fa863991a7aa2c48fd79c}
+\hypertarget{classNumCal_1_1Kpm_a517de39295cd1ea3cbc0e82ae9d98c77}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Enorm\+To\+En@{Enorm\+To\+En}}
+\index{Enorm\+To\+En@{Enorm\+To\+En}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Enorm\+To\+En}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::\+Enorm\+To\+En (
+\begin{DoxyParamCaption}
+\item[{const {\bf Num\+Cal\+::real}}]{Enorm}
+\end{DoxyParamCaption}
+) const}}\label{classNumCal_1_1Kpm_a517de39295cd1ea3cbc0e82ae9d98c77}
+\hypertarget{classNumCal_1_1Kpm_aa2e2741cf305dd5a80fe0adac014b65b}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!En\+To\+Enorm@{En\+To\+Enorm}}
+\index{En\+To\+Enorm@{En\+To\+Enorm}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{En\+To\+Enorm}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::\+En\+To\+Enorm (
+\begin{DoxyParamCaption}
+\item[{const {\bf Num\+Cal\+::real}}]{En}
+\end{DoxyParamCaption}
+) const}}\label{classNumCal_1_1Kpm_aa2e2741cf305dd5a80fe0adac014b65b}
+\hypertarget{classNumCal_1_1Kpm_a97c32cbaa01288e38c78d1df67ad2f33}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Max\+Bound@{Max\+Bound}}
+\index{Max\+Bound@{Max\+Bound}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Max\+Bound}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::\+Max\+Bound (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_a97c32cbaa01288e38c78d1df67ad2f33}
+\hypertarget{classNumCal_1_1Kpm_af5d91eca3075d8991325e0a761e3c71e}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Min\+Bound@{Min\+Bound}}
+\index{Min\+Bound@{Min\+Bound}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Min\+Bound}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::\+Min\+Bound (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_af5d91eca3075d8991325e0a761e3c71e}
+\hypertarget{classNumCal_1_1Kpm_a0d1f3e0d12ed40e124d75ee1fb595e1a}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Random\+Seed@{Random\+Seed}}
+\index{Random\+Seed@{Random\+Seed}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Random\+Seed}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int Num\+Cal\+::\+Kpm\+::\+Random\+Seed (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_a0d1f3e0d12ed40e124d75ee1fb595e1a}
+\hypertarget{classNumCal_1_1Kpm_a2427f17b0ca2959c046e4613a474b18e}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Set\+Bounds@{Set\+Bounds}}
+\index{Set\+Bounds@{Set\+Bounds}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Set\+Bounds}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Kpm\+::\+Set\+Bounds (
+\begin{DoxyParamCaption}
+\item[{const {\bf Num\+Cal\+::real}}]{\+\_\+min\+\_\+bound, }
+\item[{const {\bf Num\+Cal\+::real}}]{\+\_\+max\+\_\+bound, }
+\item[{const {\bf Num\+Cal\+::real}}]{\+\_\+cutoff}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Kpm_a2427f17b0ca2959c046e4613a474b18e}
+\hypertarget{classNumCal_1_1Kpm_ad61220cb1d97c7aad33bbbecc6c28d96}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Set\+Random\+Seed@{Set\+Random\+Seed}}
+\index{Set\+Random\+Seed@{Set\+Random\+Seed}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Set\+Random\+Seed}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Kpm\+::\+Set\+Random\+Seed (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{\+\_\+seed}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_ad61220cb1d97c7aad33bbbecc6c28d96}
+\hypertarget{classNumCal_1_1Kpm_ae5baa0e8d9a4dd8559b3873cd52b7bee}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Set\+Trunc\+Order@{Set\+Trunc\+Order}}
+\index{Set\+Trunc\+Order@{Set\+Trunc\+Order}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Set\+Trunc\+Order}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Kpm\+::\+Set\+Trunc\+Order (
+\begin{DoxyParamCaption}
+\item[{const {\bf Num\+Cal\+::size\+\_\+t}}]{\+\_\+trunc\+\_\+order}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Kpm_ae5baa0e8d9a4dd8559b3873cd52b7bee}
+\hypertarget{classNumCal_1_1Kpm_af8959c2052a3060ccba9196038dc9408}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Trunc\+Order@{Trunc\+Order}}
+\index{Trunc\+Order@{Trunc\+Order}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Trunc\+Order}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::size\+\_\+t} Num\+Cal\+::\+Kpm\+::\+Trunc\+Order (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_af8959c2052a3060ccba9196038dc9408}
+\hypertarget{classNumCal_1_1Kpm_a794390bb25114083062775f31a2f3f56}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Valley\+Conductivity\+Moments@{Valley\+Conductivity\+Moments}}
+\index{Valley\+Conductivity\+Moments@{Valley\+Conductivity\+Moments}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Valley\+Conductivity\+Moments}]{\setlength{\rightskip}{0pt plus 5cm}void Num\+Cal\+::\+Kpm\+::\+Valley\+Conductivity\+Moments (
+\begin{DoxyParamCaption}
+\item[{const {\bf Num\+Cal\+::integer}}]{vindex, }
+\item[{const {\bf Num\+Cal\+::real}}]{R\+Kscal, }
+\item[{{\bf Lattice}}]{\+\_\+lattice, }
+\item[{std\+::string}]{\+\_\+cond\+Mom\+X\+X\+File, }
+\item[{std\+::string}]{\+\_\+cond\+Mom\+X\+Y\+File}
+\end{DoxyParamCaption}
+)}}\label{classNumCal_1_1Kpm_a794390bb25114083062775f31a2f3f56}
+Get the id of the process
+
+Get the total number of processes
+
+Distribute the moments between the processes
+
+Needs to be fixed for chebyshev sets
+
+Iterate the vector until the moment corresponding to the process \hypertarget{classNumCal_1_1Kpm_ad13e93e7a6c5bf93fca2b779a85b1317}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!Vec\+Dim@{Vec\+Dim}}
+\index{Vec\+Dim@{Vec\+Dim}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{Vec\+Dim}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::integer} Num\+Cal\+::\+Kpm\+::\+Vec\+Dim (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classNumCal_1_1Kpm_ad13e93e7a6c5bf93fca2b779a85b1317}
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classNumCal_1_1Kpm_af2c38bda650ee0c6127efc49f508e08b}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!cheb\+Set@{cheb\+Set}}
+\index{cheb\+Set@{cheb\+Set}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{cheb\+Set}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Chebyshev\+Set} Num\+Cal\+::\+Kpm\+::cheb\+Set\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_af2c38bda650ee0c6127efc49f508e08b}
+\hypertarget{classNumCal_1_1Kpm_a642a669599d105532db6f7381ae03a7f}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!cutoff\+\_\+@{cutoff\+\_\+}}
+\index{cutoff\+\_\+@{cutoff\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{cutoff\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::cutoff\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a642a669599d105532db6f7381ae03a7f}
+\hypertarget{classNumCal_1_1Kpm_acee26c7b6af3442b38556d761c172038}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!distribution@{distribution}}
+\index{distribution@{distribution}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{distribution}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::random\+::uniform\+\_\+real\+\_\+dist Num\+Cal\+::\+Kpm\+::distribution\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_acee26c7b6af3442b38556d761c172038}
+\hypertarget{classNumCal_1_1Kpm_a9b09edf906b41f5c4109e7df953e8000}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!generator@{generator}}
+\index{generator@{generator}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{generator}]{\setlength{\rightskip}{0pt plus 5cm}Num\+Cal\+::random\+::generator Num\+Cal\+::\+Kpm\+::generator\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a9b09edf906b41f5c4109e7df953e8000}
+\hypertarget{classNumCal_1_1Kpm_a5bbe79f73705e403ec18880b29197d9f}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!linalg@{linalg}}
+\index{linalg@{linalg}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{linalg}]{\setlength{\rightskip}{0pt plus 5cm}{\bf K\+P\+M\+Linalg} Num\+Cal\+::\+Kpm\+::linalg\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a5bbe79f73705e403ec18880b29197d9f}
+\hypertarget{classNumCal_1_1Kpm_a6aff2cd50b5f91123c5638f9f5f8b674}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!max\+\_\+bound\+\_\+@{max\+\_\+bound\+\_\+}}
+\index{max\+\_\+bound\+\_\+@{max\+\_\+bound\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{max\+\_\+bound\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::max\+\_\+bound\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a6aff2cd50b5f91123c5638f9f5f8b674}
+\hypertarget{classNumCal_1_1Kpm_a18eba97bab8e60ce25886f2b0445f040}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!min\+\_\+bound\+\_\+@{min\+\_\+bound\+\_\+}}
+\index{min\+\_\+bound\+\_\+@{min\+\_\+bound\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{min\+\_\+bound\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::min\+\_\+bound\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a18eba97bab8e60ce25886f2b0445f040}
+\hypertarget{classNumCal_1_1Kpm_af400f702eb1525f25a4eca3b896f69e9}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!scale\+\_\+factor\+\_\+@{scale\+\_\+factor\+\_\+}}
+\index{scale\+\_\+factor\+\_\+@{scale\+\_\+factor\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{scale\+\_\+factor\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::real} Num\+Cal\+::\+Kpm\+::scale\+\_\+factor\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_af400f702eb1525f25a4eca3b896f69e9}
+\hypertarget{classNumCal_1_1Kpm_a1ffffb62aa49a0428a7959889607c873}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!seed\+\_\+@{seed\+\_\+}}
+\index{seed\+\_\+@{seed\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{seed\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int Num\+Cal\+::\+Kpm\+::seed\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a1ffffb62aa49a0428a7959889607c873}
+\hypertarget{classNumCal_1_1Kpm_a9306617bc9ed19bee31a900d916601f2}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!trunc\+\_\+order\+\_\+@{trunc\+\_\+order\+\_\+}}
+\index{trunc\+\_\+order\+\_\+@{trunc\+\_\+order\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{trunc\+\_\+order\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::integer} Num\+Cal\+::\+Kpm\+::trunc\+\_\+order\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a9306617bc9ed19bee31a900d916601f2}
+\hypertarget{classNumCal_1_1Kpm_a4ac4a7a755edc98dcecbe0871b331d60}{\index{Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}!vec\+Dim\+\_\+@{vec\+Dim\+\_\+}}
+\index{vec\+Dim\+\_\+@{vec\+Dim\+\_\+}!Num\+Cal\+::\+Kpm@{Num\+Cal\+::\+Kpm}}
+\subsubsection[{vec\+Dim\+\_\+}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Num\+Cal\+::integer} Num\+Cal\+::\+Kpm\+::vec\+Dim\+\_\+\hspace{0.3cm}{\ttfamily [private]}}}\label{classNumCal_1_1Kpm_a4ac4a7a755edc98dcecbe0871b331d60}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/kpm/\hyperlink{kpm_8hpp}{kpm.\+hpp}\item 
+/home/jgarcia/\+Dropbox/git-\/save/\+T\+B-\/\+Quantum\+Transp/kpm/\hyperlink{kpm_8cpp}{kpm.\+cpp}\end{DoxyCompactItemize}
