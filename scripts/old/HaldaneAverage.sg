@@ -1,0 +1,8 @@
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXXNx256Ny256M2048U0.1lambda0.1UAB0.0p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXYNx256Ny256M2048U0.1lambda0.1UAB0.0p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXXNx256Ny256M2048U0.1lambda0.5UAB0.4p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXYNx256Ny256M2048U0.1lambda0.5UAB0.4p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXXNx256Ny256M2048U0.9lambda0.1UAB0.0p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXYNx256Ny256M2048U0.9lambda0.1UAB0.0p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXXNx256Ny256M2048U0.9lambda0.5UAB0.4p0R5alpha0.90En1*"
+python PythonScripts/Mean.py "data/GrapheneHaldaneConductivityXYNx256Ny256M2048U0.9lambda0.5UAB0.4p0R5alpha0.90En1*"
