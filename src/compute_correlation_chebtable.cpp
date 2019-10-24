@@ -3,6 +3,7 @@
 #include <string>		/* for std::string class */
 #include <fstream>		/* for std::ofstream and std::ifstream functions classes*/
 #include <stdlib.h>
+#include "sparse_matrix.hpp"
 #include "chebyshev_solver.hpp"
 
 template <typename T>
@@ -37,17 +38,24 @@ int main(int argc, char *argv[])
 	conf.scaleFactor  = atof(argv[5]);
 	conf.shift        = atof(argv[6]);
 	
-	CSRMatrix NHAM,OPL,OPR;
+	MKL_SparseType HAM;
+	SparseMatrixBuilder builder;
+	builder.setSparseMatrix(&HAM);
+//	HAM.ReadCSRMatrix( "operators/"+LABEL+".HAM.CSR");
+	builder.ConstructFromCOO(numRows,numCols,rows,cols,vals);
 
-	//READ HAMILTONIAN
-	std::cout<<"Reading operator "+LABEL+".HAM.CSR"<<std::endl;
-	HAM.ReadCSRMatrix( "operators/"+LABEL+".HAM.CSR");
-	//READ OPERATOR LEFT
-	std::cout<<"Reading operator "+LABEL+"."+S_OPL+".CSR"<<std::endl;
-	OPL.ReadCSRMatrix( "operators/"+LABEL+"."+S_OPL+".CSR");
-	//READ OPERATOR RIGHT
-	std::cout<<"Reading operator "+LABEL+"."+S_OPR+".CSR"<<std::endl;
-	OPR.ReadCSRMatrix( "operators/"+LABEL+"."+S_OPR+".CSR");
+	MKL_SparseType OPR;
+	SparseMatrixBuilder builder;
+	builder.setSparseMatrix(&OPR);
+//	HAM.ReadCSRMatrix( "operators/"+LABEL+".OPR.CSR");
+	builder.ConstructFromCOO(numRows,numCols,rows,cols,vals);
+
+	MKL_SparseType OPL;
+	SparseMatrixBuilder builder;
+	builder.setSparseMatrix(&OPL);
+//	HAM.ReadCSRMatrix( "operators/"+LABEL+".OPL.CSR");
+	builder.ConstructFromCOO(numRows,numCols,rows,cols,vals);
+
 
 	//Define thes states youll use
 	State::Creator stateCreator;
