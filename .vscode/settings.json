@@ -70,5 +70,6 @@
         "set": "cpp",
         "string": "cpp",
         "__functional_03": "cpp"
-    }
+    },
+    "C_Cpp.dimInactiveRegions": false
 }

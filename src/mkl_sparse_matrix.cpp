@@ -1,6 +1,6 @@
 #include "sparse_matrix.hpp"
 
-string MKL_SparseType::matrixType(){ std::cout<<"CSR Matrix from MKL Library."; };
+
 void MKL_SparseType::ConvertFromCOO(vector<int> &rows,vector<int> &cols,vector<complex<double> > &vals)
 {
 	vector<int> rows_; rows_.swap(rows); 
@@ -11,17 +11,19 @@ void MKL_SparseType::ConvertFromCOO(vector<int> &rows,vector<int> &cols,vector<c
 	assert( mkl_sparse_z_create_coo (&newMatrix, SPARSE_INDEX_BASE_ZERO, numRows(),numCols(),rows_.size(), &rows_[0],&cols_[0],&vals_[0])== SPARSE_STATUS_SUCCESS );
 	assert( mkl_sparse_convert_csr (newMatrix, SPARSE_OPERATION_NON_TRANSPOSE, &Matrix)== SPARSE_STATUS_SUCCESS );
 	assert( mkl_sparse_destroy(newMatrix)== SPARSE_STATUS_SUCCESS );
-
-	descr.type = SPARSE_MATRIX_TYPE_HERMITIAN;
-	descr.mode = SPARSE_FILL_MODE_UPPER;
-	descr.diag = SPARSE_DIAG_NON_UNIT;
-
 };
 	
-
-void MKL_SparseType::Multiply(const complex<double>* a,const complex<double>* x,const complex<double>*  b, complex<double>* y)
+void MKL_SparseType::ConvertFromCSR(vector<int> &rowIndex,vector<int> &cols,vector<complex<double> > &vals)
 {
-	assert( mkl_sparse_z_mv(SPARSE_OPERATION_NON_TRANSPOSE, *a, Matrix ,descr, x, *b,y) == SPARSE_STATUS_SUCCESS );
+	vector<int> rowIndex_; rowIndex_.swap(rowIndex); 
+	vector<int> cols_; cols_.swap(cols); 
+	vector<complex<double> > vals_; vals_.swap(vals); 
+	assert( mkl_sparse_z_create_csr (&Matrix, SPARSE_INDEX_BASE_ZERO, numRows(),numCols(), &rowIndex_[0],&rowIndex_[1],&cols_[0],&vals_[0])== SPARSE_STATUS_SUCCESS );
+}
+
+void MKL_SparseType::Multiply(const complex<double> a,const complex<double>* x,const complex<double>  b, complex<double>* y)
+{
+	assert( mkl_sparse_z_mv(SPARSE_OPERATION_NON_TRANSPOSE, a, Matrix ,descr, x, b,y) == SPARSE_STATUS_SUCCESS );
 };
 
 void MKL_SparseType::Optimize()
