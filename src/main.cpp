@@ -25,7 +25,8 @@ int main(int argc, char *argv[])
 	S_OPL = argv[3],
 	S_NUM_MOM=argv[4];
 
-	chebyshev::Configure conf;
+	chebyshev::Configure conf; conf.maxMemory=70; //bites
+
 	conf.TableSize.push_back( atoi(argv[4]) );
 	conf.TableSize.push_back( atoi(argv[4]) );
 	conf.scaleFactor  = atof(argv[5]);
@@ -44,12 +45,12 @@ int main(int argc, char *argv[])
 	};
 
 	//Define thes states youll use
-	Factory state_factory ;
+	//Factory state_factory ;
 
 
 	//Compute the chebyshev expansion table
-	chebyshev::MomTable ctable(&conf);
-	chebyshev::CorrelationExpansionMoments(state_factory,OP[0],OP[1],OP[2],ctable);
+	chebyshev::MomTable ctable(conf);
+	chebyshev::CorrelationExpansionMoments(1,OP[0],OP[1],OP[2],ctable);
 /*
 
 	//Save the table in a file

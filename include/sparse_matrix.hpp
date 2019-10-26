@@ -51,12 +51,14 @@ class MKL_SparseType : public SparseMatrixType
 	void Multiply(const complex<double> a,const complex<double>* x,const complex<double>  b, complex<double>* y);
 	void Optimize();
 	void ConvertFromCOO(vector<int> &rows,vector<int> &cols,vector<complex<double> > &vals);
-  void ConvertFromCSR(vector<int> &rowIndex,vector<int> &cols,vector<complex<double> > &vals);
+  	void ConvertFromCSR(vector<int> &rowIndex,vector<int> &cols,vector<complex<double> > &vals);
 
 	private:
 		struct matrix_descr descr;
 		sparse_matrix_t Matrix;
-
+		vector<int> rows_;
+		vector<int> cols_;
+		vector<complex<double> > vals_;   
 };
 
 class SparseMatrixBuilder
@@ -73,9 +75,9 @@ class SparseMatrixBuilder
      		vector<int> columns, rowIndex;
     		vector<complex<double> > values;
         int dim;
-     		Sparse::OPERATOR_FromCSRFile(input,dim,columns,rowIndex,values );
+     	Sparse::OPERATOR_FromCSRFile(input,dim,columns,rowIndex,values );
         _matrix_type->setDimensions( dim,dim);
-        _matrix_type->ConvertFromCSR(columns,rowIndex,values);
+        _matrix_type->ConvertFromCSR(rowIndex,columns,values);
        std::cout<<"OPERATOR SUCCESSFULLY BUILD"<<std::endl;
     }
     SparseMatrixType* _matrix_type;

@@ -13,6 +13,7 @@ $CC $INC -c $SRC/chebyshev_solver.cpp -o $SRC/chebyshev_solver.o
 
 $CC $INC -c $SRC/main.cpp -o $SRC/main.o
 $CC -o main $SRC/main.o $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o -mkl=sequential
+$CC $SRC/linear_algebra.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/chebyshev_solver.o $SRC/main.o -o main   -mkl=sequential
 #$LIB
 #$CC $INC $CFLAG $OFLAG $SRC/kuboBastinFromChebmom.cpp -o ~/.local/bin/kuboBastinFromChebmom $LIB
 #$CC $INC $CFLAG $OFLAG $SRC/kuboBastinKernelChebmom.cpp -o ~/.local/bin/kuboBastinKernelChebmom $LIB
