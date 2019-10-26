@@ -5,7 +5,7 @@
 #include <vector>
 #include <complex>
 #include <numeric>
-using namespace std;  // for std::complex<double> , and std::vector
+using namespace std; // for std::complex<double> , and std::vector
 
 struct StateParams
 {
@@ -20,10 +20,11 @@ class State
 {
 };
 
-class Factory{
-    public:
-    bool CreateNewState(){ return true; }
-    vector<complex<double> > getNewState(){ return vector<complex<double> >();};
+class Factory
+{
+public:
+    bool CreateNewState() { return true; }
+    vector<complex<double>> getNewState() { return vector<complex<double>>(); };
 };
 
 #endif
