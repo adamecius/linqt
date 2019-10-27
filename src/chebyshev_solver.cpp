@@ -29,21 +29,23 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
     //Configure chebyshev
     const int MAXSIZE = cTable.maxSize();
     cTable.SetSystemSize(HAM.rank());
-    const int
-        DIM = HAM.rank(),
-        toGB = 1048576,
-        VECSIZE = sizeof(complex<double>) * 2 * DIM / toGB; //The two is because one need two set of vectors
-    int MAX_MEM = 40;
-    int batchSize = (MAX_MEM + VECSIZE - 1) / VECSIZE;
+    const int DIM = HAM.rank();
+    const long int
+        GBtoB = 1073741824,
+        VECSIZE = sizeof(complex<double>) * 2 * DIM ,
+        MAX_MEM = cTable.Configure()->maxMemory*GBtoB;
+    long int    batchSize = (MAX_MEM + VECSIZE - 1) / VECSIZE;
     if (batchSize > MAXSIZE)
         batchSize = MAXSIZE;
     std::cout << "The dimension of my complex vector is: " << DIM << std::endl;
-    std::cout << "Which will use  dimension of my complex vector is: " << VECSIZE << "GB " << std::endl;
+    std::cout << "Which will use  dimension of my complex vector is: " << VECSIZE/(double)GBtoB << "GB " << std::endl;
     std::cout << "Because my Memory Size is =" << MAX_MEM << "I Can use a batch of " << batchSize << " vectors." << std::endl;
 
     const double scalFactor = cTable.ScaleFactor();
     const double shift = cTable.EnergyShift();
     //Allocate the memory
+    std::cout<<"I am going to allocate "<<2 * batchSize * DIM<<" elements"<<std::endl;
+    std::cout<<" for a size of "<<2 * batchSize * DIM*sizeof(complex<double>)/GBtoB<<"GB"<<std::endl;
     complex<double> *data = new complex<double>[2 * batchSize * DIM];
     complex<double> **JL = new complex<double> *[batchSize];
     complex<double> **JR = new complex<double> *[batchSize];
@@ -54,7 +56,7 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
         JR[b] = &data[(b + 1 * batchSize) * DIM];
     }
     vector<complex<double> > Phi(DIM);
-
+    std::cout<<"memory allocated"<<std::endl;
     //INITIALIZE ITERATION
     for (int i = 0; i < numStates; i++)
     {

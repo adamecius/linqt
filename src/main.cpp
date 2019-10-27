@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 		S_NUM_MOM = argv[4];
 
 	chebyshev::Configure conf;
-	conf.maxMemory = 70; //bites
+	conf.maxMemory = 1500; //bites
 
 	conf.TableSize.push_back(atoi(argv[4]));
 	conf.TableSize.push_back(atoi(argv[4]));
