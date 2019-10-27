@@ -30,7 +30,7 @@ public:
         conf_ = &conf;
         size_ = conf_->TableSize;
         int numElems = accumulate(size_.begin(), size_.end(), 1, multiplies<int>()); //multiply elements of size_
-        data_ = vector<complex<double>>(numElems);                                   //create a vector to hold these elements
+        data_ = vector<complex<double> >(numElems);                                   //create a vector to hold these elements
     };
 
     inline vector<int> Size() const { return size_; };
@@ -55,7 +55,7 @@ public:
     void saveIn(std::string filename);
 
 private:
-    vector<complex<double>> data_;
+    vector<complex<double> > data_;
     vector<int> size_;
     chebyshev::Configure *conf_;
     int systSize_;

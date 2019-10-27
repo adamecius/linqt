@@ -24,7 +24,7 @@ class Factory
 {
 public:
     bool CreateNewState() { return true; }
-    vector<complex<double>> getNewState() { return vector<complex<double>>(); };
+    vector<complex<double> > getNewState() { return vector<complex<double> >(); };
 };
 
 #endif

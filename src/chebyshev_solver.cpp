@@ -18,7 +18,7 @@ void chebyshev::MomTable::saveIn(std::string filename)
         outputfile << *it << " " << std::endl;
     outputfile << std::endl;
 
-    for (vector<complex<double>>::iterator it = data_.begin();
+    for (vector<complex<double> >::iterator it = data_.begin();
          it != data_.end(); it++)
         outputfile << (*it).real() << " " << (*it).imag() << std::endl;
     outputfile.close();
@@ -53,7 +53,7 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
         JL[b] = &data[(b + 0 * batchSize) * DIM];
         JR[b] = &data[(b + 1 * batchSize) * DIM];
     }
-    vector<complex<double>> Phi(DIM);
+    vector<complex<double> > Phi(DIM);
 
     //INITIALIZE ITERATION
     for (int i = 0; i < numStates; i++)
@@ -75,7 +75,6 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
             for (int mR = 2; mR < batchSize; mR++)
                 if (mR + m0 < cTable.Size_InDir(0))
                 {
-                    std::cout << "I am mR=" << mR << " for m0=" << m0 << std::endl;
                     linalg::copy(DIM, JR[mR - 2], JR[mR]);
                     HAM.Multiply(2.0 * scalFactor, JR[mR - 1], -1.0, JR[mR]);
                     linalg::axpy(DIM, shift, JR[mR - 1], JR[mR]);
@@ -97,7 +96,7 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
                     for (int mL = 0; mL < batchSize; mL++)
                         if (mR < cTable.Size_InDir(0) && mL < cTable.Size_InDir(1))
                         {
-                            std::cout<<"Computing moments: "<<mL+m1<<","<<mR+m0<<std::endl;
+                  //          std::cout<<"Computing moments: "<<mL+m1<<","<<mR+m0<<std::endl;
                             cTable(mL + m1, mR + m0) += linalg::vdot(DIM, JR[mL], JL[mR]);
                         }
                 Jswap = JL[batchSize - 2];
