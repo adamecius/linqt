@@ -18,6 +18,8 @@ void copy(const int dim, const complex<double> *x, complex<double> *y);
 
 complex<double> vdot(const int dim, const complex<double> *x, complex<double> *y);
 
+void batch_vdot(const int dim,const int batchSize,const complex<double>* leftb,const complex<double>* rightb,complex<double>* output);
+
 } // namespace linalg
 
 #endif

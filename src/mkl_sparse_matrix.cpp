@@ -26,6 +26,19 @@ void MKL_SparseType::Multiply(const complex<double> a, const complex<double> *x,
 	assert(mkl_sparse_z_mv(SPARSE_OPERATION_NON_TRANSPOSE, a, Matrix, descr, x, b, y) == SPARSE_STATUS_SUCCESS);
 };
 
+void MKL_SparseType::BatchMultiply(const int batchSize, const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y)
+{
+	std::cout<<numCols()<<" "<<a<<" "<<b<<std::endl;
+//r	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, batchSize, batchSize, b, y, batchSize ) == SPARSE_STATUS_SUCCESS);
+//x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, batchSize, batchSize, b, y, numCols() ) == SPARSE_STATUS_SUCCESS);
+//x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, batchSize, numCols(), b, y, batchSize ) == SPARSE_STATUS_SUCCESS);
+	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_COLUMN_MAJOR,x, batchSize, numCols(), b, y, numCols() ) == SPARSE_STATUS_SUCCESS);
+//x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, numCols(), batchSize, b, y, batchSize ) == SPARSE_STATUS_SUCCESS);
+//x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, numCols(), batchSize, b, y, numCols() ) == SPARSE_STATUS_SUCCESS);
+//x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, numCols(), numCols(), b, y, batchSize ) == SPARSE_STATUS_SUCCESS);
+//x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, numCols(), numCols(), b, y, numCols() ) == SPARSE_STATUS_SUCCESS);
+}
+
 void MKL_SparseType::Optimize(){
 
 	//	std::cout<<*this->rows_[1]<<" "<<*this->rows_[2]<<std::endl;

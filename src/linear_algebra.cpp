@@ -17,3 +17,12 @@ complex<double> linalg::vdot(const int dim, const complex<double> *x, complex<do
 	cblas_zdotc_sub(dim, x, 1, y, 1, &dotc);
 	return dotc;
 }
+
+void linalg::batch_vdot(const int dim,const int batchSize,const complex<double>* leftb,const complex<double>* rightb,complex<double>* output)
+{
+	complex<double> alpha=1.0, beta=1.0; //This gives the quantity <L|R>* because there is no pure conjugation in MKL
+	cblas_zgemm (CblasRowMajor, CblasNoTrans, CblasConjTrans,batchSize, batchSize , dim, &alpha, leftb,dim ,rightb,dim,&beta,output,batchSize);
+	return ;
+}
+
+

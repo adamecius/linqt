@@ -18,6 +18,7 @@ class SparseMatrixType
 public:
   virtual string matrixType() const = 0;
   virtual void Multiply(const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y) = 0;
+  virtual void BatchMultiply(const int batchSize, const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y)=0;
   virtual void Optimize() = 0;
   virtual void ConvertFromCOO(vector<int> &rows, vector<int> &cols, vector<complex<double> > &vals) = 0;
   virtual void ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, vector<complex<double> > &vals) = 0;
@@ -53,6 +54,7 @@ public:
 
   string matrixType() const { return "CSR Matrix from MKL Library."; };
   void Multiply(const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y);
+  void BatchMultiply(const int batchSize, const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y);
   void Optimize();
   void ConvertFromCOO(vector<int> &rows, vector<int> &cols, vector<complex<double> > &vals);
   void ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, vector<complex<double> > &vals);

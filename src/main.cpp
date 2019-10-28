@@ -11,6 +11,8 @@ void printHelpMessage();
 
 void printWelcomeMessage();
 
+void printValidatedInput(chebyshev::Configure& conf);
+
 int main(int argc, char *argv[])
 {
 	if (argc != 7)
@@ -35,6 +37,8 @@ int main(int argc, char *argv[])
 	conf.scaleFactor = atof(argv[5]);
 	conf.shift = atof(argv[6]);
 
+	printValidatedInput(conf);
+	
 	MKL_SparseType OP[3];
 	OP[0].SetID("HAM");
 	OP[1].SetID(S_OPR);
@@ -55,11 +59,12 @@ int main(int argc, char *argv[])
 	//Compute the chebyshev expansion table
 	chebyshev::MomTable ctable(conf);
 	chebyshev::CorrelationExpansionMoments(1, OP[0], OP[1], OP[2], ctable);
-	/*
 
 	//Save the table in a file
-	std::ofstream outputfile( ("NonEqOp"+S_OPR+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"RV1.chebmom2D").c_str() );
-	ctable*/
+	std::string outputfilename="NonEqOp"+S_OPR+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"RV1.chebmom2D";
+	ctable.saveIn(outputfilename);
+
+	std::cout<<"End of program"<<std::endl;
 	return 0;
 }
 
@@ -76,4 +81,20 @@ void printHelpMessage()
 void printWelcomeMessage()
 {
 	std::cout << "WELCOME: This program will compute a table needed for expanding the correlation function in Chebyshev polynomialms" << std::endl;
+};
+
+
+void printValidatedInput(chebyshev::Configure& conf)
+{
+       for(int i=0; i < conf.TableSize.size();i++)
+	{
+	    assert( conf.TableSize[i] >0 );
+	    if( i==0) std::cout<<"We will use: ";
+		std::cout<<conf.TableSize[i]<<" ";
+	}
+	std::cout<<"chebyshev moments."<<std::endl;
+        assert( conf.scaleFactor > 0.0 );
+	std::cout<<"The Chebyshev rescaling will be done using:"<<std::endl;
+	std::cout<<"Scale Factor = " <<conf.scaleFactor<<std::endl;
+	std::cout<<"Energy Shift = " <<conf.shift<<std::endl;
 };
