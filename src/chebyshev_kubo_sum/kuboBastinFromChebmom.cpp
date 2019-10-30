@@ -12,10 +12,6 @@
 #include <numeric>
 #include <algorithm>
 
-// Parsing library
-#include <libconfig.h++>
-
-
 typedef std::complex<double> complex; 
 
 struct GLFunctor
@@ -39,16 +35,28 @@ struct GRFunctor
 	const double theta;
 };
 
+struct chebMom2D
+{
+	chebMom2D():numMom1(0),numMom0(0){};
+
+	chebMom2D(const int m0,const int m1):numMom1(m1),numMom0(m0),mu( std::vector<complex>(numMom1*numMom0, 0.0) ){};
+	 
+	complex& operator()(const int m0,const int m1)
+	{
+		return mu[ m0*numMom1 + m1 ];
+	}
+	int numMom1,numMom0;
+	std::vector< complex<double> > mu;
+};
+
 struct KuboFunctor
 {
 	//CONSTRUCTOR OF THE FUNCTOR
-	KuboFunctor(const int M):  
-	chebMoms( std::vector< complex >(M*M) ), 
-	matGamma( std::vector< complex >(M*M) ), 
-	GL( std::vector< double >(M) ), 
-	GR( std::vector< complex >(M) )
+	KuboFunctor(const int numMom):
+	numMom(_numMom),
+	GL( std::vector< double >(numMom) ), 
+	GR( std::vector< complex<double> >(numMom) )
 	{};
-
 
 	//THE FUNCTOR
     complex operator()(const double theta) 
@@ -57,61 +65,31 @@ struct KuboFunctor
 		GLFunctor GLfun(theta); GRFunctor GRfun(theta);
 
 		//Compute the operator at the left
-		for(int m=0; m <M; m++)
+		for(int m=0; m <numMom; m++)
 			GL[m] = m;
 		for_each(GL.begin(), GL.end(), GLfun);
 
 		//Compute the operator at the left
-		for(int m=0; m <M; m++)
+		for(int m=0; m <numMom; m++)
 			GR[m] = m;
 		for_each(GR.begin(), GR.end(), GRfun);
 
 		//Construct the Gamma_mn matrix
-		for(int m =0 ; m < M ; m++ )
+		const complex<double> sum;
+		for(int m =0 ; m < numMom ; m++ )
 		{
-			cblas_zcopy( M,&GR[0],1,&matGamma[ m*M ],1);
-			cblas_zdscal(M, GL[m], &matGamma[ m*M ],1);
+			const complex<double> partial_sum;
+			void cblas_zdotu_sub (numMom,&GR[0],1,&(chebmom->mu[0]),1, partial_sum);
+			sum+=partial_sum*GL[m];
 		}
-
-		//Multiply this matrix with the chebyshev moments to 
-		//construct the final matrix
-		vzMul(M*M,&matGamma[0],&chebMoms[0], &matGamma[0] );
-
-		//Sum the matrix and return the value;	
-		complex sum(0.0);
-		sum = accumulate(matGamma.begin(), matGamma.end(), sum );	 
 		return -sum/sin(theta);
 	}
 
-	std::vector< complex > chebMoms, matGamma, GR;
+	std::vector< complex<double> > GR;
 	std::vector< double> GL;
-
+	complex<double> *chebMoms; 
+	const int numMom;
 	
-};
-
-struct chebMom
-{
-	chebMom():numMom1(0),numMom0(0){};
-
-	chebMom(const int m0,const int m1):numMom1(m1),numMom0(m0),mu( std::vector<complex>(numMom1*numMom0, 0.0) ){};
-	 
-	complex& operator()(const int m0,const int m1)
-	{
-		return mu[ m0*numMom1 + m1 ];
-	}
-	int numMom1,numMom0;
-	std::vector<complex> mu;
-};
-
-
-using namespace std;
-
-double fermi_dirac( const double x )
-{
-	if( x > 40. )
-		return 0.0;
-	
-	return 1.0/( exp(x) + 1.0 );  	
 };
 
 int main(int argc, char *argv[])
@@ -127,7 +105,6 @@ int main(int argc, char *argv[])
 	const std::string
 	momfilename = argv[1];
 	double
-	broadening  = atof(argv[2]),
 	temperature = atof(argv[3]),
 	Emin 		= atof(argv[4]),
 	Emax 		= atof(argv[5]),
@@ -139,14 +116,15 @@ int main(int argc, char *argv[])
 	int numMoms0,numMoms1;
 	momfile>>dim>>HalfWidth>>BandCenter; HalfWidth=HalfWidth/2.0;//in the file what you have is the bandwidth
 	momfile>>numMoms0>>numMoms1;
- 	chebMom mu(numMoms0,numMoms1); double rmu,imu;
+	const int maxNumMom = ( (numMoms0 > numMom1) ? numMom0 : numMom1 ) ;
+ 	chebMom mu(maxNumMom,maxNumMom); double rmu,imu;
 	for( int m0 = 0 ; m0 < numMoms0 ; m0++)
 	for( int m1 = 0 ; m1 < numMoms1 ; m1++)
 	{	
 		momfile>>rmu>>imu;
 		mu(m0,m1) = std::complex( rmu,imu);
 	}
-	const int maxNumMom = numMoms0;
+	const int maxNumMom = ( (numMoms0 > numMom1) ? numMom0 : numMom1 ) ;
 	momfile.close();
 
 
@@ -175,12 +153,12 @@ int main(int argc, char *argv[])
 	outputName  =momfilename+".OUT";
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::ofstream outputfile( outputName.c_str() );
-	KuboFunctor kuboFun( maxNumMom );
+	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu;
 	for( vector< double >::iterator it =  angles.begin();
 									it!=  angles.end();
 								    it++)
 	{
-		outputfile<<cos(*it)<<" "<<kuboFun(*it)<<std::endl;
+		outputfile<<cos(*it)*HalfWidth + BandCenter <<" "<<kuboFun(*it)/HalfWidth/HalfWidth<<std::endl;
 	}
 
 
@@ -188,3 +166,4 @@ return 0;
 }		
 		
 		
+cd
