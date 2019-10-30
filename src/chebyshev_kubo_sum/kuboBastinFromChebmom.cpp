@@ -12,7 +12,6 @@
 #include <numeric>
 #include <algorithm>
 
-typedef std::complex<double> complex; 
 
 struct GLFunctor
 {
@@ -23,15 +22,15 @@ struct GLFunctor
 
 struct GRFunctor
 {
-	GRFunctor(double _theta):theta(_theta), I(complex(0,1)){};
-    void operator()(complex& m) const
+	GRFunctor(double _theta):theta(_theta), I(std::complex<double>(0,1)){};
+    void operator()(std::complex<double>& m) const
     { 
 		const double 
 		stheta= sin(theta),
 		ctheta= cos(theta);
 		m= I*exp(-I*theta*m)*( m*stheta - I*ctheta )/stheta/stheta/stheta;  
 	}
-	const complex I; 
+	const std::complex<double> I; 
 	const double theta;
 };
 
@@ -39,29 +38,28 @@ struct chebMom2D
 {
 	chebMom2D():numMom1(0),numMom0(0){};
 
-	chebMom2D(const int m0,const int m1):numMom1(m1),numMom0(m0),mu( std::vector<complex>(numMom1*numMom0, 0.0) ){};
+	chebMom2D(const int m0,const int m1):numMom1(m1),numMom0(m0),mu( std::vector<std::complex<double> >(numMom1*numMom0, 0.0) ){};
 	 
-	complex& operator()(const int m0,const int m1)
+	std::complex<double>& operator()(const int m0,const int m1)
 	{
 		return mu[ m0*numMom1 + m1 ];
 	}
 	int numMom1,numMom0;
-	std::vector< complex<double> > mu;
+	std::vector< std::complex<double> > mu;
 };
 
 struct KuboFunctor
 {
 	//CONSTRUCTOR OF THE FUNCTOR
-	KuboFunctor(const int numMom):
+	KuboFunctor(const int _numMom):
 	numMom(_numMom),
-	GL( std::vector< double >(numMom) ), 
-	GR( std::vector< complex<double> >(numMom) )
+	GL( std::vector< double >(_numMom) ), 
+	GR( std::vector< std::complex<double> >(_numMom) )
 	{};
 
 	//THE FUNCTOR
-    complex operator()(const double theta) 
+    double operator()(const double theta) 
     {
-		const int M = GL.size();
 		GLFunctor GLfun(theta); GRFunctor GRfun(theta);
 
 		//Compute the operator at the left
@@ -75,26 +73,26 @@ struct KuboFunctor
 		for_each(GR.begin(), GR.end(), GRfun);
 
 		//Construct the Gamma_mn matrix
-		const complex<double> sum;
+		std::complex<double> sum=0.0;
 		for(int m =0 ; m < numMom ; m++ )
 		{
-			const complex<double> partial_sum;
-			void cblas_zdotu_sub (numMom,&GR[0],1,&(chebmom->mu[0]),1, partial_sum);
+			std::complex<double> partial_sum;
+			cblas_zdotu_sub (numMom,&GR[0],1,chebMoms+m*numMom,1, &partial_sum);
 			sum+=partial_sum*GL[m];
 		}
-		return -sum/sin(theta);
+		return -2.0*sum.real()/sin(theta);
 	}
 
-	std::vector< complex<double> > GR;
+	std::vector< std::complex<double> > GR;
 	std::vector< double> GL;
-	complex<double> *chebMoms; 
+	std::complex<double> *chebMoms;
 	const int numMom;
-	
+
 };
 
 int main(int argc, char *argv[])
 {	
-	if (argc != 7)
+	if (argc != 6)
 	{
 //		printHelpMessage();
 		return 0;
@@ -105,65 +103,66 @@ int main(int argc, char *argv[])
 	const std::string
 	momfilename = argv[1];
 	double
-	temperature = atof(argv[3]),
-	Emin 		= atof(argv[4]),
-	Emax 		= atof(argv[5]),
-	dE   		= atof(argv[6]);
+	broadening = atof(argv[2]);
 
 	std::ifstream momfile( momfilename.c_str() );
-
-	double HalfWidth,BandCenter; int dim; 
+	double HalfWidth,BandCenter; int dim;
 	int numMoms0,numMoms1;
 	momfile>>dim>>HalfWidth>>BandCenter; HalfWidth=HalfWidth/2.0;//in the file what you have is the bandwidth
 	momfile>>numMoms0>>numMoms1;
-	const int maxNumMom = ( (numMoms0 > numMom1) ? numMom0 : numMom1 ) ;
- 	chebMom mu(maxNumMom,maxNumMom); double rmu,imu;
+	const int maxNumMom = ( (numMoms0 > numMoms1) ? numMoms0 : numMoms1 ) ;
+ 	chebMom2D mu(maxNumMom,maxNumMom); double rmu,imu;
 	for( int m0 = 0 ; m0 < numMoms0 ; m0++)
 	for( int m1 = 0 ; m1 < numMoms1 ; m1++)
-	{	
+	{
+		const double
+		phi_J = M_PI/(maxNumMom+1),
+		g_D_m0=( (maxNumMom-m0+1)*cos( phi_J*m0)+ sin(phi_J*m0)*cos(phi_J)/sin(phi_J) )/(maxNumMom+1),
+		g_D_m1=( (maxNumMom-m1+1)*cos( phi_J*m1)+ sin(phi_J*m1)*cos(phi_J)/sin(phi_J) )/(maxNumMom+1);
 		momfile>>rmu>>imu;
-		mu(m0,m1) = std::complex( rmu,imu);
+		mu(m0,m1) = std::complex( rmu,imu)*g_D_m0*g_D_m1;
 	}
-	const int maxNumMom = ( (numMoms0 > numMom1) ? numMom0 : numMom1 ) ;
 	momfile.close();
 
 
 	double lambda = maxNumMom *broadening/HalfWidth/1000.;
-	
+
 	//By performing the transformation x = Cos(theta)
 	//all nodes of the matGamma matrix are equally spaced
 	//on the interval (0,pi) and the separation is given by 1/M.
 	//Hence, in this domain of integration, one would need at least
 	// 10*M energy point to capture the oscilattion properly
 	const int num_angles = 10*maxNumMom;
-	vector< double >  angles(num_angles,0);
-	
+	std::vector< double >  angles(num_angles,0);
+
+
+
+	const double
+	xbound = 0.9,
+    	theta_min = acos( xbound),
+    	theta_max = acos(-xbound);
 	for( int i=0; i < num_angles; i++)
-	{
-		const double 
-		xbound = 0.9,
-		theta_min = acos( xbound),
-		theta_max = acos(-xbound),
-		theta = theta_min + i*(theta_max-theta_min)/(num_angles-1) ;
-		angles[i] = theta ;
-	}
-	
-	
+		angles[i] = theta_min + i*(theta_max-theta_min)/(num_angles-1) ;
+
 	std::string
 	outputName  =momfilename+".OUT";
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::ofstream outputfile( outputName.c_str() );
-	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu;
-	for( vector< double >::iterator it =  angles.begin();
-									it!=  angles.end();
+	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu(0,0);
+	double acc=0;
+	for( std::vector< double >::iterator it =  angles.begin();
+	   				it!=  angles.end();
 								    it++)
 	{
-		outputfile<<cos(*it)*HalfWidth + BandCenter <<" "<<kuboFun(*it)/HalfWidth/HalfWidth<<std::endl;
+		acc += dim*kuboFun(*it)/HalfWidth/HalfWidth*(theta_max-theta_min)/(num_angles-1);
+		outputfile<<cos(*it)*HalfWidth + BandCenter <<" "<<acc<<std::endl;
+//		outputfile<<cos(*it)*HalfWidth + BandCenter <<" "<<dim*kuboFun(*it)/HalfWidth/HalfWidth<<std::endl;
 	}
+	outputfile.close();
 
 
+	std::cout<<"The program finished succesfully."<<std::endl;
 return 0;
-}		
-		
-		
-cd
+}
+	
+
