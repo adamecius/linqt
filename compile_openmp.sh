@@ -10,12 +10,14 @@ CLINK=" -liomp5 -lpthread -lm -ldl"
 
 INC="-Iinclude"
 SRC="src"
+LIB="-lconfig++"
+
+#$CC $CFLAG $INC -c $SRC/mkl_sparse_matrix.cpp -o $SRC/mkl_sparse_matrix.o
+#$CC $CFLAG $INC -c $SRC/sparse_matrix.cpp -o $SRC/sparse_matrix.o
+#$CC $CGLAG $INC -c $SRC/linear_algebra.cpp -o $SRC/linear_algebra.o
+#$CC $CGLAG $INC -c $SRC/chebyshev_solver.cpp -o $SRC/chebyshev_solver.o
+#$CC $CFLAG $INC -c $SRC/main.cpp -o $SRC/main.o
+#$CC $CFLAG $OFLAG -o main $SRC/main.o $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o  $CLINK 
 
 
-$CC $CFLAG $INC -c $SRC/mkl_sparse_matrix.cpp -o $SRC/mkl_sparse_matrix.o
-$CC $CFLAG $INC -c $SRC/sparse_matrix.cpp -o $SRC/sparse_matrix.o
-$CC $CGLAG $INC -c $SRC/linear_algebra.cpp -o $SRC/linear_algebra.o
-$CC $CGLAG $INC -c $SRC/chebyshev_solver.cpp -o $SRC/chebyshev_solver.o
-$CC $CFLAG $INC -c $SRC/main.cpp -o $SRC/main.o
-$CC $CFLAG $OFLAG -o main $SRC/main.o $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o  $CLINK 
-
+$CC $CFLAG $OFLAG  src/kuboBastinFromChebmom.cpp -o kuboBastinFromChebmom $LIB

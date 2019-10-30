@@ -33,23 +33,23 @@ def write_mycsr( outputname, Amat ):
 
 def get_user_parameters():
     numargs=len(sys.argv);
-    if( numargs != 5 ):
-        print( "Wannier2Sparse need to be called as: wannier2sparse.py LABEL D0 D1 OP");
+    if( numargs != 6 ):
+        print( "Wannier2Sparse need to be called as: wannier2sparse.py LABEL D0 D1 D2 OP");
         print(  "\tLABEL" ,": string defining the filenames label.Ham and label.Geo");
         print(  "\tboth required to be present in the calling directory" );
-        print(  "\t(D0, D1): integers defining supercell dimension.");
-        print( "\tIf omitted (1,1) is assumed.");
+        print(  "\t(D0,D1,D2): integers defining supercell dimension.");
+        print( "\tIf omitted (1,1,1) is assumed.");
         print( "\tOP: string defining the output operator.");
         print( "\tOP only support the values Ham, Vx, Vy, Jx, Jy, Jxz, Jyz. If ommitted, Ham, is assumed.");
         sys.exit();
 
     label = sys.argv[1];
-    scdim = ( int(sys.argv[2]),int(sys.argv[3]) )
-    opname = sys.argv[4];
+    scdim = ( int(sys.argv[2]),int(sys.argv[3]),int(sys.argv[4]) )
+    opname = sys.argv[5];
     hampath= label+".Ham";
     geopath= label+".Geo";
     print( "Wannier2Sparse will use ",hampath," and ",geopath)
-    print( "for constructing a ",scdim[0],"x",scdim[1]," unit cell.");
+    print( "for constructing a ",scdim[0],"x",scdim[1],"x",scdim[2], "unit cell.");
     print( "and returning the ",opname," operator");
     return label, scdim, opname;
     
@@ -88,28 +88,3 @@ if __name__ == "__main__":
     main()
     
     
-
-
-
-        
-        
-"""        
-def is_current(argument):
-    switcher = {
-        "Vx": True,
-        "Vy": True,
-        "Jx": True,
-        "Jy": True,
-        "JxSz":True ,
-        "JySz":True ,
-    }
-    return switcher.get(argument, False) 
-
-def is_pure_spin(argument):
-    switcher = {
-        "Sz": True,
-        "JxSz": True,
-        "JySz": True,
-    }
-    return switcher.get(argument, False) 
-"""
