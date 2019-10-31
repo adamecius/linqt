@@ -95,7 +95,6 @@ struct KuboFunctor
 	std::vector< double> GL;
 	std::complex<double> *chebMoms;
 	const int numMom;
-
 };
 
 int main(int argc, char *argv[])
@@ -113,6 +112,7 @@ int main(int argc, char *argv[])
 	const std::string
 	momfilename = argv[1],
 	simulation_label = momfilename.substr(0,pos);     // get from "live" to the end
+	const std::string sbroadening=argv[2];
 	const double
 	broadening = atof(argv[2])/1000.;
 
@@ -123,20 +123,21 @@ int main(int argc, char *argv[])
 	momfile>>numMoms0>>numMoms1;
 	const int maxNumMom = ( (numMoms0 > numMoms1) ? numMoms0 : numMoms1 ) ;
  	chebMom2D mu(maxNumMom,maxNumMom); double rmu,imu;
+	const double lambda= maxNumMom*broadening/HalfWidth;
+	std::cout<<"Using lambda for lorentz kernel = "<<lambda<<std::endl;
 	for( int m0 = 0 ; m0 < numMoms0 ; m0++)
 	for( int m1 = 0 ; m1 < numMoms1 ; m1++)
 	{
 		const double
 		phi_J = M_PI/(maxNumMom+1),
 		g_D_m0=( (maxNumMom-m0+1)*cos( phi_J*m0)+ sin(phi_J*m0)*cos(phi_J)/sin(phi_J) )/(maxNumMom+1),
-		g_D_m1=( (maxNumMom-m1+1)*cos( phi_J*m1)+ sin(phi_J*m1)*cos(phi_J)/sin(phi_J) )/(maxNumMom+1);
+		g_L_m1=sinh(lambda*(1.0 - (double)m1/(double)maxNumMom))/sinh(lambda);
 		momfile>>rmu>>imu;
-		mu(m0,m1) = std::complex( rmu,imu)*g_D_m0*g_D_m1;
+		mu(m0,m1) = std::complex<double>( rmu,imu)*g_D_m0*g_L_m1;
 	}
 	momfile.close();
 
 
-	double lambda = maxNumMom *broadening/HalfWidth/1000.;
 
 	//By performing the transformation x = Cos(theta)
 	//all nodes of the matGamma matrix are equally spaced
@@ -156,11 +157,13 @@ int main(int argc, char *argv[])
 		angles[i] = theta_min + i*(theta_max-theta_min)/(num_angles-1) ;
 
 	std::string
-	outputName  ="KuboBastin_sum_"+simulation_label+".dat";
+	outputName  ="KuboBastin_sum_"+simulation_label+"_eta"+sbroadening+".dat";
 
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::ofstream outputfile( outputName.c_str() );
-	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu(0,0);
+
+
+	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu(0,0); 
 	double acc=0;
 	for( std::vector< double >::iterator it =  angles.begin();
 	   				it!=  angles.end();

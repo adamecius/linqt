@@ -11,4 +11,4 @@ CLINK=" -liomp5 -lpthread -lm -ldl"
 INC="-Iinclude"
 SRC="src"
 
-$CC $CFLAG $OFLAG  kuboBastinFromChebmom.cpp -o ~/.local/usr/bin/inline_kuboBastinFromChebmom 
+$CC $CFLAG $OFLAG  kuboBastinFromChebmom.cpp -o ~/.local/usr/bin/inline_kuboBastinFromChebmom  $CLINK
