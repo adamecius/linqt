@@ -1,3 +1,4 @@
+
 // C & C++ libraries
 #include <iostream>		/* for std::cout mostly */
 #include <string>		/* for std::string class */
@@ -12,6 +13,14 @@
 #include <numeric>
 #include <algorithm>
 
+const std::complex<double> I(0,1); 
+
+
+void printHelpMessage();
+
+void printWelcomeMessage();
+
+
 
 struct GLFunctor
 {
@@ -22,15 +31,14 @@ struct GLFunctor
 
 struct GRFunctor
 {
-	GRFunctor(double _theta):theta(_theta), I(std::complex<double>(0,1)){};
+	GRFunctor(double _theta): theta(_theta){};
     void operator()(std::complex<double>& m) const
     { 
 		const double 
 		stheta= sin(theta),
 		ctheta= cos(theta);
-		m= I*exp(-I*theta*m)*( m*stheta - I*ctheta )/stheta/stheta/stheta;  
+		m= exp(-I*theta*m)*( m*stheta - I*ctheta )/stheta/stheta/stheta;  
 	}
-	const std::complex<double> I; 
 	const double theta;
 };
 
@@ -80,7 +88,7 @@ struct KuboFunctor
 			cblas_zdotu_sub (numMom,&GR[0],1,chebMoms+m*numMom,1, &partial_sum);
 			sum+=partial_sum*GL[m];
 		}
-		return -2.0*sum.real()/sin(theta);
+		return 2.0*(I*sum).real()*sin(theta);//the sin(theta) is due to changing the integration from dx -> sin(theta)dtheta
 	}
 
 	std::vector< std::complex<double> > GR;
@@ -92,18 +100,21 @@ struct KuboFunctor
 
 int main(int argc, char *argv[])
 {	
-	if (argc != 6)
+	if (argc != 3)
 	{
-//		printHelpMessage();
+		printHelpMessage();
 		return 0;
 	}
-//	else
-//		printWelcomeMessage();
+	else
+		printWelcomeMessage();
 
+	std::size_t pos = std::string(argv[1]).find(".chebmom2D"); 
+	if( pos== std::string::npos){ std::cerr<<"The first argument does not seem to be a valid .chebmom2D file"<<std::endl; return -1;}
 	const std::string
-	momfilename = argv[1];
-	double
-	broadening = atof(argv[2]);
+	momfilename = argv[1],
+	simulation_label = momfilename.substr(0,pos);     // get from "live" to the end
+	const double
+	broadening = atof(argv[2])/1000.;
 
 	std::ifstream momfile( momfilename.c_str() );
 	double HalfWidth,BandCenter; int dim;
@@ -145,7 +156,8 @@ int main(int argc, char *argv[])
 		angles[i] = theta_min + i*(theta_max-theta_min)/(num_angles-1) ;
 
 	std::string
-	outputName  =momfilename+".OUT";
+	outputName  ="KuboBastin_sum_"+simulation_label+".dat";
+
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::ofstream outputfile( outputName.c_str() );
 	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu(0,0);
@@ -166,3 +178,15 @@ return 0;
 }
 	
 
+void printHelpMessage()
+{
+	std::cout << "The program should be called with the following options: moments_filename broadening(meV)" << std::endl
+			  << std::endl;
+	std::cout << "moments_filename will be used to look for .chebmom2D file" << std::endl;
+	std::cout << "broadening in (meV) will define the broadening of the delta functions" << std::endl;
+};
+
+void printWelcomeMessage()
+{
+	std::cout << "WELCOME: This program will compute the chebyshev sum of the kubo-bastin formula for non equlibrium properties" << std::endl;
+};
