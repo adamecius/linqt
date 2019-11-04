@@ -5,17 +5,17 @@ import numpy as np
 def syst2txt(syst, filename ,params ):
     with open(filename, 'w') as out:
         for elem in convert2LatGen(syst,params):
-            out.write("%d %d %d %d %d %f %f"% (elem));
-              
+            out.write("%d %d %d %d %d %f %f \n"% (elem));
+
 def geo2txt(syst,lattice_vectors,filename ):
     orb_pos = [ tuple(site.pos) for site in syst.sites() ] ;
     with open(filename, 'w') as out:
         for vec in lattice_vectors:
-            out.write("%f %f %f"% (tuple(vec)));
-            print("%f %f %f"% (tuple(vec)));
-        for orb in orb_pos:
-            out.write("%f %f %f"% (orb));
-            print("%f %f %f"% (orb));
+            out.write("%f %f %f \n"% (tuple(vec)));
+        for spin in range(2): #GENERALIZE 
+            for orb in orb_pos:
+                out.write("%f %f %f \n"% (orb));
+
 
             
 def convert2LatGen(syst,params):
@@ -64,8 +64,11 @@ def convert2LatGen(syst,params):
             for spin_i,spin_j, value in  get_matrix_values(matrix_value) :
                 index_i =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_i );
                 index_j =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_j );
-                onsites.append((index_i,index_j, *site.tag, np.real(value), np.imag(value)) );
-                onsites.append(conj(index_i,index_j, *site.tag, np.real(value), np.imag(value)));
+                hop = (index_i,index_j, *site.tag, np.real(value), np.imag(value));
+                onsites.append(hop);
+                h_hop = conj(index_i,index_j, *site.tag, np.real(value), np.imag(value));
+                if ( hop != h_hop):
+                    onsites.append(h_hop );
         return onsites;
     
     #Get the hoppings values and lattice information and storage in a list
@@ -77,8 +80,11 @@ def convert2LatGen(syst,params):
             for spin_i,spin_j, value in  get_matrix_values(matrix_value) :
                 index_i =combine_orbital_inner_indexes( orb_idx=orbIndexes[site_i.family], numOrbs=numOrbs, spin_idx=spin_i );
                 index_j =combine_orbital_inner_indexes( orb_idx=orbIndexes[site_j.family], numOrbs=numOrbs, spin_idx=spin_j );
-                hoppings.append((index_i,index_j, *site_j.tag, np.real(value), np.imag(value)) );
-                hoppings.append(conj(index_i,index_j, *site_j.tag, np.real(value), np.imag(value)) );
+                hop = (index_i,index_j, *site_j.tag, np.real(value), np.imag(value));
+                hoppings.append(hop);
+                h_hop = conj(index_i,index_j, *site_j.tag, np.real(value), np.imag(value));
+                if ( hop == h_hop):
+                    hoppings.append(h_hop );
         return hoppings;
 
     orbIndexes = getSitesID(syst.sites() ); #Extract from syst.
