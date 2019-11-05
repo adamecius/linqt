@@ -11,12 +11,14 @@ void linalg::copy(const int dim, const complex<double> *x, complex<double> *y)
 	cblas_zcopy(dim, x, 1, y, 1);
 }
 
+
 complex<double> linalg::vdot(const int dim, const complex<double> *x, complex<double> *y)
 {
 	complex<double> dotc;
 	cblas_zdotc_sub(dim, x, 1, y, 1, &dotc);
 	return dotc;
 }
+
 
 void linalg::batch_vdot(const int dim,const int batchSize,const complex<double>* leftb,const complex<double>* rightb,complex<double>* output)
 {

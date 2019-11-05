@@ -3,8 +3,6 @@
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-np.show_config();
-print("\n");
 import scipy as sp
 from numpy.linalg import eigvals,eigvalsh,multi_dot, norm
 import copy 
@@ -13,8 +11,7 @@ from operators import bloch_op
 
 from scipy.sparse import csr_matrix
 def write_mycsr( outputname, Amat ):
-    Amat = csr_matrix(Amat);
-
+    
     with open(outputname , 'w') as f:
         f.write("%d %d\n" %  (max(Amat.shape), Amat.nnz) )
       
@@ -48,7 +45,7 @@ def get_user_parameters():
     opname = sys.argv[5];
     hampath= label+".Ham";
     geopath= label+".Geo";
-    print( "Wannier2Sparse will use ",hampath," and ",geopath)
+    print( "latgen2sparse will use ",hampath," and ",geopath)
     print( "for constructing a ",scdim[0],"x",scdim[1],"x",scdim[2], "unit cell.");
     print( "and returning the ",opname," operator");
     return label, scdim, opname;
@@ -68,6 +65,8 @@ def main():
     if( opname == "Ham" ):
         write_mycsr(label+".HAM.CSR", Hk.hamiltonian_operator() );
     elif( opname == "Vx" ):
+        write_mycsr(label+".VX.CSR", Hk.current_operator("x") );
+    elif( opname == "Vy" ):
         write_mycsr(label+".VX.CSR", Hk.current_operator("x") );
     elif( opname == "Jx" ):
         Jx = Hk.current_operator("x");

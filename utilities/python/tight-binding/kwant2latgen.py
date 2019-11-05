@@ -52,8 +52,8 @@ def convert2LatGen(syst,params):
     
     #Combine the inner indexes( the indexes obtained from the matrix value)
     #with the site indexes obtained from getSItesID in a single 
-    def combine_orbital_inner_indexes( orb_idx=0, numOrbs=1, spin_idx=0, numSpins=1 ):
-        return orb_idx*numOrbs + spin_idx; 
+    def combine_orbital_inner_indexes( orb_idx=0, numOrbs=1, spin_idx=0, numSpins=2 ):
+        return spin_idx*numSpins + orb_idx; 
 
     #Get the onsite values and lattice information and storage in a list
     def getOnsites( orbIndexes, site_value_pairs ):
@@ -85,7 +85,6 @@ def convert2LatGen(syst,params):
                     hop = (index_i,index_j, *site_j.tag, np.real(value), np.imag(value));
                     hoppings.append(hop);
                     h_hop = conj(*hop);
-                    print(hop,"\n",h_hop);
                     if ( hop != h_hop):
                         hoppings.append(h_hop );
         return hoppings;

@@ -3,6 +3,8 @@
 #ifndef ALGEBRA_FUNCTION
 #define ALGEBRA_FUNCTION
 #include <complex>
+#include <vector>
+
 using namespace std;
 
 #define MKL_Complex16 complex<double>
@@ -15,6 +17,7 @@ namespace linalg
 void axpy(const int dim, complex<double> a, const complex<double> *x, complex<double> *y);
 
 void copy(const int dim, const complex<double> *x, complex<double> *y);
+
 
 complex<double> vdot(const int dim, const complex<double> *x, complex<double> *y);
 

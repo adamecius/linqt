@@ -2,6 +2,19 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from numpy import exp, pi, ndindex
 
+
+def is_hermitian ( Asp ):
+    #To compare A with its hermitian conjugate Ah, 
+    #its important that both have the same index ordering
+    #and because this can only be done in csr format for older versions
+    #We convert it first to csr
+    A = Asp.tocsr();
+    A.sort_indices(); 
+    Ah = A.getH();
+    Ah.sort_indices();
+    return not ( (A != Ah ).nnz==0 )
+
+    
 #TO DO:There are functions in this class which assume the operator is 2Dm search with 2DFunc
 class bloch_op:
 
@@ -31,7 +44,7 @@ class bloch_op:
 
     def define_unitcell(self, lat_vecs ):
         self.lat_vecs = np.array(lat_vecs) #storage internally the lattice vector
-        self.rec_vecs = 2.0*pi*np.linalg.inv(lat_vecs) ; #use it to compute the reciprocal lattice vector
+        self.rec_vecs = 2.0*pi*np.linalg.inv(lat_vecs) ; #use it to compute the reciprocal lattice vector column format      
         self.volume   = np.abs( np.linalg.det(lat_vecs) )
         self.displs    = self.displs.dot( self.lat_vecs);
 
@@ -43,11 +56,10 @@ class bloch_op:
         self.define_unitcell(lat_vecs );
         self.orbs_pos = Ro.dot(self.lat_vecs);
         self.displs+=self.orbs_pos[self.to_orbs] - self.orbs_pos[self.from_orbs] ;
-        print(self.displs);
- 
+               
     def expand_to_supercell(self, scdims ):
         self.scdims = scdims; 
-        self.num_cells = np.prod( self.scdims );                
+        self.num_cells = np.prod( self.scdims );     
         hopps= np.zeros( (self.num_cells, len(self.hoppings)  ), dtype=complex);
         forbs= np.zeros( (self.num_cells, len(self.from_orbs)), dtype=int);
         torbs= np.zeros( (self.num_cells, len(self.to_orbs)  ), dtype=int);
@@ -64,11 +76,14 @@ class bloch_op:
         dim = self.num_cells*self.num_orbs;
         indexes = (self.from_orbs,self.to_orbs);
         vals = self.hoppings;
-        Amat = coo_matrix((vals,indexes), shape=(dim,dim) )  ;
-        Amat.sum_duplicates();
+        Amat = ( coo_matrix((vals,indexes), shape=(dim,dim) ) ).tocsr();
         Amat.eliminate_zeros();
-        if( (Amat != Amat.getH()).nnz==0 ):
+        Amat.sum_duplicates();
+        Amat.sort_indices();
+
+        if( is_hermitian ( Amat ) ):
             print( "Non hermitian hamiltonian operator")
+
         return Amat;
 
     def current_operator(self, cur_dir="x"):
@@ -77,10 +92,11 @@ class bloch_op:
         dim = self.num_cells*self.num_orbs;
         indexes = (self.from_orbs,self.to_orbs);
         vals= 1j*self.hoppings*np.tile(np.transpose(self.displs)[i], self.num_cells );
-        Amat= coo_matrix((vals,indexes ), shape=(dim,dim) )  ;
-        Amat.sum_duplicates();
+        Amat= coo_matrix((vals,indexes ), shape=(dim,dim) ).tocsr()  ;
         Amat.eliminate_zeros();
-        if( (Amat != Amat.getH()).nnz==0 ):
+        Amat.sum_duplicates();
+        Amat.sort_indices();
+        if( is_hermitian ( Amat ) ):
             print( "Non hermitian hamiltonian operator")
         return Amat;
 
@@ -91,9 +107,10 @@ class bloch_op:
         indexes = (self.from_orbs,self.to_orbs);
         vals =1j*self.hoppings*np.tile(np.transpose(self.displs)[i], self.num_cells );
         vals*=np.tile(self.sz_vals, self.num_cells);
-        Amat= coo_matrix((vals,indexes ), shape=(dim,dim) )  ;
-        Amat.sum_duplicates();
+        Amat= coo_matrix((vals,indexes ), shape=(dim,dim) ).tocsr()  ;
         Amat.eliminate_zeros();
-        if( (Amat != Amat.getH()).nnz==0 ):
+        Amat.sum_duplicates();
+        Amat.sort_indices();
+        if( is_hermitian ( Amat ) ):
             print( "Non hermitian hamiltonian operator")
         return Amat;

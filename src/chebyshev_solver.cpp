@@ -34,27 +34,41 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
     const double shift = cTable.EnergyShift();
 
     //Allocate the memory
-    int batchSize = ( ( !std::string(getenv("BATCH_SIZE")).empty() ) ? atoi(getenv("BATCH_SIZE")):3);
-    if( batchSize < 3){ std::cout<<"The minimum batch size is 3, so setting to 3"<<std::endl; batchSize=3;}
+	if(!getenv("DEBUG"))
+		std::cout<<"\nEnviroment variable BATCH_SIZE not set, using BATCH_SIZE=1.\nSet to your custom N value throught the command export BATCH_SIZE N"<<std::endl;
+	else if ( atoi(getenv("BATCH_SIZE"))< 0 )
+		std::cout<<"\Enviroment variable BATCH_SIZE is negative, set to 1, the minimum allowed. \nSet to your custom N value throught the command export BATCH_SIZE N"<<std::endl;
+		
+		
+    int batchSize = ( ( getenv("BATCH_SIZE") ) ? atoi(getenv("BATCH_SIZE")):1);
+    if( batchSize < 0){ std::cout<<"The minimum batch size is 3, so setting to 3"<<std::endl; batchSize=1;}
     if( batchSize > MAXSIZE){ std::cout<<"The batch larger than the number of moments is a waste of resources. Therefore set to :"<<MAXSIZE<<std::endl; batchSize=MAXSIZE;}
     std::cout<<"Using Bath Size of : "<<batchSize<<std::endl;
-    std::cout<<"Allocating: "<<( (3*batchSize)*DIM + MAXSIZE*MAXSIZE)*sizeof(complex<double>)*1e-9<<"GB"<<std::endl;
-    complex<double> *data = new complex<double>[(3*batchSize)* DIM + batchSize*batchSize];
+
+
+	const double total_memory = ( (3*(double)batchSize + 5 )*(double)DIM + (double)batchSize*(double)batchSize)*(double)sizeof(complex<double>)/pow(2.0,30.0);
+	std::cout<<"Allocating: "<<total_memory<<"GB"<<std::endl;
+    std::vector< std::complex<double> > JR0(DIM), JR1(DIM), JL0(DIM), JL1(DIM),Phi(DIM);
+    std::vector< std::complex<double> > tmp_table(batchSize*batchSize);	
+//    complex<double> *data = new complex<double>[ (long int)3*(long int)batchSize* (long int)DIM ];
+    std::cout<<"MEMORY ALLOCATED "<<std::endl;
+
+
+	//Set the correct address for the pointer to pointers
     complex<double> **JL  = new complex<double> *[batchSize];
     complex<double> **JR  = new complex<double> *[batchSize];
+    complex<double> **JV  = new complex<double> *[batchSize];
     for (int b = 0; b < batchSize; b++)
     {
-        JL[b] = &data[(b+0 * batchSize) * DIM];
-        JR[b] = &data[(b+1 * batchSize) * DIM];
+       JL[b] = new complex<double>[DIM];//dimension batchSize*DIM
+       JR[b] = new complex<double>[DIM];//dimension batchSize*DIM
+       JV[b] = new complex<double>[DIM];//dimension batchSize*DIM
+//        JL[b] = &data[(b+0*batchSize)*DIM];//dimension batchSize*DIM
+ //       JR[b] = &data[(b+1*batchSize)*DIM];//dimension batchSize*DIM
+  //      JV[b] = &data[(b+2*batchSize)*DIM];//dimension batchSize*DIM
     }
-    complex<double> *JV        = &data[2*batchSize*DIM];
-    complex<double> *tmp_table = &data[3*batchSize*DIM];
-    complex<double> *Jswap; //
-    std::cout<<"memory allocated"<<std::endl;
-
 
     //INITIALIZE ITERATION
-    vector<complex<double> > Phi(DIM);
     for (int i = 0; i < numStates; i++)
     {
         //while (stateFactory.CreateNewState())
@@ -62,64 +76,70 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
         for (int i = 0; i < DIM; i++)
         {
             const complex<double> I(0, 1);
-            Phi[i] = exp(I *2.0*M_PI* (double)rand() / (double)RAND_MAX)/sqrt(DIM);
+            Phi[i] = exp(I*2.0*M_PI* (double)rand() / (double)RAND_MAX)/sqrt(DIM);
         }
 
         //Start the chebyshev expansion of the correlations
-        OPR.Multiply(1.0, &Phi[0], 0.0, JR[0]);
-        HAM.Multiply(scalFactor, JR[0], 0.0, JR[1]);
-        linalg::axpy(DIM, -shift,JR[0], JR[1]);
+        OPR.Multiply(1.0, &Phi[0], 0.0, &JR0[0]);
+        HAM.Multiply(scalFactor,&JR0[0], 0.0, &JR1[0]);
+        linalg::axpy(DIM,-shift,&JR0[0], &JR1[0]);
         for (int m1 = 0; m1 < cTable.Size_InDir(1); m1 += batchSize)
         {
-	    for (int mR = 2; mR < batchSize; mR++)
-            if (mR + m1 < cTable.Size_InDir(1))
-            {
-		linalg::copy(DIM, JR[mR-2], JR[mR]);
-		HAM.Multiply(2.0 * scalFactor, JR[mR-1], -1.0, JR[mR]);
-		linalg::axpy(DIM, -2.0*shift, JR[mR-1], JR[mR]);
-	    }
-            linalg::copy(DIM, &Phi[0], JL[0]);
-            HAM.Multiply(scalFactor, JL[0], 0.0, JL[1]);
-	    linalg::axpy(DIM, -shift, JL[0], JL[1]);
-            for (int m0= 0; m0 < cTable.Size_InDir(0); m0 += batchSize)
-            {
-                for (int mL = 2; mL < batchSize; mL++)
-                if (mL + m0 < cTable.Size_InDir(0))
-                {
-                   linalg::copy(DIM, JL[mL-2], JL[mL]);
-                   HAM.Multiply(2.0 * scalFactor, JL[mL-1], -1.0, JL[mL]);
-                   linalg::axpy(DIM, -2.0*shift,  JL[mL-1], JL[mL]);
-                }
-                //Compute the moment
-		OPL.BatchMultiply(batchSize,1.0,*JL ,0.0, JV );
-		linalg::batch_vdot(DIM,batchSize,*JR,JV,tmp_table ); //This actually gives <JR|JL>*
-
-                for (int mR = 0; mR < batchSize; mR++)
-                    for (int mL = 0; mL < batchSize; mL++)
-                        if (mR+m1 < cTable.Size_InDir(1) && mL+m0 < cTable.Size_InDir(0))
+			for (int mR = 0; mR < batchSize; mR++)
+			if (mR + m1 < cTable.Size_InDir(1))
 			{
-			   double scal=4;
-			   if( mL+m0==0) scal*=0.5;
-			   if( mR+m1==0) scal*=0.5;
-			   cTable(mL+m0,mR+m1)+=( std::conj(tmp_table[mL*batchSize + mR])+tmp_table[mR*batchSize + mL] )*scal/2.0;
+				linalg::copy(DIM, &JR0[0], JR[mR]);
+				
+				HAM.Multiply(2.0 * scalFactor, &JR1[0], -1.0, &JR0[0]);
+				linalg::axpy(DIM,-2.0*shift, &JR1[0], &JR0[0]);
+				JR0.swap(JR1);
 			}
 
-                Jswap = JL[batchSize - 2];
-                JL[batchSize - 2] = JL[0];
-                JL[0] = Jswap;
-                Jswap = JL[batchSize - 1];
-                JL[batchSize - 1] = JL[1];
-                JL[1] = Jswap;
+            //Start the inner ctable matrix loop
+            linalg::copy(DIM, &Phi[0], &JL0[0]);
+            HAM.Multiply(scalFactor, &JL0[0], 0.0, &JL1[0]);
+            linalg::axpy(DIM, -shift,&JL0[0],&JL1[0]);
+            for (int m0= 0; m0 < cTable.Size_InDir(0); m0 += batchSize)
+            {
+				for (int mL = 0; mL < batchSize; mL++)
+				if (mL + m0 < cTable.Size_InDir(0))
+				{
+					linalg::copy(DIM, &JL0[0], JL[mL]);
+				
+					HAM.Multiply(2.0 * scalFactor, &JL1[0], -1.0, &JL0[0]);
+					linalg::axpy(DIM,-2.0*shift, &JL1[0], &JL0[0]);
+					JL0.swap(JL1);
+				}
+				//Compute the moment (HARD PART)
+//				for (int mL = 0; mL < batchSize; mL++)
+//					OPL.Multiply(1.0,JL[mL] ,0.0, JV[mL] );				
+//				for (int mR = 0; mR < batchSize; mR++)
+//				for (int mL = 0; mL < batchSize; mL++)
+//					tmp_table[mR*batchSize + mL]=linalg::vdot(DIM,JV[mL],JR[mR]); //This actually gives <JR|JL>*
+				std::cout<<"Computing batch ("<<m0<<","<<m1<<")"<<std::endl;
+
+				OPL.BatchMultiply(batchSize,1.0,*JL ,0.0, *JV );
+				linalg::batch_vdot(DIM,batchSize,*JR,*JV,&tmp_table[0] ); //This actually gives <JR|JL>*			
+				for (int mR = 0; mR < batchSize; mR++)				  // therefore, the tmp_table appears as conjugaated for the right order
+				for (int mL = 0; mL < batchSize; mL++)
+				if (mR+m1 < cTable.Size_InDir(1) && mL+m0 < cTable.Size_InDir(0))
+				{
+					double scal=4;
+					if( mL+m0==0) scal*=0.5;
+					if( mR+m1==0) scal*=0.5;
+					cTable(mL+m0,mR+m1)+= scal*( std::conj(tmp_table[mR*batchSize + mL] ) + tmp_table[mL*batchSize + mR]  )/2.0;
+				}
             }
-            Jswap = JR[batchSize - 2];
-            JR[batchSize - 2] = JR[0];
-            JR[0] = Jswap;
-            Jswap = JR[batchSize - 1];
-            JR[batchSize - 1] = JR[1];
-            JR[1] = Jswap;
         }
     }
+    for (int b = 0; b < batchSize; b++)
+    {     
+		delete[] JL[b];
+		delete[] JR[b];
+		delete[] JV[b];
+	}
     delete[] JL;
     delete[] JR;
-    delete[] data;
+    delete[] JV;
+    //delete[] data;
 };

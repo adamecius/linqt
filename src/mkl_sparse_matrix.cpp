@@ -28,7 +28,6 @@ void MKL_SparseType::Multiply(const complex<double> a, const complex<double> *x,
 
 void MKL_SparseType::BatchMultiply(const int batchSize, const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y)
 {
-	std::cout<<numCols()<<" "<<a<<" "<<b<<std::endl;
 //r	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, batchSize, batchSize, b, y, batchSize ) == SPARSE_STATUS_SUCCESS);
 //x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, batchSize, batchSize, b, y, numCols() ) == SPARSE_STATUS_SUCCESS);
 //x	assert(mkl_sparse_z_mm(SPARSE_OPERATION_NON_TRANSPOSE,a,Matrix, descr,SPARSE_LAYOUT_ROW_MAJOR,x, batchSize, numCols(), b, y, batchSize ) == SPARSE_STATUS_SUCCESS);

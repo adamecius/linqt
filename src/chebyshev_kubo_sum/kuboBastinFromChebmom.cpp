@@ -88,7 +88,7 @@ struct KuboFunctor
 			cblas_zdotu_sub (numMom,&GR[0],1,chebMoms+m*numMom,1, &partial_sum);
 			sum+=partial_sum*GL[m];
 		}
-		return 2.0*(I*sum).real()*sin(theta);//the sin(theta) is due to changing the integration from dx -> sin(theta)dtheta
+		return -2.0*(I*sum).real()*sin(theta);//the sin(theta) is due to changing the integration from dx -> sin(theta)dtheta
 	}
 
 	std::vector< std::complex<double> > GR;
@@ -166,8 +166,8 @@ int main(int argc, char *argv[])
 	KuboFunctor kuboFun( maxNumMom ); kuboFun.chebMoms = &mu(0,0); 
 	double acc=0;
 	for( std::vector< double >::iterator it =  angles.begin();
-	   				it!=  angles.end();
-								    it++)
+										 it!=  angles.end();
+										it++)
 	{
 		acc += dim*kuboFun(*it)/HalfWidth/HalfWidth*(theta_max-theta_min)/(num_angles-1);
 		outputfile<<cos(*it)*HalfWidth + BandCenter <<" "<<acc<<std::endl;
