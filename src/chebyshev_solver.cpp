@@ -134,9 +134,9 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
     }
     for (int b = 0; b < batchSize; b++)
     {     
-		delete[] JL[b];
-		delete[] JR[b];
-		delete[] JV[b];
+		delete JL[b];
+		delete JR[b];
+		delete JV[b];
 	}
     delete[] JL;
     delete[] JR;
