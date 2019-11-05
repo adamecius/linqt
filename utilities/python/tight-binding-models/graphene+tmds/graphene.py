@@ -13,9 +13,9 @@ Sy = ta.array([[0, -1j], [1j,  0]])
 Sz = ta.array([[1,  0 ], [0 , -1]])
 
 
-    #Define graphene lattice 
-lat = 0.246; lattice_vectors = lat*ta.array([(sqrt(3)/2,1/2,0), (sqrt(3)/2,-1/2,0),(0,0,1)] ); 
-lat = kwant.lattice.general(lattice_vectors, [(0,0,0),(-1/3,-1/3,0)]) 
+#Define graphene lattice 
+lat = 1.0; lattice_vectors = lat*ta.array([(sqrt(3)/2,1/2,0), (sqrt(3)/2,-1/2,0),(0,0,1)] ); 
+lat = kwant.lattice.general(lattice_vectors, [(-1/3,-1/3,0),(0,0,0)]) 
 a, b = lat.sublattices
 
 #Dirac Model Operator
@@ -92,7 +92,7 @@ def make_bulk_graphene():
                 if key  in tb_nearest_dict:
                     total+= (tb_nearest_dict[key])(x,value);
         return  total; 
-    nn_hoppings = (((0,0,0), a, b), ((1,0,0), a, b), ((0,1,0), a, b))
+    nn_hoppings = (((0,0,0), b, a), ((-1,0,0), b, a), ((0,-1,0), b, a)) #in kwant b,a means b=target, a=origin, if using positive lat_vec
     for hopping in nn_hoppings:
         syst[ hop(*hopping) ] = sum_functions;
 
