@@ -34,38 +34,34 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
     const double shift = cTable.EnergyShift();
 
     //Allocate the memory
-	if(!getenv("DEBUG"))
+	if(!getenv("BATCH_SIZE"))
 		std::cout<<"\nEnviroment variable BATCH_SIZE not set, using BATCH_SIZE=1.\nSet to your custom N value throught the command export BATCH_SIZE N"<<std::endl;
 	else if ( atoi(getenv("BATCH_SIZE"))< 0 )
 		std::cout<<"\Enviroment variable BATCH_SIZE is negative, set to 1, the minimum allowed. \nSet to your custom N value throught the command export BATCH_SIZE N"<<std::endl;
 		
 		
     int batchSize = ( ( getenv("BATCH_SIZE") ) ? atoi(getenv("BATCH_SIZE")):1);
-    if( batchSize < 0){ std::cout<<"The minimum batch size is 3, so setting to 3"<<std::endl; batchSize=1;}
+    if( batchSize < 0){ std::cout<<"The minimum batch size is 1, so setting to 1"<<std::endl; batchSize=1;}
     if( batchSize > MAXSIZE){ std::cout<<"The batch larger than the number of moments is a waste of resources. Therefore set to :"<<MAXSIZE<<std::endl; batchSize=MAXSIZE;}
     std::cout<<"Using Bath Size of : "<<batchSize<<std::endl;
 
 
-	const double total_memory = ( (3*(double)batchSize + 5 )*(double)DIM + (double)batchSize*(double)batchSize)*(double)sizeof(complex<double>)/pow(2.0,30.0);
-	std::cout<<"Allocating: "<<total_memory<<"GB"<<std::endl;
-    std::vector< std::complex<double> > JR0(DIM), JR1(DIM), JL0(DIM), JL1(DIM),Phi(DIM);
+    const double total_memory = ( (3*(double)batchSize + 5 )*(double)DIM + (double)batchSize*(double)batchSize)*(double)sizeof(complex<double>)/pow(2.0,30.0);
+    std::cout<<"Allocating: "<<total_memory<<"GB"<<std::endl;
+    std::vector< std::complex<double> > JR0(DIM), JR1(DIM), JL0(DIM), JL1(DIM), Phi(DIM);
     std::vector< std::complex<double> > tmp_table(batchSize*batchSize);	
-//    complex<double> *data = new complex<double>[ (long int)3*(long int)batchSize* (long int)DIM ];
     std::cout<<"MEMORY ALLOCATED "<<std::endl;
 
-
-	//Set the correct address for the pointer to pointers
-    complex<double> **JL  = new complex<double> *[batchSize];
-    complex<double> **JR  = new complex<double> *[batchSize];
-    complex<double> **JV  = new complex<double> *[batchSize];
+    //Set the correct address for the pointer to pointers
+    vector< complex<double> > data( (long int)3*(long int) batchSize * (long int) DIM );
+    complex<double>**JL  = new complex<double>*[batchSize];
+    complex<double>**JR  = new complex<double>*[batchSize];
+    complex<double>**JV  = new complex<double>*[batchSize];
     for (int b = 0; b < batchSize; b++)
     {
-       JL[b] = new complex<double>[DIM];//dimension batchSize*DIM
-       JR[b] = new complex<double>[DIM];//dimension batchSize*DIM
-       JV[b] = new complex<double>[DIM];//dimension batchSize*DIM
-//        JL[b] = &data[(b+0*batchSize)*DIM];//dimension batchSize*DIM
- //       JR[b] = &data[(b+1*batchSize)*DIM];//dimension batchSize*DIM
-  //      JV[b] = &data[(b+2*batchSize)*DIM];//dimension batchSize*DIM
+       JL[b] = &data[(b + 0*batchSize )*DIM];
+       JR[b] = &data[(b + 1*batchSize )*DIM];
+       JV[b] = &data[(b + 2*batchSize )*DIM];//dimension batchSize*DIM
     }
 
     //INITIALIZE ITERATION
@@ -89,7 +85,6 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
 			if (mR + m1 < cTable.Size_InDir(1))
 			{
 				linalg::copy(DIM, &JR0[0], JR[mR]);
-				
 				HAM.Multiply(2.0 * scalFactor, &JR1[0], -1.0, &JR0[0]);
 				linalg::axpy(DIM,-2.0*shift, &JR1[0], &JR0[0]);
 				JR0.swap(JR1);
@@ -105,7 +100,6 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
 				if (mL + m0 < cTable.Size_InDir(0))
 				{
 					linalg::copy(DIM, &JL0[0], JL[mL]);
-				
 					HAM.Multiply(2.0 * scalFactor, &JL1[0], -1.0, &JL0[0]);
 					linalg::axpy(DIM,-2.0*shift, &JL1[0], &JL0[0]);
 					JL0.swap(JL1);
@@ -132,14 +126,9 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
             }
         }
     }
-    for (int b = 0; b < batchSize; b++)
-    {     
-		delete[] JL[b];
-		delete[] JR[b];
-		delete[] JV[b];
-	}
-    delete[] JL;
-    delete[] JR;
-    delete[] JV;
-    //delete[] data;
+    std::cout<<"Release batch vector's memory"<<std::endl;
+    delete[] JL; JL=0;
+    delete[] JR; JR=0;
+    delete[] JV; JV=0;
+
 };
