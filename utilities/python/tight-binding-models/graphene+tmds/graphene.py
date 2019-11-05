@@ -24,29 +24,29 @@ def make_bulk_graphene():
     syst = kwant.Builder( kwant.TranslationalSymmetry(lat.vec((1,0,0)), lat.vec((0,1,0)), lat.vec((0,0,1))) ) 
 
     
-    def onsite_potential(site, x =0 ):
+    def onsite_potential(site, x ):
         return S0*x;
 
-    def sublattice_potential(site, x = 0 ):
+    def sublattice_potential(site, x  ):
         return S0*(x,-x)[ site.family == a];
 
-    def nearest_hopping(hop, x =0 ):
+    def nearest_hopping(hop, x ):
         return S0*x;
 
-    def rashba_soc(hop, x = 0 ):
+    def rashba_soc(hop, x  ):
         site_i,site_j = hop;
         dij = site_i.pos-site_j.pos;
         dij = dij/LA.norm(dij);
         geo_fact = (2j/3)*(Sx*dij[1] - Sy*dij[0])
         return x*geo_fact;
 
-    def intrinsic_soc(hop, x = 0 ):
+    def intrinsic_soc(hop, x  ):
         site_i,site_j = hop;
         geo_fact = 1.0j/3.0/np.sqrt(3.);
         lambda_soc=x*Sz*geo_fact;
         return (lambda_soc,-lambda_soc)[ site_j.family == a];
 
-    def valleyZeeman_soc(hop, x = 0 ):
+    def valleyZeeman_soc(hop, x ):
         site_i,site_j = hop;
         geo_fact = 1.0j/3.0/np.sqrt(3.);
         lambda_soc=x*Sz*geo_fact;
@@ -105,7 +105,7 @@ def make_bulk_graphene():
                     total+= (tb_next_nearest_dict[key])(x,value);
         return  total; 
     nnn_hoppings = (((-1,0,0), a, a),((0,1,0), a, a),((1,-1,0), a, a), 
-                    ((-1,0,0), b, b),((0,1,0), b, b),((1,-1,0), b, b) )   
+                    ((-1,0,0), b, b),((0,1,0), b, b),((1,-1,0), b, b) )
     for hopping in nnn_hoppings:
         syst[ hop(*hopping) ] = sum_functions;   
 

@@ -64,11 +64,12 @@ def convert2LatGen(syst,params):
             for spin_i,spin_j, value in  get_matrix_values(matrix_value) :
                 index_i =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_i );
                 index_j =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_j );
-                hop = (index_i,index_j, *site.tag, np.real(value), np.imag(value));
-                onsites.append(hop);
-                h_hop = conj(index_i,index_j, *site.tag, np.real(value), np.imag(value));
-                if ( hop != h_hop):
-                    onsites.append(h_hop );
+                if( np.abs(value) > 1e-13 ):
+                    hop = (index_i,index_j, *site.tag, np.real(value), np.imag(value));
+                    onsites.append(hop);
+                    h_hop = conj(*hop);
+                    if ( hop != h_hop):
+                        onsites.append(h_hop );
         return onsites;
     
     #Get the hoppings values and lattice information and storage in a list
@@ -80,11 +81,13 @@ def convert2LatGen(syst,params):
             for spin_i,spin_j, value in  get_matrix_values(matrix_value) :
                 index_i =combine_orbital_inner_indexes( orb_idx=orbIndexes[site_i.family], numOrbs=numOrbs, spin_idx=spin_i );
                 index_j =combine_orbital_inner_indexes( orb_idx=orbIndexes[site_j.family], numOrbs=numOrbs, spin_idx=spin_j );
-                hop = (index_i,index_j, *site_j.tag, np.real(value), np.imag(value));
-                hoppings.append(hop);
-                h_hop = conj(index_i,index_j, *site_j.tag, np.real(value), np.imag(value));
-                if ( hop == h_hop):
-                    hoppings.append(h_hop );
+                if( np.abs(value) > 1e-13 ): 
+                    hop = (index_i,index_j, *site_j.tag, np.real(value), np.imag(value));
+                    hoppings.append(hop);
+                    h_hop = conj(*hop);
+                    print(hop,"\n",h_hop);
+                    if ( hop != h_hop):
+                        hoppings.append(h_hop );
         return hoppings;
 
     orbIndexes = getSitesID(syst.sites() ); #Extract from syst.

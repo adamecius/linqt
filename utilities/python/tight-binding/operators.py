@@ -43,6 +43,7 @@ class bloch_op:
         self.define_unitcell(lat_vecs );
         self.orbs_pos = Ro.dot(self.lat_vecs);
         self.displs+=self.orbs_pos[self.to_orbs] - self.orbs_pos[self.from_orbs] ;
+        print(self.displs);
  
     def expand_to_supercell(self, scdims ):
         self.scdims = scdims; 
