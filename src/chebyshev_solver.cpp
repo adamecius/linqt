@@ -4,7 +4,7 @@
 void chebyshev::MomTable::saveIn(std::string filename)
 {
     const double bandWidth = 2/(double)conf_->scaleFactor;
-    const double bandCenter = -conf_->shift/(double)conf_->scaleFactor;
+    const double bandCenter = conf_->shift/(double)conf_->scaleFactor;
 
     typedef std::numeric_limits<double> dbl;
 

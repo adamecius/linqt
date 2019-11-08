@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	const int maxNumMom = ( (numMoms0 > numMoms1) ? numMoms0 : numMoms1 ) ;
  	chebMom2D mu(maxNumMom,maxNumMom); double rmu,imu;
 	const double lambda= maxNumMom*broadening/HalfWidth;
-	std::cout<<"Using lambda for lorentz kernel = "<<lambda<<std::endl;
+	std::cout<<"Using lambda for lorentz kernel = "<<lambda<<" a band width of " <<2*HalfWidth<<" and a band center of "<<BandCenter<<std::endl;
 	for( int m0 = 0 ; m0 < numMoms0 ; m0++)
 	for( int m1 = 0 ; m1 < numMoms1 ; m1++)
 	{
