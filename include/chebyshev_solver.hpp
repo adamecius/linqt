@@ -228,17 +228,25 @@ private:
     int systSize_;
 };
 
+
+void CorrelationExpansionMoments(const int numMoms0,const int numMoms1,
+								 const std::vector< std::complex<double> >& Phi,
+								 SparseMatrixType &HAM, 
+								 SparseMatrixType &OPL, 
+								 SparseMatrixType &OPR, 
+								 chebyshev::MomTable &cTable);
+
 void CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR, MomTable &cTable);
 
 
-void DensityMoments( std::vector< std::complex<double> >& PhiL,
-								std::vector< std::complex<double> >& PhiR,
-								SparseMatrixType &HAM, 
-								SparseMatrixType &OPL, 
-								const int numMoms,
-								const double scalFactor,
-								const double shift,
-								std::complex<double>* mu);
+void DensityMoments(std::vector< std::complex<double> >& PhiL,
+					std::vector< std::complex<double> >& PhiR,
+					SparseMatrixType &HAM, 
+					SparseMatrixType &OPL, 
+					const int numMoms,
+					const double scalFactor,
+					const double shift,
+					std::complex<double>* mu);
 
 
 void Vectors( 					 

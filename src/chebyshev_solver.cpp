@@ -78,9 +78,7 @@ void chebyshev::Vectors(
 
 
 void chebyshev::CorrelationExpansionMoments(const int numMoms0,const int numMoms1,
-											const int m0_init, const int m1_init,
-											const std::vector< std::complex<double> >& PhiL,
-											const std::vector< std::complex<double> >& PhiR,
+											const std::vector< std::complex<double> >& Phi,
 											SparseMatrixType &HAM, 
 											SparseMatrixType &OPL, 
 											SparseMatrixType &OPR, 
@@ -92,15 +90,15 @@ void chebyshev::CorrelationExpansionMoments(const int numMoms0,const int numMoms
 	std::vector< std::complex<double> > JR0(DIM),JR1(DIM),JL0(DIM),JL1(DIM),JOL(DIM);
 
     //Start the chebyshev expansion of the correlations
-	linalg::copy(DIM, &PhiR[0], &JR0[0]);
+	OPR.Multiply(1.0, &Phi[0], 0.0, &JR0[0]);
     HAM.Multiply(scalFactor,&JR0[0], 0.0, &JR1[0]);
     linalg::axpy(DIM,-shift,&JR0[0], &JR1[0]);
-    for (int m1 = m1_init; m1 < numMoms1; m1++ )
+    for (int m1 = 0; m1 < numMoms1; m1++ )
     {
-		linalg::copy(DIM, &PhiL[0], &JL0[0]);
+		linalg::copy(DIM, &Phi[0], &JL0[0]);
 		HAM.Multiply(scalFactor, &JL0[0], 0.0, &JL1[0]);
 		linalg::axpy(DIM, -shift,&JL0[0],&JL1[0]);
-		for (int m0= m0_init; m0 < numMoms1; m0++)
+		for (int m0= 0; m0 < numMoms0; m0++)
 		{
 			OPL.Multiply(1.0,&JL0[0] ,0.0, &JOL[0] );
 			cTable(m0,m1) += linalg::vdot(DIM,&JOL[0], &JR0[0] ); //This actually gives <JR|JL>*
@@ -140,9 +138,21 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
     std::cout<<"Allocating: "<<total_memory<<"GB"<<std::endl;
 
 
+	std::cout<<"SEQUENTIAL"<<std::endl;
+	std::vector< std::complex<double> > Phi(DIM); 	//States Vectors
+    for (int i = 0; i < numStates; i++)
+    {
+		std::cout<<"Computing state: "<<i<<" out of "<<numStates<<std::endl;
+		//construct a normalized state for the left side
+		for (int j = 0; j < DIM; j++)
+			Phi[j] = exp(complex<double>(0,2.0*M_PI)*(double)rand() / (double)RAND_MAX )/sqrt(DIM);
+
+		chebyshev::CorrelationExpansionMoments(	NumMomsL,NumMomsR, Phi, HAM, OPL, OPR, cTable);
+	}
 
 
 	//DEFINE THE BATCH SIZE
+/*
     std::vector< std::vector< std::complex<double> > > JR(batchSize);
 	for(int i = 0 ; i < batchSize; i++ )
 		JR[i] = std::vector< std::complex<double> >( DIM ); 
@@ -191,15 +201,19 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
 				chebyshev::DensityMoments( PhiL , JR[m0], HAM, OPL,NumMomsL,scalFactor, shift, &cTable(0, mR + m0 ) );
 		}
 	}
-	
+*/	
 	//The moments are rescale appropriatly
-	for (int mL = 0; mL < NumMomsL; mL++)				  
-	for (int mR = 0; mR < NumMomsR; mR++)
+	for (int mL = 0 ; mL < NumMomsL; mL++)				  
+	for (int mR = mL; mR < NumMomsR; mR++)
 	{
-		double scal=4;
+		double scal=4.0/numStates;
 		if( mL==0) scal*=0.5;
 		if( mR==0) scal*=0.5;
-		cTable(mL,mR)= scal*( cTable(mL,mR) + std::conj( cTable(mL,mR) ) )/2.0;
+
+		const std::complex<double> tmp = scal*( cTable(mL,mR) + std::conj(cTable(mR,mL)) )	/2.0;
+		cTable(mL,mR)= tmp;
+		cTable(mR,mL)= std::conj(tmp);
+		
 	}
 	
 };

@@ -15,14 +15,14 @@ void printValidatedInput(chebyshev::Configure& conf);
 
 int main(int argc, char *argv[])
 {
-	if (argc != 7)
+	if ( !(argc == 7 || argc == 8) )
 	{
 		printHelpMessage();
 		return 0;
 	}
 	else
 		printWelcomeMessage();
-
+	
 	const std::string
 		LABEL = argv[1],
 		S_OPR = argv[2],
@@ -57,8 +57,12 @@ int main(int argc, char *argv[])
 	//Factory state_factory ;
 
 	//Compute the chebyshev expansion table
+	srand(time(0));
+	int num_states = 1 ;
+	if( argc == 8)	num_states = atoi(argv[7]);
+	
 	chebyshev::MomTable ctable(conf);
-	chebyshev::CorrelationExpansionMoments(1, OP[0], OP[1], OP[2], ctable);
+	chebyshev::CorrelationExpansionMoments(num_states, OP[0], OP[1], OP[2], ctable);
 
 	//Save the table in a file
 	std::string outputfilename="NonEqOp"+S_OPR+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"RV1.chebmom2D";
@@ -70,7 +74,7 @@ int main(int argc, char *argv[])
 
 void printHelpMessage()
 {
-	std::cout << "The program should be called with the following options: Label Op1 Op2 numMom scaleFactor shift" << std::endl
+	std::cout << "The program should be called with the following options: Label Op1 Op2 numMom scaleFactor shift (optional) num_states" << std::endl
 			  << std::endl;
 	std::cout << "Label will be used to look for Label.Ham, Label.Op1 and Label.Op2" << std::endl;
 	std::cout << "Op1 and Op2 will be used to located the sparse matrix file of two operators for the correlation" << std::endl;

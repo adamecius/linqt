@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../lib/libchebyshev_kubo_lib.a  CMakeFiles/chebyshev_kubo_lib.dir/chebyshev_coefficients.cpp.o CMakeFiles/chebyshev_kubo_lib.dir/chebyshev_kubo.cpp.o CMakeFiles/chebyshev_kubo_lib.dir/chebyshev_moments.cpp.o
-/usr/bin/ranlib ../lib/libchebyshev_kubo_lib.a

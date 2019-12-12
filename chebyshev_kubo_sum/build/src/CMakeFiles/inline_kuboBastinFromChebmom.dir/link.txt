@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.cpp.o  -o ../inline_kuboBastinFromChebmom ../lib/libchebyshev_kubo_lib.a 

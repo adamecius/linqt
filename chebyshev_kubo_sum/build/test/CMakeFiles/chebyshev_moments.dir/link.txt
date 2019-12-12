@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/chebyshev_moments.dir/chebyshev_moments.cpp.o  -o chebyshev_moments/chebyshev_moments ../lib/libchebyshev_kubo_lib.a 

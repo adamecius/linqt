@@ -16,8 +16,8 @@ bool Sparse::OPERATOR_FromCSRFile(const std::string input, int &dim, vector<int>
   matrix_file >> dim >> nnz;
 
   //CREATE ARRAYS TO STORE THE MATRIX
-  values = vector<complex<double> >(nnz);
-  columns = vector<int>(nnz); 
+  values   = vector<complex<double> >(nnz);
+  columns  = vector<int>(nnz); 
   rowIndex = vector<int>(dim + 1);
 
   //READ VALUES
