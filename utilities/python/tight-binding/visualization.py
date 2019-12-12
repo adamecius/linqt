@@ -6,52 +6,72 @@ from numpy import exp, cos, sin , pi
 import time
 
 
-def compute_band_structure(syst, band_paths, do_plot =True ):
-    print(np.transpose(band_paths) )
+def check_ortogonality(eigvecs):
+    U =(np.conj(eigvecs.T) ) .dot(eigvecs);
+    U[np.abs(U) < 10*np.finfo(np.float64).eps] = 0;
+    diff = np.linalg.norm(U - np.eye(len(U)))/len(U);
+    if( diff > 10*np.finfo(np.float64).eps ):
+        print( "The eigenvectors are not orthogonal. the difference is  ",diff,np.finfo(np.float64).eps)
+        return False;
+    return True;
+    
+def eigval_and_proj( Hk , Op, check_ortogonal = False ):
+      
+    #When no operator submited, return only the band structure
+    if Op is None:
+        return eigvalsh(Hk),np.ones( len(Hk) );
+
+    #If not, compute the eigen vectors
+    w, v = np.linalg.eigh( Hk );#The column w[:, i] is the normalized eigenvector of v[i] eigenvalue
+
+    #if requested, check for orthogonality
+    if( check_ortogonal ):
+        check_ortogonality(v);
+
+    w = np.diag( (np.conj(v.T) ) .dot(Hk.dot(v) ) ) ;
+    p = np.diag( (np.conj(v.T) ) .dot(Op.dot(v) ) ) ;
+    return np.real(w),np.real(p);
+
+def compute_band_structure( Ham , band_paths, fermi_energy = 0.0, proj_op = None ):
     path_labels, path_points, paths = np.transpose(band_paths);
     num_paths = len(paths);
 
-    kvec  = list();
-    eigenvals = list();
-    path_end = list()
+    kpoints   = list(); #List of kpoints used for the band structure calculation
+    eigenvals = list(); #the eigenvalues of the bands
+    eigenprojs= list(); #the eigenvalues of the bands
+    label_index  = list(); #the last element of the path (used for assigning labels)
+
+    #The paths are given in reciprocal lattice units a.b==2pi, but the k-hamiltonian is performed assuming
+    # a.b==1. Therefore, when inserting a kp in the hamiltonian one should scale
+    def scale(kp):
+        return np.array(kp);
     
     #Compute the initial path point
-    seconds = time.time()
-    k0,k1,k2  = np.array(paths[0])*2*np.pi;
-    ham = syst.hamiltonian_submatrix(params=dict( k_x=k0,k_y=k1, k_z=k2) );
-    eigenvals.append( eigvalsh(ham) );
-    kvec.append(0);
-    path_end.append(0);
-    seconds -= time.time()
-    print("It took ",-seconds," to compute the initial point. You do the math")
+    kp  = np.array(paths[0]);
+    eigval, proj = eigval_and_proj( Ham(scale(kp)) , proj_op) ;
+    eigenvals.append(eigval);
+    eigenprojs.append(proj);
+    kpoints.append(kp);
+    label_index.append(0);
 
-    #Beforme moving, it is convenient to compute the reciprocal lattice vectors:
-    #which can be done in a single instruction
-    rec =np.linalg.pinv( np.array(syst._wrapped_symmetry.periods).T ).T 
-    
     #Compute all other path points
+    kp_index = 0
     for p in range(1,num_paths):
         npoint= path_points[p];
-        beg=np.array(paths[p-1])*2*np.pi;
-        end=np.array(paths[p  ])*2*np.pi;
-        kp0 = beg;
+        beg=paths[p-1];
+        end=paths[p  ];
         for kp in np.linspace(beg,end,npoint)[1:]:
-            ham = syst.hamiltonian_submatrix(params=dict( k_x=kp[0],k_y=kp[1], k_z=kp[2]) )
-            eigenvals.append( eigvalsh(ham) );
-            kvec.append( kvec[-1]+norm( (kp-kp0).dot(rec) )); #notice the change of basis
-            kp0 = kp;
-        path_end.append( kvec[-1] )
+            eigval, proj = eigval_and_proj( Ham(scale(kp)) , proj_op ) ;
+            eigenvals.append(eigval);
+            eigenprojs.append(proj);
+            kpoints.append( kp ); #notice the change of basis
+            kp_index+=1;
+        label_index.append( kp_index )
 
-    bands=  np.transpose(eigenvals);    
-
-    for i,band in enumerate(bands):
-        plt.plot( kvec,band);   
-    labels = [ band_path[0]  for band_path in band_paths]
-    plt.xticks(path_end,labels, color='k', size=20)
-    plt.show();
+    bands = np.transpose(eigenvals);
+    proj  = np.transpose(eigenprojs);
     
-    
-    return kvec,bands,path_end
+    return kpoints,bands,proj,label_index
 
 
 def compute_kp_weigths_2D(syst, numkp , fermi_energy, broadening=0.1 ):

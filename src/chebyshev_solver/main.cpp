@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
 	chebyshev::Configure conf;
 	conf.maxMemory = 1500; //bites
 
-	conf.TableSize.push_back(atoi(argv[4]));
-	conf.TableSize.push_back(atoi(argv[4]));
+	conf.TableSize.push_back(atoi(argv[4])); //load number of moments
+	conf.TableSize.push_back(atoi(argv[4])); //load number of moments
 	conf.scaleFactor = atof(argv[5]);
 	conf.shift = atof(argv[6]);
 

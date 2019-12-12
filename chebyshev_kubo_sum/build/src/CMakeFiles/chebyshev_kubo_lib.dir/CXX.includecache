@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/chebyshev_moments.hpp
+array
+-
+vector
+-
+complex
+-
+string
+-
+cassert
+-
+iostream
+-
+fstream
+-
+
+/data/jgarcia/codes/linqt/chebyshev_kubo_sum/src/chebyshev_coefficients.cpp
+
+/data/jgarcia/codes/linqt/chebyshev_kubo_sum/src/chebyshev_kubo.cpp
+
+/data/jgarcia/codes/linqt/chebyshev_kubo_sum/src/chebyshev_moments.cpp
+chebyshev_moments.hpp
+/data/jgarcia/codes/linqt/chebyshev_kubo_sum/src/chebyshev_moments.hpp
+

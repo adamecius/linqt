@@ -1,0 +1,18 @@
+Start testing: Dec 11 19:50 CET
+----------------------------------------------------------
+1/1 Testing: chebyshev_moments
+1/1 Test: chebyshev_moments
+Command: "/data/jgarcia/codes/linqt/chebyshev_kubo_sum/build/test/chebyshev_moments/chebyshev_moments"
+Directory: /data/jgarcia/codes/linqt/chebyshev_kubo_sum/build/test/chebyshev_moments
+"chebyshev_moments" start time: Dec 11 19:50 CET
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"chebyshev_moments" end time: Dec 11 19:50 CET
+"chebyshev_moments" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Dec 11 19:50 CET

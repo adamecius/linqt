@@ -1,7 +1,8 @@
 CC=icpc
-CFLAG=" -std=c++17 -mkl=parallel "
-OFLAG=" -fopenmp -O3 -march=core-avx2 -fma -ftz -fomit-frame-pointer "
-CLINK=" -liomp5 -lpthread -lm -ldl"
+CFLAG=" -qopenmp -std=c++17 -mkl=parallel "
+#CFLAG=" -qopenmp -std=c++17 -mkl=sequential "
+OFLAG=" -O3 -march=core-avx2 -fma -ftz -fomit-frame-pointer "
+CLINK=" -lomp -lpthread -lm -ldl"
 
 #CC=clang++
 #CFLAG=" -m64 -I${MKLROOT}/include"
@@ -10,13 +11,12 @@ CLINK=" -liomp5 -lpthread -lm -ldl"
 
 INC="-I../../include"
 SRC="../../src"
-LIB="-lconfig++"
+LIB=""
 
 $CC $CFLAG $INC -c $SRC/mkl_sparse_matrix.cpp -o $SRC/mkl_sparse_matrix.o
 $CC $CFLAG $INC -c $SRC/sparse_matrix.cpp -o $SRC/sparse_matrix.o
-$CC $CGLAG $INC -c $SRC/linear_algebra.cpp -o $SRC/linear_algebra.o
-$CC $CGLAG $INC -c $SRC/chebyshev_solver.cpp -o $SRC/chebyshev_solver.o
+$CC $CFLAG $INC -c $SRC/linear_algebra.cpp -o $SRC/linear_algebra.o
+$CC  $CFLAG $INC -c $SRC/chebyshev_solver.cpp -o $SRC/chebyshev_solver.o
 $CC $CFLAG $INC -c main.cpp -o main.o
 $CC $CFLAG $OFLAG -o main main.o $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o  $CLINK
-
 

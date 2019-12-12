@@ -129,11 +129,11 @@ int main(int argc, char *argv[])
 	for( int m1 = 0 ; m1 < numMoms1 ; m1++)
 	{
 		const double
-		phi_J = M_PI/(maxNumMom+1),
-		g_D_m0=( (maxNumMom-m0+1)*cos( phi_J*m0)+ sin(phi_J*m0)*cos(phi_J)/sin(phi_J) )/(maxNumMom+1),
+		phi_J = M_PI/(double)(maxNumMom+1.0),
+		g_D_m0=( (maxNumMom-m0+1)*cos( phi_J*m0 )+ sin(phi_J*m0)*cos(phi_J)/sin(phi_J) )/(maxNumMom+1),
 		g_L_m1=sinh(lambda*(1.0 - (double)m1/(double)maxNumMom))/sinh(lambda);
 		momfile>>rmu>>imu;
-		mu(m0,m1) = std::complex<double>( rmu,imu)*g_D_m0*g_L_m1;
+		mu(m0,m1) = std::complex<double>(rmu,imu)*g_D_m0*g_L_m1;
 	}
 	momfile.close();
 
