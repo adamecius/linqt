@@ -5,7 +5,7 @@ printf "This example assumes the package is built on ${BUILD_DIR} directory \n\n
 SYSTEM_LABEL="graphene_example"
 
 printf "(1) Run the python script ${SYSTEM_LABEL}.ipynb for creating the wannier files \n\n"
-#ipython ${SYSTEM_LABEL}.ipynb
+ipython ${SYSTEM_LABEL}.ipynb
 
 
 DIMX=100
@@ -13,7 +13,7 @@ DIMY=100
 DIMZ=1
 printf "(2) Use wannier2sparse for expanding wannier system with label $WANNIER_LABEL to sparse matrices in CSR\n"
 printf "into a supercell of the system  with dimensions $DIMX $DIMY $DIMZ in sparse CSR format\n\n"
-#$BUILD_DIR/wannier2sparse ${SYSTEM_LABEL} $DIMX $DIMY $DIMZ
+$BUILD_DIR/wannier2sparse ${SYSTEM_LABEL} $DIMX $DIMY $DIMZ
 
 printf "Moving these CSR matrices to the directory operators \n"
 mkdir -p operators

@@ -19,4 +19,5 @@ $CC $CFLAG $INC -c $SRC/linear_algebra.cpp -o $SRC/linear_algebra.o
 $CC  $CFLAG $INC -c $SRC/chebyshev_solver.cpp -o $SRC/chebyshev_solver.o
 $CC $CFLAG $INC -c main.cpp -o main.o
 $CC $CFLAG $OFLAG -o main main.o $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o  $CLINK
-
+mv main ../../build/inline_compute-kpm-nonEqOp
+rm -f ../*.o *.o
