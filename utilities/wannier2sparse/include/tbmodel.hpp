@@ -71,7 +71,7 @@ class tbmodel
 
     hopping_list createHoppingCurrents_list(const int dir)
     {
-        std::cout<<"Creating the Current matrix J"<<dir<<std::endl;
+        std::cout<<"Creating the Velocity matrix V"<<dir<<std::endl;
         assert( dir <3 && dir >=0 ); 
         assert(volume(lat_vecs) > 0 );
         assert_equal( (int)orbPos_list.size(), hl.WannierBasisSize());
@@ -173,7 +173,7 @@ class tbmodel
 
     hopping_list createHoppingSpinCurrents_list(const int dir, const char sdir)
     {
-        std::cout<<"Creating the spin Current matrix J"<<dir<<"S"<<sdir<<std::endl;
+        std::cout<<"Creating the spin Velocity matrix V"<<dir<<"S"<<sdir<<std::endl;
         auto id2spin = this->map_id2spin();
         auto curr = this->createHoppingCurrents_list(dir);
         for( auto& elem: curr.hoppings )
