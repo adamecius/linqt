@@ -373,7 +373,7 @@ void chebyshev::LocalCorrelationExpansionMoments(int numStates, SparseMatrixType
 	for (int mL = 0 ; mL < NumMomsL; mL++)				  
 	for (int mR = mL; mR < NumMomsR; mR++)
 	{
-		double scal=4.0/numStates*DIM;
+		double scal=4.0/numStates/DIM;
 		if( mL==0) scal*=0.5;
 		if( mR==0) scal*=0.5;
 
