@@ -238,6 +238,8 @@ void CorrelationExpansionMoments(const int numMoms0,const int numMoms1,
 
 void CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR, MomTable &cTable);
 
+void LocalCorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR, MomTable &cTable);
+
 
 void DensityMoments(std::vector< std::complex<double> >& PhiL,
 					std::vector< std::complex<double> >& PhiR,

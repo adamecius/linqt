@@ -6,7 +6,7 @@
 #include "chebyshev_moments.hpp"
 
 int main()
-{	
+{
 	int
 	dim = 100, numMoms0 = 10, numMoms1 = 20; 
 	double BandWidth = 1.0, BandCenter = 2.0;
@@ -39,4 +39,3 @@ int main()
 
 return 0;
 }
-	

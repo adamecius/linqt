@@ -150,7 +150,18 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
 		chebyshev::CorrelationExpansionMoments(	NumMomsL,NumMomsR, Phi, HAM, OPL, OPR, cTable);
 	}
 
+	for (int mL = 0 ; mL < NumMomsL; mL++)				  
+	for (int mR = mL; mR < NumMomsR; mR++)
+	{
+		double scal=4.0/numStates;
+		if( mL==0) scal*=0.5;
+		if( mR==0) scal*=0.5;
 
+		const std::complex<double> tmp = scal*( cTable(mL,mR) + std::conj(cTable(mR,mL)) )	/2.0;
+		cTable(mL,mR)= tmp;
+		cTable(mR,mL)= std::conj(tmp);
+		
+	}
 	//DEFINE THE BATCH SIZE
 /*
     std::vector< std::vector< std::complex<double> > > JR(batchSize);
@@ -203,18 +214,7 @@ void chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM
 	}
 */	
 	//The moments are rescale appropriatly
-	for (int mL = 0 ; mL < NumMomsL; mL++)				  
-	for (int mR = mL; mR < NumMomsR; mR++)
-	{
-		double scal=4.0/numStates;
-		if( mL==0) scal*=0.5;
-		if( mR==0) scal*=0.5;
 
-		const std::complex<double> tmp = scal*( cTable(mL,mR) + std::conj(cTable(mR,mL)) )	/2.0;
-		cTable(mL,mR)= tmp;
-		cTable(mR,mL)= std::conj(tmp);
-		
-	}
 	
 };
 
@@ -333,3 +333,53 @@ void chebyshev::CorrelationExpansionMoments(int numStates,
 
 };
 */
+
+void chebyshev::LocalCorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR, chebyshev::MomTable &cTable)
+{
+	//Allocate the memory
+    int batchSize = 3;
+	if(!getenv("BATCH_SIZE"))
+		std::cout<<"\nEnviroment variable BATCH_SIZE not set.\nSet to your custom N value throught the command export BATCH_SIZE N"<<std::endl;
+	else
+		batchSize = atoi(getenv("BATCH_SIZE")) ;
+	if( batchSize <= 0 )
+		batchSize = 3;
+	std::cout<<"\nUsing batchsize: "<<batchSize<<std::endl;
+  
+	const double scalFactor = cTable.ScaleFactor();
+    const double shift = cTable.EnergyShift();
+    const int DIM = HAM.rank();
+
+    cTable.SetSystemSize(HAM.rank());
+    const int NumMomsL = cTable.Size_InDir(0);
+    const int NumMomsR = cTable.Size_InDir(1);
+
+    const double total_memory = ( ((double)batchSize + 5 )*(double)DIM +NumMomsL*(double)(NumMomsR) )*(double)sizeof(complex<double>)/pow(2.0,30.0);
+    std::cout<<"Allocating: "<<total_memory<<"GB"<<std::endl;
+
+
+	std::cout<<"SEQUENTIAL"<<std::endl;
+	std::vector< std::complex<double> > Phi(DIM); 	//States Vectors
+    for (int i = 0; i < numStates; i++)
+    {
+		std::cout<<"Computing state: "<<i<<" out of "<<numStates<<std::endl;
+		//construct a normalized state for the left side
+		for (int j = 0; j < DIM; j++)
+			Phi[j] = ( (j==i) ? 1 : 0 ) ;
+		
+		chebyshev::CorrelationExpansionMoments(	NumMomsL,NumMomsR, Phi, HAM, OPL, OPR, cTable);
+	}
+
+	for (int mL = 0 ; mL < NumMomsL; mL++)				  
+	for (int mR = mL; mR < NumMomsR; mR++)
+	{
+		double scal=4.0/numStates*DIM;
+		if( mL==0) scal*=0.5;
+		if( mR==0) scal*=0.5;
+
+		const std::complex<double> tmp = scal*( cTable(mL,mR) + std::conj(cTable(mR,mL)) )	/2.0;
+		cTable(mL,mR)= tmp;
+		cTable(mR,mL)= std::conj(tmp);
+		
+	}
+}
