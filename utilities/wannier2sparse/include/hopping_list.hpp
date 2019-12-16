@@ -141,7 +141,7 @@ inline void save_hopping_list_as_csr(string output_filename,const hopping_list& 
     {
         const auto value  = get<1>(elem.second);
         const auto edge   = get<2>(elem.second);
-        if( value.real() != 0 || value.imag()!= 0 )
+        if( (value.real() != 0 || value.imag()!= 0)  && edge[1]>= edge[0] )
 			coefficients.push_back(Triplet_t(edge[0],edge[1],value) );
     }
     output.setFromTriplets(coefficients.begin(), coefficients.end());
