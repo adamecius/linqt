@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libwannierlib.a  CMakeFiles/wannierlib.dir/wannier_parser.cpp.o CMakeFiles/wannierlib.dir/hopping_list.cpp.o
+/usr/bin/ranlib ../lib/libwannierlib.a

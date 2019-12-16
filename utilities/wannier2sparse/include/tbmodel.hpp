@@ -103,16 +103,45 @@ class tbmodel
         assert(volume(lat_vecs) > 0 );
         assert(orbPos_list.size()==hl.WannierBasisSize());
         
-        hopping_list chl = this->hl ;
-        for( auto& elem: chl.hoppings )
+        hopping_list chl ;
+        chl.num_wann= hl.WannierBasisSize(); //number of wannier functions
+             
+		int i_orb = 0;
+		hopping_list::cellID_t cellID={0,0,0};//onsite 
+        for( auto orb_id_0 : this->orbPos_list )
         {
-            auto  tag  = get<0>(elem.second);
-            if( tag != hopping_list::cellID_t({0,0,0} ) )//Send to zero  non diagonal elements
-                get<1>(elem.second) *=  0.0 ;
-        }
+			int j_orb = 0;
+			for( auto orb_id_1 : this->orbPos_list )
+			{
+				hopping_list::edge_t vertex_edge = {i_orb,j_orb}; 
+				hopping_list::value_t hop_value(1.0,0.0);
+				chl.hoppings.insert( {get_tag(cellID,vertex_edge), hopping_list::hopping_t(cellID,hop_value,vertex_edge) } );
+				j_orb++;
+			}
+			i_orb++;
+		}
 
         return chl;
     };
+
+
+    map<int,string>
+    map_id2orbs()
+    {
+		map<int,string> id2orbs; 
+        int id = 0;
+        for( auto orb_id : this->orbPos_list )
+        {
+			auto orb_label = get<0>(orb_id);
+			string orbNAME = orb_label ;
+			int end_name_pos = orbNAME.find("_");
+			orbNAME = orbNAME.substr (0,end_name_pos);
+			id2orbs.insert( {id,orbNAME} );
+			id++;
+        }
+        return id2orbs;
+    }
+
 
     map<int,int>
     map_id2spin()
@@ -136,36 +165,48 @@ class tbmodel
 
     hopping_list createHoppingSpinDensity_list(const char dir)
     {
-        std::cout<<"Creating the spin Density matrix S"<<dir<<std::endl;
-        auto id2spin = this->map_id2spin();
+		std::cout<<"Creating the  SpinDensity operator in "<<dir<<" direction"<<std::endl;
+		auto id2spin = this->map_id2spin();
+		auto id2orbs = this->map_id2orbs();
+        
         auto dens = this->createHoppingDensity_list();
+
         for( auto& elem: dens.hoppings )
         {
             auto edge  = get<2>(elem.second);
-            auto value =&get<1>(elem.second);
+            auto value =&get<1>(elem.second); 
             auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
-            if( s1!= 0 && s2!= 0 )
-            switch(dir)
+            auto o1=id2orbs[edge[0]], o2= id2orbs[edge[1]];
+			
+
+            if( s1!= 0 && s2!= 0 && o1==o2 ) //When no spinless and diagonal in orbital index
             {
-                case 'x':
-                if( s1 + s2 == 0  )
-                    *value=1.0;
-              	break;
-            
-                case 'y':
-                if( s1 + s2 == 0  )
-                    *value= hopping_list::value_t(0.0,s2);
-        		break;
+				switch(dir)
+				{
+					case 'x':
+					*value = (s1 + s2 == 0 ? 1.0 : 0.0   );
+					std::cout<<"("<<edge[0]<<","<<s1<<","<<o1<<") "<<"-->("<<edge[1]<<","<<s2<<","<<o2<<") ="<<*value<<std::endl;
+					break;
 
-                case 'z':
-                if( s1 == s2 ) 
-                    *value= s2;
-    		    break;
+					case 'y':
+					*value = (s1 + s2 == 0 ? hopping_list::value_t(0.0,s2) : 0.0   );
+					std::cout<<"("<<s1<<","<<o1<<") "<<"-->("<<s2<<","<<o2<<") ="<<*value<<std::endl;
+					break;
 
-                default:
-                    *value = 0 ;
-            }
+					case 'z':
+					*value = (s1 == s2 ? s2 : 0.0   );
+					std::cout<<"("<<s1<<","<<o1<<") "<<"-->("<<s2<<","<<o2<<") ="<<*value<<std::endl;
+					break;
+
+					default:
+					*value = 0 ;
+				}
+			}
+			else 
+				*value = 0 ;
+
         }
+
         std::cout<<"Sucess."<<std::endl;
         return dens;
     }
@@ -181,27 +222,27 @@ class tbmodel
             auto edge  = get<2>(elem.second);
             auto value =&get<1>(elem.second);
             auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
-            if( s1!= 0 && s2!= 0 )
-            switch(sdir)
+            if( s1!= 0 && s2!= 0 ) //When no spinless
             {
-                case 'x':
-                if( s1 + s2 == 0  )
-                    *value *=1.0;
-              	break;
-            
-                case 'y':
-                if( s1 + s2 == 0  )
-                    *value *= hopping_list::value_t(0.0,s2);
-        		break;
+				switch(sdir)
+				{
+					case 'x':
+						std::cout<<"NOT IMPLEMENTED"<<std::endl;
+					break;
 
-                case 'z':
-                if( s1 == s2 ) 
-                    *value *= s2;
-    		    break;
+					case 'y':
+						std::cout<<"NOT IMPLEMENTED"<<std::endl;
+					break;
 
-                default:
-                    *value *= 0 ;
-            }
+					case 'z':
+					*value *= (s1 == s2 ? s2 : 0.0   );
+					break;
+
+					default:
+					*value *= 0 ;
+				}
+			}
+
         }
         std::cout<<"Sucess."<<std::endl;
         return curr;

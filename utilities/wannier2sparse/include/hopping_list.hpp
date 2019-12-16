@@ -136,14 +136,16 @@ inline void save_hopping_list_as_csr(string output_filename,const hopping_list& 
     const size_t dim = hl.WannierBasisSize();
     SparseMatrix_t output(dim,dim);
     std::vector<Triplet_t> coefficients;            // list of non-zeros coefficients
-    for(auto const& elem : hl.hoppings)
+	const double CUTOFF = 0;
+	for(auto const& elem : hl.hoppings)
     {
         const auto value  = get<1>(elem.second);
         const auto edge   = get<2>(elem.second);
-        coefficients.push_back(Triplet_t(edge[0],edge[1],value) );
+        if( value.real() != 0 || value.imag()!= 0 )
+			coefficients.push_back(Triplet_t(edge[0],edge[1],value) );
     }
     output.setFromTriplets(coefficients.begin(), coefficients.end());
-    output.makeCompressed();
+	output.makeCompressed();
 
 
 	std::ofstream matrix_file ( output_filename.c_str()) ;

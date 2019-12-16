@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/wannier2sparse.dir/main.cpp.o  -o ../wannier2sparse -rdynamic ../lib/libwannierlib.a 

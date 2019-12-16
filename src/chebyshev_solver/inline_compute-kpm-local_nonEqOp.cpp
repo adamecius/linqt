@@ -15,7 +15,7 @@ void printValidatedInput(chebyshev::Configure& conf);
 
 int main(int argc, char *argv[])
 {
-	if ( !(argc == 7 || argc == 8) )
+	if ( !(argc == 8) )
 	{
 		printHelpMessage();
 		return 0;
@@ -57,9 +57,8 @@ int main(int argc, char *argv[])
 	//Factory state_factory ;
 
 	//Compute the chebyshev expansion table
-	srand(time(0));
-	int num_states = 1 ;
-	if( argc == 8)	num_states = atoi(argv[7]);
+	int 
+	num_states = atoi(argv[7]);
 	
 	chebyshev::MomTable ctable(conf);
 	chebyshev::LocalCorrelationExpansionMoments(num_states, OP[0], OP[1], OP[2], ctable);

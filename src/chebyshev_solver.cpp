@@ -365,7 +365,11 @@ void chebyshev::LocalCorrelationExpansionMoments(int numStates, SparseMatrixType
 		std::cout<<"Computing state: "<<i<<" out of "<<numStates<<std::endl;
 		//construct a normalized state for the left side
 		for (int j = 0; j < DIM; j++)
-			Phi[j] = ( (j==i) ? 1 : 0 ) ;
+			Phi[j] = ( (j==i) ? 1.0 : 0.0 ) ;
+
+		for (int j = 0; j < 10; j++)
+			std::cout<<Phi[j]<<std::endl;
+
 		
 		chebyshev::CorrelationExpansionMoments(	NumMomsL,NumMomsR, Phi, HAM, OPL, OPR, cTable);
 	}

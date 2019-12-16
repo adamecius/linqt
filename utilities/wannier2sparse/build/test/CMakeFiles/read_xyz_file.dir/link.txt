@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/read_xyz_file.dir/read_xyz_file.cpp.o  -o read_xyz_file/read_xyz_file -rdynamic ../lib/libwannierlib.a 
