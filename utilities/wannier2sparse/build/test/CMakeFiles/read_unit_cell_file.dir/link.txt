@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/read_unit_cell_file.dir/read_unit_cell_file.cpp.o  -o read_unit_cell_file/read_unit_cell_file -rdynamic ../lib/libwannierlib.a 

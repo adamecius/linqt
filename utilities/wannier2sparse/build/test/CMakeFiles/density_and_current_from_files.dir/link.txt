@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/density_and_current_from_files.dir/density_and_current_from_files.cpp.o  -o density_and_current_from_files/density_and_current_from_files -rdynamic ../lib/libwannierlib.a 

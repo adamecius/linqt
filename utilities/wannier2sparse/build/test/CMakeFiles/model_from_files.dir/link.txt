@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/model_from_files.dir/model_from_files.cpp.o  -o model_from_files/model_from_files -rdynamic ../lib/libwannierlib.a 
