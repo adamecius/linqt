@@ -51,6 +51,8 @@ def convert2wannier(syst,params):
     #This function take these values and evaluate them using
     #the params passed from the main.
     def evalute_value(obj,value,params):
+        if params is None:
+            return value;
         return value(obj,**params);
 
     #Kwant only storage hoppings without their conjugated complex.

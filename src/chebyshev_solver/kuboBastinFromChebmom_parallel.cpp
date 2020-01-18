@@ -5,9 +5,9 @@
 #include <fstream>		/* for std::ofstream and std::ifstream functions classes*/
 #include <vector>		/* for std::vector mostly class*/
 #include <complex>		/* for std::vector mostly class*/
+#include <omp.h>
 
-
-#include "chebyshev_moments.hpp"
+#include "chebyshev_solver.hpp"
 #include "chebyshev_coefficients.hpp"
 #include "chebyshev_kubo.hpp"
 
@@ -59,19 +59,23 @@ int main(int argc, char *argv[])
 	std::cout<<"PARAMETERS: "<< mu.SystemSize()<<" "<<mu.HalfWidth()<<std::endl;
 	std::ofstream outputfile( outputName.c_str() );
 
+	std::vector<double> kernel(num_div,0.0);
+	#pragma omp parallel for
+	for( int i=0; i < num_div; i++)
+	{
+		const double energ = energies[i];
+		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
+		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
+			kernel[i] += delta_chebF(energ,m0)*( DgreenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
+		kernel[i] *=  -2.0* mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+	}
+
 	double acc = 0;
 	for( int i=0; i < num_div-1; i++)
 	{
-		const double energ = energies[i];
-		const double denerg= energies[i+1] - energies[i];	
-
-		double kernel= 0;
-		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
-		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
-			kernel += delta_chebF(energ,m0)*( DgreenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
-		kernel *=  -2.0*denerg * mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
-
-		acc +=kernel; 
+		const double energ  = energies[i];
+		const double denerg = energies[i+1]-energies[i];
+		acc +=kernel[i]*denerg;
 		outputfile<<energ*mu.HalfWidth() + mu.BandCenter() <<" "<<acc <<std::endl;
 	}
 

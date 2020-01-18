@@ -60,7 +60,7 @@ hopping_list wrap_in_supercell(const hopping_list::cellID_t& cellDim,const hoppi
             edge[1] += index_aliasing(cellID,cellDim)*hl.WannierBasisSize(); //This is originally shidted by cellID and one added an aditional shift by cellShift.
             cellID = {0,0,0}; //After wrapping, all atoms belong to the supercell, therefore, cellID is always zero.
 
-            //Insert the hoppinhs
+            //Insert the hoppings
             assert( edge[0]< sc_hl.WannierBasisSize() );
             assert( edge[1]< sc_hl.WannierBasisSize() );
             assert( cellID== hopping_list::cellID_t({0,0,0}) );
@@ -75,3 +75,63 @@ hopping_list wrap_in_supercell(const hopping_list::cellID_t& cellDim,const hoppi
     sc_hl.SetBounds(hopping_list::cellID_t({1,1,1})); //The wrapped cell is bounded in itself
 return sc_hl; 
 };
+
+void hopping_list::AddHopping(hopping_list::cellID_t _cellID,hopping_list::value_t _value ,hopping_list::edge_t _edge)
+{
+	auto tag = get_tag(_cellID,_edge);
+	if( this->hoppings.count(tag) > 0 )
+	{
+		get<1>( this->hoppings[ tag ] )+=_value; //this add sval*value to the spincurrent value list;
+		return ;
+	}
+	this->hoppings.insert( {tag, hopping_t(_cellID,_value,_edge) } );
+	return ;
+};
+
+
+
+
+void save_hopping_list_as_csr(string output_filename,const hopping_list& hl)
+{
+    const size_t dim = hl.WannierBasisSize();
+    SparseMatrix_t output(dim,dim);
+    std::vector<Triplet_t> coefficients;            // list of non-zeros coefficients
+	const double CUTOFF = 0;
+	for(auto const& elem : hl.hoppings)
+    {
+        const auto value  = get<1>(elem.second);
+        const auto edge   = get<2>(elem.second);
+        if( (value.real() != 0 || value.imag()!= 0)  && edge[1]>= edge[0] )
+			coefficients.push_back(Triplet_t(edge[0],edge[1],value) );
+    }
+    output.setFromTriplets(coefficients.begin(), coefficients.end());
+	output.makeCompressed();
+
+
+	std::ofstream matrix_file ( output_filename.c_str()) ;
+
+	//READ DIMENSION OF THE MATRIX
+	matrix_file<<dim<<" "<<output.nonZeros()<<std::endl; 
+
+    //save values first
+    for (int k=0; k<output.outerSize(); ++k)
+    for (SparseMatrix_t::InnerIterator it(output,k); it; ++it)
+        matrix_file<<it.value().real()<<" "<<it.value().imag()<<" ";
+    matrix_file<<std::endl;
+
+    //save the columns
+    for (int k=0; k<output.outerSize(); ++k)
+    for (SparseMatrix_t::InnerIterator it(output,k); it; ++it)
+        matrix_file<<it.index()<<" ";
+    matrix_file<<std::endl;
+
+    //save the indices to columns
+    for (int k=0; k<output.outerSize()+1; ++k)
+        matrix_file<<*( output.outerIndexPtr() + k ) <<" ";
+    matrix_file<<std::endl;
+
+    matrix_file.close();
+
+return ; 
+}
+

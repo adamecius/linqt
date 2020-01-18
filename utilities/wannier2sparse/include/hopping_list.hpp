@@ -12,20 +12,18 @@
 #include <limits>
 #include <cassert>
 #include <functional>
-#include<iostream>
-#include<limits>
-#include<algorithm>
-#include"sparse_matrix.hpp"
+#include <algorithm>
+#include "sparse_matrix.hpp"
 #include <iostream>
 
 using namespace std;
+
 
 inline int 
 index_aliasing(const array<int, 3>& index,const array<int, 3>& bound )
 {
     return ( (index[2]+bound[2])%bound[2] * bound[1] + (index[1]+bound[1])%bound[1] ) * bound[0] + (index[0]+bound[0])%bound[0] ;
 }
-
 
 struct hopping_list
 {
@@ -40,6 +38,8 @@ struct hopping_list
     {
         return this-> num_wann ; 
     };
+
+	void AddHopping(cellID_t _cellID,value_t _value ,edge_t _edge);
 
     inline void SetWannierBasisSize(const int num_wann)
     {
@@ -131,48 +131,6 @@ inline array<int,5> tag_to_indices(const string& tag){
 return indices; 
 }
 
-inline void save_hopping_list_as_csr(string output_filename,const hopping_list& hl)
-{
-    const size_t dim = hl.WannierBasisSize();
-    SparseMatrix_t output(dim,dim);
-    std::vector<Triplet_t> coefficients;            // list of non-zeros coefficients
-	const double CUTOFF = 0;
-	for(auto const& elem : hl.hoppings)
-    {
-        const auto value  = get<1>(elem.second);
-        const auto edge   = get<2>(elem.second);
-        if( (value.real() != 0 || value.imag()!= 0)  && edge[1]>= edge[0] )
-			coefficients.push_back(Triplet_t(edge[0],edge[1],value) );
-    }
-    output.setFromTriplets(coefficients.begin(), coefficients.end());
-	output.makeCompressed();
-
-
-	std::ofstream matrix_file ( output_filename.c_str()) ;
-
-	//READ DIMENSION OF THE MATRIX
-	matrix_file<<dim<<" "<<output.nonZeros()<<std::endl; 
-
-    //save values first
-    for (int k=0; k<output.outerSize(); ++k)
-    for (SparseMatrix_t::InnerIterator it(output,k); it; ++it)
-        matrix_file<<it.value().real()<<" "<<it.value().imag()<<" ";
-    matrix_file<<std::endl;
-
-    //save the columns
-    for (int k=0; k<output.outerSize(); ++k)
-    for (SparseMatrix_t::InnerIterator it(output,k); it; ++it)
-        matrix_file<<it.index()<<" ";
-    matrix_file<<std::endl;
-
-    //save the indices to columns
-    for (int k=0; k<output.outerSize()+1; ++k)
-        matrix_file<<*( output.outerIndexPtr() + k ) <<" ";
-    matrix_file<<std::endl;
-
-    matrix_file.close();
-
-return ; 
-}
+void save_hopping_list_as_csr(string output_filename,const hopping_list& hl);
 
 #endif

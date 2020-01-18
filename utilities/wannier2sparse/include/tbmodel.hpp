@@ -11,9 +11,6 @@
 #include <limits>
 #include <cassert>
 #include <functional>
-#include<iostream>
-#include<limits>
-#include<algorithm>
 #include "wannier_parser.hpp"
 #include "hopping_list.hpp"
 
@@ -71,15 +68,14 @@ class tbmodel
 
     hopping_list createHoppingCurrents_list(const int dir)
     {
-        std::cout<<"Creating the Velocity matrix V"<<dir<<std::endl;
         assert( dir <3 && dir >=0 ); 
         assert(volume(lat_vecs) > 0 );
         assert_equal( (int)orbPos_list.size(), hl.WannierBasisSize());
 
-        hopping_list chl = this->hl ;
-        for( auto& elem: chl.hoppings )
+        auto curr = this->hl ;
+        for( auto& elem: curr.hoppings )
         {
-            auto  tag   = get<0>(elem.second);
+            auto  cellID   = get<0>(elem.second);
             auto  edge  = get<2>(elem.second);
 
             auto orb_diff = get<1>(orbPos_list[edge[1]]) ;//save final orbital position
@@ -87,16 +83,15 @@ class tbmodel
             for( int i=0; i < orb_diff.size(); i++)
                 orb_diff[i] +=-get<1>(orbPos_list[edge[0]])[i];//substract initial position
 
-            auto displ_vec = tag2cartesian(tag, lat_vecs); //get the displacement vector in cartesian
+            auto displ_vec = tag2cartesian(cellID, lat_vecs); //get the displacement vector in cartesian
             for( int i=0; i < orb_diff.size(); i++)
                 orb_diff[i] += displ_vec[i];    //add it to the orbital_difference
 
             //Change the hopping element accordingly
-            get<1>(elem.second) *=  hopping_list::value_t( 0.0, -orb_diff[dir] );
+            get<1>(elem.second) *=  hopping_list::value_t( 0.0, -orb_diff[dir] );           
         }
-        return chl;
+        return curr;
     };
-
 
     hopping_list createHoppingDensity_list()
     {
@@ -104,7 +99,7 @@ class tbmodel
         assert(orbPos_list.size()==hl.WannierBasisSize());
         
         hopping_list chl ;
-        chl.num_wann= hl.WannierBasisSize(); //number of wannier functions
+		chl.SetWannierBasisSize(hl.WannierBasisSize()); //increase the supercell dimension;
              
 		int i_orb = 0;
 		hopping_list::cellID_t cellID={0,0,0};//onsite 
@@ -123,7 +118,6 @@ class tbmodel
 
         return chl;
     };
-
 
     map<int,string>
     map_id2orbs()
@@ -163,6 +157,7 @@ class tbmodel
         return id2spin;
     }
 
+
     hopping_list createHoppingSpinDensity_list(const char dir)
     {
 		std::cout<<"Creating the  SpinDensity operator in "<<dir<<" direction"<<std::endl;
@@ -178,24 +173,20 @@ class tbmodel
             auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
             auto o1=id2orbs[edge[0]], o2= id2orbs[edge[1]];
 			
-
             if( s1!= 0 && s2!= 0 && o1==o2 ) //When no spinless and diagonal in orbital index
             {
 				switch(dir)
 				{
 					case 'x':
 					*value = (s1 + s2 == 0 ? 1.0 : 0.0   );
-					std::cout<<"("<<edge[0]<<","<<s1<<","<<o1<<") "<<"-->("<<edge[1]<<","<<s2<<","<<o2<<") ="<<*value<<std::endl;
 					break;
 
 					case 'y':
 					*value = (s1 + s2 == 0 ? hopping_list::value_t(0.0,s2) : 0.0   );
-					std::cout<<"("<<s1<<","<<o1<<") "<<"-->("<<s2<<","<<o2<<") ="<<*value<<std::endl;
 					break;
 
 					case 'z':
 					*value = (s1 == s2 ? s2 : 0.0   );
-					std::cout<<"("<<s1<<","<<o1<<") "<<"-->("<<s2<<","<<o2<<") ="<<*value<<std::endl;
 					break;
 
 					default:
@@ -204,55 +195,121 @@ class tbmodel
 			}
 			else 
 				*value = 0 ;
-
         }
-
-        std::cout<<"Sucess."<<std::endl;
         return dens;
     }
 
 
-    hopping_list createHoppingSpinCurrents_list(const int dir, const char sdir)
+    hopping_list createHoppingSpinCurrents_list(const int dir, const double theta, const double phi )
     {
-        std::cout<<"Creating the spin Velocity matrix V"<<dir<<"S"<<sdir<<std::endl;
-        auto id2spin = this->map_id2spin();
-        auto curr = this->createHoppingCurrents_list(dir);
-        for( auto& elem: curr.hoppings )
+		const std::complex<double> I(0,1);
+		std::complex<double> sz,sval;
+		
+        hopping_list scurr ;
+		scurr.SetWannierBasisSize(hl.WannierBasisSize()); //increase the supercell dimension;
+		scurr.SetBounds(hl.Bounds() ); //increase the supercell dimension;
+
+        for( const auto elem: this->createHoppingCurrents_list(dir).hoppings )
         {
+            auto cellID= get<0>(elem.second);
+            auto value = get<1>(elem.second);
             auto edge  = get<2>(elem.second);
-            auto value =&get<1>(elem.second);
-            auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
-            if( s1!= 0 && s2!= 0 ) //When no spinless
-            {
-				switch(sdir)
+	        int is0; getSpinIndex(edge[0],is0); 
+            int is1; getSpinIndex(edge[1],is1); 
+			auto sz  = 1.0-2.0*is0;
+
+			// spin conserving hopping. There will always be an up and a down, So two elements are going to be defined
+			if ( is0 == is1 ) 
+			{
+				//Create a spin conserving hopping. 
+				sval= sz*cos(theta);
+				if( std::norm(sval)>1e-5)
+					scurr.AddHopping(cellID,sval*value,edge);	
+			
+				//Create a spin nonconserving hopping 
+				sval= 0.5*sin(theta)*exp(-I*phi);
+				if( std::norm(sval)>1e-5)
 				{
-					case 'x':
-						std::cout<<"NOT IMPLEMENTED"<<std::endl;
-					break;
-
-					case 'y':
-						std::cout<<"NOT IMPLEMENTED"<<std::endl;
-					break;
-
-					case 'z':
-					*value *= (s1 == s2 ? s2 : 0.0   );
-					break;
-
-					default:
-					*value *= 0 ;
+					ChangeSpinIndex(edge[0], 0  );
+					ChangeSpinIndex(edge[1], 1  ); //up->dn
+					scurr.AddHopping(cellID,sval*value,edge); 
+					//complex conjugate
+					ChangeSpinIndex(edge[0], 1  );
+					ChangeSpinIndex(edge[1], 0  ); //up->dn
+					scurr.AddHopping(cellID,std::conj(sval)*value,edge);				
 				}
 			}
+			else // spin nonconserving hopping
+			{
+				//Creates a spin conserving hopping. 
+				sval=  0.5*sin(theta)*exp(sz*I*phi);
+				if( std::norm(sval)>1e-5)
+				for( int is =0 ; is<MAX_SPIN; is++)
+				{
+					ChangeSpinIndex(edge[0], is );
+					ChangeSpinIndex(edge[1], is );//up->up
+					scurr.AddHopping(cellID,sval*value,edge);				
+				}
+			}
+		}
 
-        }
-        std::cout<<"Sucess."<<std::endl;
-        return curr;
-    }
+        return scurr;
+    };
 
+    hopping_list createHoppingSpinCurrents_list(const int dir, const char sdir)
+    {
+		switch(sdir)
+		{
+			case 'x':
+				return createHoppingSpinCurrents_list(dir,0.5*M_PI,0.0*M_PI );
+			break;
+			
+			case 'y':
+				return createHoppingSpinCurrents_list(dir,0.5*M_PI,0.5*M_PI );
+			break;
+			
+			case 'z':
+				return createHoppingSpinCurrents_list(dir,0.0*M_PI,0.0*M_PI );
+			break;
+
+		}
+    };
+
+
+	inline 
+	hopping_list add_onsite_disorder(const hopping_list  hl , double W=0.0 )
+	{	
+		auto id2spin = this->map_id2spin();
+	//	for( auto& elem: dens.hoppings )
+	//	{
+	//		auto edge  = get<2>(elem.second);
+	//		auto value =&get<1>(elem.second); 
+	//		auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
+	//		auto o1=id2orbs[edge[0]], o2= id2orbs[edge[1]];
+			
+	//		if( s1==s2 && edge[0]==edge[1] ) //When no spinless and diagonal in orbital index
+		//		*value = W( rand()/RAND_MAX -0.5 );
+		//}
+		return hl;
+	};
 
     int num_orbs;
     unitCell_t lat_vecs;
     vector< orbPos_t > orbPos_list;
     hopping_list hl;
+
+
+
+	private :
+	const int MAX_SPIN = 2; 
+	inline //orbPos_list.size() gives you the number of positions. Including the repeated one due to MAX_SPIN
+	const int NumberOfSites() const { return orbPos_list.size()/MAX_SPIN; } 
+	inline 
+	void getSpinIndex(const int n, int& s)const {  s = n/NumberOfSites() ; };
+	inline
+	void ChangeSpinIndex(int &n, const int s) const {  n = n%NumberOfSites() + s*NumberOfSites(); };
+
+
 };
 
 #endif

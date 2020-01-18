@@ -26,4 +26,7 @@ $CC $CFLAG $OFLAG -o $BUILD_DIR/inline_compute-kpm-nonEqOp inline_compute-kpm-no
 $CC $CFLAG $INC -c inline_compute-kpm-local_nonEqOp.cpp  -o inline_compute-kpm-local_nonEqOp.o
 $CC $CFLAG $OFLAG -o $BUILD_DIR/inline_compute-kpm-local_nonEqOp inline_compute-kpm-local_nonEqOp.o $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o  $CLINK
 
+$CC $CFLAG $INC -c kuboBastinFromChebmom_parallel.cpp  -o inline_kuboBastinFromChebmom_parallel.o
+$CC $CFLAG $OFLAG -o $BUILD_DIR/inline_kuboBastinFromChebmom_parallel inline_kuboBastinFromChebmom_parallel.o  $SRC/chebyshev_solver.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o  $CLINK
+
 rm -f ../*.o *.o
