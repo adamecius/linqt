@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	chebyshev::LocalCorrelationExpansionMoments(num_states, OP[0], OP[1], OP[2], ctable);
 
 	//Save the table in a file
-	std::string outputfilename="NonLEqOp"+S_OPR+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"RV1.chebmom2D";
+	std::string outputfilename="NonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"RV1.chebmom2D";
 	ctable.saveIn(outputfilename);
 
 	std::cout<<"End of program"<<std::endl;

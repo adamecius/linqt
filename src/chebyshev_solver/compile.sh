@@ -2,7 +2,7 @@ CC=icpc
 CFLAG=" -qopenmp -std=c++17 -mkl=parallel "
 #CFLAG=" -qopenmp -std=c++17 -mkl=sequential "
 OFLAG=" -O3 -march=core-avx2 -fma -ftz -fomit-frame-pointer "
-CLINK=" -lomp -lpthread -lm -ldl"
+CLINK=" -lpthread -lm -ldl"
 
 #CC=clang++
 #CFLAG=" -m64 -I${MKLROOT}/include"
