@@ -276,12 +276,21 @@ private:
 };
 
 
-void CorrelationExpansionMoments(const int numMoms0,const int numMoms1,
-								 const std::vector< std::complex<double> >& Phi,
-								 SparseMatrixType &HAM, 
-								 SparseMatrixType &OPL, 
-								 SparseMatrixType &OPR, 
-								 chebyshev::MomTable &cTable);
+
+//HELP FUNCTIONS TO BE MOVED
+bool GetBatchSize(int& batchSize);
+
+namespace sequential
+{
+	void CorrelationExpansionMoments(const int numMoms0,const int numMoms1,
+									 const std::vector< std::complex<double> >& Phi,
+									 SparseMatrixType &HAM, 
+									 SparseMatrixType &OPL, 
+									 SparseMatrixType &OPR, 
+									 chebyshev::MomTable &cTable);
+	
+};
+
 
 void CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR, MomTable &cTable);
 
@@ -299,8 +308,8 @@ void DensityMoments(std::vector< std::complex<double> >& PhiL,
 
 
 void Vectors( 					 
-						 const std::vector< std::complex<double> >& J0,
-						 const std::vector< std::complex<double> >& J1,
+						  std::vector< std::complex<double> >& J0,
+						  std::vector< std::complex<double> >& J1,
 						 SparseMatrixType &HAM,
 						 const int numMoms,
 						 const double scalFactor,
