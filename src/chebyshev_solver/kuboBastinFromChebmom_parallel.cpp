@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	//and apply the appropiated kernel
 	mu.ApplyJacksonKernel(broadening,broadening);
 
-	const int num_div = 10*mu.HighestMomentNumber();
+	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
 	xbound = 0.90;

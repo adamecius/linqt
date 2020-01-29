@@ -11,7 +11,7 @@ set( TEST_ROOT ${CMAKE_BINARY_DIR}/test)
 #configure_file(spin_graphene.xyz "${TEST_ROOT}/density_and_current_from_files/spin_graphene.xyz" COPYONLY)
 
 
-set(MAIN_LIBRARY chebyshev_kubo_lib)
+set(MAIN_LIBRARY kpm_lib)
 
 # Iterate over all tests found. For each, declare an executable and add it to the tests list.
 set(ALL_TESTS)

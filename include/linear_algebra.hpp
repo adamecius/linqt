@@ -4,6 +4,7 @@
 #define ALGEBRA_FUNCTION
 #include <complex>
 #include <vector>
+#include <cassert>
 
 using namespace std;
 
@@ -18,8 +19,16 @@ void axpy(const int dim, complex<double> a, const complex<double> *x, complex<do
 
 void copy(const int dim, const complex<double> *x, complex<double> *y);
 
+void copy(const vector< complex<double> >&x,vector< complex<double> >& y);
+
+complex<double> vdot(const vector< complex<double> >& x,const vector< complex<double> >& y);
 
 complex<double> vdot(const int dim, const complex<double> *x, complex<double> *y);
+
+double nrm2(const vector< complex<double> >& x);
+
+double nrm2(const int dim, const complex<double> *x);
+
 
 void batch_vdot(const int dim,const int batchSize,const complex<double>* leftb,const complex<double>* rightb,complex<double>* output);
 

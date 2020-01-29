@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	
 
 	std::string
-	outputName  ="KuboBastin_kernel_"+mu.SystemLabel()+"JACKSON.dat";
+	outputName  ="KuboGreenWood_"+mu.SystemLabel()+"JACKSON.dat";
 
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::cout<<"PARAMETERS: "<< mu.SystemSize()<<" "<<mu.HalfWidth()<<std::endl;
@@ -65,18 +65,12 @@ int main(int argc, char *argv[])
 		const double energ = energies[i];
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
-			kernel[i] += delta_chebF(energ,m0)*( DgreenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
-		kernel[i] *=  -2.0* mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+			kernel[i] += delta_chebF(energ,m0)*( greenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
+		kernel[i] *=  - mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
 	}
 
-	double acc = 0;
 	for( int i=0; i < num_div-1; i++)
-	{
-		const double energ  = energies[i];
-		const double denerg = energies[i+1]-energies[i];
-		acc +=kernel[i]*denerg;
-		outputfile<<energ*mu.HalfWidth() + mu.BandCenter() <<" "<<acc <<std::endl;
-	}
+		outputfile<<energies[i]*mu.HalfWidth() + mu.BandCenter() <<" "<<kernel[i] <<std::endl;
 
 	outputfile.close();
 

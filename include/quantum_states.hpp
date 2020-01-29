@@ -7,24 +7,12 @@
 #include <numeric>
 using namespace std; // for std::complex<double> , and std::vector
 
-struct StateParams
-{
 
-    int numStates;
-    int dimension;
-    const string sequence_type;
-    const string origin_type;
+enum StateType
+{
+	LOCAL_STATE=1,
+	RANDOM_STATE=2
 };
 
-class State
-{
-};
-
-class Factory
-{
-public:
-    bool CreateNewState() { return true; }
-    vector<complex<double> > getNewState() { return vector<complex<double> >(); };
-};
 
 #endif

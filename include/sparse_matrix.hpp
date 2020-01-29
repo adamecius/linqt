@@ -16,10 +16,21 @@ bool OPERATOR_FromCSRFile(const std::string input, int &dim, vector<int> &column
 class SparseMatrixType
 {
 public:
-  virtual string matrixType() const = 0;
-  virtual void Multiply(const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y) = 0;
-  virtual void BatchMultiply(const int batchSize, const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y)=0;
-  virtual void Optimize() = 0;
+	typedef complex<double> value_t;
+	typedef vector< value_t > vector_t;
+	
+	virtual string matrixType() const = 0;
+	virtual void Multiply(const value_t a, const value_t *x, const value_t b, value_t *y) = 0;
+	virtual void Multiply(const value_t a, const vector_t& x, const value_t b, vector_t& y) = 0;
+	virtual void Rescale(const value_t a,const value_t b) = 0 ;
+	
+	inline virtual void Multiply(const value_t *x, value_t*y) = 0 ;
+	
+	inline virtual void Multiply(const vector_t& x, vector_t& y) = 0;
+
+/***/
+  virtual void BatchMultiply(const int batchSize, const value_t a, const value_t *x, const value_t b, value_t *y)=0;
+
   virtual void ConvertFromCOO(vector<int> &rows, vector<int> &cols, vector<complex<double> > &vals) = 0;
   virtual void ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, vector<complex<double> > &vals) = 0;
   int numRows() { return numRows_; };
@@ -51,11 +62,24 @@ public:
     descr.mode = SPARSE_FILL_MODE_UPPER;
     descr.diag = SPARSE_DIAG_NON_UNIT;
   }
+  
+  inline
+  matrix_descr& mkl_descr()  { return  descr; }; 
 
+  sparse_matrix_t& mkl_matrix()  { return Matrix; };
+  
   string matrixType() const { return "CSR Matrix from MKL Library."; };
-  void Multiply(const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y);
-  void BatchMultiply(const int batchSize, const complex<double> a, const complex<double> *x, const complex<double> b, complex<double> *y);
-  void Optimize();
+  void Multiply(const value_t a, const value_t *x, const value_t b, value_t *y);
+  void Multiply(const value_t a, const vector_t& x, const value_t b, vector_t& y);
+  void Rescale(const value_t a,const value_t b);
+  inline 
+  void Multiply(const value_t *x, value_t *y){ Multiply(value_t(1,0),x,value_t(0,0),y);};
+  inline 
+  void Multiply(const vector_t& x, vector_t& y){ Multiply(value_t(1,0),x,value_t(0,0),y);};
+
+
+  void BatchMultiply(const int batchSize, const value_t a, const value_t *x, const value_t b, value_t *y);
+
   void ConvertFromCOO(vector<int> &rows, vector<int> &cols, vector<complex<double> > &vals);
   void ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, vector<complex<double> > &vals);
 

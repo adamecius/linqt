@@ -1,8 +1,20 @@
+#BASED ON https://github.com/Barthelemy/CppProjectTemplate
 cmake_minimum_required(VERSION 2.0.0)
 
+
+set(CMAKE_CXX_COMPILER "icpc")
+
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) # project specific cmake dir
-SET(CMAKE_CXX_FLAGS "--std=c++11 -O3")
+set(CMAKE_CXX_FLAGS "--std=c++11 -Wall -Wextra ")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_STANDARD 11) # tODO move up to a general cmake config for all sub projects ?
+
+if( "${CMAKE_CXX_COMPILER}" STREQUAL "icpc")
+    message("Using intel icc optimization options")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=core-avx2 -fma -ftz -fomit-frame-pointer -qopenmp")
+endif()
+
 
 # CMake useful variables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
