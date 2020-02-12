@@ -1,6 +1,6 @@
-Wannier2Sparse which allow for creating tight-binding operators from Wannier90 outputs. 
+Wannier2Sparse is a package that allows for creating tight-binding operators from Wannier90 outputs. 
 
-From Wannier90, we used
+From Wannier90, we use:
 
 (i) The wannier hamiltonian. A file created from Wannier90 which usually have the following sufixx _hr.dat, 
 and that contains the Hamiltonian of the system in the following format:
