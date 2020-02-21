@@ -37,7 +37,7 @@ $CC $CFLAG $INC -c inline_compute-kpm-local_nonEqOp.cpp  -o $SRC/inline_compute-
 
 
 $CC $CFLAG $OFLAG -o inline_compute-kpm-nonEqOp       $SRC/inline_compute-kpm-nonEqOp.o $SRC/chebyshev_solver.o $SRC/chebyshev_moments.o  $SRC/chebyshev_moments2D.o $SRC/chebyshev_vector.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o $CLINK
-$CC $CFLAG $OFLAG -o inline_compute-kpm-local_nonEqOp $SRC/inline_compute-kpm-local_nonEqOp.o $SRC/chebyshev_solver.o $SRC/chebyshev_moments.o  $SRC/chebyshev_moments2D.o $SRC/chebyshev_vector.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o $CLINK
+$CC $CFLAG $OFLAG -o inline_compute-kpm-nonLEqOp $SRC/inline_compute-kpm-local_nonEqOp.o $SRC/chebyshev_solver.o $SRC/chebyshev_moments.o  $SRC/chebyshev_moments2D.o $SRC/chebyshev_vector.o $SRC/sparse_matrix.o $SRC/mkl_sparse_matrix.o $SRC/linear_algebra.o $CLINK
 
 
 rm -f ../*.o *.o
