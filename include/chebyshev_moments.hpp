@@ -12,6 +12,7 @@
 #include <fstream>   		 //For ifstream and ofstream
 #include <limits>    		 //Needed for dbl::digits10
 #include "linear_algebra.hpp"
+#include "vector_list.hpp"
 
 namespace chebyshev 
 {
@@ -25,7 +26,7 @@ class Moments
 
 	//GETTERS
 	inline
-	int SystemSize() const { return system_size; };
+	size_t SystemSize() const { return system_size; };
 
 	inline
 	string SystemLabel() const { return system_label; };
@@ -91,7 +92,7 @@ class Moments
 
 	private:
 	std::string system_label;
-	int system_size;
+	size_t system_size;
 	double band_width,band_center;
 	vector_t mu;	
 };
@@ -99,25 +100,27 @@ class Moments
 
 class Moments1D: public Moments
 {
+	
 	public: 
+	
 	Moments1D():numMoms(0){};
 
-	Moments1D(const int m0):numMoms(m0){ assert ( m0>0); this->MomentVector( Moments::vector_t(numMoms, 0.0) ); };
+	Moments1D(const size_t m0):numMoms(m0){ this->MomentVector( Moments::vector_t(numMoms, 0.0) ); };
 
 
 	//GETTERS
 	inline
-	int MomentNumber() const { return numMoms; };
+	size_t MomentNumber() const { return numMoms; };
 
 	inline
-	int HighestMomentNumber() const { return  numMoms; };
+	size_t HighestMomentNumber() const { return  numMoms; };
 
 	//SETTERS
 
 
 	//OPERATORS
 	inline
-	Moments::value_t& operator()(const int m0) { return this->MomentVector(m0); };
+	Moments::value_t& operator()(const size_t m0) { return this->MomentVector(m0); };
 
 	inline
 	bool operator == (const Moments1D& other) const  
@@ -132,7 +135,7 @@ class Moments1D: public Moments
 	};
 
 	private:
-	int numMoms;
+	size_t numMoms;
 };
 
 
@@ -141,7 +144,7 @@ class Moments2D: public Moments
 	public: 
 	Moments2D():numMoms({0,0}){};
 	
-	Moments2D(const int m0,const int m1):numMoms({m0,m1}){ assert ( m0>0 &&m1>0); this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    };
+	Moments2D(const size_t m0,const size_t m1):numMoms({m0,m1}){ this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    };
 
 	Moments2D( std::string momfilename );
 
@@ -190,19 +193,39 @@ class Moments2D: public Moments
 class Vectors : public Moments
 {
 	public: 
-	Vectors():numMoms(0){};
-	Vectors(const int nMoms,const int dim ):numMoms(nMoms){ assert ( nMoms>0); this->SystemSize(dim); this->MomentVector( Moments::vector_t(nMoms*this->SystemSize(), 0.0) );    };
-	Vectors( Moments1D mom ):numMoms( mom.HighestMomentNumber() ){ this->SystemSize(mom.SystemSize() ); this->MomentVector( Moments::vector_t(numMoms*this->SystemSize(), 0.0) );    };
-	Vectors( Moments2D mom ):numMoms( mom.HighestMomentNumber() ){ this->SystemSize(mom.SystemSize() ); this->MomentVector( Moments::vector_t(numMoms*this->SystemSize(), 0.0) );    };
-	Vectors( Moments2D mom, const int i ):numMoms( mom.HighestMomentNumber(i) ){ this->SystemSize(mom.SystemSize() ); this->MomentVector( Moments::vector_t(numMoms*this->SystemSize(), 0.0) );    };
+	typedef VectorList< Moments::value_t > vectorList_t;
+
+
+	Vectors():Chebmu(0,0){};
+	Vectors(const size_t nMoms,const size_t dim ):Chebmu(nMoms,dim) {  };
+	Vectors( Moments1D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
+	Vectors( Moments2D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
+	Vectors( Moments2D mom, const size_t i ): Chebmu(mom.HighestMomentNumber(i), mom.SystemSize() ) {  };
+
+
+	size_t Size() const
+	{ 
+		return  (long unsigned int)this->Chebmu.VectorSize()*
+				(long unsigned int)this->Chebmu.ListSize();
+	}
+	
+	size_t SystemSize() const { return this->Chebmu.VectorSize(); }
+
+	inline
+	size_t HighestMomentNumber() const { return  this->Chebmu.ListSize(); };
 
 
 	inline
-	Moments::value_t& operator()(const int m0) { return this->MomentVector(m0*this->SystemSize() ); };
+	vectorList_t& List() { return this->Chebmu; };
+
+	inline
+	Moments::vector_t& Vector(const size_t m0) { return this->Chebmu.ListElem(m0); };
 
 
 	inline
-	int HighestMomentNumber() const { return  numMoms; };
+	Moments::value_t& operator()(const size_t m0) { return this->Chebmu(m0,0); };
+
+
 	
 	inline 
 	Moments::vector_t& Chebyshev0(){ return ChebV0; } 
@@ -223,10 +246,11 @@ class Vectors : public Moments
 
 	double MemoryConsumptionInGB();
 	
-	
+
 	private:
-	int numMoms;
-	Moments::vector_t ChebV0,ChebV1;
+	Moments::vector_t ChebV0,ChebV1,OPV;
+	vectorList_t Chebmu;	
+
 };
 
 };

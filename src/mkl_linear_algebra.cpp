@@ -1,11 +1,6 @@
 
 #include "linear_algebra.hpp"
 
-void linalg::axpy(const int dim, complex<double> a, const complex<double> *x, complex<double> *y)
-{
-	cblas_zaxpy(dim, &a, x, 1, y, 1);
-	return ;
-}
 
 void linalg::axpy(const complex<double>& a, const vector< complex<double> >& x, vector< complex<double> >& y)
 {
@@ -14,24 +9,10 @@ void linalg::axpy(const complex<double>& a, const vector< complex<double> >& x, 
 	return ;
 }
 
-
-void linalg::copy(const int dim, const complex<double> *x, complex<double> *y)
-{
-	cblas_zcopy(dim, x, 1, y, 1);
-}
-
 void linalg::copy(const vector< complex<double> >&x,vector< complex<double> >& y)
 {
 	assert( x.size() == y.size() );
 	cblas_zcopy(x.size(), &x[0], 1, &y[0], 1);
-}
-
-
-complex<double> linalg::vdot(const int dim, const complex<double> *x, complex<double> *y)
-{
-	complex<double> dotc;
-	cblas_zdotc_sub(dim, x, 1, y, 1, &dotc);
-	return dotc;
 }
 
 complex<double> linalg::vdot(const vector< complex<double> >& x,const vector< complex<double> >& y)
@@ -46,6 +27,26 @@ double linalg::nrm2(const vector< complex<double> >& x)
 {
 	return  cblas_dznrm2 (x.size(),&x[0],1);
 };
+
+
+void linalg::axpy(const int dim, complex<double> a, const complex<double> *x, complex<double> *y)
+{
+	cblas_zaxpy(dim, &a, x, 1, y, 1);
+	return ;
+}
+
+void linalg::copy(const int dim, const complex<double> *x, complex<double> *y)
+{
+	cblas_zcopy(dim, x, 1, y, 1);
+}
+
+complex<double> linalg::vdot(const int dim, const complex<double> *x, complex<double> *y)
+{
+	complex<double> dotc;
+	cblas_zdotc_sub(dim, x, 1, y, 1, &dotc);
+	return dotc;
+}
+
 
 double linalg::nrm2(const int dim, const complex<double> *x)
 {

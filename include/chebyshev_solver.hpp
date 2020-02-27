@@ -46,12 +46,16 @@ namespace chebyshev
 
 	namespace parallel
 	{
-		int CorrelationExpansionMoments(const vector_t& PhiL, const vector_t& PhiR,
-										SparseMatrixType &HAM,
-										SparseMatrixType &OPL,
-										SparseMatrixType &OPR,
-										chebyshev::Moments2D &chebMoms);
-										
+		int CorrelationExpansionMoments( 	const int batchSize,
+											const vector_t& PhiR, const vector_t& PhiL,
+											SparseMatrixType &HAM,
+											SparseMatrixType &OPL,
+											SparseMatrixType &OPR,  
+											chebyshev::Vectors &chevVecL,
+											chebyshev::Vectors &chevVecR,
+											chebyshev::Moments2D &chebMoms
+										);
+																					
 		int ComputeMomTable( chebyshev::Vectors &chebVL, chebyshev::Vectors & chebVR ,  vector_t& output);
 
 	};

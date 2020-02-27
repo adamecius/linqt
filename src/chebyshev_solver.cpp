@@ -79,39 +79,39 @@ int sequential::CorrelationExpansionMoments( const vector_t& PhiL,const vector_t
 
 
 
-int parallel::CorrelationExpansionMoments( const vector_t& PhiR, const vector_t& PhiL,
+int parallel::CorrelationExpansionMoments(	const int batchSize,
+											const vector_t& PhiR, const vector_t& PhiL,
 											SparseMatrixType &HAM,
 											SparseMatrixType &OPL,
-											SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms)
+											SparseMatrixType &OPR,  
+											chebyshev::Vectors &chevVecL,
+											chebyshev::Vectors &chevVecR,
+											chebyshev::Moments2D &chebMoms
+											)
 {
-    const int DIM = HAM.rank();
-	const int NumMomsR= chebMoms.HighestMomentNumber(0);
-	const int NumMomsL= chebMoms.HighestMomentNumber(1);
+    const size_t DIM = HAM.rank();
+	const size_t NumMomsR = chevVecR.HighestMomentNumber();
+	const size_t NumMomsL = chevVecL.HighestMomentNumber();
+	const size_t momvecSize = (size_t)( (long unsigned int)batchSize*(long unsigned int)batchSize );
 
 	auto start = std::chrono::high_resolution_clock::now();
+	
+	std::cout<<"Initialize sparse for moment matrix"<<std::endl;
+	chebyshev::Moments::vector_t momvec( momvecSize );
 
-	chebyshev::Vectors chevVecL( chebMoms,0 );
-	chebyshev::Vectors chevVecR( chebMoms,1 );
-	int batchSize = NumMomsR;
-	chebyshev::Moments::vector_t momvec( batchSize*batchSize );
-
-
-	printf("hebyshev::parallel::CorrelationExpansionMoments will used %f GB\n",chevVecL.MemoryConsumptionInGB()+chevVecR.MemoryConsumptionInGB());
 
 	for(int  mR = 0 ; mR <  NumMomsR ; mR+=batchSize)
 	{
 		chevVecL.SetInitVectors( HAM, OPL, PhiL );
 		chevVecL.IterateAll( HAM );
-
 		for(int  mL = 0 ; mL <  NumMomsL ; mL+=batchSize)
 		{
 			chevVecR.SetInitVectors( HAM, PhiR );
 			chevVecR.IterateAll( HAM );
 			chevVecR.Multiply( OPR );
-			parallel::ComputeMomTable(chevVecL,chevVecR, momvec );
+			parallel::ComputeMomTable(chevVecL,chevVecR, momvec );		
 			linalg::axpy(momvec.size(), 1.0 , &momvec[0], &chebMoms(mR,mL) );
 		}
-
 	}	   
 	auto finish = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed = finish - start;
@@ -123,12 +123,23 @@ int parallel::CorrelationExpansionMoments( const vector_t& PhiR, const vector_t&
 
 int parallel::ComputeMomTable( chebyshev::Vectors &chebVL, chebyshev::Vectors& chebVR ,  vector_t& output)
 {
+	const auto dim   = chebVL.SystemSize();
+	const auto maxML = chebVL.HighestMomentNumber();
+	const auto maxMR = chebVR.HighestMomentNumber();
 	assert( chebVL.SystemSize() == chebVR.SystemSize() && chebVL.HighestMomentNumber() == chebVR.HighestMomentNumber() );
-	const int dim    = chebVL.SystemSize();
-	const int numMom = chebVL.HighestMomentNumber() ;
-	assert( output.size() == numMom*numMom );
+	assert( output.size() == maxML*maxMR );
+	const int nthreads = mkl_get_max_threads();
 
-	linalg::batch_vdot(dim,numMom,&chebVL(0),&chebVR(0),&output[0]);
+	mkl_set_num_threads_local(1); 
+	for( auto m0 = 0; m0 < maxML; m0++)
+	{
+		#pragma omp parallel for default(none) shared(chebVL,chebVR,m0,output)
+		for( auto m1 = 0; m1 < maxMR; m1++)
+			output[ m0*maxMR + m1 ] = linalg::vdot( chebVL.Vector(m0) , chebVR.Vector(m1) );	
+	}
+	mkl_set_num_threads_local(nthreads); 
+
+//	linalg::batch_vdot(dim,numMom,&chebVL(0),&chebVR(0),&output[0]);
 return 0;
 };
 
@@ -144,8 +155,22 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 
 	std::cout<<"The Correlation calculation will run on "<<NUM_THREADS<< " threads"<<std::endl;
 	chebMoms.Rescale2ChebyshevDomain(HAM);
-
     const int DIM = HAM.rank(); 
+
+
+	chebyshev::Vectors chevVecL,chevVecR;
+	if( use_sequential )
+		std::cout<<"USING SEQUENTIAL IMPLEMENTATION"<<std::endl;
+	else
+	{
+		std::cout<<"USING LARGE MEMORY IMPLEMENTATION with BATCH_SIZE"<<batchSize<<std::endl;
+		printf("Chebyshev::parallel::CorrelationExpansionMoments will used %f GB\n", chevVecL.MemoryConsumptionInGB() + chevVecR.MemoryConsumptionInGB() );
+
+		std::cout<<"Initialize chevVecL"<<std::endl;
+		chevVecL=chebyshev::Vectors( chebMoms,0 );
+		std::cout<<"Initialize chevVecR"<<std::endl;
+		chevVecR=chebyshev::Vectors( chebMoms,1 );
+	}
 
 	//allocate the memory for the input vector, and the iteration vector
 	std::vector< std::complex<double> >  Phi(DIM); 	//States Vectors
@@ -167,19 +192,11 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 			std::cerr<<" The state state is not identify, aborting running"<<std::endl;
 			std::exit(-1);
 		}
-
-
 		//SELECT RUNNING TYPE
 		if( use_sequential )
-		{
-			std::cout<<"USING SEQUENTIAL IMPLEMENTATION"<<std::endl;
 			chebyshev::sequential::CorrelationExpansionMoments(	Phi,Phi, HAM, OPL, OPR, chebMoms);
-		}
 		else
-		{
-			std::cout<<"LARGE MEMORY CALCULATION"<<std::endl;
-			chebyshev::parallel::CorrelationExpansionMoments( Phi,Phi, HAM, OPL, OPR, chebMoms);
-		}
+			chebyshev::parallel::CorrelationExpansionMoments(batchSize, Phi,Phi, HAM, OPL, OPR, chevVecL,chevVecR, chebMoms);
 	}
 
 	//Fix the scaling of the moments

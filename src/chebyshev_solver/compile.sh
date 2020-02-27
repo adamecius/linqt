@@ -1,4 +1,5 @@
 INC="-DNDEBUG  -I../../include"
+INC=" -I../../include"
 SRC="../../src"
 BUILD_DIR="../.."
 
