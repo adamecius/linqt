@@ -28,7 +28,7 @@ void tbmodel::readStaticDisorder(const string inputfile)
 	auto dis_list = read_disorder_file(inputfile);
 	if (dis_list.size() == 0 )
 	{
-		std::cout<<"Pristin calculation"<<std::endl;
+		std::cout<<"Pristine calculation"<<std::endl;
 		return ;
 	}
 	

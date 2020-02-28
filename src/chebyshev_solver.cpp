@@ -94,6 +94,7 @@ int parallel::CorrelationExpansionMoments(	const int batchSize,
 	const size_t NumMomsL = chevVecL.HighestMomentNumber();
 	const size_t momvecSize = (size_t)( (long unsigned int)batchSize*(long unsigned int)batchSize );
 
+
 	auto start = std::chrono::high_resolution_clock::now();
 	
 	std::cout<<"Initialize sparse for moment matrix"<<std::endl;
@@ -146,7 +147,9 @@ return 0;
 
 int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type )
 {
-
+    int kpm_seed = time(0); 	if(getenv("KPM_SEED")) kpm_seed = std::stoi(string(getenv("KPM_SEED")));
+	srand(kpm_seed);
+	std::cout<<"Using seed "<<kpm_seed<<std::endl;
 	//Allocate the memory
     string NUM_THREADS ="Default"; 	if(getenv("OMP_NUM_THREADS")) NUM_THREADS = getenv("OMP_NUM_THREADS");
 	int batchSize=3;

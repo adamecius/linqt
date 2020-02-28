@@ -30,7 +30,8 @@ class hopping_kind
 	rand_re(0.0,0.0),
 	rand_im(0.0,0.0),
 	gen(hopping_kind_random::rd())
-	{}; 
+	{
+	}; 
 
 	inline
 	value_t operator()()  

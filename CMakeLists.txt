@@ -12,8 +12,15 @@ set(CMAKE_CXX_STANDARD 11) # tODO move up to a general cmake config for all sub 
 
 if( "${CMAKE_CXX_COMPILER}" STREQUAL "icpc")
     message("Using intel icc optimization options")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=core-avx2 -fma -ftz -fomit-frame-pointer -qopenmp")
+    set(CMAKE_CXX_FLAGS "--std=c++11 -Wall -Wextra -fopenmp ")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 --std=c++11 -fopenmp")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -fopenmp")
 endif()
+
+
+#ICC WITH MKL
+
+
 
 
 # CMake useful variables

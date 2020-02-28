@@ -100,9 +100,9 @@ class Moments
 
 class Moments1D: public Moments
 {
-	
+
 	public: 
-	
+
 	Moments1D():numMoms(0){};
 
 	Moments1D(const size_t m0):numMoms(m0){ this->MomentVector( Moments::vector_t(numMoms, 0.0) ); };
@@ -141,9 +141,9 @@ class Moments1D: public Moments
 
 class Moments2D: public Moments
 {
-	public: 
+	public:
 	Moments2D():numMoms({0,0}){};
-	
+
 	Moments2D(const size_t m0,const size_t m1):numMoms({m0,m1}){ this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    };
 
 	Moments2D( std::string momfilename );
@@ -179,12 +179,12 @@ class Moments2D: public Moments
 
 	//Transformation
 	void ApplyJacksonKernel( const double b0, const double b1 );
-	
+
 	//COSTFUL FUNCTIONS
-    void saveIn(std::string filename);
+	void saveIn(std::string filename);
 
 	void Print();
-		
+
 	private:
 	array<int, 2> numMoms;
 };
@@ -204,11 +204,11 @@ class Vectors : public Moments
 
 
 	size_t Size() const
-	{ 
+	{
 		return  (long unsigned int)this->Chebmu.VectorSize()*
 				(long unsigned int)this->Chebmu.ListSize();
 	}
-	
+
 	size_t SystemSize() const { return this->Chebmu.VectorSize(); }
 
 	inline
@@ -226,11 +226,11 @@ class Vectors : public Moments
 	Moments::value_t& operator()(const size_t m0) { return this->Chebmu(m0,0); };
 
 
-	
-	inline 
+
+	inline
 	Moments::vector_t& Chebyshev0(){ return ChebV0; } 
 
-	
+
 	void SetInitVectors( SparseMatrixType &NHAM,const Moments::vector_t& T0 );
 
 
@@ -245,7 +245,7 @@ class Vectors : public Moments
 
 
 	double MemoryConsumptionInGB();
-	
+
 
 	private:
 	Moments::vector_t ChebV0,ChebV1,OPV;

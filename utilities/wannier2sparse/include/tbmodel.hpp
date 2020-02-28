@@ -11,7 +11,7 @@
 #include <limits>
 #include <cassert>
 #include <functional>
-#include "wannier_parser.hpp"
+#include "wannier_parser.hpp" //for read_disorder_file
 #include "hopping_list.hpp"
 #include "operator_utils.hpp"
 

@@ -9,7 +9,7 @@
 
 #include "chebyshev_solver.hpp"
 #include "chebyshev_coefficients.hpp"
-
+#include "chebyshev_moments.hpp"
 
 void printHelpMessage();
 void printWelcomeMessage();

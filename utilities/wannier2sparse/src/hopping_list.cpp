@@ -32,6 +32,14 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 
 	for( auto group : disorder_data )
 	{
+
+		//THE LIST IS PRESENTED IN REVERSED ORDER
+		//INPUT SHOULD BE:
+		//distributiton type
+		// x x x	 //shift kind 
+		// xio xif yio yif  //orbital pair x and y
+		// Ret_min Imt_min Ret_max Imt_max concentration
+		
 		//READ CONCENTRATION
 		double concentration;
 		{
@@ -39,7 +47,7 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			concentration =  std::stod(line);
 			group.pop_back();		
 		}
-
+		
 		//READ MAX_MIN_VALUES
 		hopping_list::value_t min_val,max_val;
 		{
@@ -78,7 +86,8 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			}
 			group.pop_back();		
 		}
-
+		for( auto line : group )
+			std::cout<<line<<std::endl;
 		//READ DISTRIBUTION
 		string distribution;
 		{
@@ -93,7 +102,6 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 	
 		for( auto vertex : vertexes )
 			this->AddHopping( cellID,hopping,vertex );
-
 	}
  
 return *this; 
@@ -139,8 +147,6 @@ hopping_list& hopping_list::add_from_wannier( tuple<int, vector<string> > wannie
 		auto hop_norm=sqrt(std::norm(value()));
     	if( hop_norm/avg_hop_norm > 1e-10 )  
 			this->AddHopping(cellID,value,edge);
-//		else
-//			std::cout<<"UNO NO ENTRO: "<<cellID[0]<<" "<<cellID[1]<<" "<<cellID[2]<<" "<<edge[0]<<" "<<edge[1]<<" "<<value()<<std::endl;
 	}
     
 
@@ -179,12 +185,12 @@ hopping_list hopping_list::wrap_in_supercell(const hopping_list::cellID_t& cellD
 		const auto _value	= get<1>(_hop);
 		const auto _edge	= get<2>(_hop);
 
+		auto value	= _value;
 	    for(cellShift[2]=0; cellShift[2]< cellDim[2]; cellShift[2]++)
 	    for(cellShift[1]=0; cellShift[1]< cellDim[1]; cellShift[1]++)
 	    for(cellShift[0]=0; cellShift[0]< cellDim[0]; cellShift[0]++)
 	    {
 			auto cellID	= _cellID; 
-			auto value	= _value;
 			auto edge	= _edge;
 	
 			//Shift the cell given by the hopping vector
@@ -201,7 +207,7 @@ hopping_list hopping_list::wrap_in_supercell(const hopping_list::cellID_t& cellD
 	            //Insert the hoppings
 	            assert( edge[0]< sc_hl.WannierBasisSize() );
 	            assert( edge[1]< sc_hl.WannierBasisSize() );         
-	            sc_hl.AddHopping(cellID, _value , edge ) ;
+	            sc_hl.AddHopping(cellID, value() , edge ) ;
 		}
 		if( hopping_insertion_time == 0.0)
 		{
