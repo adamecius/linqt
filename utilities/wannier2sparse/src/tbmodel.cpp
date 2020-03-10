@@ -373,11 +373,7 @@ oputil::op_matrix tbmodel::createTorqueMatrix(const double theta, const double p
 		auto edge  = get<2>(elem.second);
 		
 		if( value.is_constant() )	
-		{
 			H00( get<0>(edge), get<1>(edge) ) += value(); 
-			std::cout<<"H_"<<get<0>(edge)<<", "<<get<1>(edge)<<" "<<value()<<" "<<H00( get<0>(edge), get<1>(edge) )<<std::endl;
-
-		}
 	};
 	std::cout<<"Creating torque matrix "<<std::endl;
 	//Compute the torque matrix
@@ -389,6 +385,7 @@ oputil::op_matrix tbmodel::createTorqueMatrix(const double theta, const double p
 		auto j = 1*orb_dim + io;
 		double J[3] = {0.0,0.0,0.0};
 
+		std::cout<<H00(i,i)<<" "<<H00(i,j)<<std::endl<<H00(i,j)<<" "<<H00(j,j)<<std::endl;
 
 		auto J00 = 0.5*( H00(i,i) - H00(j,j) );
 		auto J01 = 0.5*( H00(i,j) + std::conj(H00(j,i)) );

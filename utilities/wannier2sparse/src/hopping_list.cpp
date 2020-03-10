@@ -68,9 +68,10 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			int i0,i1;
 			while( line.size()!= 0 ) 
 			{
-				i0 = std::stoi(line,&sz); line = line.substr(sz);
-				i1 = std::stoi(line,&sz); line = line.substr(sz);
+				i0 = std::stoi(line,&sz); line = line.substr(sz); 
+				i1 = std::stoi(line,&sz); line = line.substr(sz); 
 				vertexes.push_back( hopping_list::edge_t({i0-1,i1-1}) ); //Assume 1 based
+				
 			}
 			group.pop_back();		
 		}
@@ -95,7 +96,6 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			distribution = line;
 			group.pop_back();		
 		}
-
 		//Create a hopping which is common to all the orbitals
 		auto hopping = hopping_kind().Concentration(concentration)
 									 .DistributionType(distribution,min_val,max_val);
@@ -137,7 +137,6 @@ hopping_list& hopping_list::add_from_wannier( tuple<int, vector<string> > wannie
     avg_hop_norm /= hopping_lines.size();
 	assert(avg_hop_norm>0);
 
-    std::cout<<"The norm is "<<avg_hop_norm<<std::endl;
     for (auto elem : hoppings )
     {
 		auto  cellID = get<0>(elem);
@@ -231,7 +230,7 @@ void hopping_list::save_hopping_list_as_csr(string output_filename)
 	const double CUTOFF = 0;
 
 	//Compute the average hoppinh value
-	double avg_hop_norm;
+	double avg_hop_norm=0.0;
 	for(auto const& elem : this->hoppings)
     {
 		auto hop   = get<1>(elem.second);

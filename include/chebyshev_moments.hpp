@@ -258,13 +258,3 @@ class Vectors : public Moments
 #endif 
 
 
-
-//#include <array>
-//#include <cassert>
-//#include <iostream>		/* for std::cout mostly */
-//#include <fstream>		/* for std::ofstream and std::ifstream functions classes*/
-//#include <vector>    //for std::vector mostly class
-//#include <numeric>   //for std::accumulate *
-//#include <algorithm> //for std::max_elem
-//#include <complex>   //for std::complex
-//#include "mkl.h"

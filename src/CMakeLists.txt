@@ -1,71 +1,43 @@
 # @author  Jose H. Garcia
 
 
-set(KPM_LIB_HEADERS
- "../include/Version.h" # Generated header
- "../include/chebyshev_coefficients.hpp"
- "../include/chebyshev_moments.hpp"
- "../include/chebyshev_vectors.hpp"
- "../include/kpm_noneqop.hpp"
- "../include/sparse_matrix.hpp"
- "../include/chebyshev_solver.hpp"
- "../include/quantum_states.hpp"
- "../include/linear_algebra.hpp"
-)
+#CREATES KPM_LIB
 set(KPM_LIB_SOURCES
  "chebyshev_solver.cpp"
  "quantum_states.cpp"
  "chebyshev_vectors.cpp"
  "chebyshev_moments.cpp"
+ "chebyshev_moments2D.cpp"
+ "chebyshev_moments1D.cpp"
  "sparse_matrix.cpp"
 )
 
-
-
-#IF MKL IS FOUND USE IT AS A BACKEND
-set( BLAS_LIB "")
-if( NOT "$ENV{MKLROOT}" STREQUAL "")
-add_definitions( "" )
-include_directories( "${MKLROOT}/include" )
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl=parallel")
-set( MKLROOT "$ENV{MKLROOT}" )
-#set(BLAS_LIB "-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl")
-set(BLAS_LIB "-liomp5 -lpthread -lm -ldl")
-set(KPM_LIB_SOURCES "${KPM_LIB_SOURCES}" "mkl_sparse_matrix.cpp" "mkl_linear_algebra.cpp" )
+#IF INTEL BACKEND IS USED
+if( ${INTEL_MKL} STREQUAL "TRUE" )
+	set(KPM_LIB_SOURCES "${KPM_LIB_SOURCES}" "mkl_sparse_matrix.cpp" "mkl_linear_algebra.cpp" )
+	message( ${KPM_LIB_SOURCES} )
 endif()
 
-# Set the build version. It will be used in the name of the lib, with corresponding
-# symlinks created. SOVERSION could also be specified for api version. 
-set_target_properties(${KPM_LIB} PROPERTIES
-  VERSION ${VERSION}  # ${VERSION} was defined in the main CMakeLists.
-  FRAMEWORK FALSE
-  PUBLIC_HEADER "${KPM_LIB_HEADERS}" # specify the public headers
-)
-
-
-set(KPM_LIB kpm_lib)
+#CREATION OF THE LIBRARY
+set( KPM_LIB kpm_lib)
 add_library(${KPM_LIB} STATIC ${KPM_LIB_SOURCES})
+target_link_libraries(${KPM_LIB} ${BLAS_LIB})
 
 
+#Create the  different executables
+set(MAIN inline_compute-kpm-nonEqOp)
+add_executable(${MAIN} inline_compute-kpm-nonEqOp.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )
 
-set(SOURCE_KPM_SOLVER inline_compute-kpm-nonEqOp.cpp)
-set(KPM_SOLVER inline_compute-kpm-nonEqOp)
-add_executable(${KPM_SOLVER} ${SOURCE_KPM_SOLVER} )
-target_link_libraries(${KPM_SOLVER} ${KPM_LIB} ${BLAS_LIB})
+set(MAIN inline_compute-kpm-nonLEqOp)
+add_executable(${MAIN} inline_compute-kpm-nonLEqOp.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )
 
-set(SOURCE_KPM_SOLVER inline_compute-kpm-nonLEqOp.cpp)
-set(KPM_SOLVER inline_compute-kpm-nonLEqOp)
-add_executable(${KPM_SOLVER} ${SOURCE_KPM_SOLVER} )
-target_link_libraries(${KPM_SOLVER} ${KPM_LIB} ${BLAS_LIB})
+set(MAIN inline_kuboBastinFromChebmom)
+add_executable(${MAIN} kuboBastinFromChebmom.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )
 
-
-set(SOURCE_KPM_SOLVER kuboBastinFromChebmom.cpp)
-set(KPM_SOLVER inline_kuboBastinFromChebmom)
-add_executable(${KPM_SOLVER} ${SOURCE_KPM_SOLVER} )
-target_link_libraries(${KPM_SOLVER} ${KPM_LIB} )
-
-set(SOURCE_KPM_SOLVER kuboGreenwoodFromChebmom.cpp)
-set(KPM_SOLVER inline_kuboGreenwoodFromChebmom)
-add_executable(${KPM_SOLVER} ${SOURCE_KPM_SOLVER} )
-target_link_libraries(${KPM_SOLVER} ${KPM_LIB} )
+set(MAIN inline_inline_kuboGreenwoodFromChebmom)
+add_executable(${MAIN} kuboGreenwoodFromChebmom.cpp)
+target_link_libraries(${MAIN} ${KPM_LIB} )
 

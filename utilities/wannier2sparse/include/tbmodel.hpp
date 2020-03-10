@@ -191,7 +191,7 @@ class tbmodel
 
 
 	private:
-	const int NumberOfSites() const { return orbPos_list.size()/MAX_SPIN; } 
+	int NumberOfSites() const { return orbPos_list.size()/MAX_SPIN; } 
 
 
 	inline

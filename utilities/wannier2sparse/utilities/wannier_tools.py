@@ -30,7 +30,8 @@ class wannier_system:
         #Add both to the shift vectors to obtain a real position
         #in lattice vector units
         self.pos = self.shift+pos_j-pos_i;
-     
+
+        self.bandpath = np.array( ['G',1,[0,0,0]] );
         
     def load_xyz(self,filename):
         file = open(filename, "r");
@@ -62,15 +63,20 @@ class wannier_system:
         self.values= values[:,0]+1j*values[:,1]
        
         
-    def spin_operator(self , comp ):
+    def spin_operator(self , comp=None ):
+        s0 = [ [ 0 , 1  ] , [ 1 , 0 ] ];
         sx = [ [ 0 , 1  ] , [ 1 , 0 ] ];
         sy = [ [ 0 ,-1j ] , [ 1j, 0 ] ];
         sz = [ [ 1 , 0  ] , [ 0 ,-1 ] ];
-        sop = {"x": sx, "y": sy, "z": sz};
+        sop = {"0": s0 ,"x": sx, "y": sy, "z": sz};
 
+        orb_dim = len(self.xyz_coord)//2;
+        orb_ID = np.identity( orb_dim  ) ;
+        
+        if comp is None: #Return all components
+            return [ np.kron(si,orb_ID) for si in [s0,sx,sy,sz] ] 
+            
         if comp in sop:        
-            orb_dim = len(self.xyz_coord)//2;
-            orb_ID = np.identity( orb_dim  ) ;
             SOP = np.kron(sop[comp],orb_ID);
             return SOP;
         else:
@@ -94,67 +100,76 @@ class wannier_system:
         p = np.diag( (np.conj(v.T) ) .dot(proj_op.dot(v) ) ) ;
         return ( np.real(w),np.real(p) );
 
+    def projections(self, k , proj_op  ):
+        Hk = self.ham_operator(k);
+        #When no operator submited, return only the band structure
+        if proj_op is None:
+            return eigvalsh( Hk ) ;
+
+        #If not, compute the eigen vectors
+        w, v = np.linalg.eigh( Hk );#The column w[:, i] is the normalized eigenvector of v[i] eigenvalue
+
+        p = np.diag( (np.conj(v.T) ) .dot(proj_op.dot(v) ) ) ;
+        return np.real(p);
+    
+    
+
     def Momentum_Rec2AbsMatrix(self ):
         return 2*np.pi* np.linalg.inv(self.lat_vec);
     
-
-    def get_kpoints(self,band_paths , absolute_coords = False):
-        path_labels, path_points, paths = np.transpose(band_paths);
-
-        #List of kpoints used for the band structure calculation
+    
+    def get_kpoints(self , absolute_coords = False): #Compute the kpoints used for the band structure calculation
         kpoints   = list(); 
-
-        #Compute the initial path point
-        kp  = np.array(paths[0]);
-        kpoints.append(kp);
-
-        #Compute all other path points
-        for p in range(1, len(paths) ):
-            npoint= path_points[p];
-            beg=paths[p-1];
-            end=paths[p  ];
-            for kp in np.linspace(beg,end,npoint)[1:]:
-                kpoints.append( kp ); #notice the change of basis
+        init_k = self.bandpath[0][2];
+        for path_label, npoint, end_k in self.bandpath[1:]: #Not consider initial point anymore
+                path_kpoints = np.linspace(init_k,end_k,npoint, endpoint=False ); 
+                init_k  = end_k
+                for kp in path_kpoints:
+                    kpoints.append(kp)
+        kpoints.append(init_k);
 
         #If required, rescale to absolute value
         if absolute_coords  is True :
              kpoints = np.dot( kpoints, np.transpose(self.Momentum_Rec2AbsMatrix() ) );
-
                 
         return np.array(kpoints);
 
-    def bandsXaxis(self, kpoints, absolute_coords = False ):
-        #The kpoints are in reciprocal. Therefore, for a correct x axis 
-        # it is necessary to transform it to absolute value
-        if absolute_coords is False:
-            kps = np.dot( kpoints,  np.transpose(self.Momentum_Rec2AbsMatrix() )  );
-            return np.cumsum( np.insert( np.linalg.norm(kps[1:]-kps[:-1],axis=1),0,0) )
-        kpoints = np.array(kpoints);
-        return np.cumsum( np.insert( np.linalg.norm(kpoints[1:]-kpoints[:-1],axis=1),0,0) )
-        
+    def set_bandpath(self,bandpath):
+        self.bandpath=np.array(bandpath);
+
+    def get_XLabels(self ):
+        Xaxis = self.bandsXaxis()
+        xpos = (np.cumsum(self.bandpath[:,1],dtype=int)-1)
+        return (Xaxis[xpos],self.bandpath[:,0])                
     
     
-    def compute_band_structure(self,band_paths, fermi_energy = 0.0, proj_op = None, ax=None, plot_proj=False ):
-
-        path_labels, path_points, paths = np.transpose(band_paths);
-
+    def bandsXaxis(self ): #The kpoints are assume to be in absolute coordinates 
+        kpoints=self.get_kpoints(absolute_coords = True);
+        Xaxis=np.cumsum(np.linalg.norm(np.diff( kpoints,axis=0, prepend = 0),axis=1));
+        Xaxis-=Xaxis[0];#Remove the initial value.
+        return Xaxis;
+    
+    
+    def compute_band_structure(self, fermi_energy = 0.0, proj_op = None, ax=None, plot_proj=False, proj_range=None ):
+     
         #Compute the kpoints based on the path
-        kpoints= self.get_kpoints(band_paths) ; 
-        kaxis  = self.bandsXaxis( kpoints, absolute_coords =False );
+        kpoints= self.get_kpoints();
 
         #Compute the eigenvalues and the projected values 
         peigenvals = np.array( [self.projected_eigenvalues( kp , proj_op) for kp in kpoints ] );
 
         if proj_op is None:
-            return self.plot_band_structure(xaxis=kaxis, bands = np.transpose(peigenvals), ax=ax );
+            return self.plot_band_structure( bands = np.transpose(peigenvals-fermi_energy), ax=ax );
 
-        bands = np.transpose(peigenvals[:,0] );
+        bands = np.transpose(peigenvals[:,0]-fermi_energy );
         projs = np.transpose(peigenvals[:,1] );
         
-        return self.plot_band_structure(xaxis=kaxis, bands = bands , projs = projs , ax=ax, plot_proj = plot_proj);
+        return self.plot_band_structure( bands = bands , projs = projs , ax=ax, plot_proj = plot_proj, proj_range=proj_range);
 
     
-    def plot_band_structure(self,xaxis, bands, projs = None, ax=None, plot_proj = False):
+    def plot_band_structure(self, bands, projs = None, ax=None, plot_proj = False, proj_range=None):
+        
+        xaxis  = self.bandsXaxis();
             
         #PLOTING
         #plot options
@@ -164,8 +179,6 @@ class wannier_system:
         else:
             _ax  = ax;
 
-       # ax.set_xticks(klabels);
-       # ax.set_xticklabels(path_labels);
         _ax.tick_params(axis='both', which='major', labelsize=16);
         
         if plot_proj is True:
@@ -178,6 +191,8 @@ class wannier_system:
             if projs is not None:
                 vmin = np.min(projs);
                 vmax = np.max(projs);
+                if proj_range is not None:
+                    vmin,vmax = list(proj_range);
             for i,band in enumerate(bands):
                 _ax.plot(xaxis,band , color = 'k');
                 c = 'k';
@@ -191,17 +206,61 @@ class wannier_system:
                 im = _ax.scatter(xaxis, bands[0],s=0, c=np.linspace( vmin,vmax,len(bands[0]) ),cmap=cmap_name);
                 fig.colorbar(im, ax=_ax); 
 
+        klabels, path_labels = self.get_XLabels()
+        _ax.set_xticks(klabels);
+        _ax.set_xticklabels(path_labels);
+                
         if ax is None:
+
             return fig,_ax;
 
         ax = _ax;
         return ax;
 
+
+    def compute_projections(self,kpoints, proj_op ):
+        return  np.array( [self.projections( kp, proj_op=proj_op ) for kp in kpoints ] );
+    
+    def compute_dispersion(self,kpoints):
+        return np.array( [self.projected_eigenvalues( kp, proj_op=None ) for kp in kpoints ] );        
+      
+    def compute_fermi_surface(self,kpoints, fermi_energy = 0.0, tol = None ,  proj_op = None ):
+
+        #Compute the eigenvalues and the projected values 
+        eigvals = np.array( [self.projected_eigenvalues( kp, proj_op=None ) for kp in kpoints ] );
+    
+        #Determine the important kpoints
+        relevant_kpoints = np.any(np.abs(eigvals - fermi_energy) < tol, axis=1);
+        #Select the kpoints
+        kpoints = kpoints[relevant_kpoints];
+
+        if proj_op is None:
+            return kpoints,eigvals[relevant_kpoints];
+
+        #If one requires a projection, select the kpoints and then use them to compute the projections
         
-    
+        peigvals = np.array( [self.projected_eigenvalues( kp, proj_op=proj_op ) for kp in kpoints ] );
+        return kpoints,peigvals[relevant_kpoints];
 
-
     
+    def refine_kpoints(self, kpoints):
+
+        nkp= 2*len(kpoints);
+        kmin = np.array([ np.min(kpoints[:,0]),np.min(kpoints[:,1]),0 ] );
+        kmax = np.array([ np.max(kpoints[:,0]),np.max(kpoints[:,1]),0 ] );
+        kpoints= np.array(list(np.ndindex((nkp,nkp,1))))/(nkp-1)*(kmax-kmin) + kmin ;#kpoints in recpricola lattice vectors
+
+        return kpoints;
+    
+    
+    def compute_DOS(self, energies, fermi_energy = 0.0, kpoints =None  ):
+        b1,b2,b3 = self.Momentum_Rec2AbsMatrix().T
+        nkp= 2*len(kpoints);
+        kmin = np.array([ np.min(kpoints[:,0]),np.min(kpoints[:,1]),0 ] );
+        kmax = np.array([ np.max(kpoints[:,0]),np.max(kpoints[:,1]),0 ] );
+        kpoints= np.array(list(np.ndindex((nkp,nkp,1))))/(nkp-1)*(kmax-kmin) + kmin ;#kpoints in recpricola lattice vectors
+
+        return kpoints;
         
 
 """

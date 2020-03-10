@@ -187,6 +187,9 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 		{
 			case RANDOM_STATE:
 			Phi[j] = exp(value_t(0, 2.0*M_PI*(double)rand() / (double)RAND_MAX ) )/sqrt(DIM);
+			if( j <10)
+				std::cout<<j<<" "<<Phi[j]<<std::endl;
+
 			break;
 			case LOCAL_STATE:
 			Phi[j] = ( (j==i) ? 1.0 : 0.0 ) ;

@@ -7,8 +7,8 @@
 
 
 #include "kpm_noneqop.hpp" //Message functions
-#include "sparse_matrix.hpp"
 #include "chebyshev_moments.hpp"
+#include "sparse_matrix.hpp"
 #include "quantum_states.hpp"
 #include "chebyshev_solver.hpp"
 
@@ -46,13 +46,13 @@ int main(int argc, char *argv[])
 		builder.setSparseMatrix(&OP[i]);
 		builder.BuildOPFromCSRFile(input);
 	};
-
 	//CONFIGURE THE CHEBYSHEV MOMENTS
 	chebMoms.SystemLabel(LABEL);
 	chebMoms.BandWidth( atof(argv[5]) );
 	chebMoms.BandCenter( atof(argv[6]) );
 	chebMoms.SystemSize(OP[0].rank() );
 	chebMoms.Print();
+
 
 	//Define thes states youll use
 	//Factory state_factory ;

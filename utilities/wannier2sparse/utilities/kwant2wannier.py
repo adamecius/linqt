@@ -79,8 +79,7 @@ def convert2wannier(syst,params):
         value_list = list()
         for row, row_value in enumerate(matrix_value):
             for col, value in enumerate(row_value):
-                if row >= col:
-                    value_list.append((row,col,value));
+                value_list.append((row,col,value));
         return value_list;
 
 
@@ -103,14 +102,15 @@ def convert2wannier(syst,params):
         numOrbs = len( orbIndexes );
         for site, matrix_value in  site_value_pairs :
             matrix_value = evalute_value(site, matrix_value,params);
-            for spin_i,spin_j, value in  get_matrix_values(matrix_value) :
+            for spin_i,spin_j, value in  get_matrix_values(matrix_value) :               
                 index_i =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_i );
                 index_j =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_j );
-                if( np.abs(value) > 1e-13 ):# Remove very small non zero values
+                upper_matrix = bool(spin_j >= spin_i ); #Consider the upper part of the matrix
+                if( np.abs(value) > 1e-13 and upper_matrix ):# Remove very small non zero values 
                     hop = (*site.tag,index_i+1,index_j+1, np.real(value), np.imag(value));
                     onsites.append(hop);
                     h_hop = conj(*hop);
-                    if ( hop != h_hop):
+                    if ( hop != h_hop  ):
                         onsites.append(h_hop );
         return onsites;
     

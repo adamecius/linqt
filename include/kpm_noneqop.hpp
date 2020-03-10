@@ -10,12 +10,12 @@ namespace chebyshev
 inline
 void printHelpMessage()
 {
-	std::cout << "The program should be called with the following options: Label Op1 Op2 numMom scaleFactor shift (optional) num_states" << std::endl
+	std::cout << "The program should be called with the following options: Label Op1 Op2 numMom BandWidth BandCenter (optional) num_states" << std::endl
 			  << std::endl;
 	std::cout << "Label will be used to look for Label.Ham, Label.Op1 and Label.Op2" << std::endl;
 	std::cout << "Op1 and Op2 will be used to located the sparse matrix file of two operators for the correlation" << std::endl;
 	std::cout << "numMom will be used to set the number of moments in the chebyshev table" << std::endl;
-	std::cout << "scaleFactor and shift will be used to rescale the hamiltonian from H to scaleFactor*H + shift" << std::endl;
+	std::cout << "BandWidth and BandCenter will be used to rescale the hamiltonian from H to (2*H-BandCenter)/BandWidth" << std::endl;
 };
 
 inline
