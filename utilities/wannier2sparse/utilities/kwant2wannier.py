@@ -20,6 +20,7 @@ def syst2txt(syst, systname ,params ):
             out.write("%d %d %d %d %d %f %f \n"% (elem));
 
 def geo2txt(syst,lattice_vectors,site_dict ,systname ):
+    
     filename= systname+".uc";
     with open(filename, 'w') as out:
         for vec in lattice_vectors:
@@ -31,12 +32,13 @@ def geo2txt(syst,lattice_vectors,site_dict ,systname ):
 
     filename= systname+".xyz";
     orb_pos = [ tuple(site.pos) for site in syst.sites() ] ;
+    spin_dic = {0:"_s+_",1:"_s-_" }; #Spin should not be included here
+
     with open(filename, 'w') as out:
         out.write( " %d \n"%(2*len(orb_pos)))
         for spin in range(2): #GENERALIZE 
-            for orb in orb_pos:
-#                orb = tuple( np.dot( orb, lattice_vectors) );
-                out.write( site_dict[spin]+" ");
+            for i,orb in enumerate(orb_pos):
+                out.write( site_dict[i]+spin_dic[spin]+" ");
                 for x in orb:
                     if( x>= 0):
                         out.write(" ")
@@ -51,6 +53,8 @@ def convert2wannier(syst,params):
     #This function take these values and evaluate them using
     #the params passed from the main.
     def evalute_value(obj,value,params):
+        if params is None:
+            return value;
         return value(obj,**params);
 
     #Kwant only storage hoppings without their conjugated complex.
@@ -98,14 +102,15 @@ def convert2wannier(syst,params):
         numOrbs = len( orbIndexes );
         for site, matrix_value in  site_value_pairs :
             matrix_value = evalute_value(site, matrix_value,params);
-            for spin_i,spin_j, value in  get_matrix_values(matrix_value) :
+            for spin_i,spin_j, value in  get_matrix_values(matrix_value) :               
                 index_i =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_i );
                 index_j =combine_orbital_inner_indexes( orb_idx=orbIndexes[site.family], numOrbs=numOrbs, spin_idx=spin_j );
-                if( np.abs(value) > 1e-13 ):# Remove very small non zero values
+                upper_matrix = bool(spin_j >= spin_i ); #Consider the upper part of the matrix
+                if( np.abs(value) > 1e-13 and upper_matrix ):# Remove very small non zero values 
                     hop = (*site.tag,index_i+1,index_j+1, np.real(value), np.imag(value));
                     onsites.append(hop);
                     h_hop = conj(*hop);
-                    if ( hop != h_hop):
+                    if ( hop != h_hop  ):
                         onsites.append(h_hop );
         return onsites;
     
@@ -124,6 +129,7 @@ def convert2wannier(syst,params):
                     h_hop = conj(*hop);
                     if ( hop != h_hop):
                         hoppings.append(h_hop );
+
         return hoppings;
 
     orbIndexes = getSitesID(syst.sites() ); #Extract from syst.

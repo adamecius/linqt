@@ -11,248 +11,215 @@
 #include <limits>
 #include <cassert>
 #include <functional>
-#include<iostream>
-#include<limits>
-#include<algorithm>
-#include "wannier_parser.hpp"
+#include "wannier_parser.hpp" //for read_disorder_file
 #include "hopping_list.hpp"
+#include "operator_utils.hpp"
 
 using namespace std;
 
 
+/**
+ * This functiosn assert that two inputs are equal. the inputs should have overloeaded the operator == . 
+ *
+ * @param[out] equal.  true if they are both equal, false if not
+ * @param[in]  x Input parameter to be compare. It should have the ovearled version of ==.
+ * @param[in]  y Input parameter to be compare with X.
+ */
 template<typename T>
-void assert_equal(const T x,const T y )
+bool assert_equal(const T x,const T y )
 {
-    if( x != y )
+	bool equal = ( x == y );
+    if( !equal )
         std::cerr<<"ASSERT_EQUAL FAILED: "<<x<<" != "<<y<<std::endl;
     assert(x==y);
-    return ;
+    return equal;
 }
 
-array<double,3> tag2cartesian(const array<int,3>& tag,const array < array<double,3> , 3 >& lat_vecs  )
-{
-    array<double,3> cart_vect = {0,0,0};
-    for(int i =0 ; i < cart_vect.size(); i++ )
-    for(int j =0 ; j < tag.size(); j++ )
-        cart_vect[i] += tag[j]*lat_vecs[j][i];
-    return cart_vect;
-};
 
-double volume( const array < array<double,3> , 3 >&  uc )
-{
-    return  std::fabs(
-            ( uc[0][1]*uc[1][2]-uc[1][1]*uc[0][2])*uc[2][0]+
-            ( uc[0][2]*uc[1][0]-uc[0][0]*uc[1][2])*uc[2][1]+
-            ( uc[0][0]*uc[1][1]-uc[0][1]*uc[1][0])*uc[2][2]);
-}
+/**
+ * Transform a site tag into real space cartesian vector.
+ *
+ * @param[out] cart_vect. A three-dimensional real vector, constructed from the tag and the lattice vectors
+ * @param[in]  tag. An identification of the position of a unit cell. In this version of the code, this is the position in units of lattice vector.
+ * @param[in]  lattice_vector. The set of lattice vectors
+ */
+array<double,3> 
+tag2cartesian(const array<int,3>& tag,const array < array<double,3> , 3 >& lat_vecs  );
+
+
+/**
+ * Compute the volume of a given unit cell.
+ *
+ * @param[out] Volume. the volume of the unit cell
+ * @param[in]  UC. Unit cell in the form of an array of arrays.
+ */
+double 
+volume( const array < array<double,3> , 3 >&  uc );
+
+
+/*! The tbmodel class 
+ *  This class is responsible for reading wannier files
+ *  and converting it into a hopping_list structure
+ *  It is also responsible for constructing other tight-binding operators
+ * */
 
 class tbmodel
 {
     public:
     typedef tuple<string, array<double, 3> > orbPos_t;
     typedef array < array<double,3> , 3 > unitCell_t;
+	typedef multimap< string  ,  hopping_kind > hopping_kind_list ;
+
+    void readUnitCell(const string inputfile);
 
 
-    inline void readUnitCell(const string inputfile)
-    {
-        lat_vecs= read_unit_cell_file(inputfile);
+	void readOrbitalPositions(const string inputfile);
 
-    }
+	void readWannierModel(const string inputfile);
+    
+	void readStaticDisorder(const string inputfile);
 
-    inline void readOrbitalPositions(const string inputfile)
-    {
-        orbPos_list= read_xyz_file(inputfile);
-    };
+	/**
+	 * Transform a site tag into real space cartesian vector.
+	 *
+	 * @param[out] cart_vect. A three-dimensional real vector, constructed from the tag and the lattice vectors
+	 * @param[in]  tag. An identification of the position of a unit cell. In this version of the code, this is the position in units of lattice vector.
+	 * @param[in]  lattice_vector. The set of lattice vectors
+	 */
+    map<int,string> map_id2orbs();
 
-    inline void readWannierModel(const string inputfile)
-    {
-        hl = create_hopping_list(read_wannier_file(inputfile));
-    };
-
-    hopping_list createHoppingCurrents_list(const int dir)
-    {
-        std::cout<<"Creating the Velocity matrix V"<<dir<<std::endl;
-        assert( dir <3 && dir >=0 ); 
-        assert(volume(lat_vecs) > 0 );
-        assert_equal( (int)orbPos_list.size(), hl.WannierBasisSize());
-
-        hopping_list chl = this->hl ;
-        for( auto& elem: chl.hoppings )
-        {
-            auto  tag   = get<0>(elem.second);
-            auto  edge  = get<2>(elem.second);
-
-            auto orb_diff = get<1>(orbPos_list[edge[1]]) ;//save final orbital position
-            
-            for( int i=0; i < orb_diff.size(); i++)
-                orb_diff[i] +=-get<1>(orbPos_list[edge[0]])[i];//substract initial position
-
-            auto displ_vec = tag2cartesian(tag, lat_vecs); //get the displacement vector in cartesian
-            for( int i=0; i < orb_diff.size(); i++)
-                orb_diff[i] += displ_vec[i];    //add it to the orbital_difference
-
-            //Change the hopping element accordingly
-            get<1>(elem.second) *=  hopping_list::value_t( 0.0, -orb_diff[dir] );
-        }
-        return chl;
-    };
+	/**
+	 * Transform a site tag into real space cartesian vector.
+	 *
+	 * @param[out] cart_vect. A three-dimensional real vector, constructed from the tag and the lattice vectors
+	 * @param[in]  tag. An identification of the position of a unit cell. In this version of the code, this is the position in units of lattice vector.
+	 * @param[in]  lattice_vector. The set of lattice vectors
+	 */
+    map<int,int> map_id2spin();
+    
+    
+    //MAIN FUNCTIONS
+	inline
+	hopping_list& Hopping_List()
+	{
+		return hl;
+	}
 
 
-    hopping_list createHoppingDensity_list()
-    {
-        assert(volume(lat_vecs) > 0 );
-        assert(orbPos_list.size()==hl.WannierBasisSize());
-        
-        hopping_list chl ;
-        chl.num_wann= hl.WannierBasisSize(); //number of wannier functions
-             
-		int i_orb = 0;
-		hopping_list::cellID_t cellID={0,0,0};//onsite 
-        for( auto orb_id_0 : this->orbPos_list )
-        {
-			int j_orb = 0;
-			for( auto orb_id_1 : this->orbPos_list )
-			{
-				hopping_list::edge_t vertex_edge = {i_orb,j_orb}; 
-				hopping_list::value_t hop_value(1.0,0.0);
-				chl.hoppings.insert( {get_tag(cellID,vertex_edge), hopping_list::hopping_t(cellID,hop_value,vertex_edge) } );
-				j_orb++;
-			}
-			i_orb++;
-		}
-
-        return chl;
-    };
+	/**
+	 * Extract the local hoppings for the hopping list. 
+	 * In this context, the local hoppings are the one satisfying \sum_{i in cell} H_ij|i><j| with 
+	 * |i> the basis vector in which the hoppings <i,0,0,0|H|j,0,0,0> are defined. 
+	 * The (0,0,0) indexes is to note that this operator only consider hoppings within the unit cell
+	 * @return density_hopping_list Returns the density operator in the format of a hopping list.
+	 */
+    hopping_list createLocalHopping_list( );
 
 
-    map<int,string>
-    map_id2orbs()
-    {
-		map<int,string> id2orbs; 
-        int id = 0;
-        for( auto orb_id : this->orbPos_list )
-        {
-			auto orb_label = get<0>(orb_id);
-			string orbNAME = orb_label ;
-			int end_name_pos = orbNAME.find("_");
-			orbNAME = orbNAME.substr (0,end_name_pos);
-			id2orbs.insert( {id,orbNAME} );
-			id++;
-        }
-        return id2orbs;
-    }
+	/**
+	 * Construct a density operator for the hopping list an a matrix defining an operator. 
+	 * In this context, the matrix is defined only in the unit cell, hereby the reason for calling it a density operator.
+	 * The density operator is then defined as \sum_{i in cell} M_ij|i><j| with 
+	 * |i> the basis vector in which the hoppings <i,0,0,0|H|j,0,0,0> are defined. 
+	 * The (0,0,0) indexes is to note that this operator only consider hoppings within the unit cell
+	 * @return density_hopping_list Returns the density operator in the format of a hopping list.
+	 */
+    hopping_list createHoppingDensity_list( oputil::op_matrix OP );
+
+	/**
+	 * Construct the current operator for the hopping list. 
+	 * In this context, a current operator is defined as \sum_{i,j} |i><j| I*H_{i,j}*(R_i-R_j)_dir with 
+	 * |i> the basis vector in which the hoppings <i|H|j> are defined. 
+	 * Here i represents both orbital and unit cell indexes.
+	 * and d, representes the direction in which you want the current
+	 *
+	 * @return current_hopping_list Returns the current operator in the format of a hopping list.
+	 * @param[in]  Direction. The direction in which you want the current.
+	 */
+    hopping_list createHoppingCurrents_list(const int dir);
+
+	/**
+	 * Construct the density operator in the direction u = ( sin(theta)*cos(phi),sin(theta)*sin(phi), cos(theta); 
+	 * In this context,  OP  =   Su, the spin direction.
+	 *
+	 * @return density_hopping_list Returns the density operator in the format of a hopping list.
+	 * @param[in]  Theta. angle defining the altitute direction in which you want the current.
+	 * @param[in]  Phi. angle defining the azimuth
+	 */
+    hopping_list createHoppingSpinDensity_list(const double theta, const double phi);
+    
+	/**
+	 * Construct the density operator in the direction u = ( sin(theta)*cos(phi),sin(theta)*sin(phi), cos(theta); 
+	 * In this context,  OP  =   Su, the spin direction.
+	 *
+	 * @return density_hopping_list Returns the density operator in the format of a hopping list.
+	 * @param[in]  Theta. angle defining the altitute direction in which you want the current.
+	 * @param[in]  Phi. angle defining the azimuth
+	 */
+    hopping_list createHoppingTorqueDensity_list(const double theta, const double phi);
+
+	/**
+	 * Construct the current density operator in the direction u = ( sin(theta)*cos(phi),sin(theta)*sin(phi), cos(theta) ); 
+	 *
+	 * @return spin_current density_hopping_list Returns the Current Density operator in the format of a hopping list.
+	 * @param[in]  Theta. angle defining the altitute direction in which you want the current.
+	 * @param[in]  Phi. angle defining the azimuth
+	 */
+    hopping_list createHoppingSpinCurrents_list(const int dir, const double theta, const double phi );
 
 
-    map<int,int>
-    map_id2spin()
-    {
-        map<int,int> id2spin; 
-        int id = 0;
-        for( auto orb_id : this->orbPos_list )
-        {
-            auto orb_label = get<0>(orb_id);
-            int sz = 0 ;
-            if( orb_label.find("_s+_")!=std::string::npos )
-                sz= 1;
-            if( orb_label.find("_s-_")!=std::string::npos )
-                sz=-1;
-            if( sz != 0)
-                id2spin.insert( {id,sz} );
-            id++;
-        }
-        return id2spin;
-    }
+	//DERIVED FUNCTIONS
+    hopping_list createHoppingCurrents_list(const std::string op );
+    
+    hopping_list createHoppingSpinDensity_list(const std::string op );
 
-    hopping_list createHoppingSpinDensity_list(const char dir)
-    {
-		std::cout<<"Creating the  SpinDensity operator in "<<dir<<" direction"<<std::endl;
-		auto id2spin = this->map_id2spin();
-		auto id2orbs = this->map_id2orbs();
-        
-        auto dens = this->createHoppingDensity_list();
+    hopping_list createHoppingTorqueDensity_list(const std::string op );
 
-        for( auto& elem: dens.hoppings )
-        {
-            auto edge  = get<2>(elem.second);
-            auto value =&get<1>(elem.second); 
-            auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
-            auto o1=id2orbs[edge[0]], o2= id2orbs[edge[1]];
-			
+    hopping_list createHoppingSpinCurrents_list(string op);  
+   
+    hopping_list createHoppingSpinCurrents_list(const int dir, const char sdir);
 
-            if( s1!= 0 && s2!= 0 && o1==o2 ) //When no spinless and diagonal in orbital index
-            {
-				switch(dir)
-				{
-					case 'x':
-					*value = (s1 + s2 == 0 ? 1.0 : 0.0   );
-					std::cout<<"("<<edge[0]<<","<<s1<<","<<o1<<") "<<"-->("<<edge[1]<<","<<s2<<","<<o2<<") ="<<*value<<std::endl;
-					break;
+    hopping_list WannierOperator(std::string op_id );
 
-					case 'y':
-					*value = (s1 + s2 == 0 ? hopping_list::value_t(0.0,s2) : 0.0   );
-					std::cout<<"("<<s1<<","<<o1<<") "<<"-->("<<s2<<","<<o2<<") ="<<*value<<std::endl;
-					break;
+	//hopping_list add_onsite_disorder(const hopping_list  hl , double W=0.0 );
 
-					case 'z':
-					*value = (s1 == s2 ? s2 : 0.0   );
-					std::cout<<"("<<s1<<","<<o1<<") "<<"-->("<<s2<<","<<o2<<") ="<<*value<<std::endl;
-					break;
+	inline 
+	void getSpinIndex(const int& n, int& s)const {  s = n/this->NumberOfSites() ; };
 
-					default:
-					*value = 0 ;
-				}
-			}
-			else 
-				*value = 0 ;
-
-        }
-
-        std::cout<<"Sucess."<<std::endl;
-        return dens;
-    }
+	inline 
+	int  getSpinIndex(const int& n) const {  return  n/this->NumberOfSites() ; };
 
 
-    hopping_list createHoppingSpinCurrents_list(const int dir, const char sdir)
-    {
-        std::cout<<"Creating the spin Velocity matrix V"<<dir<<"S"<<sdir<<std::endl;
-        auto id2spin = this->map_id2spin();
-        auto curr = this->createHoppingCurrents_list(dir);
-        for( auto& elem: curr.hoppings )
-        {
-            auto edge  = get<2>(elem.second);
-            auto value =&get<1>(elem.second);
-            auto s1=id2spin[edge[0]], s2= id2spin[edge[1]];
-            if( s1!= 0 && s2!= 0 ) //When no spinless
-            {
-				switch(sdir)
-				{
-					case 'x':
-						std::cout<<"NOT IMPLEMENTED"<<std::endl;
-					break;
-
-					case 'y':
-						std::cout<<"NOT IMPLEMENTED"<<std::endl;
-					break;
-
-					case 'z':
-					*value *= (s1 == s2 ? s2 : 0.0   );
-					break;
-
-					default:
-					*value *= 0 ;
-				}
-			}
-
-        }
-        std::cout<<"Sucess."<<std::endl;
-        return curr;
-    }
+	private:
+	int NumberOfSites() const { return orbPos_list.size()/MAX_SPIN; } 
 
 
+	inline
+	void ChangeSpinIndex(int &n, const int s) const {  n = n%NumberOfSites() + s*NumberOfSites(); };
+
+	inline
+	hopping_list::edge_t ChangeSpinIndex(const hopping_list::edge_t& n,const hopping_list::edge_t& s  ) const 
+	{  
+		return {  n[0]%NumberOfSites() + s[0]*NumberOfSites(), n[1]%NumberOfSites() + s[1]*NumberOfSites()};
+	}
+	//inline orbPos_list.size() gives you the number of positions. Including the repeated one due to MAX_SPIN
+
+	oputil::op_matrix createSpinMatrix(const double theta, const double phi);
+
+	oputil::op_matrix createTorqueMatrix(const double theta, const double phi);
+
+	public:
     int num_orbs;
     unitCell_t lat_vecs;
     vector< orbPos_t > orbPos_list;
     hopping_list hl;
+
+	private :
+	const int MAX_SPIN = 2; 
+	const int SPIN_UP = 0; 
+	const int SPIN_DW = 1; 
+	
+
 };
 
 #endif

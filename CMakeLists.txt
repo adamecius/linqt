@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 2.0.0)
-
+#BASED ON https://github.com/Barthelemy/CppProjectTemplate
+cmake_minimum_required(VERSION 2.4.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) # project specific cmake dir
-SET(CMAKE_CXX_FLAGS "--std=c++11 -O3")
-set(CMAKE_CXX_STANDARD 11) # tODO move up to a general cmake config for all sub projects ?
+
 
 # CMake useful variables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -10,7 +9,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Set the name of your project here
-project("inline_kuboBastinFromChebmom")
+project("LinQT")
 
 # Set the version number of your project here (format is MAJOR.MINOR.PATCHLEVEL - e.g. 1.0.0)
 set(VERSION_MAJOR "1")
@@ -27,11 +26,10 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include
 )
 
-enable_testing()
-add_subdirectory(include)
+#enable_testing()
 add_subdirectory(src)
-#add_subdirectory(doc)
-add_subdirectory(test)
-#add_subdirectory(samples)
 add_subdirectory(utilities)
+#add_subdirectory(doc)
+#add_subdirectory(test)
+#add_subdirectory(samples)
 

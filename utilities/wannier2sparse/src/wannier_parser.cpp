@@ -1,5 +1,46 @@
 #include "wannier_parser.hpp"
 
+
+vector< vector<string> > read_disorder_file(const string disorder_filename)
+{
+	ifstream input_file(disorder_filename.c_str()); 
+    input_file.precision( numeric_limits<double>::digits10+2);
+    if(! input_file.is_open())
+		return vector< vector<string> >();
+    
+
+	//Get all lines into the memory
+    string line; 
+	vector<string>  lines;
+    for( int counter = 0; getline(input_file, line); counter++)
+		lines.push_back( line );
+
+
+	//Group lines depending on if there is a blank space between them
+	vector<string> group;
+	vector< vector<string> >  line_groups;
+    for( auto line : lines  )
+    {
+		if( line.size() == 0) 
+		{
+			if( group.size() != 0 )
+			{
+				line_groups.push_back(group);
+				group = vector<string>();
+			}
+		}
+		else
+			group.push_back( line );
+	}
+	if( group.size() != 0 )
+		line_groups.push_back(group);
+
+
+    input_file.close();        
+	return line_groups;
+};
+
+
 tuple<int, vector<string> > read_wannier_file(const string wannier_filename)
 {
     int num_wann = 0;   // the number of Wannier functions

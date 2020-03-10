@@ -1,48 +1,58 @@
-#include <deque>
+/*
+ * This file is part of wannier2sparse.
+ *
+ * Developed as a tool of LinQT package.
+ * 
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+
 #include <string>
 #include <iostream>
 
+#include "w2sp_arguments.hpp"
 #include "tbmodel.hpp"
 #include "hopping_list.hpp"
-
 using namespace std;
 
+
+
+
+/*! This is the main function for the executable  wannier2sparse */
 int main( int argc, char* argv[]){
 
-deque< string > arguments(argv,argv+argc);
-const string program_name = arguments[0]; arguments.pop_front();  
+	W2SP_arguments  args;
+	args.ReadArguments(argc,argv);
 
-if( arguments.empty() )
-{
-    cerr<<"ERROR: The program: "<<program_name <<" should be called with arguments (LABEL, Dim0, Dim1, Dim2). "<<endl;
-    return -1;
-}
+	cout<<"Using "<<args.label<<" as the system's identification label"<<endl
+		<<"This label will be used to detect the label.xyz, label_hr.dat, and label.uc files"<<endl;
 
-const string  label = arguments[0]; arguments.pop_front();  
-cout<<"Using "<<label<<" as the system's identification label"<<endl
-    <<"This label will be used to detect the label.xyz, label_hr.dat, and label.uc files"<<endl;
+	tbmodel model;
+	model.readOrbitalPositions(args.label+".xyz"); 	std::cout<<" finished"<<std::endl;
+	model.readUnitCell(args.label+".uc"); 			std::cout<<" finished"<<std::endl;
+	model.readWannierModel(args.label+"_hr.dat"); 	std::cout<<" finished"<<std::endl;
+	model.readStaticDisorder(args.label+".stdis"); 	std::cout<<" finished"<<std::endl;
 
-array<int, 3> cellDim={1,1,1};
-for(int i = 0 ; i < 3 ; i++ )
-{
-    assert( !arguments.empty() );
-    cellDim[i] = stoi(arguments[0]); arguments.pop_front();  
-}
+	std::cout<<"Creating Hamiltonian"<<std::endl;
+	model.Hopping_List().wrap_in_supercell(args.cellDim).save_hopping_list_as_csr(args.label+".HAM.CSR");
+	for( auto op : args.operators)
+	{
+		std::cout<<"Creating "<<op<<std::endl;
+		model.WannierOperator(op).wrap_in_supercell(args.cellDim).save_hopping_list_as_csr(args.label+"."+op+".CSR");
+	}	
 
-tbmodel model;
 
-model.readOrbitalPositions(label+".xyz");
-model.readUnitCell(label+".uc");
-model.readWannierModel(label+"_hr.dat");    
-
-std::cout<<"Creating the supercell ("<<cellDim[0]<<","<<cellDim[1]<<","<<cellDim[2]<<")"<<std::endl;
-save_hopping_list_as_csr(label+".HAM.CSR"  , wrap_in_supercell(cellDim, model.hl) );
-save_hopping_list_as_csr(label+".VX.CSR"   , wrap_in_supercell(cellDim, model.createHoppingCurrents_list(0)) );
-save_hopping_list_as_csr(label+".VYSZ.CSR" , wrap_in_supercell(cellDim, model.createHoppingSpinCurrents_list(1,'z')) );
-save_hopping_list_as_csr(label+".SX.CSR"   , wrap_in_supercell(cellDim, model.createHoppingSpinDensity_list('x')) );
-save_hopping_list_as_csr(label+".SY.CSR"   , wrap_in_supercell(cellDim, model.createHoppingSpinDensity_list('y')) );
-save_hopping_list_as_csr(label+".SZ.CSR"   , wrap_in_supercell(cellDim, model.createHoppingSpinDensity_list('z')) ); 
-std::cout<<"Supercells created successfully"<<std::endl;
-
-cout<<"The programa finished"<<std::endl;
+	cout<<"The programa finished"<<std::endl;
 return 0;}

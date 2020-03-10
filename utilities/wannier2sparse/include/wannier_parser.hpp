@@ -9,11 +9,12 @@
 #include <tuple>
 #include <iostream>
 #include <fstream>
-#include<limits>
+#include <limits>
 #include <iomanip>
 #include <cassert>
 
 using namespace std;
+
 
 inline int safe_stoi(const std::string& s ){
     int output;
@@ -25,6 +26,8 @@ inline int safe_stoi(const std::string& s ){
     }
     return output;
 };
+
+vector< vector<string> >read_disorder_file(const string disorder_filename);
 
 tuple<int, vector<string> > read_wannier_file(const string wannier_filename);
 

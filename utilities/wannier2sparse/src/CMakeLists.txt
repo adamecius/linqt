@@ -4,11 +4,13 @@ set(LIB_HEADERS
   "${CMAKE_CURRENT_BINARY_DIR}/../include/Version.h" # Generated header
   ../include/wannier_parser.hpp # Normal header
   ../include/hopping_list.hpp # Normal header
+  ../include/tbmodel.hpp
 )
 
 set(LIB_SOURCES
   wannier_parser.cpp
   hopping_list.cpp
+  tbmodel.cpp
 )
 
 set(APP_HEADERS
