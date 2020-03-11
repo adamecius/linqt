@@ -10,6 +10,7 @@ set(KPM_LIB_SOURCES
  "chebyshev_moments2D.cpp"
  "chebyshev_moments1D.cpp"
  "sparse_matrix.cpp"
+ "special_functions.cpp"
 )
 
 #IF INTEL BACKEND IS USED

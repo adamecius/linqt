@@ -1,6 +1,12 @@
 
 #include "linear_algebra.hpp"
 
+void linalg::scal(const complex<double>& a, vector< complex<double> >& x)
+{
+	cblas_zscal(x.size(), &a, &x[0], 1);
+	return ;
+}
+
 
 void linalg::axpy(const complex<double>& a, const vector< complex<double> >& x, vector< complex<double> >& y)
 {
@@ -28,6 +34,12 @@ double linalg::nrm2(const vector< complex<double> >& x)
 	return  cblas_dznrm2 (x.size(),&x[0],1);
 };
 
+
+void linalg::scal(const int dim, complex<double> a, complex<double> *x)
+{
+	cblas_zscal(dim, &a, x, 1);
+	return ;
+}
 
 void linalg::axpy(const int dim, complex<double> a, const complex<double> *x, complex<double> *y)
 {

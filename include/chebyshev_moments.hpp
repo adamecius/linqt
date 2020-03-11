@@ -13,6 +13,7 @@
 #include <limits>    		 //Needed for dbl::digits10
 #include "linear_algebra.hpp"
 #include "vector_list.hpp"
+#include "special_functions.hpp"
 
 namespace chebyshev 
 {
@@ -239,7 +240,7 @@ class Vectors : public Moments
 
 	int IterateAll( SparseMatrixType &NHAM );
 
-
+	int EvolveAll( SparseMatrixType &NHAM, const double DeltaT, const double Omega0);
 
 	int Multiply( SparseMatrixType &OP );
 

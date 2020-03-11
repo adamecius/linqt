@@ -15,6 +15,10 @@ namespace linalg
 {
 
 // VECTOR-VECTOR FUNCTIONS
+void scal(const int dim, complex<double> a, complex<double> *x);
+
+void scal(const complex<double>& a, vector< complex<double> >& x);
+
 void axpy(const int dim, complex<double> a, const complex<double> *x, complex<double> *y);
 
 void axpy(const complex<double>& a, const vector< complex<double> >& x, vector< complex<double> >& y);

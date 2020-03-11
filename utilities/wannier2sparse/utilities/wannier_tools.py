@@ -91,7 +91,7 @@ class wannier_system:
         Hk = self.ham_operator(k);
         #When no operator submited, return only the band structure
         if proj_op is None:
-            return eigvalsh( Hk ) ;
+            return ( eigvalsh( Hk ), None ) ;
 
         #If not, compute the eigen vectors
         w, v = np.linalg.eigh( Hk );#The column w[:, i] is the normalized eigenvector of v[i] eigenvalue
@@ -100,25 +100,12 @@ class wannier_system:
         p = np.diag( (np.conj(v.T) ) .dot(proj_op.dot(v) ) ) ;
         return ( np.real(w),np.real(p) );
 
-    def projections(self, k , proj_op  ):
-        Hk = self.ham_operator(k);
-        #When no operator submited, return only the band structure
-        if proj_op is None:
-            return eigvalsh( Hk ) ;
-
-        #If not, compute the eigen vectors
-        w, v = np.linalg.eigh( Hk );#The column w[:, i] is the normalized eigenvector of v[i] eigenvalue
-
-        p = np.diag( (np.conj(v.T) ) .dot(proj_op.dot(v) ) ) ;
-        return np.real(p);
-    
-    
 
     def Momentum_Rec2AbsMatrix(self ):
         return 2*np.pi* np.linalg.inv(self.lat_vec);
     
     
-    def get_kpoints(self , absolute_coords = False): #Compute the kpoints used for the band structure calculation
+    def band_kpoints(self , absolute_coords = False): #Compute the kpoints used for the band structure calculation
         kpoints   = list(); 
         init_k = self.bandpath[0][2];
         for path_label, npoint, end_k in self.bandpath[1:]: #Not consider initial point anymore
@@ -144,7 +131,7 @@ class wannier_system:
     
     
     def bandsXaxis(self ): #The kpoints are assume to be in absolute coordinates 
-        kpoints=self.get_kpoints(absolute_coords = True);
+        kpoints=self.band_kpoints(absolute_coords = True);
         Xaxis=np.cumsum(np.linalg.norm(np.diff( kpoints,axis=0, prepend = 0),axis=1));
         Xaxis-=Xaxis[0];#Remove the initial value.
         return Xaxis;
@@ -153,16 +140,18 @@ class wannier_system:
     def compute_band_structure(self, fermi_energy = 0.0, proj_op = None, ax=None, plot_proj=False, proj_range=None ):
      
         #Compute the kpoints based on the path
-        kpoints= self.get_kpoints();
+        kpoints= self.band_kpoints();
 
         #Compute the eigenvalues and the projected values 
-        peigenvals = np.array( [self.projected_eigenvalues( kp , proj_op) for kp in kpoints ] );
+        peigenvals  = self.compute_dispersion( kpoints , proj_op)  ;
+        bands = np.array(list(map(list,peigenvals[:,0]))).T;
+        bands-= fermi_energy;
+        
 
         if proj_op is None:
-            return self.plot_band_structure( bands = np.transpose(peigenvals-fermi_energy), ax=ax );
+            return self.plot_band_structure( bands = bands, ax=ax );
 
-        bands = np.transpose(peigenvals[:,0]-fermi_energy );
-        projs = np.transpose(peigenvals[:,1] );
+        projs = np.array(list(map(list,peigenvals[:,1]))).T;
         
         return self.plot_band_structure( bands = bands , projs = projs , ax=ax, plot_proj = plot_proj, proj_range=proj_range);
 
@@ -217,20 +206,18 @@ class wannier_system:
         ax = _ax;
         return ax;
 
-
-    def compute_projections(self,kpoints, proj_op ):
-        return  np.array( [self.projections( kp, proj_op=proj_op ) for kp in kpoints ] );
-    
-    def compute_dispersion(self,kpoints):
-        return np.array( [self.projected_eigenvalues( kp, proj_op=None ) for kp in kpoints ] );        
+    def compute_dispersion(self,kpoints, proj_op=None):
+        return np.array( [self.projected_eigenvalues( kp, proj_op ) for kp in kpoints ] );        
       
     def compute_fermi_surface(self,kpoints, fermi_energy = 0.0, tol = None ,  proj_op = None ):
 
         #Compute the eigenvalues and the projected values 
-        eigvals = np.array( [self.projected_eigenvalues( kp, proj_op=None ) for kp in kpoints ] );
-    
+        peigenvals  = self.compute_dispersion(kpoints, proj_op=proj_op)
+        eigenvalues = np.array(list(map(list,peigenvals[:,0])))
+        eigenvalues-= fermi_energy;#Compute the eigenvalues
+
         #Determine the important kpoints
-        relevant_kpoints = np.any(np.abs(eigvals - fermi_energy) < tol, axis=1);
+        relevant_kpoints = np.any(np.abs(eigenvalues - fermi_energy) < tol, axis=1);
         #Select the kpoints
         kpoints = kpoints[relevant_kpoints];
 
@@ -239,7 +226,7 @@ class wannier_system:
 
         #If one requires a projection, select the kpoints and then use them to compute the projections
         
-        peigvals = np.array( [self.projected_eigenvalues( kp, proj_op=proj_op ) for kp in kpoints ] );
+        peigvals = np.array(list(map(list,peigenvals[:,1])))
         return kpoints,peigvals[relevant_kpoints];
 
     
@@ -253,168 +240,27 @@ class wannier_system:
         return kpoints;
     
     
-    def compute_DOS(self, energies, fermi_energy = 0.0, kpoints =None  ):
-        b1,b2,b3 = self.Momentum_Rec2AbsMatrix().T
-        nkp= 2*len(kpoints);
-        kmin = np.array([ np.min(kpoints[:,0]),np.min(kpoints[:,1]),0 ] );
-        kmax = np.array([ np.max(kpoints[:,0]),np.max(kpoints[:,1]),0 ] );
-        kpoints= np.array(list(np.ndindex((nkp,nkp,1))))/(nkp-1)*(kmax-kmin) + kmin ;#kpoints in recpricola lattice vectors
-
-        return kpoints;
+    def compute_DOS(self, energies,gridpoints, fermi_energy = 0.0, broadening = 0.1,  kpoints = None ,proj_op = None ):
         
+        if kpoints is None:
+            n1,n2,n3 = gridpoints
+            kpoints = ( np.mgrid[0:1:(n1+1)*1j, 0:1:(n2+1)*1j, 0:1:(n3+1)*1j].T)[:-1,:-1,:-1].reshape(n1*n2*n3,3);
 
-"""
-        #Convert kpoints from reciprocal to real coordinates
-        kpoints = np.dot( kpoints, np.transpose(self.lat_vec/(2*np.pi))  );
-        kaxis   = np.cumsum( np.insert( np.linalg.norm(kpoints[1:]-kpoints[:-1],axis=1),0,0) );
-        klabels = [ kaxis[label] for label in label_index]
+        eta=broadening;
+        def gaussian(x):
+            return np.exp( -(x/eta)**2/2 )/eta/np.sqrt(2*np.pi)
 
-        #Transposition of bands is different depending 
-        #on whereas we computed the projected band structure or not
+        dim = len(kpoints);
+        peigenvals  = self.compute_dispersion(kpoints, proj_op=proj_op)
+        eigenvalues = np.array(list(map(list,peigenvals[:,0]))).flatten()
+        eigenvalues -= fermi_energy;#Compute the eigenvalues
+        
+        
         if proj_op is None:
-            bands = np.transpose(peigenvals);
-        else:
-            bands = np.transpose(peigenvals[:,0] );
-            projs = np.transpose(peigenvals[:,1] );
+            return np.array( [np.sum(gaussian(eigenvalues-EF)) for EF in energies] )/dim;
 
-            
-        #PLOTING
-        #plot options
-        fig = plt.figure();
-        ax  = fig.add_subplot();
-     
-        ax.set_xticks(klabels);
-        ax.set_xticklabels(path_labels);
-        ax.tick_params(axis='both', which='major', labelsize=18);
-        ax.set_ylabel("Energy (eV)", fontsize=18);
-        cmap_name="seismic";
-        vmin = np.min(projs);
-        vmax = np.max(projs);
+        P = np.array(list(map(list,peigenvals[:,1]))).flatten()
+        return np.array( [np.sum(P*gaussian(eigenvalues-EF)) for EF in energies] )/dim;
+
         
-        for i,band in enumerate(bands):
-            ax.plot(kaxis,band , color = 'k');
-            c = 'k';
-            if proj_op is not None:
-                c = projs[i];
-            #Add points to the plot
-            im = ax.scatter(kaxis, band,s=50, c=c,cmap=cmap_name,vmin=-1, vmax=1);
-            im.set_facecolor("none");
-        
-        #Create falso plot for color bar
-        im = ax.scatter(kaxis, bands[0],s=0, c=np.linspace( vmin,vmax,len(bands[0]) ),cmap=cmap_name);
-        fig.colorbar(im, ax=ax);
-                                                                   
-        return fig,ax;
-
-
-    def _compute_band_structure( numOrbs,hvec,rows,cols,values , band_paths ):
-
-        def Ham(k):
-            data = values*np.exp(np.pi*2j*hvec.dot(k));
-            return coo_matrix((data, (rows, cols)), shape=(numOrbs,numOrbs)).toarray();
-
-
-    path_labels, path_points, paths = np.transpose(band_paths);
-    num_paths = len(paths);
-
-    kpoints   = list(); #List of kpoints used for the band structure calculation
-    eigenvals = list(); #the eigenvalues of the bands
-    label_index  = list(); #the last element of the path (used for assigning labels)
-
-    #Compute the initial path point
-    kp  = np.array(paths[0]);
-    eigenval=  np.linalg.eigvalsh( Ham(kp) );
-    eigenvals.append(eigenval);
-    kpoints.append(kp);
-    label_index.append(0);
-
-    #Compute all other path points
-    kp_index = 0
-    for p in range(1,num_paths):
-        npoint= path_points[p];
-        beg=paths[p-1];
-        end=paths[p  ];
-        for kp in np.linspace(beg,end,npoint)[1:]:
-            eigenval=  np.linalg.eigvalsh( Ham(kp) );
-            eigenvals.append(eigenval);
-            kpoints.append( kp ); #notice the change of basis
-            kp_index+=1;
-        label_index.append( kp_index )
-
-    return np.array(kpoints),np.transpose(eigenvals),label_index
-        
-
-def _density_of_states( numOrbs,
-,rows,cols,values , kgrid, broadening=10 , num_eners=100):
-
-    def Ham(k):
-        data = values*np.exp(np.pi*2j*hvec.dot(k));
-        return coo_matrix((data, (rows, cols)), shape=(numOrbs,numOrbs)).toarray();
-
-    kxs,kys,kzs = [ np.linspace(0.0,1.0,ksize, endpoint=False) for ksize in kgrid ]; 
-    
-    eigvals = list();
-    for kx in kxs:
-        for ky in kys:
-            for kz in kzs:
-                kp=[kx,ky,kz];
-                eigval =  np.linalg.eigvalsh( Ham(kp) );
-                eigvals.append(eigval)
-    
-	
-#	energies = np.linspace(min(eigvals), max(eigvals),num_eners);
-    
-    #broadening = broadening/1000;
-   # dos = [(-1/np.pi/kgrid[0]/kgrid[1]/kgrid[2])*np.imag(np.sum( 1/(eigvals -(energy - 1j*broadening) ) ))  for energy in energies]
-        
-    return energies,dos
-
-def density_of_states( label , band_paths ):
-
-    wan_file =label+"_hr.dat"
-    xyz_file =label+".xyz"
-    uc_file  =label+".uc"
-    lat_vec = np.loadtxt(uc_file);
-    numOrbs,OrbsID, xyz_coord = load_xyz(xyz_file)
-    hvec,rows,cols,values = load_wannier_file(wan_file)
-
-    return _density_of_states( numOrbs,hvec,rows,cols,values , kgrid, broadening=100 , num_eners=100  );
-
-
-
-def _compute_band_structure( numOrbs,hvec,rows,cols,values , band_paths ):
-
-    def Ham(k):
-        data = values*np.exp(np.pi*2j*hvec.dot(k));
-        return coo_matrix((data, (rows, cols)), shape=(numOrbs,numOrbs)).toarray();
-
-
-    path_labels, path_points, paths = np.transpose(band_paths);
-    num_paths = len(paths);
-
-    kpoints   = list(); #List of kpoints used for the band structure calculation
-    eigenvals = list(); #the eigenvalues of the bands
-    label_index  = list(); #the last element of the path (used for assigning labels)
-
-    #Compute the initial path point
-    kp  = np.array(paths[0]);
-    eigenval=  np.linalg.eigvalsh( Ham(kp) );
-    eigenvals.append(eigenval);
-    kpoints.append(kp);
-    label_index.append(0);
-
-    #Compute all other path points
-    kp_index = 0
-    for p in range(1,num_paths):
-        npoint= path_points[p];
-        beg=paths[p-1];
-        end=paths[p  ];
-        for kp in np.linspace(beg,end,npoint)[1:]:
-            eigenval=  np.linalg.eigvalsh( Ham(kp) );
-            eigenvals.append(eigenval);
-            kpoints.append( kp ); #notice the change of basis
-            kp_index+=1;
-        label_index.append( kp_index )
-
-    return np.array(kpoints),np.transpose(eigenvals),label_index
-"""    
+  
