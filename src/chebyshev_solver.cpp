@@ -166,7 +166,7 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 		std::cout<<"USING SEQUENTIAL IMPLEMENTATION"<<std::endl;
 	else
 	{
-		std::cout<<"USING LARGE MEMORY IMPLEMENTATION with BATCH_SIZE"<<batchSize<<std::endl;
+		std::cout<<"USING LARGE MEMORY IMPLEMENTATION with BATCH_SIZE: "<<batchSize<<std::endl;
 		printf("Chebyshev::parallel::CorrelationExpansionMoments will used %f GB\n", chevVecL.MemoryConsumptionInGB() + chevVecR.MemoryConsumptionInGB() );
 
 		std::cout<<"Initialize chevVecL"<<std::endl;
@@ -179,8 +179,6 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 	std::vector< std::complex<double> >  Phi(DIM); 	//States Vectors
 	for (int i = 0; i < numStates; i++)
 	{
-		//SELECT STATE TYPE
-		std::cout<<"Computing state: "<<i+1<<" of "<<numStates<<std::endl;
 
 		for(int j = 0; j < DIM ; j++)
 		switch (type)
@@ -192,12 +190,17 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 
 			break;
 			case LOCAL_STATE:
+ //			i=(numStates-1); 
 			Phi[j] = ( (j==i) ? 1.0 : 0.0 ) ;
 			break;
 			default:
 			std::cerr<<" The state state is not identify, aborting running"<<std::endl;
 			std::exit(-1);
 		}
+//		numStates= 1;
+		//SELECT STATE TYPE
+		std::cout<<"Computing with ID: "<<i+1<<" of "<<numStates<<" states" <<std::endl;
+
 		//SELECT RUNNING TYPE
 		if( use_sequential )
 			chebyshev::sequential::CorrelationExpansionMoments(	Phi,Phi, HAM, OPL, OPR, chebMoms);

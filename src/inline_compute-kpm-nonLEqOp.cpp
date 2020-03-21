@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	chebyshev::CorrelationExpansionMoments(num_states, OP[0], OP[1], OP[2], chebMoms, LOCAL_STATE );
 
 	//Save the table in a file
-	std::string outputfilename="NonLEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+".chebmom2D";
+	std::string outputfilename="NonLEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"NV"+to_string(num_states)+".chebmom2D";
 	chebMoms.saveIn(outputfilename);
 
 	std::cout<<"End of program"<<std::endl;
