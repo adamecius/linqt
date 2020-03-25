@@ -14,5 +14,20 @@ enum StateType
 	RANDOM_STATE=2
 };
 
+typedef std::complex<double>  Complex;
+typedef std::vector<Complex>  Vector;
 
+namespace qstates
+{
+	inline
+	int FillWithRandomPhase(Vector& X)
+	{
+		for(auto& elem : X )
+		{
+			auto phi = 2.0*M_PI*(double)rand() / (double)RAND_MAX ;
+			elem = Complex(cos(phi)/X.size(),sin(phi)/X.size() );
+		}
+		return 0;	
+	}
+}
 #endif

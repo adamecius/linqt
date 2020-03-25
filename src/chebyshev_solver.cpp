@@ -5,6 +5,70 @@
 using namespace chebyshev;
 
 
+std::array<double,2> utility::SpectralBounds( SparseMatrixType& HAM)
+{
+	double highest=0, lowest=0;
+	std::ifstream bounds_file( "BOUNDS" );
+	if( bounds_file.is_open() )
+	{
+		bounds_file>>lowest>>highest;
+		bounds_file.close();
+	}
+	else
+	{
+		std::cout<<"File BOUNDS not found, computing spectral boundas automatically (EXPERIMENTAL)"<<std::endl;
+		const int NUMIT = 100;
+		const int DIM = HAM.rank(); 
+		double absmax=0;
+		vector_t PhiL(DIM), PhiR(PhiL);
+		for( int num_extrema = 0 ; num_extrema < 2  ; num_extrema++)
+		{
+			qstates::FillWithRandomPhase(PhiL);
+			for(int it =0; it  < NUMIT ; it++)
+			{
+				HAM.Multiply(PhiL, PhiR);
+				absmax = linalg::nrm2(PhiR); ////Get <Phi|H^2|Phi>
+				linalg::scal(1.0/absmax, PhiR);				
+				
+				//Break is goal achieved
+				if( std::fabs(highest-absmax) < 1e-2 )
+				{
+					HAM.Multiply(PhiR, PhiL);
+					highest = linalg::vdot(PhiL,PhiR).real(); ////Get <Phi|H^2|Phi>	
+					break;
+				}
+				//else continue
+				linalg::copy(PhiR,PhiL);
+				highest = absmax;
+			}
+			if( lowest == 0)
+			{
+				HAM.Rescale(1.0,-highest);					
+				lowest = highest;
+				highest = 0;
+			}
+		}
+		if( lowest > highest )
+		{
+			absmax = highest;
+			highest= lowest ;
+			lowest = absmax;
+		}
+	}
+	std::cout<<lowest<<" "<<highest<<" "<<(highest-lowest)<<" "<<(lowest+highest)/2<<std::endl;
+	return { lowest, highest};
+
+};
+
+int sequential::NonEqConvergence( SparseMatrixType &HAM,
+							  SparseMatrixType &OPL,
+							  SparseMatrixType &OPR,
+							  double eta, double E0)
+{
+	chebyshev::Vectors chebVL, chebVR;
+	
+};							  
+
 
 int sequential::DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,
 							SparseMatrixType &HAM,

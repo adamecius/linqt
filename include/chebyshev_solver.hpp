@@ -25,8 +25,19 @@ namespace chebyshev
 	typedef std::complex<double> value_t;	
 	typedef std::vector<value_t> vector_t ;
 
+
+	namespace utility
+	{
+		std::array<double,2> SpectralBounds( SparseMatrixType& HAM);
+	};
+
 	namespace sequential
 	{
+		int NonEqConvergence( SparseMatrixType &HAM,
+							  SparseMatrixType &OPL,
+							  SparseMatrixType &OPR,
+							  double eta, double E0);
+
 
 		int DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,
 									 SparseMatrixType &HAM,
