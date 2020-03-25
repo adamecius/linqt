@@ -1,3 +1,4 @@
+// Contribution made by Angel D. Prieto S.
 #ifndef SPECIAL_FUNCTIONS
 #define SPECIAL_FUNCTIONS
 
