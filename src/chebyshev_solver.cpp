@@ -227,3 +227,146 @@ return 0;
 };
 
 
+int parallel::TempDensityExpansionMoments(const int batchSize,					 
+					  const vector_t& Phi,
+					  SparseMatrixType &HAM,
+					  SparseMatrixType &OP,
+					  chebyshev::Vectors &chebVecR, chebyshev::Vectors &chebVecL,
+					  chebyshev::MomentsTD &chebMoms)
+{
+  assert(chebVecR.HighestMomentNumber() == chebVecL.HighestMomentNumber());
+  const size_t DIM = HAM.rank();
+  const size_t NumMoms = chebVecR.HighestMomentNumber();
+  const size_t NumTimes = chebMoms.HighestTimeNumber();
+  const size_t momvecSize = (size_t)( (long unsigned int)batchSize );
+
+  auto start = std::chrono::high_resolution_clock::now();
+
+  std::cout << "Initialize sparse for moment matrix" << std::endl;
+  chebyshev::Moments::vector_t momvec( momvecSize );
+
+  for (int m = 0; m < NumMoms; m+=batchSize)
+    {
+      chebVecR.SetInitVectors(HAM, Phi);
+      chebVecR.IterateAll(HAM);
+      chebVecR.Multiply(OP);
+
+      chebVecL.SetInitVectors(HAM, Phi);
+      for (int n = 0; n < NumTimes; n++)
+	{
+	  chebVecL.EvolveAll(HAM, chebMoms.TimeStep(), chebMoms.TimeCoeff());
+	  parallel::ComputeTDMomTable(chebVecL, chebVecR, momvec);
+	  linalg::axpy(momvec.size(), 1.0, &momvec[0], &chebMoms(m, n));
+	}
+    }
+  auto finish = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = finish - start;
+  std::cout << "Calculation of the moments in parallel solver took: "
+	    << elapsed.count() << " seconds. " << std::endl;
+
+  return 0;
+};
+
+
+int parallel::ComputeTDMomTable(chebyshev::Vectors &chebVL, chebyshev::Vectors& chebVR, vector_t& output)
+{
+  const auto dim   = chebVL.SystemSize();
+  const auto maxM = chebVL.HighestMomentNumber();
+  assert( chebVL.SystemSize() == chebVR.SystemSize() && chebVL.HighestMomentNumber() == chebVR.HighestMomentNumber() );
+  assert( output.size() == maxM );
+  const int nthreads = mkl_get_max_threads();
+  
+  mkl_set_num_threads_local(1);
+#pragma omp parallel for default(none) shared(chebVL,chebVR,output)
+  for( auto m = 0; m < maxM; m++)
+    {
+      output[m] = linalg::vdot( chebVL.Vector(m) , chebVR.Vector(m));	
+    }
+  mkl_set_num_threads_local(nthreads);
+  
+  return 0;
+};
+
+
+int chebyshev::TempDensityExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OP, SparseMatrixType &PROJ,  chebyshev::MomentsTD &chebMoms, StateType type )
+{
+  int kpm_seed = time(0); 	if(getenv("KPM_SEED")) kpm_seed = std::stoi(string(getenv("KPM_SEED")));
+  srand(kpm_seed);
+  std::cout<<"Using seed "<<kpm_seed<<std::endl;
+  //Allocate the memory
+  string NUM_THREADS ="Default"; 	if(getenv("OMP_NUM_THREADS")) NUM_THREADS = getenv("OMP_NUM_THREADS");
+  int batchSize=3;
+  bool use_sequential = !( chebyshev::GetBatchSize(batchSize) );
+  
+  
+  std::cout<<"The Temporal Density calculation will run on "<<NUM_THREADS<< " threads"<<std::endl;
+  chebMoms.Rescale2ChebyshevDomain(HAM);
+  const int DIM = HAM.rank(); 
+
+  
+  chebyshev::Vectors chebVecL,chebVecR;
+  /*if( use_sequential )
+    std::cout<<"USING SEQUENTIAL IMPLEMENTATION"<<std::endl;
+    else
+    {*/
+  assert( !(use_sequential) ); 
+  std::cout<<"USING LARGE MEMORY IMPLEMENTATION with BATCH_SIZE"<<batchSize<<std::endl;
+  printf("Chebyshev::parallel::CorrelationExpansionMoments will used %f GB\n", chebVecL.MemoryConsumptionInGB() + chebVecR.MemoryConsumptionInGB() );
+      
+  std::cout<<"Initialize chebVecL"<<std::endl;
+  chebVecL=chebyshev::Vectors( chebMoms );
+  std::cout<<"Initialize chebVecR"<<std::endl;
+  chebVecR=chebyshev::Vectors( chebMoms );
+  //}
+  
+  //allocate the memory for the input vector, and the iteration vector
+  std::vector< std::complex<double> >  Phi(DIM); 	//States Vectors
+  for (int i = 0; i < numStates; i++)
+    {
+      //SELECT STATE TYPE
+      std::cout<<"Computing state: "<<i+1<<" of "<<numStates<<std::endl;
+      
+      for(int j = 0; j < DIM ; j++)
+	switch (type)
+	  {
+	  case RANDOM_STATE:
+	    Phi[j] = exp(value_t(0, 2.0*M_PI*(double)rand() / (double)RAND_MAX ) )/sqrt(DIM);
+	    if( j <10)
+	      std::cout<<j<<" "<<Phi[j]<<std::endl;
+	    
+	    break;
+	  case LOCAL_STATE:
+ //	    i=(numStates-1); 
+	    Phi[j] = ( (j==i) ? 1.0 : 0.0 ) ;
+	    break;
+	  default:
+	    std::cerr<<" The state state is not identify, aborting running"<<std::endl;
+	    std::exit(-1);
+	  }
+//	numStates= 1;
+	//SELECT STATE TYPE
+	std::cout<<"Computing with ID: "<<i+1<<" of "<<numStates<<" states" <<std::endl;
+
+      //SELECT RUNNING TYPE
+      /*if( use_sequential )
+	chebyshev::sequential::CorrelationExpansionMoments(Phi, Phi, HAM, OPL, OPR, chebMoms);
+	else*/
+      chebyshev::parallel::TempDensityExpansionMoments(batchSize, Phi, HAM, OP, chebVecL, chebVecR, chebMoms);
+    }
+  
+  //Fix the scaling of the moments
+  const int NumMoms = chebMoms.HighestMomentNumber();
+  const int NumTimes = chebMoms.HighestTimeNumber();
+  for (int m = 0 ; m < NumMoms; m++)				  
+    for (int n = m; n < NumTimes; n++)
+      {
+	double scal = 4.0/numStates;
+	if( m == 0) scal*=0.5;
+		
+	const value_t tmp = scal * ( chebMoms(m, n) + std::conj(chebMoms(m, n)) ) / 2.0;
+	chebMoms(m, n) = tmp;
+	chebMoms(m, n) = std::conj(tmp);
+      }
+  
+  return 0;
+};

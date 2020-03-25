@@ -1,3 +1,4 @@
+// With contributions made by Angel D. Prieto S.
 #ifndef CHEBYSHEV_MOMENTS
 #define CHEBYSHEV_MOMENTS
 
@@ -14,6 +15,7 @@
 #include "linear_algebra.hpp"
 #include "vector_list.hpp"
 #include "special_functions.hpp"
+#include "chebyshev_coefficients.hpp"
 
 namespace chebyshev 
 {
@@ -190,6 +192,79 @@ class Moments2D: public Moments
 	array<int, 2> numMoms;
 };
 
+  class MomentsTD : public Moments
+  {
+  public:
+    MomentsTD():numMoms(0), numTimes(0) {};
+
+    MomentsTD( const size_t m, const size_t n ):numMoms(m), numTimes(n){ this->MomentVector( Moments::vector_t( numMoms * numTimes, 0.0) ); };
+
+    MomentsTD( std::string momfilename );
+
+    //GETTERS
+
+    inline
+    size_t MomentNumber() const { return numMoms;};
+
+    inline
+    size_t HighestMomentNumber() const { return numMoms;};
+
+    inline
+    size_t TimeNumber() const { return numTimes;};
+
+    inline
+    size_t HighestTimeNumber() const { return numTimes;};
+
+    inline
+    double TimeStep() const { return deltaT; };
+
+    inline
+    double TimeCoeff() const { return omega0; };
+    
+
+    //SETTERS
+    void MomentNumber(const size_t mom);
+
+    inline
+    void TimeStep(const double dt) { deltaT = dt; };
+
+    inline
+    void TimeCoeff(const double om0) { omega0 = om0; };
+    
+    
+    //OPERATORS
+    inline
+    Moments::value_t& operator()(const size_t m, const size_t n)
+    { return this->MomentVector( m*numTimes + n ); };
+
+    inline
+    bool operator == (const MomentsTD& other) const
+    {
+      return true;/*
+		    this->system_label	== other.system_label &&
+		    this->system_size	== other.system_size &&
+		    this->numMoms  	== other.numMoms  &&
+		    this->band_width 	== other.band_width && 
+		    this->band_center	== other.band_center &&
+		    this->mu 		== other.mu &&
+		    this->deltaT        == other.deltaT &&
+		    this->omega0        == other.omega0;*/
+    };
+
+    //Transformation
+    void ApplyJacksonKernel( const double broad );
+
+    //COSTFUL FUNCTIONS
+    void saveIn(std::string filename);
+
+    void Print();
+
+  private:
+    size_t numMoms;
+    size_t numTimes;
+    double deltaT;
+    double omega0;
+  };
 
 class Vectors : public Moments
 {
@@ -202,6 +277,7 @@ class Vectors : public Moments
 	Vectors( Moments1D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
 	Vectors( Moments2D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
 	Vectors( Moments2D mom, const size_t i ): Chebmu(mom.HighestMomentNumber(i), mom.SystemSize() ) {  };
+    Vectors( MomentsTD mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
 
 
 	size_t Size() const

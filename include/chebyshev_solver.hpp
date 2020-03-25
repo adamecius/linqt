@@ -15,10 +15,10 @@
 #include "chebyshev_moments.hpp"
 #include "linear_algebra.hpp"
 #include <omp.h>
-#include <cassert>
 #include <chrono>
 #include "quantum_states.hpp"
 #include "kpm_noneqop.hpp" //Get Batch function
+#include "special_functions.hpp"
 
 namespace chebyshev
 {
@@ -58,10 +58,20 @@ namespace chebyshev
 																					
 		int ComputeMomTable( chebyshev::Vectors &chebVL, chebyshev::Vectors & chebVR ,  vector_t& output);
 
+    int TempDensityExpansionMoments(const int batchSize,
+				    const double Omega0,
+				    const vector_t& Phi,
+				    SparseMatrixType &HAM,
+				    SparseMatrixType &OP,
+				    chebyshev::Vectors &chebVecR, chebyshev::Vectors &chebVecL,
+				    chebyshev::MomentsTD &chebMoms);
+    
+    int ComputeTDMomTable(chebyshev::Vectors &chebVL, chebyshev::Vectors& chebVR, vector_t& output);
 	};
 
 	int CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type);
 
+	int TempDensityExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OP, SparseMatrixType &PROJ,  chebyshev::MomentsTD &chebMoms, StateType type );
 
 }; // namespace chebyshev
 
