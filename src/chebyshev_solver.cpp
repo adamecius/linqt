@@ -94,7 +94,7 @@ int sequential::KuboGreenwoodChebMomConvergence( const double E0,
 		linalg::axpy( chebCL, chebVL.Chebyshev0(),  PhiL);
 
 		chebMoms(m) = linalg::vdot( PhiL, PhiR ).imag()*geo_fact; //This actually gives <JR|JL>*
-
+		std::cout<<m<<" "<<chebMoms(m).real()<<" "<<std::endl;
 		chebVL.Iterate( HAM );
 		chebVR.Iterate( HAM );
 	}
