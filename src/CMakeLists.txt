@@ -43,6 +43,6 @@ set(MAIN inline_kuboGreenwoodFromChebmom)
 add_executable(${MAIN} kuboGreenwoodFromChebmom.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
-set(MAIN kpm-nonEqOpatenergy)
-add_executable(${MAIN} kpm-nonEqOpatenergy.cpp  )
+set(MAIN kuboGreenwoodChebmomConvergence )
+add_executable(${MAIN} kuboGreenwoodChebmomConvergence.cpp  )
 target_link_libraries(${MAIN} ${KPM_LIB} )

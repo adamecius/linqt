@@ -60,13 +60,46 @@ std::array<double,2> utility::SpectralBounds( SparseMatrixType& HAM)
 
 };
 
-int sequential::NonEqConvergence( SparseMatrixType &HAM,
-							  SparseMatrixType &OPL,
-							  SparseMatrixType &OPR,
-							  double eta, double E0)
+int sequential::KuboGreenwoodChebMomConvergence( const double E0,
+												 SparseMatrixType &HAM,
+												 SparseMatrixType &OPL,
+												 SparseMatrixType &OPR,
+												 chebyshev::Moments1D&  chebMoms)
 {
-	chebyshev::Vectors chebVL, chebVR;
+    int kpm_seed = time(0); 	if(getenv("KPM_SEED")) kpm_seed = std::stoi(string(getenv("KPM_SEED")));
+
+	const int numChebVec  = 1 , DIM = chebMoms.SystemSize(); 
+	const int MOM  = chebMoms.HighestMomentNumber();
+
+	//Normalize the hamiltonian, energies, and get geometric factors
+	const double geo_fact =  DIM/chebMoms.HalfWidth()/chebMoms.HalfWidth();
+	const double energ    =  chebMoms.Rescale2ChebyshevDomain(E0);
+	chebMoms.Rescale2ChebyshevDomain(HAM);
+
+	//Create a random phase vector
+	vector_t PhiR(DIM),PhiL(DIM);
+	qstates::FillWithRandomPhase(PhiR); 
+
+	chebyshev::Vectors chebVL(numChebVec,DIM), chebVR(numChebVec,DIM);
+	chebVL.SetInitVectors( HAM, OPL, PhiR );
+	chebVR.SetInitVectors( HAM, PhiR );
+	linalg::scal(0.0,PhiR);
 	
+	for( int m=0; m < MOM; m++)
+	{
+		auto chebCR = delta_chebF(energ,m); if(m==0) chebCR*=0.5; 
+		OPR.Multiply( chebCR, chebVR.Chebyshev0(), 1.0  , PhiR);
+
+		auto chebCL = greenR_chebF(energ,m); if(m==0) chebCL*=0.5; 
+		linalg::axpy( chebCL, chebVL.Chebyshev0(),  PhiL);
+
+		chebMoms(m) = linalg::vdot( PhiL, PhiR ).imag()*geo_fact; //This actually gives <JR|JL>*
+
+		chebVL.Iterate( HAM );
+		chebVR.Iterate( HAM );
+	}
+
+	return 0;
 };							  
 
 

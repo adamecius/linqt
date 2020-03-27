@@ -12,23 +12,27 @@
 #include "quantum_states.hpp"
 #include "chebyshev_solver.hpp"
 
-
 int main(int argc, char *argv[])
 {
-	if ( !(argc == 6) )
+	if ( !(argc == 6 || argc == 7 ) )
 	{
-		chebyshev::printHelpMessage();
+		chebyshev::convergence::printHelpMessage();
 		return 0;
 	}
 	else
-		chebyshev::printWelcomeMessage();
+		chebyshev::convergence::printWelcomeMessage();
 	
 	const std::string
 		LABEL = argv[1],
 		S_OPR = argv[2],
 		S_OPL = argv[3],
-		S_ETA = argv[4],
+		S_NMOM= argv[4],
 		S_E0  = argv[5];
+
+	const int numMoms= atoi(S_NMOM.c_str() );
+	const double energ = stod( S_E0 );
+	chebyshev::Moments1D chebMoms(numMoms); //load number of moments
+
 
 	SparseMatrixType OP[3];
 	OP[0].SetID("HAM");
@@ -45,38 +49,30 @@ int main(int argc, char *argv[])
 		builder.BuildOPFromCSRFile(input);
 	
 		if( i == 0 ) //is hamiltonian
+		//Obtain automatically the energy bounds
 		 spectral_bounds = chebyshev::utility::SpectralBounds(OP[0]);
 	};
 	//CONFIGURE THE CHEBYSHEV MOMENTS
-	//chebMoms.SystemLabel(LABEL);
-
-
-	//Obtain automatically the energy bounds
-
-
-
-//	chebMoms.BandWidth( atof(argv[5]) );//
-//	chebMoms.BandCenter( atof(argv[6]) );
-//	chebMoms.SystemSize(OP[0].rank() );
-//	chebMoms.Print();
-
+	chebMoms.SystemLabel(LABEL);
+	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
+	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
+	chebMoms.SystemSize(OP[0].rank() );
+	chebMoms.Print();
 
 	//Define thes states youll use
 	//Factory state_factory ;
-
-	//Compute the chebyshev expansion table
 	
-//	srand(time(0));
-//	int num_states = 1 ;
-//	if( argc == 8)	num_states = atoi(argv[7]);
-	
-//	chebyshev::CorrelationExpansionMoments(num_states, OP[0], OP[1], OP[2], chebMoms, RANDOM_STATE );
+	std::string outputfilename="ConvNonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NMOM+"atE"+S_E0+".dat";
+	chebyshev::sequential::KuboGreenwoodChebMomConvergence( energ,OP[0], OP[1], OP[2], chebMoms );
 
-	//Save the table in a file
-//	std::string outputfilename="NonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+".chebmom2D";
-//	chebMoms.saveIn(outputfilename);
+	std::cout<<"Saving convergence data in "<<outputfilename<<std::endl;
+	std::ofstream outputfile( outputfilename.c_str() );
+	for( int m =0; m < chebMoms.HighestMomentNumber(); m++ )
+		outputfile << chebMoms(m).real() <<std::endl;
+	outputfile.close();
 
-//	std::cout<<"End of program"<<std::endl;
+
+	std::cout<<"End of program"<<std::endl;
 	return 0;
 }
 

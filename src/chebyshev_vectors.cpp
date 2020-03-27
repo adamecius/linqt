@@ -32,6 +32,8 @@ void chebyshev::Vectors::SetInitVectors( SparseMatrixType &NHAM, SparseMatrixTyp
 };
 
 
+
+
 int chebyshev::Vectors::IterateAll( SparseMatrixType &NHAM )
 {
 	const size_t  dim = NHAM.rank();

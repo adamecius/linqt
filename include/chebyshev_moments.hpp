@@ -73,6 +73,11 @@ class Moments
 	inline 
 	void MomentVector(const vector_t _mu ) { mu= _mu;}
 
+	inline
+	double Rescale2ChebyshevDomain(const double energ)
+	{ 
+		return (energ - this->BandCenter() )/this->HalfWidth(); 
+	};
 
 	//Heavy functions
 	int  Rescale2ChebyshevDomain(SparseMatrixType& H);
@@ -120,6 +125,7 @@ class Moments1D: public Moments
 
 	//SETTERS
 
+	void Print();
 
 	//OPERATORS
 	inline
@@ -308,10 +314,19 @@ class Vectors : public Moments
 	Moments::vector_t& Chebyshev0(){ return ChebV0; } 
 
 
+
 	void SetInitVectors( SparseMatrixType &NHAM,const Moments::vector_t& T0 );
 
 
 	void SetInitVectors( SparseMatrixType &NHAM, SparseMatrixType &OP ,const Moments::vector_t& T0 );
+
+	inline
+	int Iterate( SparseMatrixType &NHAM )
+	{
+		NHAM.Multiply(2.0,ChebV1,-1.0,ChebV0);
+		ChebV0.swap(ChebV1);
+		return 0;
+	};
 
 
 	int IterateAll( SparseMatrixType &NHAM );

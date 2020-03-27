@@ -22,11 +22,14 @@ namespace qstates
 	inline
 	int FillWithRandomPhase(Vector& X)
 	{
+		const double norm = sqrt(X.size());
 		for(auto& elem : X )
 		{
 			auto phi = 2.0*M_PI*(double)rand() / (double)RAND_MAX ;
-			elem = Complex(cos(phi)/X.size(),sin(phi)/X.size() );
+			elem = Complex(cos(phi)/norm,sin(phi)/norm );
 		}
+
+
 		return 0;	
 	}
 }

@@ -13,6 +13,7 @@
 #include <limits>    //For getting machine precision limit
 #include "sparse_matrix.hpp"
 #include "chebyshev_moments.hpp"
+#include "chebyshev_coefficients.hpp"
 #include "linear_algebra.hpp"
 #include <omp.h>
 #include <chrono>
@@ -33,10 +34,11 @@ namespace chebyshev
 
 	namespace sequential
 	{
-		int NonEqConvergence( SparseMatrixType &HAM,
-							  SparseMatrixType &OPL,
-							  SparseMatrixType &OPR,
-							  double eta, double E0);
+		int KuboGreenwoodChebMomConvergence( const double E0,
+											 SparseMatrixType &HAM, 
+											 SparseMatrixType &OPL, 
+											 SparseMatrixType &OPR,
+											 chebyshev::Moments1D&  mu);
 
 
 		int DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,

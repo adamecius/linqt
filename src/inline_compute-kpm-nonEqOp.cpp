@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
 	//Factory state_factory ;
 
 	//Compute the chebyshev expansion table
-	srand(time(0));
 	int num_states = 1 ;
 	if( argc == 8)	num_states = atoi(argv[7]);
 	
