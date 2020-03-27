@@ -66,7 +66,6 @@ int sequential::KuboGreenwoodChebMomConvergence( const double E0,
 												 SparseMatrixType &OPR,
 												 chebyshev::Moments1D&  chebMoms)
 {
-    int kpm_seed = time(0); 	if(getenv("KPM_SEED")) kpm_seed = std::stoi(string(getenv("KPM_SEED")));
 
 	const int numChebVec  = 1 , DIM = chebMoms.SystemSize(); 
 	const int MOM  = chebMoms.HighestMomentNumber();

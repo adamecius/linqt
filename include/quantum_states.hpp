@@ -1,6 +1,10 @@
 #ifndef QUANTUM_STATES
 #define QUANTUM_STATES
 
+#include <ctime>
+#include <cstdio>
+#include <cstdlib>
+#include <chrono>
 #include <fstream>
 #include <vector>
 #include <complex>
@@ -19,9 +23,14 @@ typedef std::vector<Complex>  Vector;
 
 namespace qstates
 {
+
 	inline
 	int FillWithRandomPhase(Vector& X)
 	{
+		int kpm_seed = time(0); 	
+		if( getenv("KPM_SEED") ) 
+			kpm_seed = std::stoi(string(getenv("KPM_SEED")));
+
 		const double norm = sqrt(X.size());
 		for(auto& elem : X )
 		{
