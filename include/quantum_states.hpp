@@ -33,10 +33,15 @@ namespace qstates
 		srand( kpm_seed );
 		std::cout<<"Current seed is "<<kpm_seed<<std::endl;
 		const double norm = sqrt(X.size());
+		int i = 0;
 		for(auto& elem : X )
 		{
 			auto phi = 2.0*M_PI*(double)rand() / (double)RAND_MAX ;
 			elem = Complex(cos(phi)/norm,sin(phi)/norm );
+			if( i < 10 )
+				std::cout<<elem.real()<<" "<<elem.imag()<<std::endl;
+			i++;
+			
 		}
 
 
