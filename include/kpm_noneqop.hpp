@@ -48,6 +48,7 @@ bool GetBatchSize(int& batchSize)
 			std::cout << "Label will be used to look for Label.Ham, Label.Op1 and Label.Op2" << std::endl;
 			std::cout << "Op1 and Op2 will be used to located the sparse matrix file of two operators for the correlation" << std::endl;
 			std::cout << "numMom will be used to set the number of moments in the chebyshev table" << std::endl;
+			std::cout << "Brodening(meV) represents the energy broadening in meV" << std::endl;
 			std::cout << "E0 represents the energy in eV on which the convergence will be tested" << std::endl;
 		};
 

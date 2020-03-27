@@ -79,6 +79,22 @@ class Moments
 		return (energ - this->BandCenter() )/this->HalfWidth(); 
 	};
 
+	//light functions
+    int JacksonKernelMomCutOff( const double broad )
+    {
+		assert( broad >0 );
+		const double eta   =  2.0*broad/1000/this->BandWidth();
+		return ceil(M_PI/eta);
+	};
+	
+	//light functions
+    double JacksonKernel(const double m,  const double Mom )
+    {
+		const double
+		phi_J = M_PI/(double)(Mom+1.0);
+		return ( (Mom-m+1)*cos( phi_J*m )+ sin(phi_J*m)*cos(phi_J)/sin(phi_J) )*phi_J/M_PI;
+	};
+
 	//Heavy functions
 	int  Rescale2ChebyshevDomain(SparseMatrixType& H);
 
@@ -259,6 +275,7 @@ class Moments2D: public Moments
 
     //Transformation
     void ApplyJacksonKernel( const double broad );
+
 
     //COSTFUL FUNCTIONS
     void saveIn(std::string filename);

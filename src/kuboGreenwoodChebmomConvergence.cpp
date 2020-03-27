@@ -14,7 +14,7 @@
 
 int main(int argc, char *argv[])
 {
-	if ( !(argc == 6 || argc == 7 ) )
+	if ( !(argc == 7) )
 	{
 		chebyshev::convergence::printHelpMessage();
 		return 0;
@@ -27,9 +27,11 @@ int main(int argc, char *argv[])
 		S_OPR = argv[2],
 		S_OPL = argv[3],
 		S_NMOM= argv[4],
-		S_E0  = argv[5];
+		S_ETA = argv[5],
+		S_E0  = argv[6];
 
-	const int numMoms= atoi(S_NMOM.c_str() );
+	const int numMoms  = atoi(S_NMOM.c_str() );
+	const double eta   = stod( S_ETA );
 	const double energ = stod( S_E0 );
 	chebyshev::Moments1D chebMoms(numMoms); //load number of moments
 
@@ -62,8 +64,8 @@ int main(int argc, char *argv[])
 	//Define thes states youll use
 	//Factory state_factory ;
 	
-	std::string outputfilename="ConvNonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NMOM+"atE"+S_E0+".dat";
-	chebyshev::sequential::KuboGreenwoodChebMomConvergence( energ,OP[0], OP[1], OP[2], chebMoms );
+	std::string outputfilename="ConvNonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NMOM+"eta"+S_ETA+"E"+S_E0+".dat";
+	chebyshev::sequential::KuboGreenwoodChebMomConvergence( energ,eta,OP[0], OP[1], OP[2], chebMoms );
 
 	std::cout<<"Saving convergence data in "<<outputfilename<<std::endl;
 	std::ofstream outputfile( outputfilename.c_str() );

@@ -61,41 +61,49 @@ std::array<double,2> utility::SpectralBounds( SparseMatrixType& HAM)
 };
 
 int sequential::KuboGreenwoodChebMomConvergence( const double E0,
+												 const double eta,
 												 SparseMatrixType &HAM,
 												 SparseMatrixType &OPL,
 												 SparseMatrixType &OPR,
 												 chebyshev::Moments1D&  chebMoms)
 {
-
 	const int numChebVec  = 1 , DIM = chebMoms.SystemSize(); 
 	const int MOM  = chebMoms.HighestMomentNumber();
+	const int deltaMOM  = chebMoms.JacksonKernelMomCutOff(eta);
+	std::cout<<"deltaMom "<<deltaMOM<<std::endl;
+	//Initialize chebyshev vectors
+	chebyshev::Vectors chebVecs(numChebVec,DIM);
 
 	//Normalize the hamiltonian, energies, and get geometric factors
 	const double geo_fact =  DIM/chebMoms.HalfWidth()/chebMoms.HalfWidth();
 	const double energ    =  chebMoms.Rescale2ChebyshevDomain(E0);
 	chebMoms.Rescale2ChebyshevDomain(HAM);
-
+	
 	//Create a random phase vector
 	vector_t PhiR(DIM),PhiL(DIM);
 	qstates::FillWithRandomPhase(PhiR); 
 
-	chebyshev::Vectors chebVL(numChebVec,DIM), chebVR(numChebVec,DIM);
-	chebVL.SetInitVectors( HAM, OPL, PhiR );
-	chebVR.SetInitVectors( HAM, PhiR );
-	linalg::scal(0.0,PhiR);
-	
+	//COMPUTE VECTOR <Phi OPR delta(H-E)| 
+	chebVecs.SetInitVectors( HAM, OPR, PhiR ); //<j0|= <Phi|OPR
+	linalg::scal( 0.0, PhiL );
+	for( int m=0; m < deltaMOM; m++)
+	{
+		auto chebCL = chebMoms.JacksonKernel(m,deltaMOM)*delta_chebF(energ,m); if(m==0) chebCL*=0.5; 
+		linalg::axpy( chebCL, chebVecs.Chebyshev0(),  PhiL);
+		chebVecs.Iterate( HAM );
+	}
+	std::cout<<"Finished adding broadening of "<<eta<<std::endl;
+	//COMPUTE VECTOR <Phi OPR delta(H-E)  |OPL G | Phi>  
+	chebVecs.SetInitVectors( HAM, OPL, PhiL ); //<j0|= <Phi OPR delta(H-E)  |OPL
+	linalg::scal( 0.0, PhiL );
 	for( int m=0; m < MOM; m++)
 	{
-		auto chebCR = delta_chebF(energ,m); if(m==0) chebCR*=0.5; 
-		OPR.Multiply( chebCR, chebVR.Chebyshev0(), 1.0  , PhiR);
-
-		auto chebCL = greenR_chebF(energ,m); if(m==0) chebCL*=0.5; 
-		linalg::axpy( chebCL, chebVL.Chebyshev0(),  PhiL);
-
+		auto chebCR = greenR_chebF(energ,m); if(m==0) chebCR*=0.5; 
+		linalg::axpy( chebCR, chebVecs.Chebyshev0(),  PhiL);
 		chebMoms(m) = linalg::vdot( PhiL, PhiR ).imag()*geo_fact; //This actually gives <JR|JL>*
+		chebVecs.Iterate( HAM );
+
 		std::cout<<m<<" "<<chebMoms(m).real()<<" "<<std::endl;
-		chebVL.Iterate( HAM );
-		chebVR.Iterate( HAM );
 	}
 
 	return 0;

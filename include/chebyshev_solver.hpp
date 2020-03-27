@@ -35,6 +35,7 @@ namespace chebyshev
 	namespace sequential
 	{
 		int KuboGreenwoodChebMomConvergence( const double E0,
+											 const double eta,
 											 SparseMatrixType &HAM, 
 											 SparseMatrixType &OPL, 
 											 SparseMatrixType &OPR,
