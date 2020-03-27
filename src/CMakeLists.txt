@@ -46,3 +46,7 @@ target_link_libraries(${MAIN} ${KPM_LIB} )
 set(MAIN inline_kuboGreenwoodChebmomConvergence )
 add_executable(${MAIN} kuboGreenwoodChebmomConvergence.cpp  )
 target_link_libraries(${MAIN} ${KPM_LIB} )
+
+set(MAIN inline_compute-kpmEvol-EqOp )
+add_executable(${MAIN} compute-kpmEvol-EqOp.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )

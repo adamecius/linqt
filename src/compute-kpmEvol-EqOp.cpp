@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 		S_OP   = argv[2],
 		S_NMOM = argv[3],
 		S_NTIME= argv[4],
-		S_TMAX = argv[5]
+		S_TMAX = argv[5];
 
 	const int numMoms = atoi(S_NMOM.c_str() );
 	const int numTimes= atoi(S_NTIME.c_str() );

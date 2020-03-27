@@ -30,7 +30,8 @@ namespace qstates
 		int kpm_seed = time(0); 	
 		if( getenv("KPM_SEED") ) 
 			kpm_seed = std::stoi(string(getenv("KPM_SEED")));
-
+		srand( kpm_seed );
+		std::cout<<"Current seed is "<<kpm_seed<<std::endl;
 		const double norm = sqrt(X.size());
 		for(auto& elem : X )
 		{
