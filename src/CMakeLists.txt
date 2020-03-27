@@ -43,6 +43,6 @@ set(MAIN inline_kuboGreenwoodFromChebmom)
 add_executable(${MAIN} kuboGreenwoodFromChebmom.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
-set(MAIN kuboGreenwoodChebmomConvergence )
+set(MAIN inline_kuboGreenwoodChebmomConvergence )
 add_executable(${MAIN} kuboGreenwoodChebmomConvergence.cpp  )
 target_link_libraries(${MAIN} ${KPM_LIB} )
