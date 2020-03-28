@@ -35,11 +35,13 @@ int main(int argc, char *argv[])
 	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
-	xbound = 0.90;
+	xbound = 0.99;
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++)
 		energies[i] = -xbound + i*(2*xbound)/(num_div-1) ;
+	
+	
 
 
 
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
 			kernel[i] += delta_chebF(energ,m0)*( DgreenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
-		kernel[i] *=  -2.0* mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+		kernel[i] *=  2.0* mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
 	}
 
 	double acc = 0;

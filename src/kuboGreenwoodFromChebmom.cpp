@@ -1,4 +1,4 @@
-
+		
 // C & C++ libraries
 #include <iostream>		/* for std::cout mostly */
 #include <string>		/* for std::string class */
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
-	xbound = 0.90;
+	xbound = 0.99;
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++)
@@ -66,11 +66,11 @@ int main(int argc, char *argv[])
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
 			kernel[i] += delta_chebF(energ,m0)*( greenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
-		kernel[i] *=  - mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+		kernel[i] *= mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
 	}
 
 	for( int i=0; i < num_div-1; i++)
-		outputfile<<energies[i]*mu.HalfWidth() + mu.BandCenter() <<" "<<kernel[i] <<std::endl;
+		outputfile<<energies[i]*mu.HalfWidth() + mu.BandCenter() <<" "<<-kernel[i] <<std::endl;
 
 	outputfile.close();
 
