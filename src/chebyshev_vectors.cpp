@@ -1,39 +1,6 @@
 #include "chebyshev_moments.hpp"
 
 
-void chebyshev::Vectors::SetInitVectors( SparseMatrixType &NHAM,const Moments::vector_t& T0 )
-{
-	assert( NHAM.rank() == this->SystemSize()&& T0.size() == this->SystemSize() );
-	
-	if( ChebV0.size()!= T0.size() )
-		ChebV0 = Moments::vector_t(T0.size(),Moments::value_t(0)); 
-
-	if( ChebV1.size()!= T0.size() )
-		ChebV1 = Moments::vector_t(T0.size(),Moments::value_t(0)); 
-	
-	linalg::copy( T0, ChebV0 );
-	NHAM.Multiply( ChebV0, ChebV1 );
-};
-
-
-void chebyshev::Vectors::SetInitVectors( SparseMatrixType &NHAM, SparseMatrixType &OP ,const Moments::vector_t& T0 )
-{
-	assert( OP.rank() == NHAM.rank() && NHAM.rank() == this->SystemSize()&& T0.size() == this->SystemSize() );
-
-	if( ChebV0.size()!= T0.size() )
-		ChebV0 = Moments::vector_t(T0.size(),Moments::value_t(0)); 
-
-	if( ChebV1.size()!= T0.size() )
-		ChebV1 = Moments::vector_t(T0.size(),Moments::value_t(0)); 
-
-	linalg::copy ( T0, ChebV1 );
-	OP.Multiply  ( ChebV1, ChebV0 );
-	NHAM.Multiply( ChebV0, ChebV1 );
-};
-
-
-
-
 int chebyshev::Vectors::IterateAll( SparseMatrixType &NHAM )
 {
 	const size_t  dim = NHAM.rank();

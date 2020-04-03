@@ -55,8 +55,27 @@ class Moments
 	inline
 	value_t& MomentVector(const int i){return  mu[i]; };
 
+	inline
+	Moments::vector_t& Chebyshev0(){ return ChebV0; } 
+
+	inline
+	Moments::vector_t& Chebyshev1(){ return ChebV1; } 
+
+	inline
+	SparseMatrixType& Hamiltonian()
+	{ 
+		return *_pNHAM; 
+	};
+
 
 	//SETTERS
+	inline
+	void SetHamiltonian(SparseMatrixType& NHAM)
+	{ 
+		this->Rescale2ChebyshevDomain(NHAM);
+		_pNHAM = &NHAM; 
+	};
+
 	inline
 	void SystemSize(const int dim)  { system_size = dim; };
 
@@ -69,9 +88,17 @@ class Moments
 	inline
 	void BandCenter(const double x) { band_center = x; };
 
-
 	inline 
 	void MomentVector(const vector_t _mu ) { mu= _mu;}
+
+//	void SetInitVectors( SparseMatrixType &NHAM,const Moments::vector_t& T0 );//to be deprecated 
+
+	void SetInitVectors( SparseMatrixType &NHAM, SparseMatrixType &OP ,const vector_t& T0 );//to be deprecated 
+
+	void SetInitVectors( const vector_t& T0 );
+
+	void SetInitVectors( SparseMatrixType &OP ,const vector_t& T0 );
+
 
 	inline
 	double Rescale2ChebyshevDomain(const double energ)
@@ -79,42 +106,23 @@ class Moments
 		return (energ - this->BandCenter() )/this->HalfWidth(); 
 	};
 
+	int Iterate( SparseMatrixType &NHAM );
+
+	int Iterate( );
+
 	//light functions
-    int JacksonKernelMomCutOff( const double broad )
-    {
-		assert( broad >0 );
-		const double eta   =  2.0*broad/1000/this->BandWidth();
-		return ceil(M_PI/eta);
-	};
+    int JacksonKernelMomCutOff( const double broad );
 	
 	//light functions
-    double JacksonKernel(const double m,  const double Mom )
-    {
-		const double
-		phi_J = M_PI/(double)(Mom+1.0);
-		return ( (Mom-m+1)*cos( phi_J*m )+ sin(phi_J*m)*cos(phi_J)/sin(phi_J) )*phi_J/M_PI;
-	};
+    double JacksonKernel(const double m,  const double Mom );
 
 	//Heavy functions
 	int  Rescale2ChebyshevDomain(SparseMatrixType& H);
 
-
-	//OPERATORS
-	inline
-	bool operator == (const Moments& other) const  
-	{ 
-		return true;
-/*			this->system_label	== other.system_label &&
-			this->system_size	== other.system_size &&
-			this->band_width 	== other.band_width && 
-			this->band_center	== other.band_center&&
-			this->mu 			== other.mu;*/
-	};
-
-
-
-
 	private:
+	SparseMatrixType* _pNHAM;
+
+	Moments::vector_t ChebV0,ChebV1,OPV;
 	std::string system_label;
 	size_t system_size;
 	double band_width,band_center;
@@ -124,13 +132,11 @@ class Moments
 
 class Moments1D: public Moments
 {
-
 	public: 
 
 	Moments1D():numMoms(0){};
 
 	Moments1D(const size_t m0):numMoms(m0){ this->MomentVector( Moments::vector_t(numMoms, 0.0) ); };
-
 
 	//GETTERS
 	inline
@@ -141,23 +147,15 @@ class Moments1D: public Moments
 
 	//SETTERS
 
-	void Print();
-
 	//OPERATORS
 	inline
 	Moments::value_t& operator()(const size_t m0) { return this->MomentVector(m0); };
 
-	inline
-	bool operator == (const Moments1D& other) const  
-	{ 
-		return true;/*
-			this->system_label	== other.system_label &&
-			this->system_size	== other.system_size &&
-			this->numMoms  		== other.numMoms  &&
-			this->band_width 	== other.band_width && 
-			this->band_center	== other.band_center&&
-			this->mu 			== other.mu;*/
-	};
+	//Transformation
+//	void ApplyJacksonKernel( const double b0 );
+
+	// Input/Output
+	void Print();
 
 	private:
 	size_t numMoms;
@@ -189,22 +187,10 @@ class Moments2D: public Moments
 	inline
 	Moments::value_t& operator()(const int m0,const int m1) { return this->MomentVector(m0*numMoms[1] + m1 ); };
 
-	inline
-	bool operator == (const Moments2D& other) const  
-	{ 
-		return true;/*
-			this->system_label	== other.system_label &&
-			this->system_size	== other.system_size &&
-			this->numMoms  		== other.numMoms  &&
-			this->band_width 	== other.band_width && 
-			this->band_center	== other.band_center&&
-			this->mu 			== other.mu;*/
-	};
-
-
 	//Transformation
 	void ApplyJacksonKernel( const double b0, const double b1 );
 
+	// Input/Output 
 	//COSTFUL FUNCTIONS
 	void saveIn(std::string filename);
 
@@ -216,77 +202,75 @@ class Moments2D: public Moments
 
   class MomentsTD : public Moments
   {
-  public:
-    MomentsTD():numMoms(0), numTimes(0) {};
+	  public:
+	  
+	  MomentsTD():
+	  _numMoms(1), _maxTimeStep(1),
+	  _timeStep(0),
+	  _dt(0), _omega(0)
+	  {};
+	  
+	  MomentsTD( const size_t m, const size_t n ): 
+	  _numMoms(m), _maxTimeStep(n),
+	  _timeStep(0),
+	  _dt(0), _omega(0)
+	  { this->MomentVector( Moments::vector_t(m*n, 0.0) );    };
+	  
+	  MomentsTD( std::string momfilename );
+	  
+	  //GETTERS
+	  inline
+	  size_t MomentNumber() const { return _numMoms;};
+	  
+	  inline
+	  size_t HighestMomentNumber() const { return _numMoms;};
+	  
+	  inline
+	  size_t CurrentTimeStep() const { return _timeStep;};
 
-    MomentsTD( const size_t m, const size_t n ):numMoms(m), numTimes(n){ this->MomentVector( Moments::vector_t( numMoms * numTimes, 0.0) ); };
+	  inline 
+	  size_t MaxTimeStep() const { return _maxTimeStep; };
+	  
+	  inline
+	  double TimeDiff() const   { return _dt; };
+	  	  
+	  inline
+	  double ChebyshevFreq() const   { return _omega; };
+	  
+	  //SETTERS
+	  void MomentNumber(const size_t mom);
+	  
+	  void MaxTimeStep(const  size_t maxTimeStep )  {  _maxTimeStep = maxTimeStep; };
 
-    MomentsTD( std::string momfilename );
-
-    //GETTERS
-
-    inline
-    size_t MomentNumber() const { return numMoms;};
-
-    inline
-    size_t HighestMomentNumber() const { return numMoms;};
-
-    inline
-    size_t TimeNumber() const { return numTimes;};
-
-    inline
-    size_t HighestTimeNumber() const { return numTimes;};
-
-    inline
-    double TimeStep() const { return deltaT; };
-
-    inline
-    double TimeCoeff() const { return omega0; };
-    
-
-    //SETTERS
-    void MomentNumber(const size_t mom);
-
-    inline
-    void TimeStep(const double dt) { deltaT = dt; };
-
-    inline
-    void TimeCoeff(const double om0) { omega0 = om0; };
-    
-    
-    //OPERATORS
-    inline
-    Moments::value_t& operator()(const size_t m, const size_t n)
-    { return this->MomentVector( m*numTimes + n ); };
-
-    inline
-    bool operator == (const MomentsTD& other) const
-    {
-      return true;/*
-		    this->system_label	== other.system_label &&
-		    this->system_size	== other.system_size &&
-		    this->numMoms  	== other.numMoms  &&
-		    this->band_width 	== other.band_width && 
-		    this->band_center	== other.band_center &&
-		    this->mu 		== other.mu &&
-		    this->deltaT        == other.deltaT &&
-		    this->omega0        == other.omega0;*/
-    };
-
-    //Transformation
-    void ApplyJacksonKernel( const double broad );
-
-
-    //COSTFUL FUNCTIONS
-    void saveIn(std::string filename);
-
-    void Print();
+	  inline
+	  void IncreaseTimeStep(){ _timeStep++; };
+	  
+	  inline
+	  void TimeDiff(const double dt ) { _dt = dt; };
+	  
+	  inline
+	  void ChebyshevFreq(const double omega) { _omega = omega; };
+	  
+	  int Evolve(  vector_t& Phi);
+	  
+	  //OPERATORS
+	  inline
+	  Moments::value_t& operator()(const size_t m, const size_t n)
+	  {
+		  return this->MomentVector( m*MaxTimeStep() + n );
+	  };
+	  
+	  //Transformation
+	  void ApplyJacksonKernel( const double broad );
+	  
+	  //COSTFUL FUNCTIONS
+	  void saveIn(std::string filename);
+	  
+	  void Print();
 
   private:
-    size_t numMoms;
-    size_t numTimes;
-    double deltaT;
-    double omega0;
+    size_t _numMoms, _maxTimeStep, _timeStep;
+    double _dt, _omega;
   };
 
 class Vectors : public Moments
@@ -294,14 +278,12 @@ class Vectors : public Moments
 	public: 
 	typedef VectorList< Moments::value_t > vectorList_t;
 
-
 	Vectors():Chebmu(0,0){};
 	Vectors(const size_t nMoms,const size_t dim ):Chebmu(nMoms,dim) {  };
 	Vectors( Moments1D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
 	Vectors( Moments2D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
 	Vectors( Moments2D mom, const size_t i ): Chebmu(mom.HighestMomentNumber(i), mom.SystemSize() ) {  };
     Vectors( MomentsTD mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
-
 
 	size_t Size() const
 	{
@@ -321,30 +303,8 @@ class Vectors : public Moments
 	inline
 	Moments::vector_t& Vector(const size_t m0) { return this->Chebmu.ListElem(m0); };
 
-
 	inline
 	Moments::value_t& operator()(const size_t m0) { return this->Chebmu(m0,0); };
-
-
-
-	inline
-	Moments::vector_t& Chebyshev0(){ return ChebV0; } 
-
-
-
-	void SetInitVectors( SparseMatrixType &NHAM,const Moments::vector_t& T0 );
-
-
-	void SetInitVectors( SparseMatrixType &NHAM, SparseMatrixType &OP ,const Moments::vector_t& T0 );
-
-	inline
-	int Iterate( SparseMatrixType &NHAM )
-	{
-		NHAM.Multiply(2.0,ChebV1,-1.0,ChebV0);
-		ChebV0.swap(ChebV1);
-		return 0;
-	};
-
 
 	int IterateAll( SparseMatrixType &NHAM );
 

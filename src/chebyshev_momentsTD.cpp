@@ -1,5 +1,46 @@
 #include "chebyshev_moments.hpp"
 
+
+int chebyshev::MomentsTD::Evolve( vector_t& Phi)
+{
+	const auto dim = this->SystemSize();
+
+	if( this->Chebyshev0().size()!= dim )
+		this->Chebyshev0() = Moments::vector_t(dim,Moments::value_t(0)); 
+
+	if( this->Chebyshev1().size()!= dim )
+		this->Chebyshev1() = Moments::vector_t(dim,Moments::value_t(0)); 
+	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
+
+	const auto I = Moments::value_t(0, 1);
+	const double x = this->TimeDiff()*this->ChebyshevFreq();
+	
+	int n = 0;
+	double Jn = besselJ(n,x);
+	linalg::copy(Phi , Chebyshev0() );
+	linalg::scal(0,Phi); //Set to zero
+	linalg::axpy( Jn , Chebyshev0(), Phi);
+	
+	double Jn1 = besselJ(n+1,x);
+	this->Hamiltonian().Multiply(Chebyshev0(), Chebyshev1());
+	linalg::axpy(-2 * I * Jn1,  Chebyshev1() , Phi);
+		
+	auto nIp =-I;
+	while( 0.5*(std::abs(Jn)+std::abs(Jn1) ) > 1e-15)
+	{
+		nIp*=-I ;
+		Jn  = Jn1;
+		Jn1 = besselJ(n, x);
+		this->Hamiltonian().Multiply(2.0,  Chebyshev1(), -1.0,  Chebyshev0() );
+		linalg::axpy(2 * nIp *Jn1, Chebyshev0() ,Phi);
+		Chebyshev0().swap(Chebyshev1());
+		n++;
+	}
+
+  return 0;
+};
+
+
 chebyshev::MomentsTD::MomentsTD( std::string momfilename)
 {
   //Check if the input_momfile have the right extension 
@@ -19,34 +60,33 @@ chebyshev::MomentsTD::MomentsTD( std::string momfilename)
   momfile>>ibuff; this->SystemSize(ibuff);
   momfile>>dbuff; this->BandWidth(dbuff);
   momfile>>dbuff; this->BandCenter(dbuff);
-  momfile>>dbuff; this->TimeStep(dbuff);
-  momfile>>dbuff; this->TimeCoeff(dbuff);
+  momfile>>ibuff; this->MaxTimeStep(ibuff);
+  momfile>>dbuff; this->TimeDiff(dbuff);
 
   //create the moment array and read the data
 	
-  momfile>>this->numMoms>>this->numTimes;
+  momfile>>this->_numMoms>>this->_maxTimeStep;
 
-  this->MomentVector( Moments::vector_t(numMoms * numTimes, 0.0) );
+  this->MomentVector( Moments::vector_t( this->HighestMomentNumber() * this->MaxTimeStep(), 0.0) );
   double rmu, imu;
-  for( int m = 0; m < numMoms; m++)
-    for( int n = 0; n < numTimes; n++)
-      { 
-	momfile>>rmu>>imu;
-	this->operator()(m,n) = Moments::value_t(rmu, imu);
-      }
+  for( int m = 0; m < this->HighestMomentNumber() ; m++)
+  for( int n = 0; n < this->MaxTimeStep() ; n++)
+  { 
+	  momfile>>rmu>>imu;
+	  this->operator()(m,n) = Moments::value_t(rmu, imu);
+  }
   momfile.close();
 };
 
 void chebyshev::MomentsTD::saveIn(std::string filename)
 {
-
   typedef std::numeric_limits<double> dbl;
   ofstream outputfile(filename.c_str());
   outputfile.precision(dbl::digits10);
   outputfile << this->SystemSize() << " " << this->BandWidth() << " " << this->BandCenter() << " " 
-	     << this->TimeStep() << " " << this->TimeCoeff() << " " << std::endl;
+	     << this->MaxTimeStep() << " " << this->TimeDiff() << " " << std::endl;
   //Print the number of moments for all directions in a line
-  outputfile << numMoms << " " << numTimes << " " << std::endl;
+  outputfile << this->HighestMomentNumber() << " " << this->MaxTimeStep() << " " << std::endl;
 
   for ( auto mom : this->MomentVector() )
     outputfile << mom.real() << " " << mom.imag() << std::endl;
@@ -61,45 +101,49 @@ void chebyshev::MomentsTD::Print()
     std::cout<<"\tSIZE:\t\t\t"<<this-> SystemSize()<<std::endl;
 
   std::cout<<"\tMOMENTS SIZE:\t\t"<<"("
-	   <<this->HighestMomentNumber()<< " x " <<this->HighestTimeNumber()<<")"<<std::endl;
+	   <<this->HighestMomentNumber()<< " x " <<this->MaxTimeStep()<<")"<<std::endl;
   std::cout<<"\tSCALE FACTOR:\t\t"<<this->ScaleFactor()<<std::endl;
   std::cout<<"\tSHIFT FACTOR:\t\t"<<this->ShiftFactor()<<std::endl;
   std::cout<<"\tENERGY SPECTRUM:\t("
 	   <<-this->HalfWidth()+this->BandCenter()<<" , "
 	   << this->HalfWidth()+this->BandCenter()<<")"<<std::endl<<std::endl;
-  std::cout<<"\tTIME STEP:\t\t"<<this->TimeStep()<<std::endl;
-  std::cout<<"\tTIME COEFFICIENT:\t"<<this->TimeCoeff()<<std::endl;
+  std::cout<<"\tTIME STEP:\t\t"<<this->MaxTimeStep()<<std::endl;
+  std::cout<<"\tTI;E DIFF:\t"<<this->TimeDiff()<<std::endl;
   
 };
 
-void chebyshev::MomentsTD::MomentNumber(const size_t mom)
+void chebyshev::MomentsTD::MomentNumber(const size_t numMoms )
 { 
-  assert(mom <= numMoms);
-  chebyshev::MomentsTD new_mom( mom, this->HighestTimeNumber() );
-  for( size_t m = 0 ; m < mom ; m++)
-    for( size_t n = 0 ; n < numTimes ; n++)
+	assert( numMoms <= this->HighestMomentNumber() );
+	const auto maxtime = this->MaxTimeStep();
+	
+	//Copy all previous moments smaller or equal than the new size into new vector;
+	chebyshev::MomentsTD new_mom( numMoms, maxtime);
+	for( size_t m = 0 ; m < numMoms  ; m++)
+	for( size_t n = 0 ; n < maxtime ; n++)
       new_mom(m, n) = this->operator()(m, n); 
-  this->numMoms = new_mom.MomentNumber();
-  this->MomentVector( new_mom.MomentVector() );
+
+	this->_numMoms = new_mom._numMoms;
+	this->MomentVector( new_mom.MomentVector() );
 };
 
 void chebyshev::MomentsTD::ApplyJacksonKernel( const double broad )
 {
   assert( broad > 0);
   const double eta = 2.0*broad/1000/this->BandWidth();
-		
   int maxMom =  ceil(M_PI/eta);
   
-  if(  maxMom > numMoms ) maxMom = numMoms;
-  std::cout << "Kernel reduced the number of moments to " << maxMom << std::endl;
+  if(  maxMom > this->HighestMomentNumber() )
+	maxMom = this->HighestMomentNumber();
+  std::cout << "Kernel reduced the number of moments to " << maxMom <<" for a broadening of "<<M_PI/maxMom << std::endl;
   this->MomentNumber(maxMom);
 
-  const double phi_J = M_PI/(double)(numMoms+1.0);
+  const double phi_J = M_PI/(double)(maxMom+1.0);
   double g_D_m;
 
-  for( size_t m = 0 ; m < numMoms ; m++)
-    {
-      g_D_m = ( (numMoms - m + 1) * cos(phi_J * m) + sin(phi_J * m) * cos(phi_J) / sin(phi_J) ) * phi_J/M_PI;
-      for( size_t n = 0 ; n < numTimes ; n++) this->operator()(m, n) *= g_D_m;
-    }
+  for( size_t m = 0 ; m < maxMom ; m++)
+  {
+	  g_D_m = ( (maxMom - m + 1) * cos(phi_J * m) + sin(phi_J * m) * cos(phi_J) / sin(phi_J) ) * phi_J/M_PI;
+	  for( size_t n = 0 ; n < this->MaxTimeStep() ; n++) this->operator()(m, n) *= g_D_m;
+	}
 }
