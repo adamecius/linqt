@@ -1,11 +1,15 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from numpy.linalg import eigh, eigvalsh, norm
+from numpy import exp, cos, sin , pi, kron
+
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import matplotlib.tri as tri #tricontourf
-from numpy.linalg import eigh, eigvalsh, norm
-from numpy import exp, cos, sin , pi, kron
+from matplotlib import rc
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+rc('text', usetex=True)
+
 from scipy.sparse import coo_matrix
 import time
 
@@ -104,7 +108,10 @@ class wannier_system:
     def Momentum_Rec2AbsMatrix(self ):
         return 2*np.pi* np.linalg.inv(self.lat_vec);
     
-    
+    #If required, rescale to absolute value
+    def toAbsoluteCoords(self,x):
+             return np.dot( x, np.transpose(self.Momentum_Rec2AbsMatrix() ) );
+                
     def band_kpoints(self , absolute_coords = False): #Compute the kpoints used for the band structure calculation
         kpoints   = list(); 
         init_k = self.bandpath[0][2];
@@ -121,7 +128,12 @@ class wannier_system:
                 
         return np.array(kpoints);
 
-    def set_bandpath(self,bandpath):
+    def set_bandpath(self,bandpath, absolute_coords = False):
+
+        if absolute_coords is True: #Convert to reciprocal
+            Abs2Rec = np.linalg.inv(np.transpose(self.Momentum_Rec2AbsMatrix() ) );
+            bandpath = [ (x[0],x[1],np.dot(x[2],Abs2Rec)) for x in bandpath]
+
         self.bandpath=np.array(bandpath);
 
     def get_XLabels(self ):
