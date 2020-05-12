@@ -127,11 +127,27 @@ hopping_list tbmodel::createHoppingCurrents_list(const int dir)
 
 
 hopping_list 
+tbmodel::createHoppingSpinorialDensity_list(const std::array< std::complex<double>,4 > op)
+{
+	//CREATE A SPINORIAL OPERATOR MATRIX
+	auto sop = this->createSpinorialOp(op);
+	return this->createHoppingDensity_list(sop);
+};
+
+
+hopping_list 
 tbmodel::createHoppingSpinDensity_list(const double theta, const double phi)
 {
+	typedef std::complex<double> mycomplex;
+	mycomplex I(0,1);
 	//CREATE A SPIN MATRIX
-	auto Su = this->createSpinMatrix(theta,phi );
-	return this->createHoppingDensity_list(Su);
+	std::array< mycomplex,4 >
+	op = { 
+			cos(theta)			   ,-sin(theta)*exp(-I*phi ),
+			sin(theta)*exp( I*phi ),-cos(theta)
+		 }; 
+	auto sop = this->createSpinorialOp(op);
+	return this->createHoppingDensity_list(sop);
 };
 
 hopping_list 
@@ -141,7 +157,6 @@ tbmodel::createHoppingTorqueDensity_list(const double theta, const double phi)
 	auto Tu = this->createTorqueMatrix(theta,phi );
 	return this->createHoppingDensity_list( Tu );
 };
-
 
 
 hopping_list 
@@ -313,48 +328,67 @@ hopping_list tbmodel::WannierOperator(std::string op_id )
 	{
 		return this->createHoppingTorqueDensity_list(op_id);
 	}
+	std::ifstream f(op_id+".OP");
+	if ( f.good() )
+	{
+		
+		std::cout<<"The file "<<op_id+".OP "<<"was found"<<std::endl;
+
+		std::string type ;
+		f>>type;
+		
+		using namespace std;
+		const int num_elems = 4;
+		array< complex<double>,num_elems> op_elems;
+		
+		for( auto& elem : op_elems )
+		{
+			double re, im;
+			f>>re>>im;
+			elem = {re, im};
+		}
+		
+		std::cout<<op_id<<"is of the "<<type<<" type"<<std::endl;
+		
+		return this->createHoppingSpinorialDensity_list(op_elems);
+	}
+	
+	
 	std::cout<<"Incorrect wannier operator requested "<<op_id<<std::endl;
 	assert(false);		
 };
 
-oputil::op_matrix tbmodel::createSpinMatrix(const double theta, const double phi)
+
+oputil::op_matrix tbmodel::createSpinorialOp(const std::array< std::complex<double>,4 > op)
 {
-	const std::complex<double> I(0,1);
 	const int tot_dim  =  this->orbPos_list.size();
 	const int num_spin = 2;
 	const int orb_dim  =  tot_dim/num_spin;
 
-	oputil::op_matrix Su ( tot_dim ) ;
+	oputil::op_matrix SOP ( tot_dim ) ;
 	for(int io = 0 ; io < orb_dim ; io++)
 	for(int si = 0 ; si < num_spin; si++)
 	for(int sj = 0 ; sj < num_spin; sj++)
 	{
 		const int i = si*orb_dim + io;
 		const int j = sj*orb_dim + io;
-		auto sz  = 1.0-2.0*si;
 
-		if( si == sj )
-		{
-			Su(i,j).real( sz*cos(theta) ); 
-			if( theta == 0.5*M_PI )  Su(i,j) = 0.0 ;
-		}
-		else
-		{
-			Su(i,j) = sin(theta)*exp(-I*phi*sz );
-			if( phi == 0.0 )
-			{
-				Su(i,j).real( sin(theta) );
-				Su(i,j).imag( 0.0 );
-			}
-			if( phi == 0.5*M_PI )
-			{
-				Su(i,j).real(0.0);
-				Su(i,j).imag(-sz*sin(theta) );
-			}
-		}
+		const int opidx = si*num_spin + sj ; //The operator is ordered in row major order
+		SOP(i,j) = op[opidx]; 
 	}
-	return Su;
+	return SOP;
 }
+
+oputil::op_matrix tbmodel::createSpinMatrix(const double theta, const double phi)
+{
+	const std::complex<double> I(0,1);
+	std::array< std::complex<double>,4 > 
+	op = { 
+			cos(theta)			   ,-sin(theta)*exp(-I*phi ),
+			sin(theta)*exp( I*phi ),-cos(theta)
+		 }; 
+	return tbmodel::createSpinorialOp(op);
+};
 
 oputil::op_matrix tbmodel::createTorqueMatrix(const double theta, const double phi)
 {

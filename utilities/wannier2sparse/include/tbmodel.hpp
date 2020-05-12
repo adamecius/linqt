@@ -171,6 +171,8 @@ class tbmodel
 	//DERIVED FUNCTIONS
     hopping_list createHoppingCurrents_list(const std::string op );
     
+	hopping_list createHoppingSpinorialDensity_list(const std::array< std::complex<double>,4 > op);
+
     hopping_list createHoppingSpinDensity_list(const std::string op );
 
     hopping_list createHoppingTorqueDensity_list(const std::string op );
@@ -203,6 +205,8 @@ class tbmodel
 		return {  n[0]%NumberOfSites() + s[0]*NumberOfSites(), n[1]%NumberOfSites() + s[1]*NumberOfSites()};
 	}
 	//inline orbPos_list.size() gives you the number of positions. Including the repeated one due to MAX_SPIN
+
+	oputil::op_matrix createSpinorialOp(const std::array< std::complex<double>,4 > op);
 
 	oputil::op_matrix createSpinMatrix(const double theta, const double phi);
 
