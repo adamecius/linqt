@@ -330,6 +330,36 @@ return 0;
 };
 
 
+int chebyshev::SpectralMoments(int numStates, SparseMatrixType &OP,  chebyshev::Moments1D &chebMoms, StateType type )
+{
+	const auto Dim = chebMoms.SystemSize();
+	const auto NumMoms = chebMoms.HighestMomentNumber();
+	vector_t Phi(Dim);
+	for(int s=0; s < numStates; s++)
+	{
+		std::cout<<"Computing state "<<s<<" for spectral moments"<<std::endl;
+		//Initialize the Random Phase vector used for the Trace approximation
+		qstates::FillWithRandomPhase(Phi);// Defines  |Psi>
+		
+		//Set the evolved vector as initial vector of the chebyshev iterations
+		if (OP.isIdentity() )
+			chebMoms.SetInitVectors( Phi );
+		else
+			chebMoms.SetInitVectors( OP,Phi );
+			
+		for(int m = 0 ; m < NumMoms ; m++ )
+		{
+			double scal=2.0/numStates;
+			if( m==0) scal*=0.5;
+			chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev0() ) ;
+			chebMoms.Iterate();
+		}
+	}
+	
+	return 0;
+};
+
+
 int chebyshev::TimeDependentCorrelations(int numStates, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::MomentsTD &chebMoms, StateType type )
 {
 	const auto Dim = chebMoms.SystemSize();
@@ -338,28 +368,38 @@ int chebyshev::TimeDependentCorrelations(int numStates, SparseMatrixType &OPL, S
 	
 	//Initialize the Random Phase vector used for the Trace approximation
 	vector_t PhiL(Dim), PhiR(Dim);
-	qstates::FillWithRandomPhase(PhiR);
-		
-	//Multiply right operator its operator
-	OPL.Multiply(PhiR,PhiL);
 	
-	//Evolve state vector from t=0 to Tmax
-	while ( chebMoms.CurrentTimeStep() !=  chebMoms.MaxTimeStep()  )
+	for(int s=0; s < numStates; s++)
 	{
-		const auto n = chebMoms.CurrentTimeStep();
-		//evolve PhiL ---> PhiLt , PhiR ---> PhiRt 
-		chebMoms.Evolve(PhiL) ;
-		chebMoms.Evolve(PhiR) ;
-
-		//Set the evolved vector as initial vector of the chebyshev iterations
-		chebMoms.SetInitVectors( OPR , PhiR );
-		for(int m = 0 ; m < NumMoms ; m++ )
+		chebMoms.ResetTime();
+		qstates::FillWithRandomPhase(PhiR);// Defines  |Psi>
+			
+		//Multiply right operator its operator
+		OPL.Multiply(PhiR,PhiL); //Defines <Phi| OPL 
+		
+		//Evolve state vector from t=0 to Tmax
+		while ( chebMoms.CurrentTimeStep() !=  chebMoms.MaxTimeStep()  )
 		{
-			chebMoms.Iterate();
-			chebMoms(m,n) = linalg::vdot( PhiL, PhiL ) ;
+			const auto n = chebMoms.CurrentTimeStep();
+
+			//Set the evolved vector as initial vector of the chebyshev iterations
+			chebMoms.SetInitVectors( OPR , PhiR );
+
+			for(int m = 0 ; m < NumMoms ; m++ )
+			{
+				double scal=2.0/numStates;
+				if( m==0) scal*=0.5;
+				chebMoms(m,n) += scal*linalg::vdot( PhiL, chebMoms.Chebyshev0() ) ;
+				chebMoms.Iterate();
+			}
+			
+			chebMoms.IncreaseTimeStep();
+			//evolve PhiL ---> PhiLt , PhiR ---> PhiRt 
+			chebMoms.Evolve(PhiL) ;
+			chebMoms.Evolve(PhiR) ;
 		}
-		chebMoms.IncreaseTimeStep();
-		std::cout<<"time: "<<chebMoms.CurrentTimeStep()<<std::endl;
+	
 	}
+	
 	return 0;
 };

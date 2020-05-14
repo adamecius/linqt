@@ -13,29 +13,34 @@ int chebyshev::MomentsTD::Evolve( vector_t& Phi)
 	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
 
 	const auto I = Moments::value_t(0, 1);
-	const double x = this->TimeDiff()*this->ChebyshevFreq();
+	const auto x = this->TimeDiff()*this->ChebyshevFreq();
+	const double tol = 1e-10;
+	double momcutOff = 2.0*tol;
 	
-	int n = 0;
-	double Jn = besselJ(n,x);
+		//Initial block
 	linalg::copy(Phi , Chebyshev0() );
-	linalg::scal(0,Phi); //Set to zero
-	linalg::axpy( Jn , Chebyshev0(), Phi);
-	
-	double Jn1 = besselJ(n+1,x);
 	this->Hamiltonian().Multiply(Chebyshev0(), Chebyshev1());
-	linalg::axpy(-2 * I * Jn1,  Chebyshev1() , Phi);
-		
-	auto nIp =-I;
-	while( 0.5*(std::abs(Jn)+std::abs(Jn1) ) > 1e-15)
+
+	int n = 0;
+	auto nIp =Moments::value_t(1, 0);
+	double  Jn = 0.5*chebyshev::besselJ(n,x);
+	linalg::scal(0,Phi); //Set to zero
+	while( momcutOff > tol)
 	{
-		nIp*=-I ;
-		Jn  = Jn1;
-		Jn1 = besselJ(n, x);
+		//---Save J0 to Phi. n = 0,1,2,3,..,
+		linalg::axpy( nIp*2*Jn , Chebyshev0(), Phi);
+
+		// Evolve n to n+1
 		this->Hamiltonian().Multiply(2.0,  Chebyshev1(), -1.0,  Chebyshev0() );
-		linalg::axpy(2 * nIp *Jn1, Chebyshev0() ,Phi);
 		Chebyshev0().swap(Chebyshev1());
+
+		nIp*=-I ;
 		n++;
+		Jn  = chebyshev::besselJ(n,x);
+		momcutOff = std::fabs(Jn) ;
 	}
+	const auto exp0= exp(-I*this->ChebyshevFreq_0()*this->TimeDiff() );
+	linalg::scal(exp0,Phi); //Set to zero
 
   return 0;
 };
@@ -108,7 +113,7 @@ void chebyshev::MomentsTD::Print()
 	   <<-this->HalfWidth()+this->BandCenter()<<" , "
 	   << this->HalfWidth()+this->BandCenter()<<")"<<std::endl<<std::endl;
   std::cout<<"\tTIME STEP:\t\t"<<this->MaxTimeStep()<<std::endl;
-  std::cout<<"\tTI;E DIFF:\t"<<this->TimeDiff()<<std::endl;
+  std::cout<<"\tTIME DIFF:\t"<<this->TimeDiff()<<std::endl;
   
 };
 
@@ -145,5 +150,5 @@ void chebyshev::MomentsTD::ApplyJacksonKernel( const double broad )
   {
 	  g_D_m = ( (maxMom - m + 1) * cos(phi_J * m) + sin(phi_J * m) * cos(phi_J) / sin(phi_J) ) * phi_J/M_PI;
 	  for( size_t n = 0 ; n < this->MaxTimeStep() ; n++) this->operator()(m, n) *= g_D_m;
-	}
+  }
 }

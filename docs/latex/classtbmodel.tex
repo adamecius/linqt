@@ -1,0 +1,249 @@
+\hypertarget{classtbmodel}{}\section{tbmodel Class Reference}
+\label{classtbmodel}\index{tbmodel@{tbmodel}}
+
+
+{\ttfamily \#include $<$tbmodel.\+hpp$>$}
+
+
+
+Collaboration diagram for tbmodel\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=148pt]{classtbmodel__coll__graph}
+\end{center}
+\end{figure}
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef tuple$<$ string, array$<$ double, 3 $>$ $>$ {\bfseries orb\+Pos\+\_\+t}\hypertarget{classtbmodel_a76dca7d0eb27c0a04cbde93974ae68e8}{}\label{classtbmodel_a76dca7d0eb27c0a04cbde93974ae68e8}
+
+\item 
+typedef array$<$ array$<$ double, 3 $>$, 3 $>$ {\bfseries unit\+Cell\+\_\+t}\hypertarget{classtbmodel_a34391d0e7eca0f75360009c5898b8d02}{}\label{classtbmodel_a34391d0e7eca0f75360009c5898b8d02}
+
+\item 
+typedef multimap$<$ string, \hyperlink{classhopping__kind}{hopping\+\_\+kind} $>$ {\bfseries hopping\+\_\+kind\+\_\+list}\hypertarget{classtbmodel_ab2715f3f60cd388612806e79e233748c}{}\label{classtbmodel_ab2715f3f60cd388612806e79e233748c}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void {\bfseries read\+Unit\+Cell} (const string inputfile)\hypertarget{classtbmodel_adee0ff864c43723c8c979f4e2e008bb6}{}\label{classtbmodel_adee0ff864c43723c8c979f4e2e008bb6}
+
+\item 
+void {\bfseries read\+Orbital\+Positions} (const string inputfile)\hypertarget{classtbmodel_a1fce67740fd3fed482cd68357cdb9cbe}{}\label{classtbmodel_a1fce67740fd3fed482cd68357cdb9cbe}
+
+\item 
+void {\bfseries read\+Wannier\+Model} (const string inputfile)\hypertarget{classtbmodel_aeef6853760e7ce690be52bc5f52b6e72}{}\label{classtbmodel_aeef6853760e7ce690be52bc5f52b6e72}
+
+\item 
+void {\bfseries read\+Static\+Disorder} (const string inputfile)\hypertarget{classtbmodel_af9feab7007f63a5f150a02cc8bcf6fa0}{}\label{classtbmodel_af9feab7007f63a5f150a02cc8bcf6fa0}
+
+\item 
+map$<$ int, string $>$ \hyperlink{classtbmodel_a1285d524d1bc13a01ada7e3c401d9e9c}{map\+\_\+id2orbs} ()
+\item 
+map$<$ int, int $>$ \hyperlink{classtbmodel_a879c46b9c956e0fdeaa7e8f924773c6f}{map\+\_\+id2spin} ()
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \& {\bfseries Hopping\+\_\+\+List} ()\hypertarget{classtbmodel_aada1c093588ba10a3a33e493b9264a4a}{}\label{classtbmodel_aada1c093588ba10a3a33e493b9264a4a}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \hyperlink{classtbmodel_aec77e33a90b894377def9814c91ca49d}{create\+Local\+Hopping\+\_\+list} ()
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \hyperlink{classtbmodel_aec3324656e65583ec29f935757b4bc2e}{create\+Hopping\+Density\+\_\+list} (\hyperlink{structoputil_1_1op__matrix}{oputil\+::op\+\_\+matrix} OP)
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \hyperlink{classtbmodel_a77324c81674f2c43e6214ca8313ced79}{create\+Hopping\+Currents\+\_\+list} (const int dir)
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \hyperlink{classtbmodel_aae40bea134fc6d634cc82a0bf2cb0a5d}{create\+Hopping\+Spin\+Density\+\_\+list} (const double theta, const double phi)
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \hyperlink{classtbmodel_ab9766c523ec0221ac91ccd507ed8f992}{create\+Hopping\+Torque\+Density\+\_\+list} (const double theta, const double phi)
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} \hyperlink{classtbmodel_a31f942be44b0a1af276ba413276d046e}{create\+Hopping\+Spin\+Currents\+\_\+list} (const int dir, const double theta, const double phi)
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries create\+Hopping\+Currents\+\_\+list} (const std\+::string op)\hypertarget{classtbmodel_a497b3607c1d498285d68ff08ac2f315b}{}\label{classtbmodel_a497b3607c1d498285d68ff08ac2f315b}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries create\+Hopping\+Spinorial\+Density\+\_\+list} (const std\+::array$<$ std\+::complex$<$ double $>$, 4 $>$ op)\hypertarget{classtbmodel_abd021ce1ebe29c77197857eda7641dac}{}\label{classtbmodel_abd021ce1ebe29c77197857eda7641dac}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries create\+Hopping\+Spin\+Density\+\_\+list} (const std\+::string op)\hypertarget{classtbmodel_aaf0f711704f7dcfc6f186c97ec024f63}{}\label{classtbmodel_aaf0f711704f7dcfc6f186c97ec024f63}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries create\+Hopping\+Torque\+Density\+\_\+list} (const std\+::string op)\hypertarget{classtbmodel_acac9ec7ef9b8e684372e09b14b73aa59}{}\label{classtbmodel_acac9ec7ef9b8e684372e09b14b73aa59}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries create\+Hopping\+Spin\+Currents\+\_\+list} (string op)\hypertarget{classtbmodel_a60707b51717f19e59be4876696263c08}{}\label{classtbmodel_a60707b51717f19e59be4876696263c08}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries create\+Hopping\+Spin\+Currents\+\_\+list} (const int dir, const char sdir)\hypertarget{classtbmodel_aaad3f86a13ac29afdb6d6c6cd1e9d431}{}\label{classtbmodel_aaad3f86a13ac29afdb6d6c6cd1e9d431}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries Wannier\+Operator} (std\+::string op\+\_\+id)\hypertarget{classtbmodel_aabcd375bbfa508596bb233012f9f2a03}{}\label{classtbmodel_aabcd375bbfa508596bb233012f9f2a03}
+
+\item 
+void {\bfseries get\+Spin\+Index} (const int \&n, int \&s) const \hypertarget{classtbmodel_a5e74702b6bb666df50783887f50e34c2}{}\label{classtbmodel_a5e74702b6bb666df50783887f50e34c2}
+
+\item 
+int {\bfseries get\+Spin\+Index} (const int \&n) const \hypertarget{classtbmodel_adfedf8e29bd8919448a16dc820ef60ed}{}\label{classtbmodel_adfedf8e29bd8919448a16dc820ef60ed}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int {\bfseries num\+\_\+orbs}\hypertarget{classtbmodel_a6401dfc2dba0df5409a92c069e1de0f0}{}\label{classtbmodel_a6401dfc2dba0df5409a92c069e1de0f0}
+
+\item 
+unit\+Cell\+\_\+t {\bfseries lat\+\_\+vecs}\hypertarget{classtbmodel_a2837b8aab16e5e679302894609b7f7af}{}\label{classtbmodel_a2837b8aab16e5e679302894609b7f7af}
+
+\item 
+vector$<$ orb\+Pos\+\_\+t $>$ {\bfseries orb\+Pos\+\_\+list}\hypertarget{classtbmodel_ae7d346cc58028b41581412751a16a87f}{}\label{classtbmodel_ae7d346cc58028b41581412751a16a87f}
+
+\item 
+\hyperlink{classhopping__list}{hopping\+\_\+list} {\bfseries hl}\hypertarget{classtbmodel_acf3031a7eed087a88ec733bc4ea2df9f}{}\label{classtbmodel_acf3031a7eed087a88ec733bc4ea2df9f}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The tbmodel class This class is responsible for reading wannier files and converting it into a \hyperlink{classhopping__list}{hopping\+\_\+list} structure It is also responsible for constructing other tight-\/binding operators 
+
+\subsection{Member Function Documentation}
+\index{tbmodel@{tbmodel}!create\+Hopping\+Currents\+\_\+list@{create\+Hopping\+Currents\+\_\+list}}
+\index{create\+Hopping\+Currents\+\_\+list@{create\+Hopping\+Currents\+\_\+list}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{create\+Hopping\+Currents\+\_\+list(const int dir)}{createHoppingCurrents_list(const int dir)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hopping\+\_\+list} tbmodel\+::create\+Hopping\+Currents\+\_\+list (
+\begin{DoxyParamCaption}
+\item[{const int}]{dir}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_a77324c81674f2c43e6214ca8313ced79}{}\label{classtbmodel_a77324c81674f2c43e6214ca8313ced79}
+Construct the current operator for the hopping list. In this context, a current operator is defined as \{i,j\} $\vert$i$>$$<$j$\vert$ I$\ast$\+H\+\_\+\{i,j\}$\ast$(R\+\_\+i-\/\+R\+\_\+j)\+\_\+dir with $\vert$i$>$ the basis vector in which the hoppings $<$i$\vert$\+H$\vert$j$>$ are defined. Here i represents both orbital and unit cell indexes. and d, representes the direction in which you want the current
+
+\begin{DoxyReturn}{Returns}
+current\+\_\+hopping\+\_\+list Returns the current operator in the format of a hopping list. 
+\end{DoxyReturn}
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em Direction.} & The direction in which you want the current. \\
+\hline
+\end{DoxyParams}
+\index{tbmodel@{tbmodel}!create\+Hopping\+Density\+\_\+list@{create\+Hopping\+Density\+\_\+list}}
+\index{create\+Hopping\+Density\+\_\+list@{create\+Hopping\+Density\+\_\+list}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{create\+Hopping\+Density\+\_\+list(oputil\+::op\+\_\+matrix O\+P)}{createHoppingDensity_list(oputil::op_matrix OP)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hopping\+\_\+list} tbmodel\+::create\+Hopping\+Density\+\_\+list (
+\begin{DoxyParamCaption}
+\item[{{\bf oputil\+::op\+\_\+matrix}}]{OP}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_aec3324656e65583ec29f935757b4bc2e}{}\label{classtbmodel_aec3324656e65583ec29f935757b4bc2e}
+Construct a density operator for the hopping list an a matrix defining an operator. In this context, the matrix is defined only in the unit cell, hereby the reason for calling it a density operator. The density operator is then defined as \{i in cell\} M\+\_\+ij$\vert$i$>$$<$j$\vert$ with $\vert$i$>$ the basis vector in which the hoppings $<$i,0,0,0$\vert$\+H$\vert$j,0,0,0$>$ are defined. The (0,0,0) indexes is to note that this operator only consider hoppings within the unit cell \begin{DoxyReturn}{Returns}
+density\+\_\+hopping\+\_\+list Returns the density operator in the format of a hopping list. 
+\end{DoxyReturn}
+\index{tbmodel@{tbmodel}!create\+Hopping\+Spin\+Currents\+\_\+list@{create\+Hopping\+Spin\+Currents\+\_\+list}}
+\index{create\+Hopping\+Spin\+Currents\+\_\+list@{create\+Hopping\+Spin\+Currents\+\_\+list}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{create\+Hopping\+Spin\+Currents\+\_\+list(const int dir, const double theta, const double phi)}{createHoppingSpinCurrents_list(const int dir, const double theta, const double phi)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hopping\+\_\+list} tbmodel\+::create\+Hopping\+Spin\+Currents\+\_\+list (
+\begin{DoxyParamCaption}
+\item[{const int}]{dir, }
+\item[{const double}]{theta, }
+\item[{const double}]{phi}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_a31f942be44b0a1af276ba413276d046e}{}\label{classtbmodel_a31f942be44b0a1af276ba413276d046e}
+Construct the current density operator in the direction u = ( sin(theta)$\ast$cos(phi),sin(theta)$\ast$sin(phi), cos(theta) );
+
+\begin{DoxyReturn}{Returns}
+spin\+\_\+current density\+\_\+hopping\+\_\+list Returns the Current Density operator in the format of a hopping list. 
+\end{DoxyReturn}
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em Theta.} & angle defining the altitute direction in which you want the current. \\
+\hline
+\mbox{\tt in}  & {\em Phi.} & angle defining the azimuth \\
+\hline
+\end{DoxyParams}
+\index{tbmodel@{tbmodel}!create\+Hopping\+Spin\+Density\+\_\+list@{create\+Hopping\+Spin\+Density\+\_\+list}}
+\index{create\+Hopping\+Spin\+Density\+\_\+list@{create\+Hopping\+Spin\+Density\+\_\+list}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{create\+Hopping\+Spin\+Density\+\_\+list(const double theta, const double phi)}{createHoppingSpinDensity_list(const double theta, const double phi)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hopping\+\_\+list} tbmodel\+::create\+Hopping\+Spin\+Density\+\_\+list (
+\begin{DoxyParamCaption}
+\item[{const double}]{theta, }
+\item[{const double}]{phi}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_aae40bea134fc6d634cc82a0bf2cb0a5d}{}\label{classtbmodel_aae40bea134fc6d634cc82a0bf2cb0a5d}
+Construct the density operator in the direction u = ( sin(theta)$\ast$cos(phi),sin(theta)$\ast$sin(phi), cos(theta); In this context, OP = Su, the spin direction.
+
+\begin{DoxyReturn}{Returns}
+density\+\_\+hopping\+\_\+list Returns the density operator in the format of a hopping list. 
+\end{DoxyReturn}
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em Theta.} & angle defining the altitute direction in which you want the current. \\
+\hline
+\mbox{\tt in}  & {\em Phi.} & angle defining the azimuth \\
+\hline
+\end{DoxyParams}
+\index{tbmodel@{tbmodel}!create\+Hopping\+Torque\+Density\+\_\+list@{create\+Hopping\+Torque\+Density\+\_\+list}}
+\index{create\+Hopping\+Torque\+Density\+\_\+list@{create\+Hopping\+Torque\+Density\+\_\+list}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{create\+Hopping\+Torque\+Density\+\_\+list(const double theta, const double phi)}{createHoppingTorqueDensity_list(const double theta, const double phi)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hopping\+\_\+list} tbmodel\+::create\+Hopping\+Torque\+Density\+\_\+list (
+\begin{DoxyParamCaption}
+\item[{const double}]{theta, }
+\item[{const double}]{phi}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_ab9766c523ec0221ac91ccd507ed8f992}{}\label{classtbmodel_ab9766c523ec0221ac91ccd507ed8f992}
+Construct the density operator in the direction u = ( sin(theta)$\ast$cos(phi),sin(theta)$\ast$sin(phi), cos(theta); In this context, OP = Su, the spin direction.
+
+\begin{DoxyReturn}{Returns}
+density\+\_\+hopping\+\_\+list Returns the density operator in the format of a hopping list. 
+\end{DoxyReturn}
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em Theta.} & angle defining the altitute direction in which you want the current. \\
+\hline
+\mbox{\tt in}  & {\em Phi.} & angle defining the azimuth \\
+\hline
+\end{DoxyParams}
+\index{tbmodel@{tbmodel}!create\+Local\+Hopping\+\_\+list@{create\+Local\+Hopping\+\_\+list}}
+\index{create\+Local\+Hopping\+\_\+list@{create\+Local\+Hopping\+\_\+list}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{create\+Local\+Hopping\+\_\+list()}{createLocalHopping_list()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hopping\+\_\+list} tbmodel\+::create\+Local\+Hopping\+\_\+list (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_aec77e33a90b894377def9814c91ca49d}{}\label{classtbmodel_aec77e33a90b894377def9814c91ca49d}
+Extract the local hoppings for the hopping list. In this context, the local hoppings are the one satisfying \{i in cell\} H\+\_\+ij$\vert$i$>$$<$j$\vert$ with $\vert$i$>$ the basis vector in which the hoppings $<$i,0,0,0$\vert$\+H$\vert$j,0,0,0$>$ are defined. The (0,0,0) indexes is to note that this operator only consider hoppings within the unit cell \begin{DoxyReturn}{Returns}
+density\+\_\+hopping\+\_\+list Returns the density operator in the format of a hopping list. 
+\end{DoxyReturn}
+\index{tbmodel@{tbmodel}!map\+\_\+id2orbs@{map\+\_\+id2orbs}}
+\index{map\+\_\+id2orbs@{map\+\_\+id2orbs}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{map\+\_\+id2orbs()}{map_id2orbs()}}]{\setlength{\rightskip}{0pt plus 5cm}map$<$ int, string $>$ tbmodel\+::map\+\_\+id2orbs (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_a1285d524d1bc13a01ada7e3c401d9e9c}{}\label{classtbmodel_a1285d524d1bc13a01ada7e3c401d9e9c}
+Transform a site tag into real space cartesian vector.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt out}  & {\em cart\+\_\+vect.} & A three-\/dimensional real vector, constructed from the tag and the lattice vectors \\
+\hline
+\mbox{\tt in}  & {\em tag.} & An identification of the position of a unit cell. In this version of the code, this is the position in units of lattice vector. \\
+\hline
+\mbox{\tt in}  & {\em lattice\+\_\+vector.} & The set of lattice vectors \\
+\hline
+\end{DoxyParams}
+\index{tbmodel@{tbmodel}!map\+\_\+id2spin@{map\+\_\+id2spin}}
+\index{map\+\_\+id2spin@{map\+\_\+id2spin}!tbmodel@{tbmodel}}
+\subsubsection[{\texorpdfstring{map\+\_\+id2spin()}{map_id2spin()}}]{\setlength{\rightskip}{0pt plus 5cm}map$<$ int, int $>$ tbmodel\+::map\+\_\+id2spin (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classtbmodel_a879c46b9c956e0fdeaa7e8f924773c6f}{}\label{classtbmodel_a879c46b9c956e0fdeaa7e8f924773c6f}
+Transform a site tag into real space cartesian vector.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt out}  & {\em cart\+\_\+vect.} & A three-\/dimensional real vector, constructed from the tag and the lattice vectors \\
+\hline
+\mbox{\tt in}  & {\em tag.} & An identification of the position of a unit cell. In this version of the code, this is the position in units of lattice vector. \\
+\hline
+\mbox{\tt in}  & {\em lattice\+\_\+vector.} & The set of lattice vectors \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/data/jgarcia/codes/linqt/utilities/wannier2sparse/include/tbmodel.\+hpp\item 
+/data/jgarcia/codes/linqt/utilities/wannier2sparse/src/tbmodel.\+cpp\end{DoxyCompactItemize}

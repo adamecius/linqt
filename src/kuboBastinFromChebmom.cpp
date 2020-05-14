@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	
 
 	std::string
-	outputName  ="KuboBastin_kernel_"+mu.SystemLabel()+"JACKSON.dat";
+	outputName  ="KuboBastin_"+mu.SystemLabel()+"JACKSON.dat";
 
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::cout<<"PARAMETERS: "<< mu.SystemSize()<<" "<<mu.HalfWidth()<<std::endl;

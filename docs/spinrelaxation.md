@@ -39,9 +39,9 @@ where we had defined \f$Z={\rm Tr}\left[  P\delta(H-\varepsilon_{\rm F})\right]\
 \f]
 where \f$ |\chi_{\rm L}(n) \rangle =  U(t_n)P|\chi\rangle \f$ and \f$ |\chi_{\rm R}(m,n) \rangle =  U(t_n)PT_m(H)|\chi\rangle \f$
 
-Finally, the time evolution is computed in terms of the expansion moments as:
+Finally, the \subpage time_evolution  is computed in terms of the expansion moments as:
 \f[
-S(t_n)= \sum_{m}\mu_{m,n} T_m(\varepsilon_{\rm F}
+S(t_n)= \sum_{m}\mu_{m,n} T_m(\varepsilon_{\rm F})
 \f]
 
 

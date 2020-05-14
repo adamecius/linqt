@@ -19,7 +19,7 @@
 
 namespace chebyshev 
 {
-
+	const double CUTOFF = 0.99;
 
 class Moments
 {
@@ -44,10 +44,10 @@ class Moments
 	double BandCenter() const { return band_center; };
 
 	inline
-	double ScaleFactor() const { return 1.0/HalfWidth(); };
+	double ScaleFactor() const { return chebyshev::CUTOFF/HalfWidth(); };
 
 	inline
-	double ShiftFactor() const { return -BandCenter()/HalfWidth(); };
+	double ShiftFactor() const { return -BandCenter()/HalfWidth()/chebyshev::CUTOFF; };
 
 	inline 
 	vector_t& MomentVector() { return mu ;}
@@ -134,16 +134,18 @@ class Moments1D: public Moments
 {
 	public: 
 
-	Moments1D():numMoms(0){};
+	Moments1D():_numMoms(0){};
 
-	Moments1D(const size_t m0):numMoms(m0){ this->MomentVector( Moments::vector_t(numMoms, 0.0) ); };
+	Moments1D(const size_t m0):_numMoms(m0){ this->MomentVector( Moments::vector_t(_numMoms, 0.0) ); };
+
+	Moments1D( std::string momfilename );
 
 	//GETTERS
 	inline
-	size_t MomentNumber() const { return numMoms; };
+	size_t MomentNumber() const { return _numMoms; };
 
 	inline
-	size_t HighestMomentNumber() const { return  numMoms; };
+	size_t HighestMomentNumber() const { return  _numMoms; };
 
 	//SETTERS
 
@@ -151,14 +153,18 @@ class Moments1D: public Moments
 	inline
 	Moments::value_t& operator()(const size_t m0) { return this->MomentVector(m0); };
 
+	void MomentNumber(const size_t _numMoms );
+
+	void saveIn(std::string filename);
+
 	//Transformation
-//	void ApplyJacksonKernel( const double b0 );
+	void ApplyJacksonKernel( const double broad );
 
 	// Input/Output
 	void Print();
 
 	private:
-	size_t numMoms;
+	size_t _numMoms;
 };
 
 
@@ -203,17 +209,18 @@ class Moments2D: public Moments
   class MomentsTD : public Moments
   {
 	  public:
+	  const double HBAR = 0.6582119624 ;//planck constant in eV.fs
 	  
 	  MomentsTD():
 	  _numMoms(1), _maxTimeStep(1),
 	  _timeStep(0),
-	  _dt(0), _omega(0)
+	  _dt(0)
 	  {};
 	  
 	  MomentsTD( const size_t m, const size_t n ): 
 	  _numMoms(m), _maxTimeStep(n),
 	  _timeStep(0),
-	  _dt(0), _omega(0)
+	  _dt(0)
 	  { this->MomentVector( Moments::vector_t(m*n, 0.0) );    };
 	  
 	  MomentsTD( std::string momfilename );
@@ -235,21 +242,26 @@ class Moments2D: public Moments
 	  double TimeDiff() const   { return _dt; };
 	  	  
 	  inline
-	  double ChebyshevFreq() const   { return _omega; };
+	  double ChebyshevFreq() const   { return HalfWidth()/chebyshev::CUTOFF/HBAR; };
+
+	  inline
+	  double ChebyshevFreq_0() const   { return BandCenter()/HBAR; };
 	  
 	  //SETTERS
+	  
 	  void MomentNumber(const size_t mom);
 	  
 	  void MaxTimeStep(const  size_t maxTimeStep )  {  _maxTimeStep = maxTimeStep; };
 
 	  inline
 	  void IncreaseTimeStep(){ _timeStep++; };
+
+	  inline
+	  void ResetTime(){ _timeStep=0; };
 	  
 	  inline
 	  void TimeDiff(const double dt ) { _dt = dt; };
 	  
-	  inline
-	  void ChebyshevFreq(const double omega) { _omega = omega; };
 	  
 	  int Evolve(  vector_t& Phi);
 	  
@@ -270,7 +282,7 @@ class Moments2D: public Moments
 
   private:
     size_t _numMoms, _maxTimeStep, _timeStep;
-    double _dt, _omega;
+    double _dt;
   };
 
 class Vectors : public Moments

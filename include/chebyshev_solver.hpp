@@ -78,6 +78,8 @@ namespace chebyshev
 
 	int TimeDependentCorrelations(int numStates, SparseMatrixType &OP, SparseMatrixType &PROJ,  chebyshev::MomentsTD &chebMoms, StateType type );
 
+	int SpectralMoments(int numStates, SparseMatrixType &OP,  chebyshev::Moments1D &chebMoms, StateType type );
+
 }; // namespace chebyshev
 
 #endif

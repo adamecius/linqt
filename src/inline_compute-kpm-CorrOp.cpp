@@ -12,15 +12,23 @@
 #include "quantum_states.hpp"
 #include "chebyshev_solver.hpp"
 
+
+namespace time_evolution
+{
+	void printHelpMessage();
+	void printWelcomeMessage();
+}
+
+
 int main(int argc, char *argv[])
 {
-	if ( !(argc == 8 || argc == 7 ) )
+	if ( !(argc == 7 || argc == 8 ) )
 	{
-		chebyshev::time_evolution::printHelpMessage();
+		time_evolution::printHelpMessage();
 		return 0;
 	}
 	else
-		chebyshev::time_evolution::printWelcomeMessage();
+		time_evolution::printWelcomeMessage();
 	
 	const std::string
 		LABEL  = argv[1],
@@ -33,14 +41,19 @@ int main(int argc, char *argv[])
 	const int numMoms = atoi(S_NMOM.c_str() );
 	const int numTimes= atoi(S_NTIME.c_str() );
 	const double tmax = stod( S_TMAX );
+	int numStates = 1;
+
+	if (argc ==8 )
+		numStates = atoi( argv[7] );
 
 	chebyshev::MomentsTD chebMoms(numMoms, numTimes); //load number of moments
 
+	
 	SparseMatrixType OP[3];
 	OP[0].SetID("HAM");
 	OP[1].SetID(S_OPL);
 	OP[2].SetID(S_OPR);
-
+	
 	// Build the operators from Files
 	SparseMatrixBuilder builder;
 	std::array<double,2> spectral_bounds;	
@@ -59,17 +72,34 @@ int main(int argc, char *argv[])
 	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
 	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
 	chebMoms.TimeDiff( tmax/(numTimes-1) );
-	chebMoms.SystemSize(OP[0].rank() );
+	chebMoms.SystemSize(OP[0	].rank() );
 	chebMoms.SetHamiltonian(OP[0]);
 	chebMoms.Print();
 
-	chebyshev::TimeDependentCorrelations( 1, OP[1], OP[2], chebMoms , RANDOM_STATE);
+	std::cout<<"numstates:"<<numStates<<std::endl;
+	chebyshev::TimeDependentCorrelations( numStates, OP[1], OP[2], chebMoms , RANDOM_STATE);
 
 	
-	std::string outputfilename="EvolEqOp"+S_OPL+"-"+S_OPR+LABEL+"KPM_M"+S_NMOM+".chebmomTD";	
+	std::string outputfilename="TimeCorr"+S_OPL+"-"+S_OPR+LABEL+"KPM_M"+S_NMOM+"RV"+to_string(numStates)+".chebmomTD";	
 	std::cout<<"Saving convergence data in "<<outputfilename<<std::endl;
 	chebMoms.saveIn(outputfilename);
 	std::cout<<"End of program"<<std::endl;
 	return 0;
 }
 
+void time_evolution::printHelpMessage()
+	{
+		std::cout << "The program should be called with the following options: Label Op1 Op2 numMom numTimeSteps TimeStep BandWidth BandCenter (optional) num_states" << std::endl
+				  << std::endl;
+		std::cout << "Label will be used to look for Label.Ham, Label.Op1 and Label.Op2" << std::endl;
+		std::cout << "Op1 and Op2 will be used to located the sparse matrix file of two operators for the correlation" << std::endl;
+		std::cout << "numMom will be used to set the number of moments in the chebyshev table" << std::endl;
+		std::cout << "numTimeSteps  will be used to set the number of timesteps in the chebyshev table" << std::endl;
+		std::cout << "TimeMax  will be set the maximum time where the correlation will be evaluted " << std::endl;
+	};
+
+	inline
+void time_evolution::printWelcomeMessage()
+	{
+		std::cout << "WELCOME: This program will compute a table needed for expanding the correlation function in Chebyshev polynomialms" << std::endl;
+	};

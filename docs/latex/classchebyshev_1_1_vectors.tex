@@ -1,0 +1,80 @@
+\hypertarget{classchebyshev_1_1_vectors}{}\section{chebyshev\+:\+:Vectors Class Reference}
+\label{classchebyshev_1_1_vectors}\index{chebyshev\+::\+Vectors@{chebyshev\+::\+Vectors}}
+
+
+Inheritance diagram for chebyshev\+:\+:Vectors\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=190pt]{classchebyshev_1_1_vectors__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for chebyshev\+:\+:Vectors\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=190pt]{classchebyshev_1_1_vectors__coll__graph}
+\end{center}
+\end{figure}
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{class_vector_list}{Vector\+List}$<$ Moments\+::value\+\_\+t $>$ {\bfseries vector\+List\+\_\+t}\hypertarget{classchebyshev_1_1_vectors_a1a6e132ce26c89c86e3c1d2df240cdad}{}\label{classchebyshev_1_1_vectors_a1a6e132ce26c89c86e3c1d2df240cdad}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries Vectors} (const size\+\_\+t n\+Moms, const size\+\_\+t dim)\hypertarget{classchebyshev_1_1_vectors_a47bceab1fdf23555a7da246983a799d8}{}\label{classchebyshev_1_1_vectors_a47bceab1fdf23555a7da246983a799d8}
+
+\item 
+{\bfseries Vectors} (\hyperlink{classchebyshev_1_1_moments1_d}{Moments1D} mom)\hypertarget{classchebyshev_1_1_vectors_a35d85ed43200417dea2e698c09766a43}{}\label{classchebyshev_1_1_vectors_a35d85ed43200417dea2e698c09766a43}
+
+\item 
+{\bfseries Vectors} (\hyperlink{classchebyshev_1_1_moments2_d}{Moments2D} mom)\hypertarget{classchebyshev_1_1_vectors_aa11abf4e8251b6a9b69d56191a653844}{}\label{classchebyshev_1_1_vectors_aa11abf4e8251b6a9b69d56191a653844}
+
+\item 
+{\bfseries Vectors} (\hyperlink{classchebyshev_1_1_moments2_d}{Moments2D} mom, const size\+\_\+t i)\hypertarget{classchebyshev_1_1_vectors_a9cee99d5d80da73abeec40f96568ade1}{}\label{classchebyshev_1_1_vectors_a9cee99d5d80da73abeec40f96568ade1}
+
+\item 
+{\bfseries Vectors} (\hyperlink{classchebyshev_1_1_moments_t_d}{Moments\+TD} mom)\hypertarget{classchebyshev_1_1_vectors_ad922ad16003b2526c71898b122688b65}{}\label{classchebyshev_1_1_vectors_ad922ad16003b2526c71898b122688b65}
+
+\item 
+size\+\_\+t {\bfseries Size} () const \hypertarget{classchebyshev_1_1_vectors_a30dc46a183c087fac30a3bc4d78b1094}{}\label{classchebyshev_1_1_vectors_a30dc46a183c087fac30a3bc4d78b1094}
+
+\item 
+size\+\_\+t {\bfseries System\+Size} () const \hypertarget{classchebyshev_1_1_vectors_a23d0d7c8fba9f9819d3aef9b0d9d9163}{}\label{classchebyshev_1_1_vectors_a23d0d7c8fba9f9819d3aef9b0d9d9163}
+
+\item 
+size\+\_\+t {\bfseries Highest\+Moment\+Number} () const \hypertarget{classchebyshev_1_1_vectors_a08aea691c50843f1a797cf09b624a9e2}{}\label{classchebyshev_1_1_vectors_a08aea691c50843f1a797cf09b624a9e2}
+
+\item 
+\hyperlink{class_vector_list}{vector\+List\+\_\+t} \& {\bfseries List} ()\hypertarget{classchebyshev_1_1_vectors_adf7b1351546490cbf11619cbaa49ffb6}{}\label{classchebyshev_1_1_vectors_adf7b1351546490cbf11619cbaa49ffb6}
+
+\item 
+Moments\+::vector\+\_\+t \& {\bfseries Vector} (const size\+\_\+t m0)\hypertarget{classchebyshev_1_1_vectors_ad7fb30e4b0200f4c3bc4e6f9528c1139}{}\label{classchebyshev_1_1_vectors_ad7fb30e4b0200f4c3bc4e6f9528c1139}
+
+\item 
+Moments\+::value\+\_\+t \& {\bfseries operator()} (const size\+\_\+t m0)\hypertarget{classchebyshev_1_1_vectors_a017a8ee693aa4d9f206a541872d2d117}{}\label{classchebyshev_1_1_vectors_a017a8ee693aa4d9f206a541872d2d117}
+
+\item 
+int {\bfseries Iterate\+All} (\hyperlink{class_sparse_matrix_type}{Sparse\+Matrix\+Type} \&N\+H\+AM)\hypertarget{classchebyshev_1_1_vectors_a189bb070d0310aa8dede2721c2df189f}{}\label{classchebyshev_1_1_vectors_a189bb070d0310aa8dede2721c2df189f}
+
+\item 
+int {\bfseries Evolve\+All} (\hyperlink{class_sparse_matrix_type}{Sparse\+Matrix\+Type} \&N\+H\+AM, const double DeltaT, const double Omega0)\hypertarget{classchebyshev_1_1_vectors_aec0080410aaab617e2a491be414824c0}{}\label{classchebyshev_1_1_vectors_aec0080410aaab617e2a491be414824c0}
+
+\item 
+int {\bfseries Multiply} (\hyperlink{class_sparse_matrix_type}{Sparse\+Matrix\+Type} \&OP)\hypertarget{classchebyshev_1_1_vectors_a006a4bbef4757065613daf41d6d22bee}{}\label{classchebyshev_1_1_vectors_a006a4bbef4757065613daf41d6d22bee}
+
+\item 
+double {\bfseries Memory\+Consumption\+In\+GB} ()\hypertarget{classchebyshev_1_1_vectors_a843740c964a4e430a5e832fac8e6dc9d}{}\label{classchebyshev_1_1_vectors_a843740c964a4e430a5e832fac8e6dc9d}
+
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/data/jgarcia/codes/linqt/include/chebyshev\+\_\+moments.\+hpp\item 
+/data/jgarcia/codes/linqt/src/chebyshev\+\_\+vectors.\+cpp\end{DoxyCompactItemize}

@@ -76,6 +76,7 @@ void SparseMatrixType::Rescale(const complex<double> a,const complex<double> b)
 	sparse_matrix_t bID; 
 	std::vector<int> row(numRows()+1,0); for( int i=0; i < numRows()+1; i++) row[i]=i;
 	std::vector< complex<double> >  val(numRows(),b);
+	//B := b
 
 	auto status = mkl_sparse_z_create_csr(&bID, SPARSE_INDEX_BASE_ZERO, numRows(), numCols(), &row[0], &row[1], &row[0], &val[0]) ;
 	assert(status == SPARSE_STATUS_SUCCESS);
@@ -85,9 +86,12 @@ void SparseMatrixType::Rescale(const complex<double> a,const complex<double> b)
 	status = mkl_sparse_copy (Matrix,descr,&A);
 	assert(status == SPARSE_STATUS_SUCCESS);
 
-	//PERFOM C = (b-1.0)/a  + A;
+	//C := alpha*op(A) + B
+	//C := a*op(A) + B
+
 	status = mkl_sparse_z_add (SPARSE_OPERATION_NON_TRANSPOSE,A,a,bID, &Matrix);
 	assert(status == SPARSE_STATUS_SUCCESS);
+
 
 	return ;
 }

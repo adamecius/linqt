@@ -15,6 +15,8 @@ bool OPERATOR_FromCSRFile(const std::string input, int &dim, vector<int> &column
 
 class SparseMatrixType_BASE
 {
+	
+	
 public:
 	typedef complex<double> value_t;
 	typedef vector< value_t > vector_t;
@@ -29,6 +31,8 @@ public:
 	  };
 	  void SetID(string id) { id_ = id; }
 	  string ID() const { return id_; }
+		
+	  bool isIdentity(){ return (bool)( ID()=="1"); };
 
 private:
   int numRows_, numCols_;

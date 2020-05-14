@@ -2,7 +2,10 @@
 #ifndef SPECIAL_FUNCTIONS
 #define SPECIAL_FUNCTIONS
 
+#include <limits>
+#include <cmath>
 #include "mathimf.h"
+
 
 namespace chebyshev{
 
