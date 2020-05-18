@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	
 
 	std::string
-	outputName  ="KuboBastin_"+mu.SystemLabel()+"JACKSON.dat";
+	outputName  ="KuboBastinI_"+mu.SystemLabel()+"JACKSON.dat";
 
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::cout<<"PARAMETERS: "<< mu.SystemSize()<<" "<<mu.HalfWidth()<<std::endl;
@@ -64,11 +64,13 @@ int main(int argc, char *argv[])
 	#pragma omp parallel for
 	for( int i=0; i < num_div; i++)
 	{
+		double out = 0.0;
 		const double energ = energies[i];
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
-			kernel[i] += delta_chebF(energ,m0)*( DgreenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
-		kernel[i] *= -2.0* mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+			out += delta_chebF(energ,m0)*( greenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
+		
+		kernel[i] = -1.0*out*(mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth() );
 	}
 
 	double acc = 0;
@@ -76,7 +78,7 @@ int main(int argc, char *argv[])
 	{
 		const double energ  = energies[i];
 		const double denerg = energies[i+1]-energies[i];
-		acc +=kernel[i]*denerg;
+		acc = 0.5*(kernel[i]+kernel[i+1]);
 		outputfile<<energ*mu.HalfWidth() + mu.BandCenter() <<" "<<acc <<std::endl;
 	}
 

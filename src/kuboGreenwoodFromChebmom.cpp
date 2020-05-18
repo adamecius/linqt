@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
-	xbound = 0.99;
+	xbound = chebyshev::CUTOFF;
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++)
@@ -62,15 +62,17 @@ int main(int argc, char *argv[])
 	#pragma omp parallel for
 	for( int i=0; i < num_div; i++)
 	{
+		double out = 0.0;
 		const double energ = energies[i];
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
-			kernel[i] += delta_chebF(energ,m0)*( greenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
-		kernel[i] *= mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+			out += delta_chebF(energ,m0)*( greenR_chebF(energ,m1)*mu(m0,m1) ).imag() ;
+		
+		kernel[i] =  -1.0*out*(mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth() );
 	}
 
 	for( int i=0; i < num_div-1; i++)
-		outputfile<<energies[i]*mu.HalfWidth() + mu.BandCenter() <<" "<<-kernel[i] <<std::endl;
+		outputfile<<energies[i]*mu.HalfWidth() + mu.BandCenter() <<" "<<kernel[i] <<std::endl;
 
 	outputfile.close();
 

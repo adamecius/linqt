@@ -52,9 +52,22 @@ set(MAIN inline_kuboGreenwoodFromChebmom)
 add_executable(${MAIN} kuboGreenwoodFromChebmom.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
+set(MAIN inline_kuboBastinIFromChebmom)
+add_executable(${MAIN} kuboBastinIFromChebmom.cpp)
+target_link_libraries(${MAIN} ${KPM_LIB} )
+
+set(MAIN inline_kuboBastinIIFromChebmom)
+add_executable(${MAIN} kuboBastinIIFromChebmom.cpp)
+target_link_libraries(${MAIN} ${KPM_LIB} )
+
+set(MAIN inline_kuboBastinFromChebmom)
+add_executable(${MAIN} kuboBastinFromChebmom.cpp)
+target_link_libraries(${MAIN} ${KPM_LIB} )
+
 set(MAIN inline_kuboBastinSeaFromChebmom)
 add_executable(${MAIN} kuboBastinSeaFromChebmom.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
+
 
 set(MAIN inline_kuboBastinSurfFromChebmom)
 add_executable(${MAIN} kuboBastinSurfFromChebmom.cpp)

@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
-	xbound = 0.99;
+	xbound = chebyshev::CUTOFF;
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++)
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	{
 		const double energ  = energies[i];
 		const double denerg = energies[i+1]-energies[i];
-		acc +=(kernel[i+1]+kernel[i])/2.0*denerg;
+		acc =(kernel[i+1]+kernel[i])/2.0;
 		outputfile<<energ*mu.HalfWidth() + mu.BandCenter() <<" "<<acc <<std::endl;
 	}
 

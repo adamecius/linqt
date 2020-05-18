@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
-	xbound = 0.99;
+	xbound = chebyshev::CUTOFF;
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++)
@@ -67,8 +67,15 @@ int main(int argc, char *argv[])
 		const double energ = energies[i];
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
-			kernel[i] += delta_chebF(energ,m0)* DgreenR_chebF(energ,m1).real()*mu(m0,m1).real() ;
-		kernel[i] *=  2.0* mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+		{
+			const auto Gr = greenR_chebF(energ,m0);
+			const auto Ga = std::conj( greenR_chebF(energ,m0) );
+			const auto DGr = DgreenR_chebF(energ,m1).real();
+			const auto DGa = std::conj( DGr );
+			kernel[i] +=-( (Gr-Ga)*( DGr +DGa)*mu(m0,m1) ).real() ;
+//			kernel[i] +=-4*Gr.imag()*DGr.real()*mu(m0,m1).imag() ;
+		}
+		kernel[i] *=  mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth() / 2 /M_PI;
 	}
 
 	double acc = 0;
