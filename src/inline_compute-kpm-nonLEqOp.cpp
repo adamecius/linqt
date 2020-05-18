@@ -12,16 +12,23 @@
 #include "quantum_states.hpp"
 #include "chebyshev_solver.hpp"
 
+namespace kpmKubo
+{
 
+void printHelpMessage();
+
+void printWelcomeMessage();
+
+}
 int main(int argc, char *argv[])
 {
-	if ( !(argc == 7 || argc == 8) )
+	if ( !(argc == 5 || argc == 6) )
 	{
-		chebyshev::printHelpMessage();
+		kpmKubo::printHelpMessage();
 		return 0;
 	}
 	else
-		chebyshev::printWelcomeMessage();
+		kpmKubo::printWelcomeMessage();
 	
 	const std::string
 		LABEL = argv[1],
@@ -40,17 +47,21 @@ int main(int argc, char *argv[])
 
 	// Build the operators from Files
 	SparseMatrixBuilder builder;
+	std::array<double,2> spectral_bounds;	
 	for (int i = 0; i < 3; i++)
 	{
 		std::string input = "operators/" + LABEL + "." + OP[i].ID() + ".CSR";
 		builder.setSparseMatrix(&OP[i]);
 		builder.BuildOPFromCSRFile(input);
+		if( i == 0 ) //is hamiltonian
+		//Obtain automatically the energy bounds
+		 spectral_bounds = chebyshev::utility::SpectralBounds(OP[0]);		
 	};
 	//CONFIGURE THE CHEBYSHEV MOMENTS
 	chebMoms.SystemLabel(LABEL);
-	chebMoms.BandWidth( atof(argv[5]) );
-	chebMoms.BandCenter( atof(argv[6]) );
-	chebMoms.SystemSize(OP[0].rank() );
+	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
+	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
+	chebMoms.SetAndRescaleHamiltonian(OP[0]);
 	chebMoms.Print();
 
 
@@ -60,9 +71,9 @@ int main(int argc, char *argv[])
 	//Compute the chebyshev expansion table
 	srand(time(0));
 	int num_states = 1 ;
-	if( argc == 8)	num_states = atoi(argv[7]);
+	if( argc == 6)	num_states = atoi(argv[5]);
 	
-	chebyshev::CorrelationExpansionMoments(num_states, OP[0], OP[1], OP[2], chebMoms, LOCAL_STATE );
+	chebyshev::CorrelationExpansionMoments(num_states, OP[1], OP[2], chebMoms, LOCAL_STATE );
 
 	//Save the table in a file
 	std::string outputfilename="NonLEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"NV"+to_string(num_states)+".chebmom2D";
@@ -72,3 +83,17 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+
+void kpmKubo::printHelpMessage()
+{
+	std::cout << "The program should be called with the following options: Label Op1 Op2 numMom num_states (default 1)" << std::endl
+			  << std::endl;
+	std::cout << "Label will be used to look for Label.Ham, Label.Op1 and Label.Op2" << std::endl;
+	std::cout << "Op1 and Op2 will be used to located the sparse matrix file of two operators for the correlation" << std::endl;
+	std::cout << "numMom will be used to set the number of moments in the chebyshev table" << std::endl;
+};
+
+void kpmKubo::printWelcomeMessage()
+{
+	std::cout << "WELCOME: This program will compute a table needed for expanding the correlation function in Chebyshev polynomialms" << std::endl;
+};

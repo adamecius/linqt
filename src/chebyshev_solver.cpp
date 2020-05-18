@@ -62,7 +62,6 @@ std::array<double,2> utility::SpectralBounds( SparseMatrixType& HAM)
 
 int sequential::KuboGreenwoodChebMomConvergence( const double E0,
 												 const double eta,
-												 SparseMatrixType &HAM,
 												 SparseMatrixType &OPL,
 												 SparseMatrixType &OPR,
 												 chebyshev::Moments1D&  chebMoms)
@@ -77,31 +76,30 @@ int sequential::KuboGreenwoodChebMomConvergence( const double E0,
 	//Normalize the hamiltonian, energies, and get geometric factors
 	const double geo_fact =  DIM/chebMoms.HalfWidth()/chebMoms.HalfWidth();
 	const double energ    =  chebMoms.Rescale2ChebyshevDomain(E0);
-	chebMoms.Rescale2ChebyshevDomain(HAM);
 	
 	//Create a random phase vector
 	vector_t PhiR(DIM),PhiL(DIM);
 	qstates::FillWithRandomPhase(PhiR); 
 
 	//COMPUTE VECTOR <Phi OPR delta(H-E)| 
-	chebVecs.SetInitVectors( HAM, OPR, PhiR ); //<j0|= <Phi|OPR
+	chebVecs.SetInitVectors( OPR, PhiR ); //<j0|= <Phi|OPR
 	linalg::scal( 0.0, PhiL );
 	for( int m=0; m < deltaMOM; m++)
 	{
 		auto chebCL = chebMoms.JacksonKernel(m,deltaMOM)*delta_chebF(energ,m); if(m==0) chebCL*=0.5; 
 		linalg::axpy( chebCL, chebVecs.Chebyshev0(),  PhiL);
-		chebVecs.Iterate( HAM );
+		chebVecs.Iterate( );
 	}
 	std::cout<<"Finished adding broadening of "<<eta<<std::endl;
 	//COMPUTE VECTOR <Phi OPR delta(H-E)  |OPL G | Phi>  
-	chebVecs.SetInitVectors( HAM, OPL, PhiL ); //<j0|= <Phi OPR delta(H-E)  |OPL
+	chebVecs.SetInitVectors( OPL, PhiL ); //<j0|= <Phi OPR delta(H-E)  |OPL
 	linalg::scal( 0.0, PhiL );
 	for( int m=0; m < MOM; m++)
 	{
 		auto chebCR = greenR_chebF(energ,m); if(m==0) chebCR*=0.5; 
 		linalg::axpy( chebCR, chebVecs.Chebyshev0(),  PhiL);
 		chebMoms(m) = linalg::vdot( PhiL, PhiR ).imag()*geo_fact; //This actually gives <JR|JL>*
-		chebVecs.Iterate( HAM );
+		chebVecs.Iterate( );
 
 		std::cout<<m<<" "<<chebMoms(m).real()<<" "<<std::endl;
 	}
@@ -111,7 +109,6 @@ int sequential::KuboGreenwoodChebMomConvergence( const double E0,
 
 
 int sequential::DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,
-							SparseMatrixType &HAM,
 							SparseMatrixType &OP,
 							chebyshev::Moments1D &chebMoms)
 { 
@@ -123,13 +120,12 @@ int sequential::DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,
 	vector_t J0(DIM), J1(DIM), JOPL(DIM);
 	
 	linalg::copy(PhiL,J0);
-	HAM.Multiply(J0,J1);
 	for(int m=0; m < MOM ; m++)
 	{
 		OP.Multiply(J0, JOPL);
 		chebMoms(m) += linalg::vdot(JOPL,PhiR); //This actually gives <JR|JL>*
-		HAM.Multiply(2.0,J1,-1.0,J0);
 		J0.swap(J1);
+		std::cout<<"DENSITY MOMENTS NOT IMPLEMENTED"<<std::endl;
 	}
 	return 0;
 };
@@ -142,49 +138,41 @@ return 0;
 
 
 int sequential::CorrelationExpansionMoments( const vector_t& PhiL,const vector_t& PhiR,
-											  SparseMatrixType &HAM,
 											  SparseMatrixType &OPL,
 											  SparseMatrixType &OPR,
 											  chebyshev::Moments2D &chebMoms)
 {
-	const int DIM  = chebMoms.SystemSize(); 
-	const double A = chebMoms.ScaleFactor();
-    const double B = chebMoms.ShiftFactor();
     const int MOML = chebMoms.HighestMomentNumber(0);
     const int MOMR = chebMoms.HighestMomentNumber(1);
-    
+		std::cout<<"Not implemented"<<std::endl;
+/*    
     vector_t JR0(DIM),JR1(DIM),JL0(DIM),JL1(DIM),JOL(DIM);
 
     //Start the chebyshev expansion of the correlations
 	auto start = std::chrono::high_resolution_clock::now();
 	OPR.Multiply(PhiR, JR0);
-    HAM.Multiply(JR0 , JR1);
     for (int m1 = 0; m1 < MOMR; m1++ )
     {
 		linalg::copy(PhiL,JL0);
-		HAM.Multiply( JL0, JL1 );
 		for (int m0= 0; m0 < MOML; m0++)
 		{
 			OPL.Multiply(JL0, JOL );
 			chebMoms(m0,m1) += linalg::vdot(JOL,JR0); //This actually gives <JR|JL>*
-			HAM.Multiply(2.0, JL1, -1.0, JL0);
 			JL0.swap(JL1);
 		};
-		HAM.Multiply(2.0, JR1, -1.0, JR0 );
 		JR0.swap(JR1);
-	}
+
 	auto finish = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed = finish - start;
 	std::cout << "Calculation of the moments in sequential solver took: " << elapsed.count() << " seconds\n";
+		*/
 	
 	return 0;
 };
 
 
-
 int parallel::CorrelationExpansionMoments(	const int batchSize,
 											const vector_t& PhiR, const vector_t& PhiL,
-											SparseMatrixType &HAM,
 											SparseMatrixType &OPL,
 											SparseMatrixType &OPR,  
 											chebyshev::Vectors &chevVecL,
@@ -192,26 +180,23 @@ int parallel::CorrelationExpansionMoments(	const int batchSize,
 											chebyshev::Moments2D &chebMoms
 											)
 {
-	const size_t DIM = HAM.rank();
 	const size_t NumMomsR = chevVecR.HighestMomentNumber();
 	const size_t NumMomsL = chevVecL.HighestMomentNumber();
 	const size_t momvecSize = (size_t)( (long unsigned int)batchSize*(long unsigned int)batchSize );
-
 
 	auto start = std::chrono::high_resolution_clock::now();
 	
 	std::cout<<"Initialize sparse for moment matrix"<<std::endl;
 	chebyshev::Moments::vector_t momvec( momvecSize );
 
-
 	for(int  mR = 0 ; mR <  NumMomsR ; mR+=batchSize)
 	{
-		chevVecL.SetInitVectors( HAM, OPL, PhiL );
-		chevVecL.IterateAll( HAM );
+		chevVecL.SetInitVectors( OPL, PhiL );
+		chevVecL.IterateAll();
 		for(int  mL = 0 ; mL <  NumMomsL ; mL+=batchSize)
 		{
-			chevVecR.SetInitVectors( HAM, PhiR );
-			chevVecR.IterateAll( HAM );
+			chevVecR.SetInitVectors( PhiR );
+			chevVecR.IterateAll();
 			chevVecR.Multiply( OPR );
 			parallel::ComputeMomTable(chevVecL,chevVecR, momvec );		
 			linalg::axpy(momvec.size(), 1.0 , &momvec[0], &chebMoms(mR,mL) );
@@ -219,8 +204,8 @@ int parallel::CorrelationExpansionMoments(	const int batchSize,
 	}	   
 	auto finish = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed = finish - start;
-	std::cout << "Calculation of the moments in sequential solver took: " << elapsed.count() << " seconds\n";
-	
+	std::cout << "Calculation of the moments in sequential solver took: " << elapsed.count() << " seconds\n\n";
+
 	return 0;
 };
 
@@ -248,8 +233,9 @@ return 0;
 };
 
 
-int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type )
+int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type )
 {
+	const int DIM  = chebMoms.SystemSize(); 
     int kpm_seed = time(0); 	if(getenv("KPM_SEED")) kpm_seed = std::stoi(string(getenv("KPM_SEED")));
 	srand(kpm_seed);
 	std::cout<<"Using seed "<<kpm_seed<<std::endl;
@@ -260,8 +246,6 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 
 
 	std::cout<<"The Correlation calculation will run on "<<NUM_THREADS<< " threads"<<std::endl;
-	chebMoms.Rescale2ChebyshevDomain(HAM);
-    const int DIM = HAM.rank(); 
 
 
 	chebyshev::Vectors chevVecL,chevVecR;
@@ -270,12 +254,14 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 	else
 	{
 		std::cout<<"USING LARGE MEMORY IMPLEMENTATION with BATCH_SIZE: "<<batchSize<<std::endl;
-		printf("Chebyshev::parallel::CorrelationExpansionMoments will used %f GB\n", chevVecL.MemoryConsumptionInGB() + chevVecR.MemoryConsumptionInGB() );
 
 		std::cout<<"Initialize chevVecL"<<std::endl;
 		chevVecL=chebyshev::Vectors( chebMoms,0 );
 		std::cout<<"Initialize chevVecR"<<std::endl;
 		chevVecR=chebyshev::Vectors( chebMoms,1 );
+
+		printf("Chebyshev::parallel::CorrelationExpansionMoments will used %f GB\n", chevVecL.MemoryConsumptionInGB() + chevVecR.MemoryConsumptionInGB() );
+
 	}
 
 	//allocate the memory for the input vector, and the iteration vector
@@ -293,22 +279,20 @@ int chebyshev::CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM,
 
 			break;
 			case LOCAL_STATE:
- //			i=(numStates-1); 
 			Phi[j] = ( (j==i) ? 1.0 : 0.0 ) ;
 			break;
 			default:
 			std::cerr<<" The state state is not identify, aborting running"<<std::endl;
 			std::exit(-1);
 		}
-//		numStates= 1;
 		//SELECT STATE TYPE
 		std::cout<<"Computing with ID: "<<i+1<<" of "<<numStates<<" states" <<std::endl;
 
 		//SELECT RUNNING TYPE
 		if( use_sequential )
-			chebyshev::sequential::CorrelationExpansionMoments(	Phi,Phi, HAM, OPL, OPR, chebMoms);
+			chebyshev::sequential::CorrelationExpansionMoments(	Phi,Phi, OPL, OPR, chebMoms);
 		else
-			chebyshev::parallel::CorrelationExpansionMoments(batchSize, Phi,Phi, HAM, OPL, OPR, chevVecL,chevVecR, chebMoms);
+			chebyshev::parallel::CorrelationExpansionMoments(batchSize, Phi,Phi, OPL, OPR, chevVecL,chevVecR, chebMoms);
 	}
 
 	//Fix the scaling of the moments

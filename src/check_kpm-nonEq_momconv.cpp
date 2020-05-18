@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	chebMoms.SystemLabel(LABEL);
 	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
 	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
-	chebMoms.SystemSize(OP[0].rank() );
+	chebMoms.SetHamiltonian(OP[0]);
 	chebMoms.Print();
 
 	//Define thes states youll use
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	
 	std::string outputfilename="NonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_CONVM"+S_NMOM+".dat";
 	
-	chebyshev::sequential::NonEqKPMMomConvergence(OP[0], OP[1], OP[2], chebMoms, outputfilename );
+	chebyshev::sequential::NonEqKPMMomConvergence(OP[1], OP[2], chebMoms, outputfilename );
 
 	std::cout<<"End of program"<<std::endl;
 	return 0;

@@ -27,6 +27,11 @@ class Moments
 	typedef std::complex<double>  value_t;
 	typedef std::vector< value_t > vector_t;
 
+	//default constructor
+	Moments():
+	_pNHAM(0),system_label(""),system_size(0),
+	band_width(0),band_center(0){};
+
 	//GETTERS
 	inline
 	size_t SystemSize() const { return system_size; };
@@ -70,11 +75,28 @@ class Moments
 
 	//SETTERS
 	inline
-	void SetHamiltonian(SparseMatrixType& NHAM)
+	void SetHamiltonian( SparseMatrixType& NHAM )
 	{ 
-		this->Rescale2ChebyshevDomain(NHAM);
+		if ( this->SystemSize() == 0 ) //Use the rank of the hamiltonian as system size
+			this->SystemSize( NHAM.rank() );	
+		assert( NHAM.rank() == this->SystemSize()  );
 		_pNHAM = &NHAM; 
 	};
+
+	//Heavy functions
+	int  Rescale2ChebyshevDomain()
+	{
+		this->Hamiltonian().Rescale(this->ScaleFactor(),this->ShiftFactor());
+		return 0;
+	};
+
+	inline
+	void SetAndRescaleHamiltonian(SparseMatrixType& NHAM)
+	{ 
+		this->SetHamiltonian(NHAM );
+		this->Rescale2ChebyshevDomain();
+	};
+
 
 	inline
 	void SystemSize(const int dim)  { system_size = dim; };
@@ -91,10 +113,6 @@ class Moments
 	inline 
 	void MomentVector(const vector_t _mu ) { mu= _mu;}
 
-//	void SetInitVectors( SparseMatrixType &NHAM,const Moments::vector_t& T0 );//to be deprecated 
-
-	void SetInitVectors( SparseMatrixType &NHAM, SparseMatrixType &OP ,const vector_t& T0 );//to be deprecated 
-
 	void SetInitVectors( const vector_t& T0 );
 
 	void SetInitVectors( SparseMatrixType &OP ,const vector_t& T0 );
@@ -106,8 +124,6 @@ class Moments
 		return (energ - this->BandCenter() )/this->HalfWidth(); 
 	};
 
-	int Iterate( SparseMatrixType &NHAM );
-
 	int Iterate( );
 
 	//light functions
@@ -116,8 +132,6 @@ class Moments
 	//light functions
     double JacksonKernel(const double m,  const double Mom );
 
-	//Heavy functions
-	int  Rescale2ChebyshevDomain(SparseMatrixType& H);
 
 	private:
 	SparseMatrixType* _pNHAM;
@@ -292,18 +306,54 @@ class Vectors : public Moments
 
 	Vectors():Chebmu(0,0){};
 	Vectors(const size_t nMoms,const size_t dim ):Chebmu(nMoms,dim) {  };
-	Vectors( Moments1D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
-	Vectors( Moments2D mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
-	Vectors( Moments2D mom, const size_t i ): Chebmu(mom.HighestMomentNumber(i), mom.SystemSize() ) {  };
-    Vectors( MomentsTD mom ): Chebmu(mom.HighestMomentNumber(),mom.SystemSize() ) {  };
 
+	Vectors( Moments1D& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
+	{ 
+		this->getMomentsParams(mom);
+	};
+	
+
+	Vectors( Moments2D& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
+	{ 
+		this->getMomentsParams(mom);
+
+	};
+	
+	Vectors( Moments2D& mom, const size_t i ): Chebmu(mom.HighestMomentNumber(i), mom.SystemSize() )
+	{ 
+		this->getMomentsParams(mom);
+
+	};
+    
+    Vectors( MomentsTD& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
+	{ 
+		this->getMomentsParams(mom);
+	};
+
+	void getMomentsParams( Moments& mom)
+	{
+		this->SetHamiltonian( mom.Hamiltonian() ) ; 
+		this->SystemLabel( mom.SystemLabel());
+		this->BandWidth( mom.BandWidth() );
+		this->BandCenter( mom.BandCenter() );
+		if ( mom.Chebyshev0().size() == this->SystemSize() )
+			this->SetInitVectors( mom.Chebyshev0() );
+	}
+
+	inline
 	size_t Size() const
 	{
 		return  (long unsigned int)this->Chebmu.VectorSize()*
 				(long unsigned int)this->Chebmu.ListSize();
 	}
 
-	size_t SystemSize() const { return this->Chebmu.VectorSize(); }
+	inline 
+	double SizeInGB() const
+	{
+		const double vec_size = Chebmu.VectorSize();
+		const double list_size = Chebmu.VectorSize();
+		return  sizeof(value_t)*vec_size*list_size*pow(2.0,-30.0);
+	}
 
 	inline
 	size_t HighestMomentNumber() const { return  this->Chebmu.ListSize(); };
@@ -318,9 +368,9 @@ class Vectors : public Moments
 	inline
 	Moments::value_t& operator()(const size_t m0) { return this->Chebmu(m0,0); };
 
-	int IterateAll( SparseMatrixType &NHAM );
+	int IterateAll( );
 
-	int EvolveAll( SparseMatrixType &NHAM, const double DeltaT, const double Omega0);
+	int EvolveAll( const double DeltaT, const double Omega0);
 
 	int Multiply( SparseMatrixType &OP );
 
@@ -329,7 +379,7 @@ class Vectors : public Moments
 
 
 	private:
-	Moments::vector_t ChebV0,ChebV1,OPV;
+	Moments::vector_t OPV;
 	vectorList_t Chebmu;	
 
 };

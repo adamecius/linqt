@@ -72,8 +72,7 @@ int main(int argc, char *argv[])
 	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
 	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
 	chebMoms.TimeDiff( tmax/(numTimes-1) );
-	chebMoms.SystemSize(OP[0	].rank() );
-	chebMoms.SetHamiltonian(OP[0]);
+	chebMoms.SetAndRescaleHamiltonian(OP[0]);
 	chebMoms.Print();
 
 	std::cout<<"numstates:"<<numStates<<std::endl;

@@ -36,19 +36,16 @@ namespace chebyshev
 	{
 		int KuboGreenwoodChebMomConvergence( const double E0,
 											 const double eta,
-											 SparseMatrixType &HAM, 
 											 SparseMatrixType &OPL, 
 											 SparseMatrixType &OPR,
 											 chebyshev::Moments1D&  mu);
 
 
 		int DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,
-									 SparseMatrixType &HAM,
 									 SparseMatrixType &OP,
 									 chebyshev::Moments1D &chebMoms);
 
 		int CorrelationExpansionMoments(const vector_t& PhiL, const vector_t& PhiR,
-										SparseMatrixType &HAM,
 										SparseMatrixType &OPL,
 										SparseMatrixType &OPR,
 										chebyshev::Moments2D &chebMoms);
@@ -62,7 +59,6 @@ namespace chebyshev
 	{
 		int CorrelationExpansionMoments( 	const int batchSize,
 											const vector_t& PhiR, const vector_t& PhiL,
-											SparseMatrixType &HAM,
 											SparseMatrixType &OPL,
 											SparseMatrixType &OPR,  
 											chebyshev::Vectors &chevVecL,
@@ -74,7 +70,7 @@ namespace chebyshev
 
 	};
 
-	int CorrelationExpansionMoments(int numStates, SparseMatrixType &HAM, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type);
+	int CorrelationExpansionMoments(int numStates, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type);
 
 	int TimeDependentCorrelations(int numStates, SparseMatrixType &OP, SparseMatrixType &PROJ,  chebyshev::MomentsTD &chebMoms, StateType type );
 

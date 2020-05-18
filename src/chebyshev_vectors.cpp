@@ -1,32 +1,29 @@
 #include "chebyshev_moments.hpp"
 
 
-int chebyshev::Vectors::IterateAll( SparseMatrixType &NHAM )
-{
-	const size_t  dim = NHAM.rank();
-	assert( dim == this->SystemSize()  );
-	
-	linalg::copy( this->ChebV0 ,this->Vector(0) );
+int chebyshev::Vectors::IterateAll( )
+{	
+	linalg::copy( this->Chebyshev0() ,this->Vector(0) );
 	for(int m=1; m < this->HighestMomentNumber(); m++ )
 	{
-		linalg::copy( ChebV1 , this->Vector(m) );
-		NHAM.Multiply(2.0,ChebV1,-1.0,ChebV0);
-		ChebV0.swap(ChebV1);
+		linalg::copy( Chebyshev1() , this->Vector(m) );
+		this->Hamiltonian().Multiply(2.0,Chebyshev1(),-1.0,Chebyshev0());
+		Chebyshev0().swap(Chebyshev1());
 	}
 	return 0;
 };
 
-int chebyshev::Vectors::EvolveAll( SparseMatrixType &NHAM, const double DeltaT, const double Omega0)
+int chebyshev::Vectors::EvolveAll(const double DeltaT, const double Omega0)
 {
-	const auto dim = NHAM.rank();
+	const auto dim = this->SystemSize();
 	const auto numMom = this->HighestMomentNumber();
 
-	if( this->ChebV0.size()!= dim )
-		this->ChebV0 = Moments::vector_t(dim,Moments::value_t(0)); 
+	if( this->Chebyshev0().size()!= dim )
+		this->Chebyshev0() = Moments::vector_t(dim,Moments::value_t(0)); 
 
-	if( this->ChebV1.size()!= dim )
-		this->ChebV1 = Moments::vector_t(dim,Moments::value_t(0)); 
-	//From now on this-> will be discarded in ChebV0 and ChebV1
+	if( this->Chebyshev1().size()!= dim )
+		this->Chebyshev1() = Moments::vector_t(dim,Moments::value_t(0)); 
+	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
 
 	const auto I = Moments::value_t(0, 1);
 	const double x = Omega0*DeltaT;
@@ -36,13 +33,13 @@ int chebyshev::Vectors::EvolveAll( SparseMatrixType &NHAM, const double DeltaT, 
 		
 		int n = 0;
 		double Jn = besselJ(n,x);
-		linalg::copy(myVec , ChebV0);
+		linalg::copy(myVec , Chebyshev0());
 		linalg::scal(0, myVec); //Set to zero
-		linalg::axpy( Jn , ChebV0, myVec);
+		linalg::axpy( Jn , Chebyshev0(), myVec);
 
 		double Jn1 = besselJ(n+1,x);	
-		NHAM.Multiply(ChebV0, ChebV1);
-		linalg::axpy(-2 * I * Jn1, ChebV1, myVec);
+		this->Hamiltonian().Multiply(Chebyshev0(), Chebyshev1());
+		linalg::axpy(-2 * I * Jn1, Chebyshev1(), myVec);
 		
 		auto nIp =-I;
 		while( 0.5*(std::abs(Jn)+std::abs(Jn1) ) > 1e-15)
@@ -50,9 +47,9 @@ int chebyshev::Vectors::EvolveAll( SparseMatrixType &NHAM, const double DeltaT, 
 			nIp*=-I ;
 			Jn  = Jn1;
 			Jn1 = besselJ(n, x);
-			NHAM.Multiply(2.0, ChebV1, -1.0, ChebV0);
-			linalg::axpy(2 * nIp *Jn1, ChebV0, myVec);
-			ChebV0.swap(ChebV1);
+			this->Hamiltonian().Multiply(2.0, Chebyshev1(), -1.0, Chebyshev0());
+			linalg::axpy(2 * nIp *Jn1, Chebyshev0(), myVec);
+			Chebyshev0().swap(Chebyshev1());
 			n++;
 		}
 	}
@@ -82,6 +79,6 @@ int chebyshev::Vectors::Multiply( SparseMatrixType &OP )
 
 double chebyshev::Vectors::MemoryConsumptionInGB()
 {
-	return sizeof(value_t)*( this->Size()/pow(2.0,30.0)+2.0*this->SystemSize()/pow(2.0,30.0) );
+	return SizeInGB()+2.0*( (double)this->SystemSize() )*pow(2.0,-30.0) ;
 }
 	

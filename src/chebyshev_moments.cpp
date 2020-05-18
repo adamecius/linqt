@@ -1,27 +1,5 @@
 #include "chebyshev_moments.hpp"
 
-//Heavy functions
-int  chebyshev::Moments::Rescale2ChebyshevDomain(SparseMatrixType& H)
-{
-	H.Rescale(this->ScaleFactor(),this->ShiftFactor());
-	return 0;
-};
-
-
-void chebyshev::Moments::SetInitVectors( SparseMatrixType &NHAM, SparseMatrixType &OP ,const Moments::vector_t& T0 )
-{
-	assert( OP.rank() == NHAM.rank() && NHAM.rank() == this->SystemSize()&& T0.size() == this->SystemSize() );
-
-	if( ChebV0.size()!= T0.size() )
-		ChebV0 = Moments::vector_t(T0.size(),Moments::value_t(0)); 
-
-	if( ChebV1.size()!= T0.size() )
-		ChebV1 = Moments::vector_t(T0.size(),Moments::value_t(0)); 
-
-	linalg::copy ( T0, ChebV1 );
-	OP.Multiply  ( ChebV1, ChebV0 );
-	NHAM.Multiply( ChebV0, ChebV1 );
-};
 
 void chebyshev::Moments::SetInitVectors( const Moments::vector_t& T0 )
 {
@@ -42,8 +20,8 @@ void chebyshev::Moments::SetInitVectors( const Moments::vector_t& T0 )
 
 void chebyshev::Moments::SetInitVectors( SparseMatrixType &OP ,const Moments::vector_t& T0 )
 {
-	assert( OP.rank() == this->SystemSize() && T0.size() == this->SystemSize() );
 	const auto dim = this->SystemSize();
+	assert( OP.rank() == this->SystemSize() && T0.size() == this->SystemSize() );
 
 	if( this->Chebyshev0().size()!= dim )
 		this->Chebyshev0() = Moments::vector_t(dim,Moments::value_t(0)); 
@@ -53,8 +31,10 @@ void chebyshev::Moments::SetInitVectors( SparseMatrixType &OP ,const Moments::ve
 	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
 
 	linalg::copy ( T0, this->Chebyshev1() );
-	OP.Multiply  ( this->Chebyshev1(), this->Chebyshev0() );
+	OP.Multiply( this->Chebyshev1(), this->Chebyshev0() );
 	this->Hamiltonian().Multiply( this->Chebyshev0(), this->Chebyshev1() );
+
+	return ;
 };
 
 
@@ -65,14 +45,6 @@ int chebyshev::Moments::Iterate( )
 	this->Chebyshev0().swap(this->Chebyshev1());
 	return 0;
 };
-
-int chebyshev::Moments::Iterate( SparseMatrixType &NHAM )
-{
-	NHAM.Multiply(2.0,ChebV1,-1.0,ChebV0);
-	ChebV0.swap(ChebV1);
-	return 0;
-};
-
 
 	//light functions
 int chebyshev::Moments::JacksonKernelMomCutOff( const double broad )

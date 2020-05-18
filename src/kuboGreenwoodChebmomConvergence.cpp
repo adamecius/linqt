@@ -59,13 +59,15 @@ int main(int argc, char *argv[])
 	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
 	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
 	chebMoms.SystemSize(OP[0].rank() );
+	chebMoms.SetHamiltonian(OP[0]);
+
 	chebMoms.Print();
 
 	//Define thes states youll use
 	//Factory state_factory ;
 	
 	std::string outputfilename="ConvNonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NMOM+"eta"+S_ETA+"E"+S_E0+".dat";
-	chebyshev::sequential::KuboGreenwoodChebMomConvergence( energ,eta,OP[0], OP[1], OP[2], chebMoms );
+	chebyshev::sequential::KuboGreenwoodChebMomConvergence( energ,eta,OP[1], OP[2], chebMoms );
 
 	std::cout<<"Saving convergence data in "<<outputfilename<<std::endl;
 	std::ofstream outputfile( outputfilename.c_str() );
