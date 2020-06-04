@@ -5,7 +5,7 @@ from numpy import exp, cos, sin , pi, kron
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
-import matplotlib.tri as tri #tricontourf
+import matplotlib.tri as mtri #tricontourf
 from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
@@ -95,7 +95,7 @@ class wannier_system:
         Hk = self.ham_operator(k);
         #When no operator submited, return only the band structure
         if proj_op is None:
-            return ( eigvalsh( Hk ), None ) ;
+            return ( eigvalsh( Hk ) ) ;
 
         #If not, compute the eigen vectors
         w, v = np.linalg.eigh( Hk );#The column w[:, i] is the normalized eigenvector of v[i] eigenvalue
@@ -156,14 +156,13 @@ class wannier_system:
 
         #Compute the eigenvalues and the projected values 
         peigenvals  = self.compute_dispersion( kpoints , proj_op)  ;
-        bands = np.array(list(map(list,peigenvals[:,0]))).T;
-        bands-= fermi_energy;
-        
 
         if proj_op is None:
+            bands = peigenvals.T;
             return self.plot_band_structure( bands = bands, ax=ax );
 
-        projs = np.array(list(map(list,peigenvals[:,1]))).T;
+        bands = peigenvals[:,0].T - fermi_energy;
+        projs = peigenvals[:,1].T;
         
         return self.plot_band_structure( bands = bands , projs = projs , ax=ax, plot_proj = plot_proj, proj_range=proj_range);
 
@@ -218,7 +217,11 @@ class wannier_system:
         ax = _ax;
         return ax;
 
-    def compute_dispersion(self,kpoints, proj_op=None):
+    def compute_dispersion(self,kpoints, proj_op=None, absolute_coords = False):
+        if ( absolute_coords is True ):
+            Abs2Rec = np.linalg.inv(np.transpose(self.Momentum_Rec2AbsMatrix() ) );
+            kpoints = np.dot( kpoints , Abs2Rec);
+        
         return np.array( [self.projected_eigenvalues( kp, proj_op ) for kp in kpoints ] );        
       
     def compute_fermi_surface(self,kpoints, fermi_energy = 0.0, tol = None ,  proj_op = None ):
@@ -274,5 +277,58 @@ class wannier_system:
         P = np.array(list(map(list,peigenvals[:,1]))).flatten()
         return np.array( [np.sum(P*gaussian(eigenvalues-EF)) for EF in energies] )/dim;
 
-        
-  
+
+    def band_spin_texture(self, kpoints, bidx, uop = None, vop = None, zop=None, zlims = None, ax=None ):
+        #Compute first the mean values using the model
+
+        Ops= [uop, vop, zop ] ;
+
+        def get_band_data( x, bidx ):
+            y = None;
+            if x.shape[0] == kpoints.shape[0]:
+                y = x;
+            else:
+                y = self.compute_dispersion(kpoints, proj_op = x )[:,1];
+            y = np.array(list(map(list,y))).T;
+            return y[bidx];
+
+        #If is a compatible array of data, add it directly to Ops
+        Ops= [ get_band_data(op,bidx) for op in Ops ];
+
+        uop, vop, zop = Ops;
+        KX,KY,KZ = np.transpose(kpoints);
+
+        # Create triangulation.
+        triang = mtri.Triangulation(KX, KY)
+
+        def get_mask( x, y, z ):
+            return mtri.CubicTriInterpolator(triang, z, kind='geom')(x, y) > 0.;
+
+        def xypoints( npts ):
+            return np.meshgrid(np.linspace(KX.min(), KX.max(), npts), np.linspace(KY.min(), KY.max(), npts));
+
+        # Set up the figure
+        if( ax is None ):
+            fig, ax = plt.subplots(dpi=400);
+
+        # Interpolate to regularly-spaced quad grid.
+        xi, yi = xypoints(npts=100)
+        fzi    = mtri.CubicTriInterpolator(triang, zop, kind='geom');
+        zi     = np.ma.array( fzi(xi,yi) , mask=get_mask(xi, yi,zop) )
+
+        cs = ax.contourf(xi, yi, zi,levels=100, cmap="bone")
+#        fig.colorbar(cs, ax=ax, shrink=0.9 , label=r"$\rm Energy (meV)$")
+        # This is the fix for the white lines between contour levels
+        for c in cs.collections:
+            c.set_edgecolor("face")
+
+
+        xi, yi = xypoints(npts=20)
+        fui= mtri.CubicTriInterpolator(triang, uop, kind='geom');
+        fvi= mtri.CubicTriInterpolator(triang, vop, kind='geom');
+        ui = np.ma.array(fui(xi, yi), mask=get_mask(xi, yi,zop));
+        vi = np.ma.array(fvi(xi, yi), mask=get_mask(xi, yi,zop));
+        Q = ax.quiver(xi, yi, ui, vi, color="C1",  scale=15, width=0.022/4);
+
+        return ax;
+
