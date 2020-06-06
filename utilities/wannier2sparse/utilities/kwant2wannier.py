@@ -26,16 +26,16 @@ def evalute_value(obj,value,params):
         if( isinstance(value, (float,complex) ) ):
             return value*I;
 
-        #If is not an scalar, then we assume is a matrix
-        #and check its dimension
-        try:
-            if ( len(value) == 2 ):
-                return np.array( value);
-        except:
-            return I*0;
-           
-        print( "Return 0, Invalid object:", obj, " is invalid" )
+    #If is not an scalar, then we assume is a matrix
+    #and check its dimension
+    try:
+        if ( len(value) == 2 ):
+            return np.array( value);
+    except:
         return I*0;
+
+    print( "Return 0, Invalid object:", obj, " is invalid" )
+    return I*0;
 
 
 def fold_slab( syst, lat_vec, params):
