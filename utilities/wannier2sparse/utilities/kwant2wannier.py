@@ -80,7 +80,7 @@ def fold_slab( syst, lat_vec, params):
     return nsyst,lat;
 
 
-def syst2linQT( syst, systname, lattice_vectors, params ):
+def syst2linQT( syst, systname, lattice_vectors, params=dict() ):
 
     syst,lat = fold_slab( syst, lattice_vectors,params)
     lattice2txt( lat , systname )    
