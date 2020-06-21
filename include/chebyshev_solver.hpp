@@ -32,49 +32,24 @@ namespace chebyshev
 		std::array<double,2> SpectralBounds( SparseMatrixType& HAM);
 	};
 
-	namespace sequential
-	{
-		int KuboGreenwoodChebMomConvergence( const double E0,
-											 const double eta,
-											 SparseMatrixType &OPL, 
-											 SparseMatrixType &OPR,
-											 chebyshev::Moments1D&  mu);
 
 
-		int DensityExpansionMoments(vector_t& PhiL,vector_t& PhiR,
-									 SparseMatrixType &OP,
-									 chebyshev::Moments1D &chebMoms);
+	int ComputeMomTable( chebyshev::Vectors &chevVecL, chebyshev::Vectors& chevVecR , chebyshev::Moments2D& sub);
 
-		int CorrelationExpansionMoments(const vector_t& PhiL, const vector_t& PhiR,
+	int CorrelationExpansionMoments( 	const vector_t& PhiR, const vector_t& PhiL,
 										SparseMatrixType &OPL,
-										SparseMatrixType &OPR,
-										chebyshev::Moments2D &chebMoms);
-
-		int ComputeMomTable( chebyshev::Vectors &chebVL,  chebyshev::Vectors& chebVR ,  vector_t& output);
-
-	};
-
-
-	namespace parallel
-	{
-		int CorrelationExpansionMoments( 	const int batchSize,
-											const vector_t& PhiR, const vector_t& PhiL,
-											SparseMatrixType &OPL,
-											SparseMatrixType &OPR,  
-											chebyshev::Vectors &chevVecL,
-											chebyshev::Vectors &chevVecR,
-											chebyshev::Moments2D &chebMoms
+										SparseMatrixType &OPR,  
+										chebyshev::Vectors &chevVecL,
+										chebyshev::Vectors &chevVecR,
+										chebyshev::Moments2D &chebMoms
 										);
-																					
-		int ComputeMomTable( chebyshev::Vectors &chebVL, chebyshev::Vectors & chebVR ,  vector_t& output);
 
-	};
+	
+	int CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, qstates::generator& gen );
 
-	int CorrelationExpansionMoments(int numStates, SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::Moments2D &chebMoms, StateType type);
+	int TimeDependentCorrelations( SparseMatrixType &OP, SparseMatrixType &PROJ,  chebyshev::MomentsTD &chebMoms, qstates::generator& gen);
 
-	int TimeDependentCorrelations(int numStates, SparseMatrixType &OP, SparseMatrixType &PROJ,  chebyshev::MomentsTD &chebMoms, StateType type );
-
-	int SpectralMoments(int numStates, SparseMatrixType &OP,  chebyshev::Moments1D &chebMoms, StateType type );
+	int SpectralMoments(SparseMatrixType &OP,  chebyshev::Moments1D &chebMoms, qstates::generator& gen);
 
 }; // namespace chebyshev
 

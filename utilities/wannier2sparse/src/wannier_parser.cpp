@@ -7,7 +7,8 @@ vector< vector<string> > read_disorder_file(const string disorder_filename)
     input_file.precision( numeric_limits<double>::digits10+2);
     if(! input_file.is_open())
 		return vector< vector<string> >();
-    
+    else
+        std::cout<<"Readining disorder file:"<<disorder_filename<<std::endl;
 
 	//Get all lines into the memory
     string line; 

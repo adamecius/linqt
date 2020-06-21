@@ -35,11 +35,6 @@ int main(int argc, char *argv[])
 		S_NMOM = argv[3];
 
 	const int numMoms   = atoi(S_NMOM.c_str() );
-	int numStates = 1;
-
-	if (argc ==5 )
-		numStates = atoi( argv[4] );
-
 	chebyshev::Moments1D chebMoms( numMoms ); //load number of moments
 
 	const int NOPS = 2;
@@ -71,12 +66,19 @@ int main(int argc, char *argv[])
 	chebMoms.SetAndRescaleHamiltonian(OP[0]);
 	chebMoms.Print();
 
-	chebyshev::SpectralMoments(numStates,OP[1],chebMoms, RANDOM_STATE);
+
+	//Compute the chebyshev expansion table
+	qstates::generator gen;
+	if( argc == 5)
+		gen  = qstates::LoadStateFile(argv[4]);
+
+
+	chebyshev::SpectralMoments(OP[1],chebMoms, gen);
 
 	auto prefix="SpectralOp"+OP[1].ID();
 	if( OP[1].isIdentity() )
 		prefix="SpectralOp"+OP[1].ID();
-	std::string outputfilename=prefix+LABEL+"KPM_M"+S_NMOM+"RV"+to_string(numStates)+".chebmom1D";	
+	std::string outputfilename=prefix+LABEL+"KPM_M"+S_NMOM+"_state"+gen.StateLabel()+".chebmom1D";	
 
 	std::cout<<"Saving the moments in  "<<outputfilename<<std::endl;
 	chebMoms.saveIn(outputfilename);

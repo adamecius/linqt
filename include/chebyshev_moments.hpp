@@ -33,6 +33,14 @@ class Moments
 	band_width(0),band_center(0){};
 
 	//GETTERS
+	void getMomentsParams( Moments& mom)
+	{
+		this->SetHamiltonian( mom.Hamiltonian() ) ; 
+		this->SystemLabel( mom.SystemLabel());
+		this->BandWidth( mom.BandWidth() );
+		this->BandCenter( mom.BandCenter() );
+	};	
+	
 	inline
 	size_t SystemSize() const { return system_size; };
 
@@ -187,9 +195,18 @@ class Moments2D: public Moments
 	public:
 	Moments2D():numMoms({0,0}){};
 
+
 	Moments2D(const size_t m0,const size_t m1):numMoms({m0,m1}){ this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    };
 
 	Moments2D( std::string momfilename );
+
+
+	Moments2D( Moments2D mom, const size_t m0,const size_t m1 )
+	{
+		this->getMomentsParams(mom);
+		this->numMoms={m0,m1};
+		this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    
+	};
 
 	//GETTERS
 
@@ -213,6 +230,23 @@ class Moments2D: public Moments
 	// Input/Output 
 	//COSTFUL FUNCTIONS
 	void saveIn(std::string filename);
+
+	
+	void AddSubMatrix( Moments2D& sub , const int mL, const int mR)
+	{
+		for(int m0=0; m0<sub.HighestMomentNumber(0); m0++)
+		for(int m1=0; m1<sub.HighestMomentNumber(1); m1++)
+			this->operator()(mL+m0,mR+m1) += sub(m0,m1);
+	} 
+
+	void InsertSubMatrix( Moments2D& sub , const int mL, const int mR)
+	{
+		for(int m0=0; m0<sub.HighestMomentNumber(0); m0++)
+		for(int m1=0; m1<sub.HighestMomentNumber(1); m1++)
+			this->operator()(mL+m0,mR+m1) = sub(m0,m1);
+	} 
+	
+	
 
 	void Print();
 
@@ -304,7 +338,17 @@ class Vectors : public Moments
 	public: 
 	typedef VectorList< Moments::value_t > vectorList_t;
 
+
+	int NumberOfVectors() const
+	{ return numVecs;}
+
+
+	int SetNumberOfVectors( const int x)
+	{ numVecs = x; return 0;}
+
+
 	Vectors():Chebmu(0,0){};
+	
 	Vectors(const size_t nMoms,const size_t dim ):Chebmu(nMoms,dim) {  };
 
 	Vectors( Moments1D& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
@@ -312,18 +356,35 @@ class Vectors : public Moments
 		this->getMomentsParams(mom);
 	};
 	
-
 	Vectors( Moments2D& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
 	{ 
 		this->getMomentsParams(mom);
-
 	};
+
 	
-	Vectors( Moments2D& mom, const size_t i ): Chebmu(mom.HighestMomentNumber(i), mom.SystemSize() )
+	Vectors( Moments2D& mom, size_t i  ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
 	{ 
 		this->getMomentsParams(mom);
-
 	};
+	
+	
+   
+    int CreateVectorSet()
+    {
+		try
+		{
+			const int vec_size  = this->SystemSize();
+			const int list_size = this->NumberOfVectors();
+			Chebmu(list_size, vec_size );
+		}
+		catch (...)
+		{ std::cerr<<"Failed to initilize the vector list."<<std::endl;}
+
+		
+		return 0;
+	}
+    
+    
     
     Vectors( MomentsTD& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
 	{ 
@@ -343,15 +404,15 @@ class Vectors : public Moments
 	inline
 	size_t Size() const
 	{
-		return  (long unsigned int)this->Chebmu.VectorSize()*
-				(long unsigned int)this->Chebmu.ListSize();
+		return  (long unsigned int)this->SystemSize()*
+				(long unsigned int)this->NumberOfVectors();
 	}
 
 	inline 
 	double SizeInGB() const
 	{
-		const double vec_size = Chebmu.VectorSize();
-		const double list_size = Chebmu.VectorSize();
+		const double vec_size  = this->SystemSize();
+		const double list_size = this->NumberOfVectors();
 		return  sizeof(value_t)*vec_size*list_size*pow(2.0,-30.0);
 	}
 
@@ -364,6 +425,7 @@ class Vectors : public Moments
 
 	inline
 	Moments::vector_t& Vector(const size_t m0) { return this->Chebmu.ListElem(m0); };
+
 
 	inline
 	Moments::value_t& operator()(const size_t m0) { return this->Chebmu(m0,0); };
@@ -381,7 +443,7 @@ class Vectors : public Moments
 	private:
 	Moments::vector_t OPV;
 	vectorList_t Chebmu;	
-
+	int numVecs;
 };
 
 };

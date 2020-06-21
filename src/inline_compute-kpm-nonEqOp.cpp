@@ -70,13 +70,14 @@ int main(int argc, char *argv[])
 	//Factory state_factory ;
 
 	//Compute the chebyshev expansion table
-	int num_states = 1 ;
-	if( argc == 6)	num_states = atoi(argv[5]);
+	qstates::generator gen;
+	if( argc == 6)	
+		gen  = qstates::LoadStateFile(argv[5]);
 	
-	chebyshev::CorrelationExpansionMoments(num_states, OP[1], OP[2], chebMoms, RANDOM_STATE );
+	chebyshev::CorrelationExpansionMoments( OP[1], OP[2], chebMoms, gen );
 
 	//Save the table in a file
-	std::string outputfilename="NonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+".chebmom2D";
+	std::string outputfilename="NonEqOp"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"_state"+gen.StateLabel()+".chebmom2D";
 	chebMoms.saveIn(outputfilename);
 
 	std::cout<<"End of program"<<std::endl;

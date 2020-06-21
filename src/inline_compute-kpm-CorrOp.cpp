@@ -75,11 +75,15 @@ int main(int argc, char *argv[])
 	chebMoms.SetAndRescaleHamiltonian(OP[0]);
 	chebMoms.Print();
 
-	std::cout<<"numstates:"<<numStates<<std::endl;
-	chebyshev::TimeDependentCorrelations( numStates, OP[1], OP[2], chebMoms , RANDOM_STATE);
+	//Compute the chebyshev expansion table
+	qstates::generator gen;
+	if( argc == 5)
+		gen  = qstates::LoadStateFile(argv[5]);
+
+	chebyshev::TimeDependentCorrelations( OP[1], OP[2], chebMoms, gen);
 
 	
-	std::string outputfilename="TimeCorr"+S_OPL+"-"+S_OPR+LABEL+"KPM_M"+S_NMOM+"RV"+to_string(numStates)+".chebmomTD";	
+	std::string outputfilename="TimeCorr"+S_OPL+"-"+S_OPR+LABEL+"KPM_M"+S_NMOM+"_state"+gen.StateLabel()+".chebmomTD";	
 	std::cout<<"Saving convergence data in "<<outputfilename<<std::endl;
 	chebMoms.saveIn(outputfilename);
 	std::cout<<"End of program"<<std::endl;

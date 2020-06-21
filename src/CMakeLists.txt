@@ -31,10 +31,6 @@ set(MAIN inline_compute-kpm-nonEqOp)
 add_executable(${MAIN} inline_compute-kpm-nonEqOp.cpp )
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
-set(MAIN inline_compute-kpm-nonLEqOp)
-add_executable(${MAIN} inline_compute-kpm-nonLEqOp.cpp )
-target_link_libraries(${MAIN} ${KPM_LIB} )
-
 set(MAIN inline_compute-kpm-CorrOp )
 add_executable(${MAIN} inline_compute-kpm-CorrOp.cpp )
 target_link_libraries(${MAIN} ${KPM_LIB} )
@@ -42,7 +38,6 @@ target_link_libraries(${MAIN} ${KPM_LIB} )
 set(MAIN inline_compute-kpm-spectralOp )
 add_executable(${MAIN} inline_compute-kpm-spectralOp.cpp )
 target_link_libraries(${MAIN} ${KPM_LIB} )
-
 
 set(MAIN inline_spectralFunctionFromChebmom)
 add_executable(${MAIN} spectralFunctionFromChebmom.cpp )
@@ -73,10 +68,6 @@ set(MAIN inline_kuboBastinSurfFromChebmom)
 add_executable(${MAIN} kuboBastinSurfFromChebmom.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
-
-set(MAIN inline_kuboGreenwoodChebmomConvergence )
-add_executable(${MAIN} kuboGreenwoodChebmomConvergence.cpp  )
-target_link_libraries(${MAIN} ${KPM_LIB} )
 
 set(MAIN inline_timeCorrelationsFromChebmom )
 add_executable(${MAIN} timeCorrelationsFromChebmom.cpp  )

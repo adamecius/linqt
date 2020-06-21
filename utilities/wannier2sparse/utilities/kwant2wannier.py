@@ -48,8 +48,9 @@ def fold_slab( syst, lat_vec, params):
 
     #Create an operator that will remove the tag component outside the fundamental domain.
     #There should be a more elegant way of doing thi
+    sym_dir  =  np.dot(kTS.periods , np.linalg.inv(lat_vec));
     fold_tag = np.eye(3)*0;
-    for idx in np.argmax(kTS.periods,axis=1):
+    for idx in np.argmax(sym_dir,axis=1):
         fold_tag[idx,idx]=1;
 
     

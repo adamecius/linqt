@@ -158,7 +158,7 @@ class wannier_system:
         peigenvals  = self.compute_dispersion( kpoints , proj_op)  ;
 
         if proj_op is None:
-            bands = peigenvals.T;
+            bands = peigenvals.T- fermi_energy;
             return self.plot_band_structure( bands = bands, ax=ax );
 
         bands = peigenvals[:,0].T - fermi_energy;

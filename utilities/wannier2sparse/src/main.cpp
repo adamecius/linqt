@@ -37,13 +37,14 @@ int main( int argc, char* argv[]){
 	args.ReadArguments(argc,argv);
 
 	cout<<"Using "<<args.label<<" as the system's identification label"<<endl
-		<<"This label will be used to detect the label.xyz, label_hr.dat, and label.uc files"<<endl;
+		<<"This label will be used to detect the label.xyz, label_hr.dat, label.stdis, and label.uc files"<<endl;
 
 	tbmodel model;
 	model.readOrbitalPositions(args.label+".xyz"); 	std::cout<<" finished"<<std::endl;
 	model.readUnitCell(args.label+".uc"); 			std::cout<<" finished"<<std::endl;
 	model.readWannierModel(args.label+"_hr.dat"); 	std::cout<<" finished"<<std::endl;
 	model.readStaticDisorder(args.label+".stdis"); 	std::cout<<" finished"<<std::endl;
+
 
 	std::cout<<"Creating Hamiltonian"<<std::endl;
 	model.Hopping_List().wrap_in_supercell(args.cellDim).save_hopping_list_as_csr(args.label+".HAM.CSR");
