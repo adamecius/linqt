@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 		for( int m0 = 0 ; m0 < mu.HighestMomentNumber(0) ; m0++)
 		for( int m1 = 0 ; m1 < mu.HighestMomentNumber(1) ; m1++)
 			kernel[i] += delta_chebF(energ,m0)*delta_chebF(energ,m1)*mu(m0,m1).real() ;
-		kernel[i] *= -M_PI * mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
+		kernel[i] *= M_PI * mu.SystemSize()/mu.HalfWidth()/mu.HalfWidth();
 	}
 
 	double acc = 0;

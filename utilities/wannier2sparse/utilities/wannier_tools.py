@@ -331,4 +331,43 @@ class wannier_system:
         Q = ax.quiver(xi, yi, ui, vi, color="C1",  scale=15, width=0.022/4);
 
         return ax;
+    
+    
+    def createRandomPhase(self, shape, output):
+        def linearize( i , shape ):
+            x,y,z =i ;
+            nx,ny,nz =shape ;
+            return z*nx*ny + y*nx + x;
+
+        nx,ny,nz = shape;
+        numstates  = matdim = len(self.ham_operator([0,0,0]))
+        dim = np.prod(shape);
+        states = np.zeros((numstates,numstates*dim), dtype=complex)
+        grid =(np.mgrid[0:nx,0:ny,0:nz].T).reshape( dim ,3);
+
+        for kp in grid:
+            k = linearize(kp,shape);
+            kp = kp/shape;
+            w, vs  = np.linalg.eigh(self.ham_operator(kp))
+            vs = vs.T;
+            for i,v in enumerate(vs):
+                states[i,k*matdim:(k+1)*matdim]= np.exp(2j*np.pi*np.random.random())*v;
+
+        for s in range(numstates):
+            for i in range(matdim):
+                S = states[s][i::matdim].reshape(shape).T
+                FS = np.fft.fftn(S)
+                states[s][i::matdim] = FS.T.flatten();
+            states[s] /=np.linalg.norm(states[s]);
+
+        f = open(output,'w')
+        f.write("vector\n")
+        f.write( str(numstates)+"\n")
+        f.write( str(dim*matdim)+"\n")
+
+        for state in states:
+            for x in state:
+                f.write(str(x.real)+" "+str(x.imag)+"\n")
+        f.close()
+
 

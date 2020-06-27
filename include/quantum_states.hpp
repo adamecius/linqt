@@ -17,8 +17,9 @@ using namespace std; // for std::complex<double> , and std::vector
 
 enum StateType
 {
-	LOCAL_STATE=1,
-	RANDOM_STATE=2
+	LOCAL_STATE,
+	USER_STATE,
+	RANDOM_STATE
 };
 
 typedef std::complex<double>  Complex;
@@ -32,7 +33,12 @@ namespace qstates
 	{
 		public:
 
-		generator():count(0),label("default"), num_states(1),kind(RANDOM_STATE){}
+		generator():count(0),dim(0),label("default"), num_states(1),kind(RANDOM_STATE){ srand(time(0));}
+
+		int SystemSize() const
+		{
+			return dim;
+		}
 
 		int NumberOfStates() const
 		{
@@ -45,25 +51,37 @@ namespace qstates
 			num_states = n;
 			spos.reserve(n);
 		}
-		
+
 		void SystemSize( const int n)
 		{
-			dim = n;
-			out = std::vector< scalar >(dim);
+			if( SystemSize() == 0 )
+			{
+				dim = n;
+				out = std::vector< scalar >(dim);
+				return ;
+			}
+			assert( SystemSize() == n);
+			return ;
+			
 		}
 
 		bool getQuantumState()
 		{
-			if( count < num_states )
+			if( count < this->NumberOfStates() )
 			{
-				
-				std::fill(out.begin(), out.end(), 0.0);
-
 				switch (kind)
 				{
 					case LOCAL_STATE:
+						std::fill(out.begin(), out.end(), 0.0);
 						out[ spos[count] ] = 1.0;
 						break;
+					case USER_STATE:
+						std::cout<<"Using vector at"<<spos[count]<<std::endl;
+						out.assign(data.begin()+spos[count] , data.begin()+spos[count]+ out.size() ); 
+
+						break;
+						
+						
 					case RANDOM_STATE:
 						const double norm = sqrt(out.size());
 						for( auto&x : out )
@@ -75,7 +93,7 @@ namespace qstates
 				}
 				count++;
 				return true;
-			}			
+			}
 			return false;
 		}
 		
@@ -93,6 +111,7 @@ namespace qstates
 		std::string label;
 		int count;
 		std::vector< scalar > out;
+		std::vector< scalar > data;
 		std::vector<int> spos;
 		int dim;
 		int num_states;
@@ -100,30 +119,90 @@ namespace qstates
 		
 };
 	
+	inline 
+	StateType String2State( std::string kind )
+	{
+		if( kind == "local" )
+			return LOCAL_STATE;
+		if( kind == "vector" )
+			return USER_STATE;
+		
+		return RANDOM_STATE;
+	}
+
 	
+	inline 
+	void readLocalState(std::ifstream& file, generator& data)
+	{
+		int ibuff;
+		file>>ibuff;
+		data.NumberOfStates(ibuff);
+		
+		for ( int i = 0 ; i < data.num_states; i++ )
+		{
+			int ibuff;
+			file>>ibuff;
+			data.spos.push_back(ibuff);
+		}
+		assert( data.spos.size() == data.num_states  );	
+		
+		return ;
+	};
+
+
+	inline 
+	void readCustomState(std::ifstream& file, generator& data)
+	{
+		int ibuff;
+		file>>ibuff;
+		std::cout<<"NumberOfStates"<<ibuff<<std::endl;
+		data.NumberOfStates(ibuff);
+
+		file>>ibuff;
+		data.SystemSize(ibuff);
+		
+		const int size= data.SystemSize();
+		const int num = data.NumberOfStates();
+		data.data = std::vector< scalar >( size*num )  ;
+
+		
+		for ( int i = 0 ; i < num; i++ )
+		{
+			for ( int j = 0 ; j < size; j++ )
+			{
+				double re,im;
+				file>>re>>im;
+				data.data[i*size + j] = std::complex<double>(re,im);
+			};
+			data.spos.push_back(i*size);
+			std::cout<<"Added a vector at "<<data.spos[i]<<"="<<i*size<<std::endl;
+		}
 	
+		return ;
+	};
 	
 	
 	inline 
 	generator CreateStateSet(std::ifstream& file, std::string kind)
 	{
 		generator data;
-		if( kind == "local")
-		{
-			data.kind = LOCAL_STATE;
+		data.kind = String2State( kind );
 
-			int ibuff;  
-			file>>ibuff;
-			data.NumberOfStates(ibuff);
+		switch( data.kind)
+		{
+			case(LOCAL_STATE):
+			readLocalState(file,data);
+			break;
+			case(USER_STATE):
+			readCustomState(file,data);
+			break;
+
+			default:
+			break;
 			
-			for ( int i = 0 ; i < data.num_states; i++ )
-			{
-				int ibuff;
-				file>>ibuff;
-				data.spos.push_back(ibuff);			
-			}
-			assert( data.spos.size() == data.num_states  );			
 		}
+		
+
 			
 	return data;
 	};

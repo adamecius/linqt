@@ -8,7 +8,7 @@ vector< vector<string> > read_disorder_file(const string disorder_filename)
     if(! input_file.is_open())
 		return vector< vector<string> >();
     else
-        std::cout<<"Readining disorder file:"<<disorder_filename<<std::endl;
+        std::cout<<"Found disorder file:"<<disorder_filename<<std::endl;
 
 	//Get all lines into the memory
     string line; 

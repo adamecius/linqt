@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
 	void spectral::printHelpMessage()
 	{
-		std::cout << "The program should be called with the following options: Label Op numMom num_states" << std::endl
+		std::cout << "The program should be called with the following options: Label Op numMom " << std::endl
 				  << std::endl;
 		std::cout << "Label will be used to look for Label.Ham, Label.Op" << std::endl;
 		std::cout << "Op will be used to located the  matrix file of the operators for the spectral " << std::endl;

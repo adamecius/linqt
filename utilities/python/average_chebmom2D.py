@@ -13,9 +13,11 @@ filelist= parser.parse_args().FileList
 outfile = parser.parse_args().output
 
 
+i = 0;
 data  = None;
 header= None;
 for inputfile in filelist:
+    print("added file ",i)
     with open(inputfile) as f:
         current_header = f.readline()+f.readline()[:-1]#This remove the last newline char. 
 
@@ -37,7 +39,7 @@ for inputfile in filelist:
 
     #Then just summ it
     data+=np.genfromtxt(inputfile, dtype=None, skip_header=2); 
-
+    i=i+1;
 #Compute average
 data/=len(filelist)    
 

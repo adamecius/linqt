@@ -43,7 +43,7 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 		//READ CONCENTRATION
 		double concentration;
 		{
-			auto line = group.back();
+			auto line = group.back(); std::cout<<"concentration: "<<line<<std::endl;
 			concentration =  std::stod(line);
 			group.pop_back();		
 		}
@@ -57,6 +57,8 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			min_val.imag( stod(line,&sz) ); line = line.substr(sz);
 			max_val.real( stod(line,&sz) ); line = line.substr(sz);
 			max_val.imag( stod(line,&sz) ); line = line.substr(sz);
+			std::cout<<"min,max: "<<min_val<<","<<max_val<<std::endl;
+			assert( std::norm(min_val)<=std::norm(max_val) );
 			group.pop_back();			
 		}
   
@@ -69,7 +71,7 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			while( line.size()!= 0 ) 
 			{
 				i0 = std::stoi(line,&sz); line = line.substr(sz); 
-				i1 = std::stoi(line,&sz); line = line.substr(sz); 
+				i1 = std::stoi(line,&sz); line = line.substr(sz); std::cout<<"i0,i1: "<<i0<<","<<i1<<std::endl;
 				vertexes.push_back( hopping_list::edge_t({i0-1,i1-1}) ); //Assume 1 based
 				
 			}
@@ -83,7 +85,7 @@ hopping_list& hopping_list::add_random_hopping_list( vector< vector<string> > di
 			string::size_type sz;     // alias of size_t
 			for( auto& x : cellID)
 			{
-				x = std::stoi(line,&sz); line = line.substr(sz);
+				x = std::stoi(line,&sz); line = line.substr(sz); 
 			}
 			group.pop_back();		
 		}
