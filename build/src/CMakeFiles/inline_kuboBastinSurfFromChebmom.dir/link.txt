@@ -1,1 +1,0 @@
-/home/ICN2/jgarcia/.local/intel/compilers_and_libraries_2019.1.144/linux/bin/intel64/icpc   -mkl=parallel -O3 --std=c++11 -Wall -Wextra -fopenmp    CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o  -o ../inline_kuboBastinSurfFromChebmom  -L/data/jgarcia/codes/linqt/build/lib -rdynamic ../lib/libkpm_lib.a -liomp5 -lpthread -lm -ldl 
