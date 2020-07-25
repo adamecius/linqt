@@ -13,6 +13,10 @@ rc('text', usetex=True)
 from scipy.sparse import coo_matrix
 import time
 
+
+proj_s = 50 ;
+cmap_name="seismic";
+band_lw = 1;
 class wannier_system:
        
     def __init__(self, label ):
@@ -186,7 +190,6 @@ class wannier_system:
                 _ax.plot(xaxis,proj );
         else:
             _ax.set_ylabel("Energy (eV)", fontsize=16);
-            cmap_name="seismic";
             vmin,vmax = 0,1;
             if projs is not None:
                 vmin = np.min(projs);
@@ -194,12 +197,12 @@ class wannier_system:
                 if proj_range is not None:
                     vmin,vmax = list(proj_range);
             for i,band in enumerate(bands):
-                _ax.plot(xaxis,band , color = 'k');
+                _ax.plot(xaxis,band , color = 'k', lw=band_lw);
                 c = 'k';
                 if projs is not None:
                     c = projs[i];
                 #Add points to the plot
-                im = _ax.scatter(xaxis, band,s=50, c=c,cmap=cmap_name,vmin=vmin, vmax=vmax);
+                im = _ax.scatter(xaxis, band,s=proj_s, c=c,cmap=cmap_name,vmin=vmin, vmax=vmax);
                 im.set_facecolor("none");        
             #Create falso plot for color bar
             if projs is not None and ax is None: #Add the color bar whenever you have the a projectedprlt
@@ -333,29 +336,32 @@ class wannier_system:
         return ax;
     
     
-    def createRandomPhase(self, shape, output):
-        def linearize( i , shape ):
+    def createRandomPhase(self, dims, output, mask=None):
+        def linearize( i , dims ):
             x,y,z =i ;
-            nx,ny,nz =shape ;
+            nx,ny,nz =dims ;
             return z*nx*ny + y*nx + x;
 
-        nx,ny,nz = shape;
+        nx,ny,nz = dims;
         numstates  = matdim = len(self.ham_operator([0,0,0]))
-        dim = np.prod(shape);
+        dim = np.prod(dims);
         states = np.zeros((numstates,numstates*dim), dtype=complex)
         grid =(np.mgrid[0:nx,0:ny,0:nz].T).reshape( dim ,3);
 
         for kp in grid:
-            k = linearize(kp,shape);
-            kp = kp/shape;
-            w, vs  = np.linalg.eigh(self.ham_operator(kp))
-            vs = vs.T;
-            for i,v in enumerate(vs):
-                states[i,k*matdim:(k+1)*matdim]= np.exp(2j*np.pi*np.random.random())*v;
+            if mask is not None and mask(kp/dims):
+                continue;
+            else:
+                k = linearize(kp,dims);
+                kp = kp/dims;
+                w, vs  = np.linalg.eigh(self.ham_operator(kp))
+                vs = vs.T;
+                for i,v in enumerate(vs):
+                    states[i,k*matdim:(k+1)*matdim]= np.exp(2j*np.pi*np.random.random())*v;
 
         for s in range(numstates):
             for i in range(matdim):
-                S = states[s][i::matdim].reshape(shape).T
+                S = states[s][i::matdim].reshape(dims).T
                 FS = np.fft.fftn(S)
                 states[s][i::matdim] = FS.T.flatten();
             states[s] /=np.linalg.norm(states[s]);
