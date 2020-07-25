@@ -3,3 +3,5 @@ mkdir build
 cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-icc+mkl.cmake  ..
 cmake --build .
+
+#Requires Eigen
