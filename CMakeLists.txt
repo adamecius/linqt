@@ -10,12 +10,11 @@ set(CMAKE_INSTALL_INCLUDEDIR "$ENV{HOME}/.local/usr/include/")
 set( PYTHON_MODULES 1 ) #TRUE
 
 if( ${PYTHON_MODULES} )
- find_package(PythonInterp)
+ find_package(PythonInterp 3.2 REQUIRED)
  string( REPLACE "/bin/python" "" PYTHON_USER_ROOT ${PYTHON_EXECUTABLE} )
  set( PYTHON_USER_LIB ${PYTHON_USER_ROOT}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
  set( PYTHON_USER_BIN ${PYTHON_USER_ROOT}/bin )
  set( PYTHON_USER_INC ${PYTHON_USER_ROOT}/include )
- message( ${PYTHON_USER_INC})
 endif()
 
 
@@ -37,7 +36,6 @@ set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 # All the includes should be in this variable To add new directories to the include path,
 # just add them in this list (after a space), or add an include_directories statement in a
 # subdirectory's CMakeLists.
-message( ${PROJECT_SOURCE_DIR} )
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
 )
@@ -49,3 +47,26 @@ add_subdirectory(utilities)
 #add_subdirectory(test)
 #add_subdirectory(samples)
 
+
+
+
+# first we can indicate the documentation build as an option and set it to ON by default
+option(BUILD_DOC "Build documentation" ON)
+# check if Doxygen is installed
+find_package(Doxygen)
+
+if (DOXYGEN_FOUND)
+ set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/linqt.dox)
+ set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/docs/linqt.dox)
+ configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+ message("Doxygen build started")
+
+ # note the option ALL which allows to build the docs together with the application
+ add_custom_target( doc_doxygen ALL
+     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+     COMMENT "Generating API documentation with Doxygen"
+     VERBATIM )
+else (DOXYGEN_FOUND)
+  message("Doxygen need to be installed to generate the doxygen documentation")
+endif (DOXYGEN_FOUND)
