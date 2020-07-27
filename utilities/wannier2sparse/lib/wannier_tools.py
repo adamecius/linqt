@@ -20,9 +20,12 @@ band_lw = 1;
 class wannier_system:
        
     def __init__(self, label ):
-        wan_file =label+"_hr.dat"
-        xyz_file =label+".xyz"
-        uc_file  =label+".uc"
+
+        self.label =label;
+
+        wan_file =self.label+"_hr.dat"
+        xyz_file =self.label+".xyz"
+        uc_file  =self.label+".uc"
        
         self.lat_vec = np.loadtxt(uc_file);
         self.load_xyz(xyz_file)
@@ -247,17 +250,7 @@ class wannier_system:
         peigvals = np.array(list(map(list,peigenvals[:,1])))
         return kpoints,peigvals[relevant_kpoints];
 
-    
-    def refine_kpoints(self, kpoints):
-
-        nkp= 2*len(kpoints);
-        kmin = np.array([ np.min(kpoints[:,0]),np.min(kpoints[:,1]),0 ] );
-        kmax = np.array([ np.max(kpoints[:,0]),np.max(kpoints[:,1]),0 ] );
-        kpoints= np.array(list(np.ndindex((nkp,nkp,1))))/(nkp-1)*(kmax-kmin) + kmin ;#kpoints in recpricola lattice vectors
-
-        return kpoints;
-    
-    
+   
     def compute_DOS(self, energies,gridpoints, fermi_energy = 0.0, broadening = 0.1,  kpoints = None ,proj_op = None ):
         
         if kpoints is None:

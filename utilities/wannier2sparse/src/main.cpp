@@ -23,8 +23,7 @@
 #include <iostream>
 
 #include "w2sp_arguments.hpp"
-#include "tbmodel.hpp"
-#include "hopping_list.hpp"
+#include "wannier2sparse.hpp"
 using namespace std;
 
 
@@ -39,6 +38,9 @@ int main( int argc, char* argv[]){
 	cout<<"Using "<<args.label<<" as the system's identification label"<<endl
 		<<"This label will be used to detect the label.xyz, label_hr.dat, label.stdis, and label.uc files"<<endl;
 
+	wannier2sparse(args.label, args.cellDim, args.operators);
+	
+	/*
 	tbmodel model;
 	model.readOrbitalPositions(args.label+".xyz"); 	std::cout<<" finished"<<std::endl;
 	model.readUnitCell(args.label+".uc"); 			std::cout<<" finished"<<std::endl;
@@ -53,7 +55,7 @@ int main( int argc, char* argv[]){
 		std::cout<<"Creating "<<op<<std::endl;
 		model.WannierOperator(op).wrap_in_supercell(args.cellDim).save_hopping_list_as_csr(args.label+"."+op+".CSR");
 	}	
-
+	*/
 
 	cout<<"The programa finished"<<std::endl;
 return 0;}

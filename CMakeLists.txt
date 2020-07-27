@@ -2,10 +2,23 @@
 cmake_minimum_required(VERSION 2.4.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) # project specific cmake dir
 
-#Instalation variables
-set (PYTHON_VERSION "3.6") 
-set( ENV_PYTHON_ROOT $ENV{CONDA_PREFIX}) 
-# CMake useful variables
+#Configuration variables
+set(CMAKE_INSTALL_LIBDIR "$ENV{HOME}/.local/usr/lib/")
+set(CMAKE_INSTALL_INCLUDEDIR "$ENV{HOME}/.local/usr/include/")
+
+#Relevant package for the projec
+set( PYTHON_MODULES 1 ) #TRUE
+
+if( ${PYTHON_MODULES} )
+ find_package(PythonInterp)
+ string( REPLACE "/bin/python" "" PYTHON_USER_ROOT ${PYTHON_EXECUTABLE} )
+ set( PYTHON_USER_LIB ${PYTHON_USER_ROOT}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+ set( PYTHON_USER_BIN ${PYTHON_USER_ROOT}/bin )
+ set( PYTHON_USER_INC ${PYTHON_USER_ROOT}/include )
+ message( ${PYTHON_USER_INC})
+endif()
+
+
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib") 
