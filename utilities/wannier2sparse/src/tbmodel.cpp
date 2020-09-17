@@ -151,6 +151,14 @@ tbmodel::createHoppingSpinDensity_list(const double theta, const double phi)
 };
 
 hopping_list 
+tbmodel::createHoppingSpinProjectionDensity_list(const double theta, const double phi, const int s)
+{
+        //CREATE A SPIN PROJECTOR MATRIX
+        auto sop = this->createSpinProjectionMatrix(theta, phi, s);
+        return this->createHoppingDensity_list(sop);
+};
+
+hopping_list 
 tbmodel::createHoppingTorqueDensity_list(const double theta, const double phi)
 {
 	//CREATE A TORQUE MATRIX
@@ -227,6 +235,49 @@ tbmodel::createHoppingSpinDensity_list(const std::string op )
 	assert(false);
 };
 
+
+hopping_list 
+tbmodel::createHoppingSpinProjectionDensity_list(const std::string op)
+{
+	char direction = oputil::projection_direction(op);
+	int s = +1; //Assume is UP.
+	switch(direction)
+	{
+		case 'U':
+			s = +1;
+		break;
+
+		case 'D':
+			s = -1;
+		default:
+			s = +1;
+	}
+	direction = oputil::spin_direction(op);
+	return  this->createHoppingSpinProjectionDensity_list(s, direction);
+}
+
+
+hopping_list 
+tbmodel::createHoppingSpinProjectionDensity_list(const int s, const char sdir)
+{
+	std::cout<<"Which mean eig="<<s<<std::endl;
+	switch(sdir)
+	{
+		case 'X':
+		  return createHoppingSpinProjectionDensity_list(0.5*M_PI, 0.0*M_PI, s);
+		break;
+
+		case 'Y':
+		  return createHoppingSpinProjectionDensity_list(0.5*M_PI,0.5*M_PI, s);
+		break;
+
+		case 'Z':
+		  return createHoppingSpinProjectionDensity_list(0.0*M_PI,0.0*M_PI, s);
+		break;
+	}
+	std::cout<<"Incorrect spin requested in createHoppingSpinProjectionDensity_list: s"<<s<<"S"<<sdir<<std::endl;
+	assert(false);	
+};
 
 hopping_list 
 tbmodel::createHoppingTorqueDensity_list(const std::string op )
@@ -324,6 +375,11 @@ hopping_list tbmodel::WannierOperator(std::string op_id )
 		return this->createHoppingSpinDensity_list(op_id);
 	}
 
+	if ( oputil::is_spinprojection(op_id) )
+	{
+		return this->createHoppingSpinProjectionDensity_list(op_id);
+	}
+
 	if ( oputil::is_torque(op_id) )
 	{
 		return this->createHoppingTorqueDensity_list(op_id);
@@ -387,6 +443,17 @@ oputil::op_matrix tbmodel::createSpinMatrix(const double theta, const double phi
 			cos(theta)			   ,-sin(theta)*exp(-I*phi ),
 			sin(theta)*exp( I*phi ),-cos(theta)
 		 }; 
+	return tbmodel::createSpinorialOp(op);
+};
+
+oputil::op_matrix tbmodel::createSpinProjectionMatrix(const double theta, const double phi, const int s)
+{
+	const std::complex<double> I(0,1);
+	std::array< std::complex<double>,4 > 
+	op = { 
+	  0.5*(1 + s * cos(theta))            , 0.5 * s * sin(theta) * exp(-I * phi),
+	  0.5 * s * sin(theta) * exp( I * phi), 0.5 * (1 - s * cos(theta))
+	}; 
 	return tbmodel::createSpinorialOp(op);
 };
 

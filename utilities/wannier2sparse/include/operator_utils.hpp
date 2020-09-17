@@ -35,7 +35,8 @@ namespace oputil
 	string AVAIL_OPS[] = {	
 							"VX"  ,"VY"  ,"VZ","VXSX","VXSY","VXSZ",
 							"VYSX","VYSY","VYSZ","VZSX","VZSY","VZSZ",
-							"SX", "SY", "SZ","TX","TY", "TZ"	
+							"SX", "SY", "SZ", "PUSX", "PUSY", "PUSZ",
+							"PDSX", "PDSY", "PDSZ", "TX","TY", "TZ"	
 							}; 
 
 
@@ -92,6 +93,18 @@ namespace oputil
 		return is_operator_in(op,12,15);
 	};
 
+        /**
+	 * Check if the string labeling an operator belongs to any of the defined spin projection operators. 
+	 *
+	 * @param[out] is_op  true if it belongs false if not
+	 * @param[in]  op string containing the operator label.
+	 */
+	inline
+	bool is_spinprojection(string op)
+	{
+		return is_operator_in(op,15,21);
+	};
+
 	/**
 	 * Check if the string labeling an operator belongs to any of the defined torque operators. 
 	 *
@@ -101,7 +114,7 @@ namespace oputil
 	inline
 	bool is_torque(string op)
 	{
-		return is_operator_in(op,15,18);
+		return is_operator_in(op,21,24);
 	};
 
 	/**
@@ -124,6 +137,18 @@ namespace oputil
 	 */
 	 inline
 	 char velocity_direction(string op)
+	 {
+		 return op[1];
+	 };
+
+         /**
+	 * Extract the direction of the projection fron the operator label. This function does not check if the operator belong to a projection operator. 
+	 *
+	 * @param[out] direction  The direction of the projection which can be = +1,-1;
+	 * @param[in]  op string containing the operator label.
+	 */
+	 inline
+	 char projection_direction(string op)
 	 {
 		 return op[1];
 	 };
