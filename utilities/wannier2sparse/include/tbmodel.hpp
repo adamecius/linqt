@@ -147,6 +147,17 @@ class tbmodel
 	 * @param[in]  Phi. angle defining the azimuth
 	 */
     hopping_list createHoppingSpinDensity_list(const double theta, const double phi);
+
+        /**
+	 * Construct the density operator in the direction u = ( sin(theta)*cos(phi),sin(theta)*sin(phi), cos(theta); 
+	 * In this context,  OP  =   PsSu, the spin projector direction.
+	 *
+	 * @return density_hopping_list Returns the density operator in the format of a hopping list.
+	 * @param[in]  Theta. angle defining the altitute direction in which you want the current.
+	 * @param[in]  Phi. angle defining the azimuth
+         * @param[in]  S. eigenvalue of the spin projection.
+	 */
+  hopping_list createHoppingSpinProjectionDensity_list(const double theta, const double phi, const int s);
     
 	/**
 	 * Construct the density operator in the direction u = ( sin(theta)*cos(phi),sin(theta)*sin(phi), cos(theta); 
@@ -171,9 +182,13 @@ class tbmodel
 	//DERIVED FUNCTIONS
     hopping_list createHoppingCurrents_list(const std::string op );
     
-	hopping_list createHoppingSpinorialDensity_list(const std::array< std::complex<double>,4 > op);
+    hopping_list createHoppingSpinorialDensity_list(const std::array< std::complex<double>,4 > op);
 
     hopping_list createHoppingSpinDensity_list(const std::string op );
+
+    hopping_list createHoppingSpinProjectionDensity_list(string op);  
+   
+    hopping_list createHoppingSpinProjectionDensity_list(const int s, const char sdir);
 
     hopping_list createHoppingTorqueDensity_list(const std::string op );
 
@@ -209,6 +224,8 @@ class tbmodel
 	oputil::op_matrix createSpinorialOp(const std::array< std::complex<double>,4 > op);
 
 	oputil::op_matrix createSpinMatrix(const double theta, const double phi);
+
+        oputil::op_matrix createSpinProjectionMatrix(const double theta, const double phi, const int s);
 
 	oputil::op_matrix createTorqueMatrix(const double theta, const double phi);
 
