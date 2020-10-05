@@ -252,16 +252,16 @@ int chebyshev::TimeEvolvedProjectedOperator(SparseMatrixType &OP, SparseMatrixTy
 	{
 		chebMoms.ResetTime();
 
-		auto PhiR =gen.State();
-		auto PhiL =gen.State();
+		auto PhiR = gen.State();
+		auto PhiL = PhiR;
 		 
 		//Multiply right operator its operator
-		{
-		  auto tempPhiL = PhiL;
-		  OP.Multiply(tempPhiL,PhiL); //Defines <Phi| OP
-		  linalg::copy(PhiL, tempPhiL);
-		  OPPRJ.Multiply(tempPhiL, PhiL); //Defines <Phi| OP OPPRJ 
-		}
+		//{
+		auto PhiT = PhiR;
+		// OP.Multiply(PhiL,tempPhiL); //Defines <Phi| OP
+		OPPRJ.Multiply(PhiR, PhiL); //Defines <Phi| OPPRJ
+		linalg::copy(PhiL, PhiR);
+		//}
 		
 		//Evolve state vector from t=0 to Tmax
 		while ( chebMoms.CurrentTimeStep() !=  chebMoms.MaxTimeStep()  )
@@ -269,13 +269,14 @@ int chebyshev::TimeEvolvedProjectedOperator(SparseMatrixType &OP, SparseMatrixTy
 			const auto n = chebMoms.CurrentTimeStep();
 
 			//Set the evolved vector as initial vector of the chebyshev iterations
-			chebMoms.SetInitVectors( OPPRJ , PhiR );
+			chebMoms.SetInitVectors( PhiR );
 
 			for(int m = 0 ; m < NumMoms ; m++ )
 			{
 				double scal=2.0/gen.NumberOfStates();
 				if( m==0) scal*=0.5;
-				chebMoms(m,n) += scal*linalg::vdot( PhiL, chebMoms.Chebyshev0() ) ;
+				OP.Multiply( chebMoms.Chebyshev0(), PhiT );
+				chebMoms(m,n) += scal*linalg::vdot( PhiL, PhiT ) ;
 				chebMoms.Iterate();
 			}
 			
