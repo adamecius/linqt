@@ -238,3 +238,55 @@ int chebyshev::TimeDependentCorrelations(SparseMatrixType &OPL, SparseMatrixType
 	
 	return 0;
 };
+
+
+int chebyshev::TimeEvolvedProjectedOperator(SparseMatrixType &OP, SparseMatrixType &OPPRJ,  chebyshev::MomentsTD &chebMoms, qstates::generator& gen  )
+{
+	const auto Dim = chebMoms.SystemSize();
+	const auto NumMoms = chebMoms.HighestMomentNumber();
+	const auto NumTimes= chebMoms.MaxTimeStep();
+	
+	//Initialize the Random Phase vector used for the Trace approximation
+	gen.SystemSize(Dim);	
+	while( gen.getQuantumState() )
+	{
+		chebMoms.ResetTime();
+
+		auto PhiR = gen.State();
+		auto PhiL = PhiR;
+		 
+		//Multiply right operator its operator
+		//{
+		auto PhiT = PhiR;
+		// OP.Multiply(PhiL,tempPhiL); //Defines <Phi| OP
+		OPPRJ.Multiply(PhiR, PhiL); //Defines <Phi| OPPRJ
+		linalg::copy(PhiL, PhiR);
+		//}
+		
+		//Evolve state vector from t=0 to Tmax
+		while ( chebMoms.CurrentTimeStep() !=  chebMoms.MaxTimeStep()  )
+		{
+			const auto n = chebMoms.CurrentTimeStep();
+
+			//Set the evolved vector as initial vector of the chebyshev iterations
+			chebMoms.SetInitVectors( PhiR );
+
+			for(int m = 0 ; m < NumMoms ; m++ )
+			{
+				double scal=2.0/gen.NumberOfStates();
+				if( m==0) scal*=0.5;
+				OP.Multiply( chebMoms.Chebyshev0(), PhiT );
+				chebMoms(m,n) += scal*linalg::vdot( PhiL, PhiT ) ;
+				chebMoms.Iterate();
+			}
+			
+			chebMoms.IncreaseTimeStep();
+			//evolve PhiL ---> PhiLt , PhiR ---> PhiRt 
+			chebMoms.Evolve(PhiL) ;
+			chebMoms.Evolve(PhiR) ;
+		}
+	
+	}
+	
+	return 0;
+};

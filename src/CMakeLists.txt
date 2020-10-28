@@ -73,3 +73,7 @@ set(MAIN inline_timeCorrelationsFromChebmom )
 add_executable(${MAIN} timeCorrelationsFromChebmom.cpp  )
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
+
+set(MAIN inline_compute-kpm-TimeEvProjetedOp )
+add_executable(${MAIN} inline_compute-kpm-TimeEvProjetedOp.cpp  )
+target_link_libraries(${MAIN} ${KPM_LIB} )
