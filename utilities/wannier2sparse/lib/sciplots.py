@@ -147,7 +147,7 @@ def plot4fig( Xs, Ys, **kwargs ):
     plt.tight_layout(pad=0.5, h_pad=None, w_pad=None);
     return fig;
 
-def plot_ZwithArrows(XX,YY,ZZ,UU,VV, Zlabel="", mask = None,npoints=(3,3)):
+def plot_ZwithArrows(XX,YY,ZZ,UU,VV, Zlabel="", mask = None,npoints=(3,3), ax=None):
     if mask is not None:
         UU,VV,ZZ = [ np.ma.array(XX, mask=mask) for XX in (UU,VV,ZZ) ];
 
@@ -165,15 +165,20 @@ def plot_ZwithArrows(XX,YY,ZZ,UU,VV, Zlabel="", mask = None,npoints=(3,3)):
     if mask is not None:
         UU,VV,ZZ = [ np.ma.array(XX, mask=mask(ZZ)) for XX in (UU,VV,ZZ) ];
         ui,vi,zi = [ np.ma.array(xi, mask=mask(zi)) for xi in (ui,vi,zi) ];
-           
-    cos = plt.contour (XX,YY, ZZ,levels=[0], cmap="bone")
-    cs = plt.contourf(XX,YY, ZZ,levels=100, cmap="bone")
-    Qv = plt.quiver(xi,yi,ui,vi, color="C1",  scale=10.0, width=0.021/2.0);
+
+    plotcb = False;
+    if ax is  None:
+        ax = plt.gca();
+        plotcb = True;
+
+    cos = ax.contour (XX,YY, ZZ,levels=[0], cmap="bone")
+    cs = ax.contourf(XX,YY, ZZ,levels=100, cmap="bone")
+    Qv = ax.quiver(xi,yi,ui,vi, color="C1",  scale=10.0, width=0.021/2.0);
     for c in cs.collections:
         c.set_edgecolor("face")
     for c in cos.collections:
         c.set_edgecolor("white")
-
-    cbar = plt.gcf().colorbar(cs, shrink=0.9,label=Zlabel);
+    if plotcb:
+        cbar = plt.gcf().colorbar(cs, shrink=0.9,label=Zlabel);
     return 0;
 
