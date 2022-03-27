@@ -126,13 +126,13 @@ hopping_list tbmodel::createHoppingCurrents_list(const int dir)
 };
 
 
-hopping_list 
-tbmodel::createHoppingSpinorialDensity_list(const std::array< std::complex<double>,4 > op)
-{
+// hopping_list 
+// tbmodel::createHoppingSpinorialDensity_list(const std::array< std::complex<double>,4 > op)
+// {
 	//CREATE A SPINORIAL OPERATOR MATRIX
-	auto sop = this->createSpinorialOp(op);
-	return this->createHoppingDensity_list(sop);
-};
+// 	auto sop = this->createSpinorialOp(op);
+// 	return this->createHoppingDensity_list(sop);
+// };
 
 
 hopping_list 
@@ -143,19 +143,25 @@ tbmodel::createHoppingSpinDensity_list(const double theta, const double phi)
 	//CREATE A SPIN MATRIX
 	std::array< mycomplex,4 >
 	op = { 
-			cos(theta)			   ,-sin(theta)*exp(-I*phi ),
+			cos(theta)			   ,sin(theta)*exp(-I*phi ),
 			sin(theta)*exp( I*phi ),-cos(theta)
 		 }; 
 	auto sop = this->createSpinorialOp(op);
-	return this->createHoppingDensity_list(sop);
+ 	return this->createHoppingDensity_list(sop);
 };
 
 hopping_list 
 tbmodel::createHoppingSpinProjectionDensity_list(const double theta, const double phi, const int s)
 {
-        //CREATE A SPIN PROJECTOR MATRIX
-        auto sop = this->createSpinProjectionMatrix(theta, phi, s);
-        return this->createHoppingDensity_list(sop);
+    //CREATE A SPIN PROJECTOR MATRIX
+    const std::complex<double> I(0,1);
+	std::array< std::complex<double>,4 > 
+	op = { 
+	  0.5 * (1 + s * cos(theta))          ,0.5 * s * sin(theta) * exp(-I * phi),
+	  0.5 * s * sin(theta) * exp( I * phi),0.5 * (1 - s * cos(theta))
+	};
+	auto sop = this->createSpinorialOp(op);
+    return this->createHoppingDensity_list(sop);
 };
 
 hopping_list 
@@ -260,7 +266,6 @@ tbmodel::createHoppingSpinProjectionDensity_list(const std::string op)
 hopping_list 
 tbmodel::createHoppingSpinProjectionDensity_list(const int s, const char sdir)
 {
-	std::cout<<"Which mean eig="<<s<<std::endl;
 	switch(sdir)
 	{
 		case 'X':
@@ -406,7 +411,8 @@ hopping_list tbmodel::WannierOperator(std::string op_id )
 		
 		std::cout<<op_id<<"is of the "<<type<<" type"<<std::endl;
 		
-		return this->createHoppingSpinorialDensity_list(op_elems);
+		auto sop = this->createSpinorialOp(op_elems);
+		return this->createHoppingDensity_list(sop);
 	}
 	
 	
@@ -435,27 +441,27 @@ oputil::op_matrix tbmodel::createSpinorialOp(const std::array< std::complex<doub
 	return SOP;
 }
 
-oputil::op_matrix tbmodel::createSpinMatrix(const double theta, const double phi)
-{
-	const std::complex<double> I(0,1);
-	std::array< std::complex<double>,4 > 
-	op = { 
-			cos(theta)			   ,-sin(theta)*exp(-I*phi ),
-			sin(theta)*exp( I*phi ),-cos(theta)
-		 }; 
-	return tbmodel::createSpinorialOp(op);
-};
+// oputil::op_matrix tbmodel::createSpinMatrix(const double theta, const double phi)
+// {
+//	const std::complex<double> I(0,1);
+//	std::array< std::complex<double>,4 > 
+//	op = { 
+//			cos(theta)			   ,sin(theta)*exp(-I*phi ),
+//			sin(theta)*exp( I*phi ),-cos(theta)
+//		 }; 
+//	return tbmodel::createSpinorialOp(op);
+//};
 
-oputil::op_matrix tbmodel::createSpinProjectionMatrix(const double theta, const double phi, const int s)
-{
-	const std::complex<double> I(0,1);
-	std::array< std::complex<double>,4 > 
-	op = { 
-	  0.5*(1 + s * cos(theta))            , 0.5 * s * sin(theta) * exp(-I * phi),
-	  0.5 * s * sin(theta) * exp( I * phi), 0.5 * (1 - s * cos(theta))
-	}; 
-	return tbmodel::createSpinorialOp(op);
-};
+// oputil::op_matrix tbmodel::createSpinProjectionMatrix(const double theta, const double phi, const int s)
+// {
+//	const std::complex<double> I(0,1);
+//	std::array< std::complex<double>,4 > 
+//	op = { 
+//	  0.5 * (1 + s * cos(theta))          ,0.5 * s * sin(theta) * exp(-I * phi),
+//	  0.5 * s * sin(theta) * exp( I * phi),0.5 * (1 - s * cos(theta))
+//	}; 
+//	return tbmodel::createSpinorialOp(op);
+//};
 
 oputil::op_matrix tbmodel::createTorqueMatrix(const double theta, const double phi)
 {
