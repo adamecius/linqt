@@ -19,7 +19,7 @@
 
 namespace chebyshev 
 {
-	const double CUTOFF = 0.99;
+	const double CUTOFF = 0.8;//99;
 
 class Moments
 {
@@ -60,7 +60,7 @@ class Moments
 	double ScaleFactor() const { return chebyshev::CUTOFF/HalfWidth(); };
 
 	inline
-	double ShiftFactor() const { return -BandCenter()/HalfWidth()/chebyshev::CUTOFF; };
+	double ShiftFactor() const { return -BandCenter()/HalfWidth()*chebyshev::CUTOFF; };
 
 	inline 
 	vector_t& MomentVector() { return mu ;}
