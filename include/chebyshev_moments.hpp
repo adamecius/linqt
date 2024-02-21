@@ -19,7 +19,7 @@
 
 namespace chebyshev 
 {
-	const double CUTOFF = 0.8;//99;
+	const double CUTOFF = 0.99;
 
 class Moments
 {
