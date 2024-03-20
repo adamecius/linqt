@@ -176,11 +176,11 @@ void Kubo_solver_FFT_postProcess::Bastin_postProcess(const value_t final_data[],
   for(int k = 0; k < nump; k++){
     integrand[k]  = E_points_[k] * real( final_data[ k ] ) - ( sqrt(1.0 - E_points_[ k ] * E_points_[ k ] ) * imag( final_data[ k + nump ] ) );
     integrand[k] *= 1.0 / pow( (1.0 - E_points_[k]  * E_points_[k] ), 2.0);
-    integrand[k] *= - 4.0 * omega / (M_PI * M_PI); //-1.0/M_PI Matches the prefactors from fill.cpp. From the paper this would be -4.0/(M_PI*M_PI);
+    integrand[k] *=  4.0 * omega / (M_PI * M_PI); //-1.0/M_PI Matches the prefactors from fill.cpp. From the paper this would be -4.0/(M_PI*M_PI);
 
     rvec_integrand[k]  = E_points_[k] * real( r_data[ k ] ) - ( sqrt(1.0 - E_points_[ k ] * E_points_[ k ] ) * real( r_data[ k + nump ] ) );
     rvec_integrand[k] *= 1.0 / pow( (1.0 - E_points_[k]  * E_points_[k] ), 2.0);
-    rvec_integrand[k] *= - 4.0 * omega / (M_PI * M_PI); 
+    rvec_integrand[k] *=  4.0 * omega / (M_PI * M_PI); 
   }
 
   rearrange_crescent_order(integrand);
@@ -325,8 +325,8 @@ void Kubo_solver_FFT_postProcess::Greenwood_postProcess(const value_t final_data
 
   
   for(int k=0; k < nump; k++){
-    rvec_partial_result[k] = 2.0 * omega * real( r_data[k] )     / (1.0 - E_points_[k] * E_points_[k] ) * -1 ;//Temporary -1 to account for the conjugation of the vel. operator   
-    partial_result[k]      = 2.0 * omega * real( final_data[k] ) / (1.0 - E_points_[k] * E_points_[k] ) * -1 ;
+    rvec_partial_result[k] = 2.0 * omega * real( r_data[k] )     / (1.0 - E_points_[k] * E_points_[k] );//Temporary -1 to account for the conjugation of the vel. operator   
+    partial_result[k]      = 2.0 * omega * real( final_data[k] ) / (1.0 - E_points_[k] * E_points_[k] );
   }
 
   rearrange_crescent_order(partial_result);

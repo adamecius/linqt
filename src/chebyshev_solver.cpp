@@ -87,8 +87,8 @@ int chebyshev::CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixT
 {
 	//Set Batch Behavior
 	int batchSize;
-    if( !!chebyshev::GetBatchSize(batchSize)  )
-    {
+        if( !chebyshev::GetBatchSize(batchSize)  )
+        {
 		batchSize = chebMoms.HighestMomentNumber(0);
 		std::cout<<"Using default BATCH_SIZE = "<<batchSize<<std::endl;
 	}

@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 		gen  = qstates::LoadStateFile(argv[5]);
 
 	int num_sections = 1, nump = numMoms;
-	chebyshev::formula sym_formula = chebyshev::KUBO_GREENWOOD;
+	chebyshev::formula sym_formula = chebyshev::KUBO_BASTIN;
 	std::string outputfilename="Bastin_FFT"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"_state"+gen.StateLabel()+".conductivity";
 
 	chebyshev::Kubo_solver_FFT solver(numMoms,  num_sections, nump, sym_formula, Hamiltonian_dummyMoms,  outputfilename);

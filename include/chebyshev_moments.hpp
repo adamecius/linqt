@@ -519,23 +519,23 @@ class Vectors : public Vectors_sliced
 		CreateVectorSet();		
 	};
 
-        int IterateAll( );
-        int Multiply(SparseMatrixType &OP);
-  /*
+  //int IterateAll( );
+  //  int Multiply(SparseMatrixType &OP);
+  
         int IterateAll( )
         {
-	  IterateAllSliced(1);
+	  IterateAllSliced(0);
 	  return 0;
-	  };*/
-
+	  };
+  
 	int EvolveAll( const double DeltaT, const double Omega0);
-  /*
+  
         int Multiply( SparseMatrixType &OP )
         {
-	  MultiplySliced(OP, 1);
+	  MultiplySliced(OP, 0);
 	  return 0;
-	};
-  */
+	  };
+  
 
 	double MemoryConsumptionInGB();
 

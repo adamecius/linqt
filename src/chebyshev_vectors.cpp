@@ -3,16 +3,16 @@
 
 int chebyshev::Vectors_sliced::IterateAllSliced(int s )
 {
-  size_t segment_size = ( s == num_sections_ ? last_section_size_ : section_size_ ),
+  size_t segment_size = ( s == num_sections_-1 ? last_section_size_ : section_size_ ),
     segment_start = s * section_size_,
     DIM = this->SystemSize();
 
 	//The vectorss Chebyshev0() and Chebyshev1() are assumed to have
 	// been initialized
-       linalg::extract_segment( Chebyshev0(), DIM, segment_start, Vector(0), segment_size);//Not parallelized. Easy with omp
+       linalg::extract_segment( Chebyshev0(), DIM, segment_start, Vector(0), segment_size);
 	for(int m=1; m < this->NumberOfVectors(); m++ )
 	{
-	  linalg::extract_segment( Chebyshev1(), DIM, segment_start, Vector(m),  segment_size );//Not parallelized. Easy with omp
+	  linalg::extract_segment( Chebyshev1(), DIM, segment_start, Vector(m),  segment_size );
 	  this->Hamiltonian().Multiply(2.0,Chebyshev1(),-1.0,Chebyshev0());
 	  Chebyshev0().swap(Chebyshev1());
 	}
@@ -22,7 +22,7 @@ int chebyshev::Vectors_sliced::IterateAllSliced(int s )
 
 int chebyshev::Vectors_sliced::MultiplySliced( SparseMatrixType &OP, int s)
 {
-  size_t segment_size = ( s == num_sections_ ? last_section_size_ : section_size_ ),
+  size_t segment_size = ( s == num_sections_-1 ? last_section_size_ : section_size_ ),
     segment_start = s * section_size_,
     DIM = this->SystemSize();
 
@@ -44,39 +44,6 @@ int chebyshev::Vectors_sliced::MultiplySliced( SparseMatrixType &OP, int s)
 	  linalg::introduce_segment(Chebmu_.ListElem(m), segment_size, OPV(), DIM, segment_start);
 		OP.Multiply(  OPV(), tmp2 );
 	  linalg::extract_segment(tmp2, DIM, segment_start, Chebmu_.ListElem(m), segment_size );
-	}
-
-	return 0;
-};
-
-
-
-int chebyshev::Vectors::IterateAll( )
-{	
-	//The vectorss Chebyshev0() and Chebyshev1() are assumed to have
-	// been initialized
-	linalg::copy( this->Chebyshev0() ,this->Vector(0) );
-	for(int m=1; m < this->NumberOfVectors(); m++ )
-	{
-		linalg::copy( Chebyshev1() , this->Vector(m) );
-		this->Hamiltonian().Multiply(2.0,Chebyshev1(),-1.0,Chebyshev0());
-		Chebyshev0().swap(Chebyshev1());
-	}
-	return 0;
-};
-
-
-
-int chebyshev::Vectors::Multiply( SparseMatrixType &OP )
-{
-	assert( OP.rank() == this->SystemSize() );
-	if( this->OPV().size()!= OP.rank() )
-	  this->OPV() = Moments::vector_t ( OP.rank() );
-	
-	for(size_t m=0; m < this->NumberOfVectors(); m++ )
-	{
-	  linalg::copy( this->Chebmu().ListElem(m), this->OPV() ); 
-	  OP.Multiply(  this->OPV(), this->Chebmu().ListElem(m) );
 	}
 
 	return 0;

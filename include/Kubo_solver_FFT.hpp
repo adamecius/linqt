@@ -85,13 +85,13 @@ class Kubo_solver_FFT{
 	//Initializers
         inline
         void reset_data(value_t data[]){
-          for(int i = 0; i < nump_; i++)
+          for(int i = 0; i < 2 * nump_; i++)
 	    data[i] = 0.0;
 	};
 
         inline
         void update_data(value_t final_data[], const value_t new_r_data[], int  r){
-          for(int i = 0; i < nump_; i++)
+          for(int i = 0; i < 2 * nump_; i++)
 	    final_data[i] = ( final_data[i] * value_t( r - 1 ) + new_r_data[i] ) / value_t(r);
 	};
 

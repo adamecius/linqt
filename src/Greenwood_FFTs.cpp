@@ -15,7 +15,7 @@ void Kubo_solver_FFT::Greenwood_FFTs(Vectors_sliced &chebVecL, Vectors_sliced &c
   value_t pre_factors [ M_ ];
 
   for(int m = 0; m < M_; m++)
-    pre_factors[m]  = value_t( ( 2 - ( m == 0 ) ) * Jackson_kernel(m, M_) ) * std::polar( 1.0, M_PI * m / ( 2.0 * M_ ) ) ;
+    pre_factors[m]  = value_t( ( 2 - ( m == 0 ) ) * Jackson_kernel(m, M_) ) * std::polar( 1.0, M_PI * m / ( 2.0 * nump_ ) ) ;
 
 
   
