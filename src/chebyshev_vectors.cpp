@@ -25,12 +25,14 @@ int chebyshev::Vectors_sliced::MultiplySliced( SparseMatrixType &OP, int s)
   size_t segment_size = ( s == num_sections_ ? last_section_size_ : section_size_ ),
     segment_start = s * section_size_,
     DIM = this->SystemSize();
-  
+
+  Moments::vector_t tmp2(this->SystemSize());
+
 	assert( OP.rank() == this->SystemSize() );
 	if( OPV_.size()!= OP.rank() )
 	       OPV_ = Moments::vector_t ( OP.rank() );
 
-
+#pragma omp parallel for
 	for(int i=0; i<OP.rank(); i++)//not parallelized; with omp/ eigen this is straightforward;
 	  OPV_[i] = 0.0;
 
@@ -38,8 +40,9 @@ int chebyshev::Vectors_sliced::MultiplySliced( SparseMatrixType &OP, int s)
 	
 	for(int m=0; m < this->NumberOfVectors(); m++ )
 	{
-	  linalg::introduce_segment(Chebmu_.ListElem(m), segment_size, OPV_, DIM, segment_start);//Suboptimal. Ideally, there would be a blockOP x cheb_segment_vector
-		OP.Multiply(  OPV_, Chebmu_.ListElem(m) );
+	  linalg::introduce_segment(Chebmu_.ListElem(m), segment_size, OPV_, DIM, segment_start);
+		OP.Multiply(  OPV_, tmp2 );
+	  linalg::extract_segment(tmp2, DIM, segment_start, Chebmu_.ListElem(m), segment_size );
 	}
 
 	return 0;
