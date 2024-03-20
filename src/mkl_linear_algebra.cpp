@@ -78,14 +78,26 @@ void linalg::batch_vdot(const int dim,const int batchSize,const complex<double>*
 }
 
 
-void linalg::extract_segment(vector< complex<double> >&x, size_t size_x, size_t start_x,  vector< complex<double> >& y, size_t size_y ){//size_x >> size_y
+#include<iostream>
+void linalg::extract_segment(const vector< complex<double> >&x, size_t size_x, size_t start_x,  vector< complex<double> >& y, size_t size_y ){//size_x >> size_y
+  if( start_x + size_y > size_x ){
+    std::cout<<"Something's wrong";
+      return;
+  }
+
 #pragma omp parallel for 
   for(size_t i = 0;  i < size_y ; i++)//&& (start_x + i < size_x)  !!!
     y[i] = x[start_x + i];
 
 };
 
-void linalg::introduce_segment(vector< complex<double> >&x, size_t size_x, vector< complex<double> >& y, size_t size_y, size_t start_y ){//size_y >> size_y
+void linalg::introduce_segment(const vector< complex<double> >&x, size_t size_x, vector< complex<double> >& y, size_t size_y, size_t start_y ){//size_y >> size_y
+  if( start_y + size_x > size_y ){
+    std::cout<<"Something's wrong";
+      return;
+  }
+
+
 #pragma omp parallel for 
   for(size_t i = 0; i< size_x; i++)
     y[start_y + i] = x[i];

@@ -196,7 +196,7 @@ class Moments2D: public Moments
 	Moments2D():numMoms({0,0}){};
 
 
-  Moments2D(const size_t m0,const size_t m1):numMoms({int(m0),int(m1)}){ this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    };
+        Moments2D(const size_t m0,const size_t m1):numMoms({int(m0),int(m1)}){ this->MomentVector( Moments::vector_t(numMoms[1]*numMoms[0], 0.0) );    };
 
 	Moments2D( std::string momfilename );
 
@@ -345,19 +345,48 @@ class Vectors_sliced : public Moments
 	int NumberOfVectors() const
 	{ return numVecs_;}
 
+        Moments::vector_t& OPV() 
+        {return OPV_;};
+  
+  	int SectionSize() const
+	{ return last_section_size_;}
+
+
+  	void SetNumberOfVectors( const int x)
+	{
+	  numVecs_ = x;
+	}
+  
 	int SetNumSections( const int x)
 	{
-	  num_sections_ = x;
-	  section_size_ = SystemSize()/num_sections_; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
-	  last_section_size_ = SystemSize()/num_sections_ + SystemSize() % num_sections_;
-	  
-	  return 0;}
-  
 
+	    num_sections_ = x;
+	    section_size_ = SystemSize()/num_sections_; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
+	    last_section_size_ = SystemSize()/num_sections_ + SystemSize() % num_sections_;
+	  
+	    return 0;
+	}
+  
+        void SetChebmu(const int num_vecs, const size_t section_size)
+        {
+	     Chebmu_(num_vecs, section_size);
+        }
+
+        vectorList_t& Chebmu(){return Chebmu_;};
+  
 	Vectors_sliced():Chebmu_(0,0){};
 
 
         Vectors_sliced(Moments& mom, const int numVecs, const size_t num_sections): numVecs_(numVecs), num_sections_(num_sections), Chebmu_(numVecs, mom.SystemSize()/num_sections + mom.SystemSize() % num_sections ) { 
+
+
+	  section_size_ = mom.SystemSize()/num_sections; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
+	  last_section_size_ = mom.SystemSize()/num_sections + mom.SystemSize() % num_sections;
+	  
+	  this->getMomentsParams(mom);	  
+        };
+
+        Vectors_sliced(Moments2D& mom, const int numVecs, const size_t num_sections): numVecs_(numVecs), num_sections_(num_sections), Chebmu_(numVecs, mom.SystemSize()/num_sections + mom.SystemSize() % num_sections ) { 
 
 
 	  section_size_ = mom.SystemSize()/num_sections; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
@@ -372,7 +401,7 @@ class Vectors_sliced : public Moments
         {
 		try
 		{
-			const int vec_size  = section_size_;
+			const int vec_size  = last_section_size_;
 			const int list_size = this->NumberOfVectors();
 			Chebmu_(list_size, vec_size );
 		}
@@ -427,6 +456,7 @@ class Vectors_sliced : public Moments
 	double MemoryConsumptionInGB();
 
 
+
 	private:
 	Moments::vector_t OPV_;
         int numVecs_, num_sections_;
@@ -441,63 +471,78 @@ class Vectors : public Vectors_sliced
 	public: 
 	typedef VectorList< Moments::value_t > vectorList_t;
 
-
-	int SetNumberOfVectors( const int x)
-        {numVecs = x; return 0;};
   
-	Vectors():Chebmu(0,0){};
+	Vectors()
+        {
+                SetChebmu(0,0);
+                SetNumSections(1);};
 	
-        Vectors(const size_t nMoms,const size_t dim ):Chebmu(nMoms,dim) { SetNumSections(1);};
-
-	Vectors( Moments1D& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
-	{
+        Vectors(const size_t nMoms,const size_t dim )
+        {
+	        SetChebmu(nMoms,dim);
 	        SetNumSections(1);
-		this->getMomentsParams(mom);
-	};
-	
-	Vectors( Moments2D& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
-	{
-	        SetNumSections(1);
-		this->getMomentsParams(mom);
+	        SetNumberOfVectors(nMoms);
 	};
 
-	
-	Vectors( Moments2D& mom, size_t i  ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
+	Vectors( Moments1D& mom )
 	{
-	        SetNumSections(1);
+	        this->getMomentsParams(mom);
+		SetNumSections(1);
+		SetNumberOfVectors(mom.HighestMomentNumber());
+		CreateVectorSet();		
+	};
+	
+        Vectors( Moments2D& mom ):Vectors_sliced(mom, mom.HighestMomentNumber(),  1)
+	{
+	  	this->getMomentsParams(mom);	        
+		SetNumSections(1);
+		SetNumberOfVectors(mom.HighestMomentNumber());
+		std::cout<<NumberOfVectors()<<"  "<<SectionSize()<<std::endl;
+		CreateVectorSet();		
+	};
+
+	
+	Vectors( Moments2D& mom, size_t i  )
+	{
 		this->getMomentsParams(mom);
+		SetNumSections(1);
+		SetNumberOfVectors(mom.HighestMomentNumber());
+		CreateVectorSet();		
 	};    
     
     
-        Vectors( MomentsTD& mom ): Chebmu(mom.HighestMomentNumber(), mom.SystemSize() )
+        Vectors( MomentsTD& mom )
 	{
-	        SetNumSections(1);
 		this->getMomentsParams(mom);
+		SetNumSections(1);
+		SetNumberOfVectors(mom.HighestMomentNumber());
+		CreateVectorSet();		
 	};
 
-
+        int IterateAll( );
+        int Multiply(SparseMatrixType &OP);
+  /*
         int IterateAll( )
         {
 	  IterateAllSliced(1);
 	  return 0;
-        };
+	  };*/
 
 	int EvolveAll( const double DeltaT, const double Omega0);
-
+  /*
         int Multiply( SparseMatrixType &OP )
         {
 	  MultiplySliced(OP, 1);
 	  return 0;
 	};
-
+  */
 
 	double MemoryConsumptionInGB();
 
 
-	private:
-	Moments::vector_t OPV;
-	vectorList_t Chebmu;	
-	int numVecs;
+
+
+
 };
 
 

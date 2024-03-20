@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <chrono>
 
-
 #include "kpm_noneqop.hpp" //Message functions
 #include "chebyshev_moments.hpp"
 #include "sparse_matrix.hpp"
@@ -76,7 +75,7 @@ int main(int argc, char *argv[])
 	if( argc == 6)	
 		gen  = qstates::LoadStateFile(argv[5]);
 
-	int num_sections=1, nump=numMoms;
+	int num_sections = 1, nump = numMoms;
 	chebyshev::formula sym_formula = chebyshev::KUBO_GREENWOOD;
 	std::string outputfilename="Bastin_FFT"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"_state"+gen.StateLabel()+".conductivity";
 

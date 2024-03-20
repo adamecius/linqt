@@ -38,9 +38,9 @@ double nrm2(const int dim, const complex<double> *x);
 
 void batch_vdot(const int dim,const int batchSize,const complex<double>* leftb,const complex<double>* rightb,complex<double>* output);
 
-void extract_segment( vector< complex<double> >&x, size_t size_x, size_t start_x, vector< complex<double> >& y, size_t size_y );//size_x >> size_y
+void extract_segment( const vector< complex<double> >&x, size_t size_x, size_t start_x, vector< complex<double> >& y, size_t size_y );//size_x >> size_y
    
-void introduce_segment(vector< complex<double> >&x, size_t size_x,   vector< complex<double> >& y, size_t size_y, size_t start_y );//size_y >> size_y
+void introduce_segment( const vector< complex<double> >&x, size_t size_x,   vector< complex<double> >& y, size_t size_y, size_t start_y );//size_y >> size_y
 
   
 } // namespace linalg

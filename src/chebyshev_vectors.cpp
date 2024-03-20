@@ -29,19 +29,20 @@ int chebyshev::Vectors_sliced::MultiplySliced( SparseMatrixType &OP, int s)
   Moments::vector_t tmp2(this->SystemSize());
 
 	assert( OP.rank() == this->SystemSize() );
-	if( OPV_.size()!= OP.rank() )
-	       OPV_ = Moments::vector_t ( OP.rank() );
+	if( OPV().size()!= OP.rank() )
+	       OPV() = Moments::vector_t ( OP.rank() );
 
 #pragma omp parallel for
-	for(int i=0; i<OP.rank(); i++)//not parallelized; with omp/ eigen this is straightforward;
-	  OPV_[i] = 0.0;
-
+	for(int i=0; i<OP.rank(); i++){//not parallelized; with omp/ eigen this is straightforward;
+	  OPV()[i] = 0.0;
+	  tmp2[i] = 0.0;
+	}
 
 	
 	for(int m=0; m < this->NumberOfVectors(); m++ )
 	{
-	  linalg::introduce_segment(Chebmu_.ListElem(m), segment_size, OPV_, DIM, segment_start);
-		OP.Multiply(  OPV_, tmp2 );
+	  linalg::introduce_segment(Chebmu_.ListElem(m), segment_size, OPV(), DIM, segment_start);
+		OP.Multiply(  OPV(), tmp2 );
 	  linalg::extract_segment(tmp2, DIM, segment_start, Chebmu_.ListElem(m), segment_size );
 	}
 
@@ -50,7 +51,6 @@ int chebyshev::Vectors_sliced::MultiplySliced( SparseMatrixType &OP, int s)
 
 
 
-/*
 int chebyshev::Vectors::IterateAll( )
 {	
 	//The vectorss Chebyshev0() and Chebyshev1() are assumed to have
@@ -70,18 +70,18 @@ int chebyshev::Vectors::IterateAll( )
 int chebyshev::Vectors::Multiply( SparseMatrixType &OP )
 {
 	assert( OP.rank() == this->SystemSize() );
-	if( this->OPV.size()!= OP.rank() )
-		this->OPV = Moments::vector_t ( OP.rank() );
+	if( this->OPV().size()!= OP.rank() )
+	  this->OPV() = Moments::vector_t ( OP.rank() );
 	
 	for(size_t m=0; m < this->NumberOfVectors(); m++ )
 	{
-		linalg::copy( this->Chebmu.ListElem(m), this->OPV ); 
-		OP.Multiply(  this->OPV, this->Chebmu.ListElem(m) );
+	  linalg::copy( this->Chebmu().ListElem(m), this->OPV() ); 
+	  OP.Multiply(  this->OPV(), this->Chebmu().ListElem(m) );
 	}
 
 	return 0;
 };
-*/
+
 
 int chebyshev::Vectors::EvolveAll(const double DeltaT, const double Omega0)
 {
