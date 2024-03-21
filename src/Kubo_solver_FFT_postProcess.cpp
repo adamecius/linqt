@@ -325,8 +325,8 @@ void Kubo_solver_FFT_postProcess::Greenwood_postProcess(const value_t final_data
 
   
   for(int k=0; k < nump; k++){
-    rvec_partial_result[k] = 2.0 * omega * real( r_data[k] )     / (1.0 - E_points_[k] * E_points_[k] );//Temporary -1 to account for the conjugation of the vel. operator   
-    partial_result[k]      = 2.0 * omega * real( final_data[k] ) / (1.0 - E_points_[k] * E_points_[k] );
+    rvec_partial_result[k] = 2.0 * omega * real( r_data[k] )     / (1.0 - E_points_[k] * E_points_[k] ) / ( 2 * M_PI );//Temporary -1 to account for the conjugation of the vel. operator   
+    partial_result[k]      = 2.0 * omega * real( final_data[k] ) / (1.0 - E_points_[k] * E_points_[k] ) / ( 2 * M_PI );
   }
 
   rearrange_crescent_order(partial_result);

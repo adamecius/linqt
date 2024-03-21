@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	const int num_div = 30*mu.HighestMomentNumber();
 	
 	const double
-	xbound = chebyshev::CUTOFF;
+	  xbound = 0.99;//chebyshev::CUTOFF;
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++)

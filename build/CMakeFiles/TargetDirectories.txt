@@ -9,10 +9,12 @@
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_compute-kpm-CorrOp.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_compute-kpm-spectralOp.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_spectralFunctionFromChebmom.dir
+/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinIFromChebmom.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinFromChebmom.dir
+/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir
 /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir

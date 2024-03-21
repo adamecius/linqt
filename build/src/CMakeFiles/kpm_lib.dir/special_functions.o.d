@@ -1,9 +1,9 @@
 src/CMakeFiles/kpm_lib.dir/special_functions.o: \
   /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/special_functions.cpp \
   /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/special_functions.hpp \
-  /usr/include/c++/11/limits \
-  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
-  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/limits \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++config.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
   /usr/include/features.h /usr/include/features-time64.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/bits/timesize.h \
@@ -11,9 +11,11 @@ src/CMakeFiles/kpm_lib.dir/special_functions.o: \
   /usr/include/x86_64-linux-gnu/bits/long-double.h \
   /usr/include/x86_64-linux-gnu/gnu/stubs.h \
   /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
-  /usr/include/x86_64-linux-gnu/c++/11/bits/cpu_defines.h \
-  /usr/include/c++/11/cmath /usr/include/c++/11/bits/cpp_type_traits.h \
-  /usr/include/c++/11/ext/type_traits.h /usr/include/math.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/cpu_defines.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cmath \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/cpp_type_traits.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/ext/type_traits.h \
+  /usr/include/math.h \
   /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
   /usr/include/x86_64-linux-gnu/bits/types.h \
   /usr/include/x86_64-linux-gnu/bits/typesizes.h \
@@ -29,8 +31,9 @@ src/CMakeFiles/kpm_lib.dir/special_functions.o: \
   /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
   /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
   /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
-  /usr/include/c++/11/bits/std_abs.h /usr/include/stdlib.h \
-  /opt/intel/oneapi/compiler/2024.0/lib/clang/17/include/stddef.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/std_abs.h \
+  /usr/include/stdlib.h \
+  /opt/intel/oneapi/compiler/2023.2.4/linux/lib/clang/17/include/stddef.h \
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \

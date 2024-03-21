@@ -227,6 +227,19 @@ inline_spectralFunctionFromChebmom/fast:
 .PHONY : inline_spectralFunctionFromChebmom/fast
 
 #=============================================================================
+# Target rules for targets named inline_kuboGreenwoodFromChebmom_FFTgrid
+
+# Build rule for target.
+inline_kuboGreenwoodFromChebmom_FFTgrid: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 inline_kuboGreenwoodFromChebmom_FFTgrid
+.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid
+
+# fast build rule for target.
+inline_kuboGreenwoodFromChebmom_FFTgrid/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
+.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid/fast
+
+#=============================================================================
 # Target rules for targets named inline_kuboGreenwoodFromChebmom
 
 # Build rule for target.
@@ -277,6 +290,19 @@ inline_kuboBastinFromChebmom: cmake_check_build_system
 inline_kuboBastinFromChebmom/fast:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom.dir/build
 .PHONY : inline_kuboBastinFromChebmom/fast
+
+#=============================================================================
+# Target rules for targets named inline_kuboBastinFromChebmom_FFTgrid
+
+# Build rule for target.
+inline_kuboBastinFromChebmom_FFTgrid: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 inline_kuboBastinFromChebmom_FFTgrid
+.PHONY : inline_kuboBastinFromChebmom_FFTgrid
+
+# fast build rule for target.
+inline_kuboBastinFromChebmom_FFTgrid/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
+.PHONY : inline_kuboBastinFromChebmom_FFTgrid/fast
 
 #=============================================================================
 # Target rules for targets named inline_kuboBastinSeaFromChebmom
@@ -347,11 +373,13 @@ help:
 	@echo "... inline_compute-kpm-nonEqOp"
 	@echo "... inline_compute-kpm-spectralOp"
 	@echo "... inline_kuboBastinFromChebmom"
+	@echo "... inline_kuboBastinFromChebmom_FFTgrid"
 	@echo "... inline_kuboBastinIFromChebmom"
 	@echo "... inline_kuboBastinIIFromChebmom"
 	@echo "... inline_kuboBastinSeaFromChebmom"
 	@echo "... inline_kuboBastinSurfFromChebmom"
 	@echo "... inline_kuboGreenwoodFromChebmom"
+	@echo "... inline_kuboGreenwoodFromChebmom_FFTgrid"
 	@echo "... inline_spectralFunctionFromChebmom"
 	@echo "... inline_timeCorrelationsFromChebmom"
 	@echo "... kpm_lib"

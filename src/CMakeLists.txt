@@ -47,6 +47,10 @@ set(MAIN inline_spectralFunctionFromChebmom)
 add_executable(${MAIN} spectralFunctionFromChebmom.cpp )
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
+set(MAIN inline_kuboGreenwoodFromChebmom_FFTgrid)
+add_executable(${MAIN} kuboGreenwoodFromChebmom_FFTgrid.cpp)
+target_link_libraries(${MAIN} ${KPM_LIB} )
+
 set(MAIN inline_kuboGreenwoodFromChebmom)
 add_executable(${MAIN} kuboGreenwoodFromChebmom.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
@@ -61,6 +65,10 @@ target_link_libraries(${MAIN} ${KPM_LIB} )
 
 set(MAIN inline_kuboBastinFromChebmom)
 add_executable(${MAIN} kuboBastinFromChebmom.cpp)
+target_link_libraries(${MAIN} ${KPM_LIB} )
+
+set(MAIN inline_kuboBastinFromChebmom_FFTgrid)
+add_executable(${MAIN} kuboBastinFromChebmom_FFTgrid.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
 set(MAIN inline_kuboBastinSeaFromChebmom)

@@ -211,7 +211,7 @@ LinQT_IS_TOP_LEVEL:STATIC=ON
 LinQT_SOURCE_DIR:STATIC=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta
 
 //Path to a program.
-XIAR:FILEPATH=/opt/intel/oneapi/compiler/2024.0/bin/xiar
+XIAR:FILEPATH=/opt/intel/oneapi/compiler/2023.2.4/linux/bin/intel64/xiar
 
 //Dependencies for the target
 kpm_lib_LIB_DEPENDS:STATIC=general;-liomp5 -lpthread -lm -ldl;

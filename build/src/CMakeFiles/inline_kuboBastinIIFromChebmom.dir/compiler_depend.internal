@@ -27,8 +27,8 @@ src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/kuboBastinIIFromChebmom.o
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h
  /usr/include/x86_64-linux-gnu/bits/floatn.h
  /usr/include/x86_64-linux-gnu/bits/floatn-common.h
- /opt/intel/oneapi/compiler/2024.0/lib/clang/17/include/stddef.h
- /opt/intel/oneapi/compiler/2024.0/lib/clang/17/include/stdarg.h
+ /opt/intel/oneapi/compiler/2023.2.4/linux/lib/clang/17/include/stddef.h
+ /opt/intel/oneapi/compiler/2023.2.4/linux/lib/clang/17/include/stdarg.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
  /usr/include/x86_64-linux-gnu/bits/types/wint_t.h
  /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h
@@ -42,7 +42,7 @@ src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/kuboBastinIIFromChebmom.o
  /usr/include/c++/11/bits/exception_ptr.h
  /usr/include/c++/11/bits/exception_defines.h
  /usr/include/c++/11/bits/cxxabi_init_exception.h
- /opt/intel/oneapi/compiler/2024.0/lib/clang/17/include/__stddef_max_align_t.h
+ /opt/intel/oneapi/compiler/2023.2.4/linux/lib/clang/17/include/__stddef_max_align_t.h
  /usr/include/c++/11/typeinfo
  /usr/include/c++/11/bits/hash_bytes.h
  /usr/include/c++/11/new
@@ -65,7 +65,7 @@ src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/kuboBastinIIFromChebmom.o
  /usr/include/c++/11/debug/debug.h
  /usr/include/c++/11/bits/predefined_ops.h
  /usr/include/c++/11/cstdint
- /opt/intel/oneapi/compiler/2024.0/lib/clang/17/include/stdint.h
+ /opt/intel/oneapi/compiler/2023.2.4/linux/lib/clang/17/include/stdint.h
  /usr/include/stdint.h
  /usr/include/x86_64-linux-gnu/bits/types.h
  /usr/include/x86_64-linux-gnu/bits/typesizes.h
@@ -192,7 +192,7 @@ src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/kuboBastinIIFromChebmom.o
  /usr/include/c++/11/bits/stl_vector.h
  /usr/include/c++/11/bits/stl_bvector.h
  /usr/include/c++/11/bits/vector.tcc
- /opt/intel/oneapi/compiler/2024.0/opt/compiler/include/complex
+ /opt/intel/oneapi/compiler/2023.2.4/linux/compiler/include/complex
  /usr/include/c++/11/complex
  /usr/include/c++/11/cmath
  /usr/include/math.h
@@ -207,7 +207,7 @@ src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/kuboBastinIIFromChebmom.o
  /usr/include/x86_64-linux-gnu/bits/iscanonical.h
  /usr/include/c++/11/sstream
  /usr/include/c++/11/bits/sstream.tcc
- /opt/intel/oneapi/compiler/2024.0/opt/compiler/include/omp.h
+ /opt/intel/oneapi/compiler/2023.2.4/linux/compiler/include/omp.h
  /usr/include/c++/11/stdlib.h
  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_solver.hpp
  /usr/include/c++/11/cassert
