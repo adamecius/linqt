@@ -86,16 +86,17 @@ src/all: src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/all
 src/all: src/CMakeFiles/inline_compute-kpm-CorrOp.dir/all
 src/all: src/CMakeFiles/inline_compute-kpm-spectralOp.dir/all
 src/all: src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/all
-src/all: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
 src/all: src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/all
 src/all: src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/all
 src/all: src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/all
 src/all: src/CMakeFiles/inline_kuboBastinFromChebmom.dir/all
-src/all: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
 src/all: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/all
 src/all: src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/all
 src/all: src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/all
 src/all: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/all
+src/all: src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all
+src/all: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
+src/all: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
 .PHONY : src/all
 
 # Recursive "preinstall" directory target.
@@ -108,16 +109,17 @@ src/clean: src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/clean
 src/clean: src/CMakeFiles/inline_compute-kpm-CorrOp.dir/clean
 src/clean: src/CMakeFiles/inline_compute-kpm-spectralOp.dir/clean
 src/clean: src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/clean
-src/clean: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
 src/clean: src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/clean
 src/clean: src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/clean
 src/clean: src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/clean
 src/clean: src/CMakeFiles/inline_kuboBastinFromChebmom.dir/clean
-src/clean: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
 src/clean: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/clean
 src/clean: src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/clean
 src/clean: src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/clean
 src/clean: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/clean
+src/clean: src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/clean
+src/clean: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
+src/clean: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
 .PHONY : src/clean
 
 #=============================================================================
@@ -157,7 +159,7 @@ utilities/python/clean:
 src/CMakeFiles/kpm_lib.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44 "Built target kpm_lib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46 "Built target kpm_lib"
 .PHONY : src/CMakeFiles/kpm_lib.dir/all
 
 # Build rule for subdir invocation for target.
@@ -281,32 +283,6 @@ src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/clean:
 .PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/clean
 
 #=============================================================================
-# Target rules for target src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir
-
-# All Build rule for target.
-src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/depend
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=23,24 "Built target inline_kuboGreenwoodFromChebmom_FFTgrid"
-.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
-
-# Build rule for subdir invocation for target.
-src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 18
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
-.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
-
-# Convenience name for target.
-inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
-.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid
-
-# clean rule for target.
-src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean:
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
-.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
-
-#=============================================================================
 # Target rules for target src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir
 
 # All Build rule for target.
@@ -411,32 +387,6 @@ src/CMakeFiles/inline_kuboBastinFromChebmom.dir/clean:
 .PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom.dir/clean
 
 #=============================================================================
-# Target rules for target src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir
-
-# All Build rule for target.
-src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/depend
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=11,12 "Built target inline_kuboBastinFromChebmom_FFTgrid"
-.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
-
-# Build rule for subdir invocation for target.
-src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 18
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
-.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
-
-# Convenience name for target.
-inline_kuboBastinFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
-.PHONY : inline_kuboBastinFromChebmom_FFTgrid
-
-# clean rule for target.
-src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean:
-	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
-.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
-
-#=============================================================================
 # Target rules for target src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir
 
 # All Build rule for target.
@@ -495,7 +445,7 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/clean:
 src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build.make src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build.make src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=27,28 "Built target inline_timeCorrelationsFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=29,30 "Built target inline_timeCorrelationsFromChebmom"
 .PHONY : src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -539,6 +489,84 @@ inline_compute-Kubo-kpm-FFT: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/rule
 src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/clean:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/build.make src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/clean
 .PHONY : src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/clean
+
+#=============================================================================
+# Target rules for target src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir
+
+# All Build rule for target.
+src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=27,28 "Built target inline_spectralFunctionFromChebmom_FFTgrid"
+.PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all
+
+# Build rule for subdir invocation for target.
+src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 18
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
+.PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule
+
+# Convenience name for target.
+inline_spectralFunctionFromChebmom_FFTgrid: src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule
+.PHONY : inline_spectralFunctionFromChebmom_FFTgrid
+
+# clean rule for target.
+src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/clean
+.PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/clean
+
+#=============================================================================
+# Target rules for target src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir
+
+# All Build rule for target.
+src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=23,24 "Built target inline_kuboGreenwoodFromChebmom_FFTgrid"
+.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
+
+# Build rule for subdir invocation for target.
+src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 18
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
+.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
+
+# Convenience name for target.
+inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
+.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid
+
+# clean rule for target.
+src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
+.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
+
+#=============================================================================
+# Target rules for target src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir
+
+# All Build rule for target.
+src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=11,12 "Built target inline_kuboBastinFromChebmom_FFTgrid"
+.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
+
+# Build rule for subdir invocation for target.
+src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 18
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
+.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
+
+# Convenience name for target.
+inline_kuboBastinFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
+.PHONY : inline_kuboBastinFromChebmom_FFTgrid
+
+# clean rule for target.
+src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
+.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

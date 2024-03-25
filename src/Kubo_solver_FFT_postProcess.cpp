@@ -33,6 +33,21 @@ void Kubo_solver_FFT_postProcess::eta_CAP_correct(r_value_t E_points[], r_value_
 }
 
 
+void Kubo_solver_FFT_postProcess::integration_linqt(const r_value_t E_points[], const r_value_t integrand[], r_value_t data[]){
+
+  int nump = parent_solver_.nump();
+
+  double acc = 0;
+  for( int i=0; i < nump-1; i++)
+  {
+     const double denerg = E_points[i+1]-E_points[i];
+     acc +=integrand[i]*denerg;
+     data[i] = acc;
+  }
+}
+
+  
+
 
 void Kubo_solver_FFT_postProcess::integration(const r_value_t E_points[], const r_value_t integrand[], r_value_t data[]){
 
@@ -49,7 +64,7 @@ void Kubo_solver_FFT_postProcess::integration(const r_value_t E_points[], const 
       r_value_t ej  = E_points[j],
 	ej1      = E_points[j+1],
 	de       = ej-ej1,
-        integ    = ( integrand[j+1] + integrand[j] ) / 2.0;     
+        integ    = ( integrand[j+1] + integrand[j] )/2;     
       
       data[k] +=  de * integ;
     }
@@ -176,11 +191,11 @@ void Kubo_solver_FFT_postProcess::Bastin_postProcess(const value_t final_data[],
   for(int k = 0; k < nump; k++){
     integrand[k]  = E_points_[k] * real( final_data[ k ] ) - ( sqrt(1.0 - E_points_[ k ] * E_points_[ k ] ) * imag( final_data[ k + nump ] ) );
     integrand[k] *= 1.0 / pow( (1.0 - E_points_[k]  * E_points_[k] ), 2.0);
-    integrand[k] *=  4.0 * omega / (M_PI * M_PI); //-1.0/M_PI Matches the prefactors from fill.cpp. From the paper this would be -4.0/(M_PI*M_PI);
+    integrand[k] *=  omega / ( M_PI ); 
 
     rvec_integrand[k]  = E_points_[k] * real( r_data[ k ] ) - ( sqrt(1.0 - E_points_[ k ] * E_points_[ k ] ) * real( r_data[ k + nump ] ) );
     rvec_integrand[k] *= 1.0 / pow( (1.0 - E_points_[k]  * E_points_[k] ), 2.0);
-    rvec_integrand[k] *=  4.0 * omega / (M_PI * M_PI); 
+    rvec_integrand[k] *=  omega / ( M_PI ); 
   }
 
   rearrange_crescent_order(integrand);
@@ -191,8 +206,8 @@ void Kubo_solver_FFT_postProcess::Bastin_postProcess(const value_t final_data[],
 
   time_station time_integration;
       
-  integration(rearranged_E_points, rvec_integrand, rvec_partial_result);  
-  integration(rearranged_E_points, integrand, partial_result);    
+  integration_linqt(rearranged_E_points, rvec_integrand, rvec_partial_result);  
+  integration_linqt(rearranged_E_points, integrand, partial_result);    
 
   time_integration.stop("       Integration time:           ");
 
@@ -248,7 +263,7 @@ void Kubo_solver_FFT_postProcess::Bastin_postProcess(const value_t final_data[],
   data2.open(filename+"_integrand");
 
   for(int e=0;e<nump;e++)  
-    data2<< a * rearranged_E_points[e] - b<<"  "<< omega * integrand[e] <<std::endl;
+    data2<< a * rearranged_E_points[e] - b<<"  "<<  integrand[e] <<std::endl;
   
   data2.close();
 
@@ -325,7 +340,7 @@ void Kubo_solver_FFT_postProcess::Greenwood_postProcess(const value_t final_data
 
   
   for(int k=0; k < nump; k++){
-    rvec_partial_result[k] = 2.0 * omega * real( r_data[k] )     / (1.0 - E_points_[k] * E_points_[k] ) / ( 2 * M_PI );//Temporary -1 to account for the conjugation of the vel. operator   
+    rvec_partial_result[k] = 2.0 * omega * real( r_data[k] )     / (1.0 - E_points_[k] * E_points_[k] ) / ( 2 * M_PI );
     partial_result[k]      = 2.0 * omega * real( final_data[k] ) / (1.0 - E_points_[k] * E_points_[k] ) / ( 2 * M_PI );
   }
 

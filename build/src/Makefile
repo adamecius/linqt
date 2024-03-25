@@ -232,20 +232,6 @@ inline_spectralFunctionFromChebmom/fast:
 .PHONY : inline_spectralFunctionFromChebmom/fast
 
 # Convenience name for target.
-src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
-.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
-
-# Convenience name for target.
-inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
-.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid
-
-# fast build rule for target.
-inline_kuboGreenwoodFromChebmom_FFTgrid/fast:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
-.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid/fast
-
-# Convenience name for target.
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/rule:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/rule
 .PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/rule
@@ -302,20 +288,6 @@ inline_kuboBastinFromChebmom/fast:
 .PHONY : inline_kuboBastinFromChebmom/fast
 
 # Convenience name for target.
-src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
-.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
-
-# Convenience name for target.
-inline_kuboBastinFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
-.PHONY : inline_kuboBastinFromChebmom_FFTgrid
-
-# fast build rule for target.
-inline_kuboBastinFromChebmom_FFTgrid/fast:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
-.PHONY : inline_kuboBastinFromChebmom_FFTgrid/fast
-
-# Convenience name for target.
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/rule:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/rule
 .PHONY : src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/rule
@@ -370,6 +342,48 @@ inline_compute-Kubo-kpm-FFT: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/rule
 inline_compute-Kubo-kpm-FFT/fast:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/build.make src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/build
 .PHONY : inline_compute-Kubo-kpm-FFT/fast
+
+# Convenience name for target.
+src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule
+.PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule
+
+# Convenience name for target.
+inline_spectralFunctionFromChebmom_FFTgrid: src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/rule
+.PHONY : inline_spectralFunctionFromChebmom_FFTgrid
+
+# fast build rule for target.
+inline_spectralFunctionFromChebmom_FFTgrid/fast:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build
+.PHONY : inline_spectralFunctionFromChebmom_FFTgrid/fast
+
+# Convenience name for target.
+src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
+.PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
+
+# Convenience name for target.
+inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/rule
+.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid
+
+# fast build rule for target.
+inline_kuboGreenwoodFromChebmom_FFTgrid/fast:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
+.PHONY : inline_kuboGreenwoodFromChebmom_FFTgrid/fast
+
+# Convenience name for target.
+src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
+.PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
+
+# Convenience name for target.
+inline_kuboBastinFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/rule
+.PHONY : inline_kuboBastinFromChebmom_FFTgrid
+
+# fast build rule for target.
+inline_kuboBastinFromChebmom_FFTgrid/fast:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
+.PHONY : inline_kuboBastinFromChebmom_FFTgrid/fast
 
 # target to build an object file
 Bastin_FFTs.o:
@@ -792,6 +806,21 @@ spectralFunctionFromChebmom.s:
 .PHONY : spectralFunctionFromChebmom.s
 
 # target to build an object file
+spectralFunctionFromChebmom_FFTgrid.o:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/spectralFunctionFromChebmom_FFTgrid.o
+.PHONY : spectralFunctionFromChebmom_FFTgrid.o
+
+# target to preprocess a source file
+spectralFunctionFromChebmom_FFTgrid.i:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/spectralFunctionFromChebmom_FFTgrid.i
+.PHONY : spectralFunctionFromChebmom_FFTgrid.i
+
+# target to generate assembly for a file
+spectralFunctionFromChebmom_FFTgrid.s:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/spectralFunctionFromChebmom_FFTgrid.s
+.PHONY : spectralFunctionFromChebmom_FFTgrid.s
+
+# target to build an object file
 timeCorrelationsFromChebmom.o:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build.make src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/timeCorrelationsFromChebmom.o
 .PHONY : timeCorrelationsFromChebmom.o
@@ -831,6 +860,7 @@ help:
 	@echo "... inline_kuboGreenwoodFromChebmom"
 	@echo "... inline_kuboGreenwoodFromChebmom_FFTgrid"
 	@echo "... inline_spectralFunctionFromChebmom"
+	@echo "... inline_spectralFunctionFromChebmom_FFTgrid"
 	@echo "... inline_timeCorrelationsFromChebmom"
 	@echo "... kpm_lib"
 	@echo "... Bastin_FFTs.o"
@@ -917,6 +947,9 @@ help:
 	@echo "... spectralFunctionFromChebmom.o"
 	@echo "... spectralFunctionFromChebmom.i"
 	@echo "... spectralFunctionFromChebmom.s"
+	@echo "... spectralFunctionFromChebmom_FFTgrid.o"
+	@echo "... spectralFunctionFromChebmom_FFTgrid.i"
+	@echo "... spectralFunctionFromChebmom_FFTgrid.s"
 	@echo "... timeCorrelationsFromChebmom.o"
 	@echo "... timeCorrelationsFromChebmom.i"
 	@echo "... timeCorrelationsFromChebmom.s"
