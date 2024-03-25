@@ -14,13 +14,12 @@ void Kubo_solver_FFT::compute( SparseMatrixType &OPL, SparseMatrixType &OPR,  qs
   time_station solver_station;
 
 
-  const size_t DIM = Hamiltonian_dummyMoms_.SystemSize();
+  const size_t DIM = chebVecL_.SystemSize();
   Kubo_solver_FFT_postProcess postProcess(*this);
-  section_size_ = Hamiltonian_dummyMoms_.SystemSize() / num_sections_ +
-                  Hamiltonian_dummyMoms_.SystemSize() % num_sections_; //We are assuming */* is bigger than *%*. If not, i'd increase/decrease num_parts until it is.
+  section_size_ = DIM / num_sections_ +
+                  DIM % num_sections_; //We are assuming */* is bigger than *%*. If not, i'd increase/decrease num_parts until it is.
   
 
-  
 
   
   
@@ -30,14 +29,9 @@ void Kubo_solver_FFT::compute( SparseMatrixType &OPL, SparseMatrixType &OPR,  qs
   
   value_t
     r_data[2*nump_],
-    final_data[2*nump_];
+    final_data[2*nump_];	
 
-  Vectors_sliced 
-    chebVecL( Hamiltonian_dummyMoms_, M_, num_sections_ ),
-    chebVecR( Hamiltonian_dummyMoms_, M_, num_sections_ );
-	
-
-  allocate(chebVecL, chebVecR);
+  allocate(chebVecL_, chebVecR_);
 
   
   allocation_time.stop("\n \nAllocation time:            ");
@@ -55,7 +49,7 @@ void Kubo_solver_FFT::compute( SparseMatrixType &OPL, SparseMatrixType &OPR,  qs
     std::cout<<"Computing with ID: "<<gen.count<<" states" <<std::endl;
 
     //SELECT RUNNING TYPE
-    polynomial_recursion(gen.State(),gen.State(), OPL, OPR, chebVecL,chebVecR, r_data);
+    polynomial_recursion(gen.State(),gen.State(), OPL, OPR, chebVecL_,chebVecR_, r_data);
 
     randVec_time.stop("       Total RandVec time:         ");
     std::cout<<std::endl;

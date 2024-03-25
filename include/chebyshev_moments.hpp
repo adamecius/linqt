@@ -75,7 +75,7 @@ class Moments
 	Moments::vector_t& Chebyshev1(){ return ChebV1; } 
 
 	inline
-	SparseMatrixType& Hamiltonian()
+	SparseMatrixType& Hamiltonian() const
 	{ 
 		return *_pNHAM; 
 	};
@@ -135,10 +135,10 @@ class Moments
 	int Iterate( );
 
 	//light functions
-    int JacksonKernelMomCutOff( const double broad );
+        int JacksonKernelMomCutOff( const double broad );
 	
 	//light functions
-    double JacksonKernel(const double m,  const double Mom );
+        double JacksonKernel(const double m,  const double Mom );
 
 
 	private:
@@ -345,10 +345,17 @@ class Vectors_sliced : public Moments
 	int NumberOfVectors() const
 	{ return numVecs_;}
 
-        Moments::vector_t& OPV() 
+	int NumberOfSections() const
+	{ return num_sections_;}
+  
+  
+        Moments::vector_t& OPV()
         {return OPV_;};
   
   	int SectionSize() const
+	{ return section_size_;}
+
+        int LastSectionSize() const
 	{ return last_section_size_;}
 
 
@@ -367,18 +374,25 @@ class Vectors_sliced : public Moments
 	    return 0;
 	}
   
-        void SetChebmu(const int num_vecs, const size_t section_size)
+        void SetChebmu(const int num_vecs, const size_t last_section_size)
         {
-	     Chebmu_(num_vecs, section_size);
+	     Chebmu_(num_vecs, last_section_size);
         }
 
         vectorList_t& Chebmu(){return Chebmu_;};
+
+	Vectors_sliced()
+        {
+                SetChebmu(0,0);
+                SetNumSections(1);
+	};
   
-	Vectors_sliced():Chebmu_(0,0){};
 
-
+        Vectors_sliced( chebyshev::Vectors_sliced& vec){ *this = vec; };
+  
+        Vectors_sliced( const int numVecs, const size_t num_sections): numVecs_(numVecs), num_sections_(num_sections), Chebmu_(0,0) {};
+  
         Vectors_sliced(Moments& mom, const int numVecs, const size_t num_sections): numVecs_(numVecs), num_sections_(num_sections), Chebmu_(numVecs, mom.SystemSize()/num_sections + mom.SystemSize() % num_sections ) { 
-
 
 	  section_size_ = mom.SystemSize()/num_sections; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
 	  last_section_size_ = mom.SystemSize()/num_sections + mom.SystemSize() % num_sections;
@@ -387,7 +401,6 @@ class Vectors_sliced : public Moments
         };
 
         Vectors_sliced(Moments2D& mom, const int numVecs, const size_t num_sections): numVecs_(numVecs), num_sections_(num_sections), Chebmu_(numVecs, mom.SystemSize()/num_sections + mom.SystemSize() % num_sections ) { 
-
 
 	  section_size_ = mom.SystemSize()/num_sections; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
 	  last_section_size_ = mom.SystemSize()/num_sections + mom.SystemSize() % num_sections;
@@ -401,9 +414,14 @@ class Vectors_sliced : public Moments
         {
 		try
 		{
-			const int vec_size  = last_section_size_;
+
+		        this->SystemSize( this->Hamiltonian().rank() );
+			section_size_ = SystemSize()/num_sections_; // All of this assuming */* is larger than *%*. Otherwise, i'd change num_sections until it is.
+	                last_section_size_ = SystemSize()/num_sections_ + SystemSize() % num_sections_;
+
+		        const int vec_size  = last_section_size_;
 			const int list_size = this->NumberOfVectors();
-			Chebmu_(list_size, vec_size );
+			Chebmu_.Resize(list_size, vec_size );
 		}
 		catch (...)
 		{ std::cerr<<"Failed to initilize the vector list."<<std::endl;}
@@ -449,6 +467,23 @@ class Vectors_sliced : public Moments
 	inline
 	Moments::value_t& operator()(const size_t m0) { return this->Chebmu_(m0,0); };
 
+        void operator=( Vectors_sliced& vec)
+	{
+		this->SetHamiltonian( vec.Hamiltonian() ) ; 
+		this->SystemLabel( vec.SystemLabel());
+		this->BandWidth( vec.BandWidth() );
+		this->BandCenter( vec.BandCenter() );
+		if ( vec.Chebyshev0().size() == this->SystemSize() )
+			this->SetInitVectors( vec.Chebyshev0() );
+
+		num_sections_ = vec.NumberOfSections();
+		numVecs_ = vec.NumberOfVectors();
+		section_size_ = vec.SectionSize();
+	        last_section_size_ = vec.LastSectionSize();
+
+	}
+
+  
 	int IterateAllSliced( int );
 
         int MultiplySliced( SparseMatrixType & , int );
@@ -472,10 +507,6 @@ class Vectors : public Vectors_sliced
 	typedef VectorList< Moments::value_t > vectorList_t;
 
   
-	Vectors()
-        {
-                SetChebmu(0,0);
-                SetNumSections(1);};
 	
         Vectors(const size_t nMoms,const size_t dim )
         {
@@ -497,7 +528,6 @@ class Vectors : public Vectors_sliced
 	  	this->getMomentsParams(mom);	        
 		SetNumSections(1);
 		SetNumberOfVectors(mom.HighestMomentNumber());
-		std::cout<<NumberOfVectors()<<"  "<<SectionSize()<<std::endl;
 		CreateVectorSet();		
 	};
 

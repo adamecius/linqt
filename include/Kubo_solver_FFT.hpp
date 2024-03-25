@@ -30,9 +30,9 @@ class Kubo_solver_FFT{
         typedef double  r_value_t;
 
 
-        Kubo_solver_FFT(int M, int num_sections, int nump, formula sym_formula, chebyshev::Moments& dummyMoms, std::string& outputfilename)
+        Kubo_solver_FFT(int M, int num_sections, int nump, formula sym_formula, chebyshev::Vectors_sliced& chebVec, std::string& outputfilename)
 	  : M_(M), num_sections_(num_sections), nump_(nump), section_size_(0),
-	    sym_formula_(sym_formula), Hamiltonian_dummyMoms_(dummyMoms), outputfilename_(outputfilename) {};
+	    sym_formula_(sym_formula), chebVecL_(chebVec), chebVecR_(chebVec), outputfilename_(outputfilename) {};
 
         ~Kubo_solver_FFT(){};
   
@@ -55,7 +55,7 @@ class Kubo_solver_FFT{
 
 
         inline
-	chebyshev::Moments Hamiltonian(){return Hamiltonian_dummyMoms_; };
+	chebyshev::Vectors_sliced Hamiltonian(){return chebVecL_; };
 
         inline
 	std::string& OutputFilename(){return outputfilename_;};
@@ -114,6 +114,7 @@ class Kubo_solver_FFT{
 	size_t section_size_;
         formula sym_formula_;
         chebyshev::Moments Hamiltonian_dummyMoms_;
+        chebyshev::Vectors_sliced chebVecL_, chebVecR_;
 
         std::string outputfilename_;
 

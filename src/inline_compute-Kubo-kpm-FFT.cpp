@@ -37,9 +37,15 @@ int main(int argc, char *argv[])
 		S_OPL = argv[3],
 		S_NUM_MOM = argv[4];
 
-
+	
 	const int numMoms= atoi(argv[4]);
-	chebyshev::Moments Hamiltonian_dummyMoms; //load number of moments
+        int num_sections = 1, nump = numMoms;
+	chebyshev::formula sym_formula = chebyshev::KUBO_GREENWOOD;
+	//chebyshev::Moments Hamiltonian_dummyMoms; //load number of moments
+
+	chebyshev::Vectors_sliced 
+	  chebVec( numMoms, num_sections );
+                
 
 	SparseMatrixType OP[3];
 	OP[0].SetID("HAM");
@@ -60,12 +66,11 @@ int main(int argc, char *argv[])
 		 spectral_bounds = chebyshev::utility::SpectralBounds(OP[0]);
 	};
 	//CONFIGURE THE CHEBYSHEV MOMENTS
-	Hamiltonian_dummyMoms.SystemLabel(LABEL);
-	Hamiltonian_dummyMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
-	Hamiltonian_dummyMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
-	Hamiltonian_dummyMoms.SetAndRescaleHamiltonian(OP[0]);
+	chebVec.SystemLabel(LABEL);
+	chebVec.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
+        chebVec.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
+	chebVec.SetAndRescaleHamiltonian(OP[0]);
 	
-
 
 	//Define thes states youll use
 	//Factory state_factory ;
@@ -75,11 +80,9 @@ int main(int argc, char *argv[])
 	if( argc == 6)	
 		gen  = qstates::LoadStateFile(argv[5]);
 
-	int num_sections = 1, nump = numMoms;
-	chebyshev::formula sym_formula = chebyshev::KUBO_BASTIN;
-	std::string outputfilename="Bastin_FFT"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"_state"+gen.StateLabel()+".conductivity";
+	std::string outputfilename="Greenwood_FFT"+S_OPR+"-"+S_OPL+LABEL+"KPM_M"+S_NUM_MOM+"x"+S_NUM_MOM+"_state"+gen.StateLabel()+".conductivity";
 
-	chebyshev::Kubo_solver_FFT solver(numMoms,  num_sections, nump, sym_formula, Hamiltonian_dummyMoms,  outputfilename);
+	chebyshev::Kubo_solver_FFT solver(numMoms,  num_sections, nump, sym_formula, chebVec,  outputfilename);
 	solver.compute( OP[1], OP[2], gen );
 
 	//Save the table in a file

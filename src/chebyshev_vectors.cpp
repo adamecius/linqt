@@ -4,9 +4,10 @@
 int chebyshev::Vectors_sliced::IterateAllSliced(int s )
 {
   size_t segment_size = ( s == num_sections_-1 ? last_section_size_ : section_size_ ),
-    segment_start = s * section_size_,
-    DIM = this->SystemSize();
+         segment_start = s * section_size_,
+         DIM = this->SystemSize();
 
+  
 	//The vectorss Chebyshev0() and Chebyshev1() are assumed to have
 	// been initialized
        linalg::extract_segment( Chebyshev0(), DIM, segment_start, Vector(0), segment_size);
