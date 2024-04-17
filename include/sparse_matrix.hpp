@@ -101,7 +101,7 @@ public:
     Sparse::OPERATOR_FromCSRFile(input, dim, columns, rowIndex, values);
     _matrix_type->setDimensions(dim, dim);
     _matrix_type->ConvertFromCSR(rowIndex, columns, values);
-    std::cout << "OPERATOR SUCCESSFULLY BUILD" << std::endl;
+    std::cout << "OPERATOR SUCCESSFULLY BUILT" << std::endl;
   }
   SparseMatrixType *_matrix_type;
 };

@@ -4,8 +4,7 @@
 
 #include <limits>
 #include <cmath>
-#include "mathimf.h"
-
+//#include "mathimf.h"
 
 namespace chebyshev{
 

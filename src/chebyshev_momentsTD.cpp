@@ -28,7 +28,7 @@ int chebyshev::MomentsTD::Evolve( vector_t& Phi)
 	while( momcutOff > tol)
 	{
 		//---Save J0 to Phi. n = 0,1,2,3,..,
-		linalg::axpy( nIp*2*Jn , Chebyshev0(), Phi);
+	  linalg::axpy( nIp*value_t(2)*Jn , Chebyshev0(), Phi);
 
 		// Evolve n to n+1
 		this->Hamiltonian().Multiply(2.0,  Chebyshev1(), -1.0,  Chebyshev0() );

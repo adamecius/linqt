@@ -1,0 +1,1 @@
+/opt/intel/oneapi/compiler/2024.1/bin/icpx -qmkl=parallel -O3 --std=c++11 -Wall -Wextra -fopenmp  -rdynamic CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o -o ../inline_kuboGreenwoodFromChebmom   -L/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/lib  ../lib/libkpm_lib.a -liomp5 -lpthread -lm -ldl 

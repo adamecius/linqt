@@ -34,7 +34,7 @@ int chebyshev::ComputeMomTable( chebyshev::Vectors &chevVecL, chebyshev::Vectors
 	{
 		//#pragma omp parallel for default(none) shared(chevVecL,chevVecR,m0,sub)
 		for( auto m1 = 0; m1 < maxMR; m1++)
-			sub(m0,m1) = linalg::vdot( chevVecL.Vector(m0) , chevVecR.Vector(m1) );
+ 		sub(m0,m1) = linalg::vdot( chevVecL.Vector(m0) , chevVecR.Vector(m1) );
 	}
 //	mkl_set_num_threads_local(nthreads); 
 
@@ -52,13 +52,13 @@ int chebyshev::CorrelationExpansionMoments(	const vector_t& PhiR, const vector_t
 {
 	const size_t numRVecs = chevVecR.NumberOfVectors();
 	const size_t numLVecs = chevVecL.NumberOfVectors();
-	const size_t NumMomsR = chevVecR.HighestMomentNumber();
-	const size_t NumMomsL = chevVecL.HighestMomentNumber();
+	const size_t NumMomsR = chebMoms.HighestMomentNumber();
+	const size_t NumMomsL = chebMoms.HighestMomentNumber();
 	const size_t momvecSize = (size_t)( numRVecs*numLVecs );
+
 
 	auto start = std::chrono::high_resolution_clock::now();
 	chebyshev::Moments2D sub(numLVecs,numRVecs);
-
 	
 	chevVecL.SetInitVectors( OPL, PhiL );
 	for(int  mL = 0 ; mL <  NumMomsL ; mL+=numLVecs )
@@ -87,8 +87,8 @@ int chebyshev::CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixT
 {
 	//Set Batch Behavior
 	int batchSize;
-    if( !chebyshev::GetBatchSize(batchSize)  )
-    {
+        if( !chebyshev::GetBatchSize(batchSize)  )
+        {
 		batchSize = chebMoms.HighestMomentNumber(0);
 		std::cout<<"Using default BATCH_SIZE = "<<batchSize<<std::endl;
 	}
@@ -102,7 +102,7 @@ int chebyshev::CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixT
 	if( or_mom0%batchSize != 0 ||
 		or_mom1%batchSize != 0 )
 	{
-		std::cout<<"\nWARNING: This implementation need to the batchsize to be a multiple of ";
+		std::cout<<"\nWARNING: This implementation needs to the batchsize to be a multiple of ";
 		std::cout<<or_mom0<<" and "<<or_mom1<<std::endl;
 		std::cout<<"The moments requiremenets will be increased to ";
 		
@@ -120,17 +120,22 @@ int chebyshev::CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixT
 	chevVecL( chebMoms ), chevVecR( chebMoms );
 
 	//Allocate the memory
-	
+
 	chevVecL.SetNumberOfVectors( batchSize );
 	chevVecR.SetNumberOfVectors( batchSize );
+
+
+
 	printf("Chebyshev::CorrelationExpansionMoments will used %f GB\n", chevVecL.MemoryConsumptionInGB() + chevVecR.MemoryConsumptionInGB() );
 
 	//This operation is memory intensive
 	std::cout<<"Initializing chevVecL"<<std::endl;
 	chevVecL.CreateVectorSet( );
-	std::cout<<"Initialize chevVecR"<<std::endl;
+	std::cout<<"Initializing chevVecR"<<std::endl;
 	chevVecR.CreateVectorSet( );
 
+		
+		
 	gen.SystemSize(DIM);
 	while( gen.getQuantumState() )
 	{
@@ -143,6 +148,7 @@ int chebyshev::CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixT
 	//Fix the scaling of the moments
     const int NumMomsL = chebMoms.HighestMomentNumber(0);
     const int NumMomsR = chebMoms.HighestMomentNumber(1);
+    
 	for (int mL = 0 ; mL < NumMomsL; mL++)				  
 	for (int mR = mL; mR < NumMomsR; mR++)
 	{
