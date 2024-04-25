@@ -5,6 +5,10 @@
 #include <complex>
 #include <vector>
 #include <cassert>
+#include "sparse_matrix.hpp"
+
+#include<eigen-3.4.0/Eigen/Sparse>
+#include<eigen-3.4.0/Eigen/IterativeLinearSolvers>
 
 using namespace std;
 
@@ -42,6 +46,8 @@ void extract_segment( const vector< complex<double> >&x, size_t size_x, size_t s
    
 void introduce_segment( const vector< complex<double> >&x, size_t size_x,   vector< complex<double> >& y, size_t size_y, size_t start_y );//size_y >> size_y
 
+
+void orthogonalize(SparseMatrixType &,  vector< complex<double> >&,  vector< complex<double> >& );
   
 } // namespace linalg
 

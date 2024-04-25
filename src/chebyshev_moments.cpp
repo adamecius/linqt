@@ -62,3 +62,92 @@ double chebyshev::Moments::JacksonKernel(const double m,  const double Mom )
 	return ( (Mom-m+1)*cos( phi_J*m )+ sin(phi_J*m)*cos(phi_J)/sin(phi_J) )*phi_J/M_PI;
 };
 
+
+
+
+
+
+void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( Moments::vector_t& T0 )
+{
+  
+
+	assert( T0.size() == this->SystemSize() );
+	const auto dim = this->SystemSize();
+
+	if( this->Chebyshev0().size()!= dim )
+		this->Chebyshev0() = Moments::vector_t(dim,Moments::value_t(0)); 
+
+	if( this->Chebyshev1().size()!= dim )
+		this->Chebyshev1() = Moments::vector_t(dim,Moments::value_t(0)); 
+	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
+
+	
+        vector_t tmp_(Chebyshev0().size(),0.0);
+
+
+	
+	linalg::orthogonalize(*S_, tmp_, T0);
+	linalg::copy ( tmp_, this->Chebyshev0() );
+
+	
+	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
+        linalg::orthogonalize(*S_, this->Chebyshev1(), tmp_);
+	
+};
+
+
+void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixType &OP , Moments::vector_t& T0 )
+{
+	const auto dim = this->SystemSize();
+	assert( OP.rank() == this->SystemSize() && T0.size() == this->SystemSize() );
+
+	if( this->Chebyshev0().size()!= dim )
+		this->Chebyshev0() = Moments::vector_t(dim,Moments::value_t(0)); 
+
+	if( this->Chebyshev1().size()!= dim )
+		this->Chebyshev1() = Moments::vector_t(dim,Moments::value_t(0)); 
+	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
+
+
+	vector_t tmp_(Chebyshev0().size(),0.0);
+
+	linalg::orthogonalize(*S_, tmp_, T0);
+	linalg::copy ( tmp_, this->Chebyshev0() );
+        OP.Multiply( this->Chebyshev1(), this->Chebyshev0() );
+
+	
+	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
+        linalg::orthogonalize(*S_, this->Chebyshev1(), tmp_ );
+
+
+		
+	return ;
+};
+
+
+
+int chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal( )
+{
+        vector_t tmp_(Chebyshev0().size(),0.0),
+	  tmp_2_(Chebyshev0().size(),0.0);
+
+	
+	this->Hamiltonian().Multiply(tmp_, this->Chebyshev1());
+
+
+	
+	linalg::orthogonalize(*S_, tmp_2_, tmp_);
+
+	#pragma omp parallel for
+	for(std::size_t i=0; i< tmp_.size();i++){
+	  tmp_2_[i] = 2.0 * tmp_2_[i] - Chebyshev0()[i];
+
+	}
+	
+	linalg::copy( tmp_2_, Chebyshev0());
+
+
+	
+	this->Chebyshev0().swap(this->Chebyshev1());
+	return 0;
+};

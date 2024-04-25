@@ -99,3 +99,7 @@ set(MAIN inline_kuboBastinFromChebmom_FFTgrid)
 add_executable(${MAIN} kuboBastinFromChebmom_FFTgrid.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
+set(MAIN inline_compute-kpm-spectralOp-nonOrth )
+add_executable(${MAIN} inline_compute-kpm-spectralOp-nonOrth.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )
+

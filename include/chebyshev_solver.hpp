@@ -51,6 +51,8 @@ namespace chebyshev
 
 	int SpectralMoments(SparseMatrixType &OP,  chebyshev::Moments1D &chebMoms, qstates::generator& gen);
 
+  	int SpectralMoments_nonOrth(SparseMatrixType &OP, chebyshev::Moments1D_nonOrth &chebMoms, qstates::generator& gen);
+
 }; // namespace chebyshev
 
 #endif

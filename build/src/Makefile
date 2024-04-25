@@ -385,6 +385,20 @@ inline_kuboBastinFromChebmom_FFTgrid/fast:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
 .PHONY : inline_kuboBastinFromChebmom_FFTgrid/fast
 
+# Convenience name for target.
+src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule
+.PHONY : src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule
+
+# Convenience name for target.
+inline_compute-kpm-spectralOp-nonOrth: src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule
+.PHONY : inline_compute-kpm-spectralOp-nonOrth
+
+# fast build rule for target.
+inline_compute-kpm-spectralOp-nonOrth/fast:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build
+.PHONY : inline_compute-kpm-spectralOp-nonOrth/fast
+
 # target to build an object file
 Bastin_FFTs.o:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o
@@ -579,6 +593,21 @@ inline_compute-kpm-nonEqOp.i:
 inline_compute-kpm-nonEqOp.s:
 	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/build.make src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.s
 .PHONY : inline_compute-kpm-nonEqOp.s
+
+# target to build an object file
+inline_compute-kpm-spectralOp-nonOrth.o:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o
+.PHONY : inline_compute-kpm-spectralOp-nonOrth.o
+
+# target to preprocess a source file
+inline_compute-kpm-spectralOp-nonOrth.i:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.i
+.PHONY : inline_compute-kpm-spectralOp-nonOrth.i
+
+# target to generate assembly for a file
+inline_compute-kpm-spectralOp-nonOrth.s:
+	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.s
+.PHONY : inline_compute-kpm-spectralOp-nonOrth.s
 
 # target to build an object file
 inline_compute-kpm-spectralOp.o:
@@ -851,6 +880,7 @@ help:
 	@echo "... inline_compute-kpm-CorrOp"
 	@echo "... inline_compute-kpm-nonEqOp"
 	@echo "... inline_compute-kpm-spectralOp"
+	@echo "... inline_compute-kpm-spectralOp-nonOrth"
 	@echo "... inline_kuboBastinFromChebmom"
 	@echo "... inline_kuboBastinFromChebmom_FFTgrid"
 	@echo "... inline_kuboBastinIFromChebmom"
@@ -902,6 +932,9 @@ help:
 	@echo "... inline_compute-kpm-nonEqOp.o"
 	@echo "... inline_compute-kpm-nonEqOp.i"
 	@echo "... inline_compute-kpm-nonEqOp.s"
+	@echo "... inline_compute-kpm-spectralOp-nonOrth.o"
+	@echo "... inline_compute-kpm-spectralOp-nonOrth.i"
+	@echo "... inline_compute-kpm-spectralOp-nonOrth.s"
 	@echo "... inline_compute-kpm-spectralOp.o"
 	@echo "... inline_compute-kpm-spectralOp.i"
 	@echo "... inline_compute-kpm-spectralOp.s"

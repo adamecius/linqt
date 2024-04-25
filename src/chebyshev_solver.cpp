@@ -200,6 +200,35 @@ int chebyshev::SpectralMoments( SparseMatrixType &OP,  chebyshev::Moments1D &che
 };
 
 
+int chebyshev::SpectralMoments_nonOrth( SparseMatrixType &OP,  chebyshev::Moments1D_nonOrth &chebMoms, qstates::generator& gen )
+{
+	const auto Dim = chebMoms.SystemSize();
+	const auto NumMoms = chebMoms.HighestMomentNumber();
+
+
+	gen.SystemSize(Dim);
+	while( gen.getQuantumState() )
+	{		
+		auto Phi = gen.State();
+		//Set the evolved vector as initial vector of the chebyshev iterations
+		if (OP.isIdentity() )
+			chebMoms.SetInitVectors_nonOrthogonal( Phi );
+		else
+			chebMoms.SetInitVectors_nonOrthogonal( OP,Phi );
+			
+		for(int m = 0 ; m < NumMoms ; m++ )
+		{
+			double scal=2.0/gen.NumberOfStates();
+			if( m == 0 ) scal*=0.5;
+			chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev0() ) ;
+			chebMoms.Iterate_nonOrthogonal();
+
+		}
+	}
+	return 0;
+};
+
+
 int chebyshev::TimeDependentCorrelations(SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::MomentsTD &chebMoms, qstates::generator& gen  )
 {
 	const auto Dim = chebMoms.SystemSize();

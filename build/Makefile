@@ -369,6 +369,19 @@ inline_kuboBastinFromChebmom_FFTgrid/fast:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
 .PHONY : inline_kuboBastinFromChebmom_FFTgrid/fast
 
+#=============================================================================
+# Target rules for targets named inline_compute-kpm-spectralOp-nonOrth
+
+# Build rule for target.
+inline_compute-kpm-spectralOp-nonOrth: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 inline_compute-kpm-spectralOp-nonOrth
+.PHONY : inline_compute-kpm-spectralOp-nonOrth
+
+# fast build rule for target.
+inline_compute-kpm-spectralOp-nonOrth/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build
+.PHONY : inline_compute-kpm-spectralOp-nonOrth/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -385,6 +398,7 @@ help:
 	@echo "... inline_compute-kpm-CorrOp"
 	@echo "... inline_compute-kpm-nonEqOp"
 	@echo "... inline_compute-kpm-spectralOp"
+	@echo "... inline_compute-kpm-spectralOp-nonOrth"
 	@echo "... inline_kuboBastinFromChebmom"
 	@echo "... inline_kuboBastinFromChebmom_FFTgrid"
 	@echo "... inline_kuboBastinIFromChebmom"

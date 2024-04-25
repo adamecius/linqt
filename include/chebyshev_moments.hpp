@@ -185,8 +185,38 @@ class Moments1D: public Moments
 	// Input/Output
 	void Print();
 
+  
 	private:
 	size_t _numMoms;
+};
+
+  
+class Moments1D_nonOrth: public Moments1D
+{
+	public:
+  
+        Moments1D_nonOrth( const size_t m0 ):Moments1D(m0), S_(NULL){};
+  
+        Moments1D_nonOrth( SparseMatrixType &S ):Moments1D(), S_(&S){};
+
+        Moments1D_nonOrth(const size_t m0,  SparseMatrixType &S ): Moments1D(m0), S_(&S){};
+
+        Moments1D_nonOrth( std::string& momfilename,  SparseMatrixType &S ): Moments1D(momfilename), S_(&S){};
+
+
+        void set_S(SparseMatrixType &S) {S_ = &S;};
+  
+	void SetInitVectors_nonOrthogonal( vector_t& T0 );
+
+	void SetInitVectors_nonOrthogonal( SparseMatrixType &OP ,vector_t& T0 );
+  
+        int Iterate_nonOrthogonal();
+
+  
+	private:
+
+        SparseMatrixType *S_;
+
 };
 
 

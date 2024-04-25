@@ -100,3 +100,31 @@ void linalg::introduce_segment(const vector< complex<double> >&x, size_t size_x,
       return;
   }
 */
+
+
+void linalg::orthogonalize(SparseMatrixType& S, vector< complex<double> >& orthogonalized, vector< complex<double> >& original){
+
+
+  int DIM = S.numRows(), NNZ=S.vals()->size();
+
+  int *rowsPtr = S.rows()->data();
+  int *colsPtr = S.cols()->data();
+  std::complex<double> *values = S.vals()->data();
+
+
+  Eigen::Map<Eigen::Vector<std::complex<double>, -1>>
+    eig_original(original.data(), DIM),
+    eig_orthogonalized(orthogonalized.data(), DIM);
+
+    std::cout << "OK:     " << std::endl;
+  Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> > eigen_S( DIM, DIM, NNZ, rowsPtr, colsPtr, values);
+
+  
+  Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> > solver;
+  solver.compute(eigen_S);
+  eig_orthogonalized = solver.solve(eig_original);
+  
+  std::cout << "#iterations:     " << solver.iterations() << std::endl;
+  std::cout << "estimated error: " << solver.error()      << std::endl;
+  
+};

@@ -198,7 +198,15 @@ src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_bvector.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/vector.tcc \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cassert \
-  /usr/include/assert.h /opt/intel/oneapi/mkl/2024.1/include/mkl.h \
+  /usr/include/assert.h \
+  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/iostream \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/fstream \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/codecvt.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++io.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/fstream.tcc \
+  /opt/intel/oneapi/mkl/2024.1/include/mkl.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_version.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_types.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_blas.h \
@@ -236,6 +244,8 @@ src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_direct_call.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_compact.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h \
+  /usr/include/eigen-3.4.0/Eigen/Sparse \
+  /usr/include/eigen-3.4.0/Eigen/SparseCore \
   /usr/include/eigen-3.4.0/Eigen/Core \
   /usr/include/eigen-3.4.0/Eigen/src/Core/util/DisableStupidWarnings.h \
   /usr/include/eigen-3.4.0/Eigen/src/Core/util/Macros.h \
@@ -397,4 +407,85 @@ src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: \
   /usr/include/eigen-3.4.0/Eigen/src/Core/ArrayWrapper.h \
   /usr/include/eigen-3.4.0/Eigen/src/Core/StlIterators.h \
   /usr/include/eigen-3.4.0/Eigen/src/Core/GlobalFunctions.h \
-  /usr/include/eigen-3.4.0/Eigen/src/Core/util/ReenableStupidWarnings.h
+  /usr/include/eigen-3.4.0/Eigen/src/Core/util/ReenableStupidWarnings.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/map \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_tree.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/ext/aligned_buffer.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_map.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_multimap.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/erase_if.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseUtil.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseMatrixBase.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/../plugins/CommonCwiseUnaryOps.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/../plugins/CommonCwiseBinaryOps.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/../plugins/MatrixCwiseUnaryOps.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/../plugins/MatrixCwiseBinaryOps.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/../plugins/BlockMethods.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseAssign.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/CompressedStorage.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/AmbiVector.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseCompressedBase.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseMatrix.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseMap.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/MappedSparseMatrix.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseVector.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseRef.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseCwiseUnaryOp.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseCwiseBinaryOp.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseTranspose.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseBlock.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseDot.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseRedux.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseView.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseDiagonalProduct.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseSparseProductWithPruning.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseProduct.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseDenseProduct.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseSelfAdjointView.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseTriangularView.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/TriangularSolver.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparsePermutation.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseFuzzy.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseSolverBase.h \
+  /usr/include/eigen-3.4.0/Eigen/OrderingMethods \
+  /usr/include/eigen-3.4.0/Eigen/src/OrderingMethods/Amd.h \
+  /usr/include/eigen-3.4.0/Eigen/src/OrderingMethods/Ordering.h \
+  /usr/include/eigen-3.4.0/Eigen/src/OrderingMethods/Eigen_Colamd.h \
+  /usr/include/eigen-3.4.0/Eigen/SparseCholesky \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCholesky/SimplicialCholesky.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h \
+  /usr/include/eigen-3.4.0/Eigen/SparseLU \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_gemm_kernel.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_Structs.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLUImpl.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseColEtree.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_Memory.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_relax_snode.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_pivotL.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_panel_dfs.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_kernel_bmod.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_panel_bmod.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_column_dfs.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_column_bmod.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_pruneL.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_Utils.h \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU.h \
+  /usr/include/eigen-3.4.0/Eigen/SparseQR \
+  /usr/include/eigen-3.4.0/Eigen/src/SparseQR/SparseQR.h \
+  /usr/include/eigen-3.4.0/Eigen/IterativeLinearSolvers \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/SolveWithGuess.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/IterativeSolverBase.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/BasicPreconditioners.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/ConjugateGradient.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/LeastSquareConjugateGradient.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/IncompleteLUT.h \
+  /usr/include/eigen-3.4.0/Eigen/src/IterativeLinearSolvers/IncompleteCholesky.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/list \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_list.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/allocated_ptr.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/list.tcc

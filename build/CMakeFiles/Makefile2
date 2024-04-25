@@ -97,6 +97,7 @@ src/all: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/all
 src/all: src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all
 src/all: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
 src/all: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
+src/all: src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/all
 .PHONY : src/all
 
 # Recursive "preinstall" directory target.
@@ -120,6 +121,7 @@ src/clean: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/clean
 src/clean: src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/clean
 src/clean: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
 src/clean: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
+src/clean: src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/clean
 .PHONY : src/clean
 
 #=============================================================================
@@ -159,7 +161,7 @@ utilities/python/clean:
 src/CMakeFiles/kpm_lib.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46 "Built target kpm_lib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48 "Built target kpm_lib"
 .PHONY : src/CMakeFiles/kpm_lib.dir/all
 
 # Build rule for subdir invocation for target.
@@ -263,7 +265,7 @@ src/CMakeFiles/inline_compute-kpm-spectralOp.dir/clean:
 src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=25,26 "Built target inline_spectralFunctionFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=27,28 "Built target inline_spectralFunctionFromChebmom"
 .PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -289,7 +291,7 @@ src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/clean:
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=21,22 "Built target inline_kuboGreenwoodFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=23,24 "Built target inline_kuboGreenwoodFromChebmom"
 .PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -315,7 +317,7 @@ src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/clean:
 src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=13,14 "Built target inline_kuboBastinIFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=15,16 "Built target inline_kuboBastinIFromChebmom"
 .PHONY : src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -341,7 +343,7 @@ src/CMakeFiles/inline_kuboBastinIFromChebmom.dir/clean:
 src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=15,16 "Built target inline_kuboBastinIIFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=17,18 "Built target inline_kuboBastinIIFromChebmom"
 .PHONY : src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -367,7 +369,7 @@ src/CMakeFiles/inline_kuboBastinIIFromChebmom.dir/clean:
 src/CMakeFiles/inline_kuboBastinFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=9,10 "Built target inline_kuboBastinFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=11,12 "Built target inline_kuboBastinFromChebmom"
 .PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -393,7 +395,7 @@ src/CMakeFiles/inline_kuboBastinFromChebmom.dir/clean:
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=17,18 "Built target inline_kuboBastinSeaFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=19,20 "Built target inline_kuboBastinSeaFromChebmom"
 .PHONY : src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -419,7 +421,7 @@ src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/clean:
 src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/build.make src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=19,20 "Built target inline_kuboBastinSurfFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=21,22 "Built target inline_kuboBastinSurfFromChebmom"
 .PHONY : src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -445,7 +447,7 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/clean:
 src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build.make src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build.make src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=29,30 "Built target inline_timeCorrelationsFromChebmom"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=31,32 "Built target inline_timeCorrelationsFromChebmom"
 .PHONY : src/CMakeFiles/inline_timeCorrelationsFromChebmom.dir/all
 
 # Build rule for subdir invocation for target.
@@ -497,7 +499,7 @@ src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/clean:
 src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=27,28 "Built target inline_spectralFunctionFromChebmom_FFTgrid"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=29,30 "Built target inline_spectralFunctionFromChebmom_FFTgrid"
 .PHONY : src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/all
 
 # Build rule for subdir invocation for target.
@@ -523,7 +525,7 @@ src/CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/clean:
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=23,24 "Built target inline_kuboGreenwoodFromChebmom_FFTgrid"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=25,26 "Built target inline_kuboGreenwoodFromChebmom_FFTgrid"
 .PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/all
 
 # Build rule for subdir invocation for target.
@@ -549,7 +551,7 @@ src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean:
 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all: src/CMakeFiles/kpm_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=11,12 "Built target inline_kuboBastinFromChebmom_FFTgrid"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=13,14 "Built target inline_kuboBastinFromChebmom_FFTgrid"
 .PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/all
 
 # Build rule for subdir invocation for target.
@@ -567,6 +569,32 @@ inline_kuboBastinFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboBastinFromChebmo
 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/build.make src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
 .PHONY : src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/clean
+
+#=============================================================================
+# Target rules for target src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir
+
+# All Build rule for target.
+src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/all: src/CMakeFiles/kpm_lib.dir/all
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=9,10 "Built target inline_compute-kpm-spectralOp-nonOrth"
+.PHONY : src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/all
+
+# Build rule for subdir invocation for target.
+src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 18
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
+.PHONY : src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule
+
+# Convenience name for target.
+inline_compute-kpm-spectralOp-nonOrth: src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/rule
+.PHONY : inline_compute-kpm-spectralOp-nonOrth
+
+# clean rule for target.
+src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/build.make src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/clean
+.PHONY : src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

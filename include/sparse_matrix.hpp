@@ -74,6 +74,10 @@ public:
   void ConvertFromCOO(vector<int> &rows, vector<int> &cols, vector<complex<double> > &vals);
   void ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, vector<complex<double> > &vals);
 
+  vector<int>* rows() {return &rows_;};
+  vector<int>* cols() {return &cols_;};
+  vector<complex<double> >* vals(){return &vals_;};
+
 private:
   struct matrix_descr descr;
   sparse_matrix_t Matrix;
