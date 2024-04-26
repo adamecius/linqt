@@ -82,13 +82,11 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( Moments::vector
 	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
 
 	
-        vector_t tmp_(Chebyshev0().size(),0.0);
+        vector_t tmp_(dim,0.0);
 
 
 	
-	linalg::orthogonalize(*S_, tmp_, T0);
-	linalg::copy ( tmp_, this->Chebyshev0() );
-
+	linalg::orthogonalize(*S_, this->Chebyshev0(), T0);
 	
 	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
         linalg::orthogonalize(*S_, this->Chebyshev1(), tmp_);
@@ -109,10 +107,19 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 	//From now on this-> will be discarded in Chebyshev0() and Chebyshev1()
 
 
-	vector_t tmp_(Chebyshev0().size(),0.0);
+	vector_t tmp_(dim,0.0);
+
+
+	linalg::copy ( T0, this->Chebyshev1() );
+	OP.Multiply( this->Chebyshev1(), this->Chebyshev0() );
+	this->Hamiltonian().Multiply( this->Chebyshev0(), this->Chebyshev1() );
+
+
+
+	
 
 	linalg::orthogonalize(*S_, tmp_, T0);
-	linalg::copy ( tmp_, this->Chebyshev0() );
+	linalg::copy ( tmp_, this->Chebyshev1() );
         OP.Multiply( this->Chebyshev1(), this->Chebyshev0() );
 
 	
@@ -125,29 +132,28 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 };
 
 
-
 int chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal( )
 {
-        vector_t tmp_(Chebyshev0().size(),0.0),
-	  tmp_2_(Chebyshev0().size(),0.0);
+
+        std::size_t dim = Chebyshev0().size();
+        vector_t tmp_( dim, 0.0 ),
+	         tmp_2_( dim, 0.0);
+
 
 	
-	this->Hamiltonian().Multiply(tmp_, this->Chebyshev1());
-
-
+	this->Hamiltonian().Multiply( this->Chebyshev1(),tmp_);
 	
-	linalg::orthogonalize(*S_, tmp_2_, tmp_);
-
+       	linalg::orthogonalize(*S_, tmp_2_, tmp_);
+	//linalg::copy(tmp_, tmp_2_);
+	
 	#pragma omp parallel for
-	for(std::size_t i=0; i< tmp_.size();i++){
-	  tmp_2_[i] = 2.0 * tmp_2_[i] - Chebyshev0()[i];
-
-	}
+	for(std::size_t i=0; i< dim;i++)
+	  Chebyshev0()[i] = 2.0 * tmp_2_[i] - Chebyshev0()[i];
 	
-	linalg::copy( tmp_2_, Chebyshev0());
-
-
 	
 	this->Chebyshev0().swap(this->Chebyshev1());
+
+	
+
 	return 0;
 };

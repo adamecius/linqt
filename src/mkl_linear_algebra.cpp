@@ -95,17 +95,13 @@ void linalg::introduce_segment(const vector< complex<double> >&x, size_t size_x,
     y[start_y + i] = x[i];
 
 };  
-/*  if( start_x + size_y > size_x ){
-    std::cout<<"Something's wrong-extract  "<<start_x<<" "<<size_y<<"     "<<size_x<<std::endl;
-      return;
-  }
-*/
 
 
 void linalg::orthogonalize(SparseMatrixType& S, vector< complex<double> >& orthogonalized, vector< complex<double> >& original){
 
 
   int DIM = S.numRows(), NNZ=S.vals()->size();
+
 
   int *rowsPtr = S.rows()->data();
   int *colsPtr = S.cols()->data();
@@ -116,7 +112,8 @@ void linalg::orthogonalize(SparseMatrixType& S, vector< complex<double> >& ortho
     eig_original(original.data(), DIM),
     eig_orthogonalized(orthogonalized.data(), DIM);
 
-    std::cout << "OK:     " << std::endl;
+
+  std::cout<<eig_original.norm()<<std::endl;  
   Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> > eigen_S( DIM, DIM, NNZ, rowsPtr, colsPtr, values);
 
   

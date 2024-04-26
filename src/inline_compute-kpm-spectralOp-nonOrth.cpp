@@ -50,8 +50,6 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < NOPS; i++)
 	  if( OP[i].isIdentity() ){
 			std::cout<<"The operator "<<OP[i].ID()<<" is treated as the identity"<<std::endl;
-
-			OP[2] = OP[1];//Hack for testing
 	  }
 	else
 	{
@@ -76,12 +74,15 @@ int main(int argc, char *argv[])
 	if( argc == 5)
 		gen  = qstates::LoadStateFile(argv[4]);
 
+	
+
+
 	chebMoms.set_S(OP[2]);
 	chebyshev::SpectralMoments_nonOrth(OP[1],chebMoms, gen);
 
-	auto prefix="SpectralOp"+OP[1].ID();
+	auto prefix="SpectralOp-nonOrth-"+OP[1].ID();
 	if( OP[1].isIdentity() )
-		prefix="SpectralOp"+OP[1].ID();
+		prefix="Spectral-nonOrth-OP"+OP[1].ID();
 	std::string outputfilename=prefix+LABEL+"KPM_M"+S_NMOM+"_state"+gen.StateLabel()+".chebmom1D-nonOrth";	
 
 	std::cout<<"Saving the moments in  "<<outputfilename<<std::endl;
