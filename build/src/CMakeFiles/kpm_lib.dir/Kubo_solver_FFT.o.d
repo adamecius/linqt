@@ -1,6 +1,6 @@
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/Kubo_solver_FFT.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/Kubo_solver_FFT.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/string \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++config.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -191,7 +191,7 @@ src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: \
   /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/sstream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/sstream.tcc \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/sparse_matrix.hpp \
   /usr/include/assert.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/vector \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_uninitialized.h \
@@ -241,13 +241,13 @@ src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_direct_call.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_compact.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/array \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/utility \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_relops.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cassert \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/limits \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/linear_algebra.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/linear_algebra.hpp \
   /usr/include/eigen-3.4.0/Eigen/Sparse \
   /usr/include/eigen-3.4.0/Eigen/SparseCore \
   /usr/include/eigen-3.4.0/Eigen/Core \
@@ -487,16 +487,16 @@ src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_list.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/allocated_ptr.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/list.tcc \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/vector_list.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/special_functions.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_solver.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/vector_list.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/special_functions.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_solver.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/numeric \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_numeric.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/chrono \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/ratio \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/ctime \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/parse_numbers.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/quantum_states.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/kpm_noneqop.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/time_station.hpp
+  /home/santiago/Projects/linqt-3.0.0_beta/include/quantum_states.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/kpm_noneqop.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/time_station.hpp

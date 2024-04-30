@@ -4,7 +4,7 @@
 # compile CXX with /opt/intel/oneapi/compiler/2024.1/bin/icpx
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include
+CXX_INCLUDES = -I/home/santiago/Projects/linqt-3.0.0_beta/include
 
 CXX_FLAGS = -qmkl=parallel -O3 --std=c++11 -Wall -Wextra -fopenmp 
 

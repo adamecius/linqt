@@ -1,6 +1,6 @@
 src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o: \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/mkl_sparse_matrix.cpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_sparse_matrix.cpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/sparse_matrix.hpp \
   /usr/include/assert.h /usr/include/features.h \
   /usr/include/features-time64.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \

@@ -1,6 +1,6 @@
 src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/Bastin_FFTs.cpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/fftw_wrapper.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/fftw_wrapper.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/iostream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++config.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -208,10 +208,10 @@ src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/sstream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/sstream.tcc \
   /usr/include/fftw3.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/Kubo_solver_FFT.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/Kubo_solver_FFT.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cstring \
   /usr/include/string.h /usr/include/strings.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/sparse_matrix.hpp \
   /usr/include/assert.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/vector \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_uninitialized.h \
@@ -260,9 +260,9 @@ src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_direct_call.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_compact.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cassert \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/linear_algebra.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/linear_algebra.hpp \
   /usr/include/eigen-3.4.0/Eigen/Sparse \
   /usr/include/eigen-3.4.0/Eigen/SparseCore \
   /usr/include/eigen-3.4.0/Eigen/Core \
@@ -497,11 +497,11 @@ src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_list.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/allocated_ptr.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/list.tcc \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/vector_list.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/special_functions.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_solver.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/vector_list.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/special_functions.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_solver.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/numeric \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_numeric.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/quantum_states.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/kpm_noneqop.hpp
+  /home/santiago/Projects/linqt-3.0.0_beta/include/quantum_states.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/kpm_noneqop.hpp

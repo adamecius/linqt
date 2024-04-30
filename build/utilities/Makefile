@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta
+CMAKE_SOURCE_DIR = /home/santiago/Projects/linqt-3.0.0_beta
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build
+CMAKE_BINARY_DIR = /home/santiago/Projects/linqt-3.0.0_beta/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -132,14 +132,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/utilities//CMakeFiles/progress.marks
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles 0
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles /home/santiago/Projects/linqt-3.0.0_beta/build/utilities//CMakeFiles/progress.marks
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/clean
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/clean
 .PHONY : clean
 
 # The main clean target
@@ -148,17 +148,17 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/preinstall
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/preinstall
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utilities/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Help Target
@@ -184,6 +184,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

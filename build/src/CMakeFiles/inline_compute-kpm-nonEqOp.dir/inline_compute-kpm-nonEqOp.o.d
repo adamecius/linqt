@@ -1,5 +1,5 @@
 src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/iostream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++config.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -185,8 +185,8 @@ src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/limits \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/ctime \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/parse_numbers.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/kpm_noneqop.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/kpm_noneqop.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
   /opt/intel/oneapi/compiler/2024.1/bin/compiler/../../opt/compiler/include/complex \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/complex \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cmath \
@@ -209,7 +209,7 @@ src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/array \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/utility \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_relops.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/sparse_matrix.hpp \
   /usr/include/assert.h /opt/intel/oneapi/mkl/2024.1/include/mkl.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_version.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_types.h \
@@ -248,7 +248,7 @@ src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_compact.h \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cassert \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/linear_algebra.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/linear_algebra.hpp \
   /usr/include/eigen-3.4.0/Eigen/Sparse \
   /usr/include/eigen-3.4.0/Eigen/SparseCore \
   /usr/include/eigen-3.4.0/Eigen/Core \
@@ -490,10 +490,10 @@ src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_list.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/allocated_ptr.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/list.tcc \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/vector_list.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/special_functions.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/quantum_states.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/vector_list.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/special_functions.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/quantum_states.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/numeric \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_numeric.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_solver.hpp
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_solver.hpp
