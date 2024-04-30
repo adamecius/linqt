@@ -113,15 +113,20 @@ void linalg::orthogonalize(SparseMatrixType& S, vector< complex<double> >& ortho
     eig_orthogonalized(orthogonalized.data(), DIM);
 
 
-  std::cout<<eig_original.norm()<<std::endl;  
+
   Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> > eigen_S( DIM, DIM, NNZ, rowsPtr, colsPtr, values);
 
   
   Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> > solver;
+  solver.setTolerance(0.0001); 
+  solver.setMaxIterations(2000); 
   solver.compute(eigen_S);
   eig_orthogonalized = solver.solve(eig_original);
-  
+
+
   std::cout << "#iterations:     " << solver.iterations() << std::endl;
+  std::cout << "  max#iterations:" << solver.maxIterations() << std::endl;
   std::cout << "estimated error: " << solver.error()      << std::endl;
-  
+  std::cout << "  tolerance :    " << solver.tolerance()      << std::endl;
+  std::cout<<  "Vector norm :    " <<eig_original.norm()<<std::endl<<std::endl;    
 };
