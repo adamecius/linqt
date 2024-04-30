@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	//Read the chebyshev moments from the file
  	chebyshev::Moments1D mu(argv[1]); 
 	//and apply the appropiated kernel
-	//	mu.ApplyJacksonKernel(broadening);
+		mu.ApplyJacksonKernel(broadening);
 
 	const int num_div = mu.HighestMomentNumber();
 	
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++){
-	  energies[i] = cos( M_PI * ( i  )/num_div );// -xbound + i*(2*xbound)/(num_div-1) ; //
+	  energies[i] = cos( M_PI * ( i +0.5 )/num_div );// -xbound + i*(2*xbound)/(num_div-1) ; //
 	}
 
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	
 
 	std::string
-	outputName  ="mean"+mu.SystemLabel()+"_noKernel_actualNodes_noDisp_FFTgrid.dat";
+	outputName  ="mean"+mu.SystemLabel()+"JACKSON_FFTgrid.dat";
 
 	std::cout<<"Saving the data in "<<outputName<<std::endl;
 	std::cout<<"PARAMETERS: "<< mu.SystemSize()<<" "<<mu.HalfWidth()<<std::endl;
