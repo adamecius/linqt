@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta
+CMAKE_SOURCE_DIR = /home/santiago/Projects/linqt-3.0.0_beta
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build
+CMAKE_BINARY_DIR = /home/santiago/Projects/linqt-3.0.0_beta/build
 
 # Include any dependencies generated for this target.
 include src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/depend.make
@@ -72,16 +72,16 @@ include src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/flags.make
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/flags.make
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o: ../src/kuboBastinSeaFromChebmom.cpp
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o -MF CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o.d -o CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o -c /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/kuboBastinSeaFromChebmom.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o -MF CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o.d -o CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinSeaFromChebmom.cpp
 
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.i"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/kuboBastinSeaFromChebmom.cpp > CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinSeaFromChebmom.cpp > CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.i
 
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.s"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/kuboBastinSeaFromChebmom.cpp -o CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinSeaFromChebmom.cpp -o CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/kuboBastinSeaFromChebmom.s
 
 # Object files for target inline_kuboBastinSeaFromChebmom
 inline_kuboBastinSeaFromChebmom_OBJECTS = \
@@ -94,18 +94,18 @@ inline_kuboBastinSeaFromChebmom: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.
 inline_kuboBastinSeaFromChebmom: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/build.make
 inline_kuboBastinSeaFromChebmom: lib/libkpm_lib.a
 inline_kuboBastinSeaFromChebmom: src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../inline_kuboBastinSeaFromChebmom"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../inline_kuboBastinSeaFromChebmom"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/build: inline_kuboBastinSeaFromChebmom
 .PHONY : src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/build
 
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/clean:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -P CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/cmake_clean.cmake
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -P CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/cmake_clean.cmake
 .PHONY : src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/clean
 
 src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/depend:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/santiago/Projects/linqt-3.0.0_beta /home/santiago/Projects/linqt-3.0.0_beta/src /home/santiago/Projects/linqt-3.0.0_beta/build /home/santiago/Projects/linqt-3.0.0_beta/build/src /home/santiago/Projects/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : src/CMakeFiles/inline_kuboBastinSeaFromChebmom.dir/depend
 

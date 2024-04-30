@@ -1,6 +1,6 @@
 src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/mkl_linear_algebra.cpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/linear_algebra.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_linear_algebra.cpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/linear_algebra.hpp \
   /opt/intel/oneapi/compiler/2024.1/bin/compiler/../../opt/compiler/include/complex \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/complex \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++config.h \
@@ -199,7 +199,7 @@ src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/vector.tcc \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cassert \
   /usr/include/assert.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/sparse_matrix.hpp \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/iostream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/fstream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/codecvt.h \

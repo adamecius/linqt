@@ -1,4 +1,4 @@
-# Install script for directory: /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta
+# Install script for directory: /home/santiago/Projects/linqt-3.0.0_beta
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,8 +44,8 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/cmake_install.cmake")
-  include("/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/utilities/cmake_install.cmake")
+  include("/home/santiago/Projects/linqt-3.0.0_beta/build/src/cmake_install.cmake")
+  include("/home/santiago/Projects/linqt-3.0.0_beta/build/utilities/cmake_install.cmake")
 
 endif()
 
@@ -57,5 +57,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/santiago/Projects/linqt-3.0.0_beta/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

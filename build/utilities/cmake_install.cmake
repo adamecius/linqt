@@ -1,4 +1,4 @@
-# Install script for directory: /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/utilities
+# Install script for directory: /home/santiago/Projects/linqt-3.0.0_beta/utilities
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,7 +44,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/utilities/python/cmake_install.cmake")
+  include("/home/santiago/Projects/linqt-3.0.0_beta/build/utilities/python/cmake_install.cmake")
 
 endif()
 

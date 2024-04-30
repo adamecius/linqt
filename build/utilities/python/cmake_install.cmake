@@ -1,8 +1,8 @@
-# Install script for directory: /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/utilities/python
+# Install script for directory: /home/santiago/Projects/linqt-3.0.0_beta/utilities/python
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/utilities/python")
+  set(CMAKE_INSTALL_PREFIX "/home/santiago/Projects/linqt-3.0.0_beta/utilities/python")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -51,6 +51,6 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-  file(INSTALL DESTINATION "/lib/python3.6" TYPE DIRECTORY FILES "/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/utilities/python/lib/" REGEX "/lib\\/[^/]*\\.py$" PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ)
+  file(INSTALL DESTINATION "/lib/python3.6" TYPE DIRECTORY FILES "/home/santiago/Projects/linqt-3.0.0_beta/utilities/python/lib/" REGEX "/lib\\/[^/]*\\.py$" PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ)
 endif()
 

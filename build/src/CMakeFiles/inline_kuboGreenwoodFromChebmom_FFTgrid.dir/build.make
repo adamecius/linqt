@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta
+CMAKE_SOURCE_DIR = /home/santiago/Projects/linqt-3.0.0_beta
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build
+CMAKE_BINARY_DIR = /home/santiago/Projects/linqt-3.0.0_beta/build
 
 # Include any dependencies generated for this target.
 include src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/depend.make
@@ -72,16 +72,16 @@ include src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/flags.make
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/flags.make
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o: ../src/kuboGreenwoodFromChebmom_FFTgrid.cpp
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o -MF CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o.d -o CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o -c /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom_FFTgrid.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o -MF CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o.d -o CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom_FFTgrid.cpp
 
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.i"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom_FFTgrid.cpp > CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom_FFTgrid.cpp > CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.i
 
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.s"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom_FFTgrid.cpp -o CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom_FFTgrid.cpp -o CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/kuboGreenwoodFromChebmom_FFTgrid.s
 
 # Object files for target inline_kuboGreenwoodFromChebmom_FFTgrid
 inline_kuboGreenwoodFromChebmom_FFTgrid_OBJECTS = \
@@ -94,18 +94,18 @@ inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFrom
 inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build.make
 inline_kuboGreenwoodFromChebmom_FFTgrid: lib/libkpm_lib.a
 inline_kuboGreenwoodFromChebmom_FFTgrid: src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../inline_kuboGreenwoodFromChebmom_FFTgrid"
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../inline_kuboGreenwoodFromChebmom_FFTgrid"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build: inline_kuboGreenwoodFromChebmom_FFTgrid
 .PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/build
 
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -P CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/cmake_clean.cmake
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && $(CMAKE_COMMAND) -P CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/cmake_clean.cmake
 .PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/clean
 
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/depend:
-	cd /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/santiago/Projects/linqt-3.0.0_beta /home/santiago/Projects/linqt-3.0.0_beta/src /home/santiago/Projects/linqt-3.0.0_beta/build /home/santiago/Projects/linqt-3.0.0_beta/build/src /home/santiago/Projects/linqt-3.0.0_beta/build/src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : src/CMakeFiles/inline_kuboGreenwoodFromChebmom_FFTgrid.dir/depend
 

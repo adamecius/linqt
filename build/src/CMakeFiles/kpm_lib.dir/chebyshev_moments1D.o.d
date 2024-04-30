@@ -1,6 +1,6 @@
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_moments.hpp \
   /opt/intel/oneapi/compiler/2024.1/bin/compiler/../../opt/compiler/include/complex \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/complex \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/x86_64-linux-gnu/c++/11/bits/c++config.h \
@@ -200,7 +200,7 @@ src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/array \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/utility \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_relops.h \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/sparse_matrix.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/sparse_matrix.hpp \
   /usr/include/assert.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/iostream \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/fstream \
@@ -248,7 +248,7 @@ src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: \
   /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/cassert \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/limits \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/linear_algebra.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/linear_algebra.hpp \
   /usr/include/eigen-3.4.0/Eigen/Sparse \
   /usr/include/eigen-3.4.0/Eigen/SparseCore \
   /usr/include/eigen-3.4.0/Eigen/Core \
@@ -490,6 +490,6 @@ src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_list.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/allocated_ptr.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/list.tcc \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/vector_list.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/special_functions.hpp \
-  /home/santiago/Documents/ICN2/Codes/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp
+  /home/santiago/Projects/linqt-3.0.0_beta/include/vector_list.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/special_functions.hpp \
+  /home/santiago/Projects/linqt-3.0.0_beta/include/chebyshev_coefficients.hpp
