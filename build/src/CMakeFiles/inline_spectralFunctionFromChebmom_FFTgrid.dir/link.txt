@@ -1,1 +1,0 @@
-/opt/intel/oneapi/compiler/2024.1/bin/icpx -qmkl=parallel -O3 --std=c++11 -Wall -Wextra -fopenmp  -rdynamic CMakeFiles/inline_spectralFunctionFromChebmom_FFTgrid.dir/spectralFunctionFromChebmom_FFTgrid.o -o ../inline_spectralFunctionFromChebmom_FFTgrid   -L/home/santiago/Projects/linqt-3.0.0_beta/build/lib  ../lib/libkpm_lib.a -liomp5 -lpthread -lm -ldl 
