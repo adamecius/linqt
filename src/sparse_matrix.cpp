@@ -34,6 +34,7 @@ bool Sparse::OPERATOR_FromCSRFile(const std::string input, int &dim, vector<int>
   {
     matrix_file >> col;
     columns[i] = col;
+    
   }
 
   //READ ROW_INDEX_ARRAY
@@ -42,9 +43,10 @@ bool Sparse::OPERATOR_FromCSRFile(const std::string input, int &dim, vector<int>
   {
     matrix_file >> rowIdx;
     rowIndex[i] = rowIdx;
+    
   }
   matrix_file.close();
-
+  
   std::cout << "FINISH READING.Status: SUCCEED" << std::endl;
   return true;
 };

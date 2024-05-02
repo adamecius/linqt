@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
 	if( argc == 5)
 		gen  = qstates::LoadStateFile(argv[4]);
 
+
+	gen.NumberOfStates(std::stoi(argv[4]));
 	
 
 

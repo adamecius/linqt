@@ -122,11 +122,12 @@ void linalg::orthogonalize(SparseMatrixType& S, vector< complex<double> >& ortho
   solver.setMaxIterations(2000); 
   solver.compute(eigen_S);
   eig_orthogonalized = solver.solve(eig_original);
-
-
+  
+  /*
   std::cout << "#iterations:     " << solver.iterations() << std::endl;
   std::cout << "  max#iterations:" << solver.maxIterations() << std::endl;
   std::cout << "estimated error: " << solver.error()      << std::endl;
   std::cout << "  tolerance :    " << solver.tolerance()      << std::endl;
   std::cout<<  "Vector norm :    " <<eig_original.norm()<<std::endl<<std::endl;    
+  */
 };

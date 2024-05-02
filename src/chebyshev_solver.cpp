@@ -164,7 +164,7 @@ int chebyshev::CorrelationExpansionMoments( SparseMatrixType &OPL, SparseMatrixT
 	
 	if( NumMomsL != or_mom0 or NumMomsR != or_mom1 )
 	{
-		std::cout<<"Changin from "<<NumMomsL<<"x"<<NumMomsR<<" to "<<or_mom0<<"x"<<or_mom1<<std::endl;
+		std::cout<<"Changing from "<<NumMomsL<<"x"<<NumMomsR<<" to "<<or_mom0<<"x"<<or_mom1<<std::endl;
 		chebMoms.MomentNumber(or_mom0,or_mom1);
 	}
 	 
@@ -215,13 +215,19 @@ int chebyshev::SpectralMoments_nonOrth( SparseMatrixType &OP,  chebyshev::Moment
 			chebMoms.SetInitVectors_nonOrthogonal( Phi );
 		else
 			chebMoms.SetInitVectors_nonOrthogonal( OP,Phi );
-			
-		for(int m = 0 ; m < NumMoms ; m++ )
+
+		double scal=2.0/gen.NumberOfStates();
+		chebMoms(0) += 0.5*scal*linalg::vdot( Phi, chebMoms.Chebyshev0() ) ;
+		
+		
+		chebMoms(1) +=scal*linalg::vdot( Phi, chebMoms.Chebyshev1() ) ;
+		
+		
+		for(int m = 2 ; m < NumMoms ; m++ )
 		{
-			double scal=2.0/gen.NumberOfStates();
-			if( m == 0 ) scal*=0.5;
-			chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev0() ) ;
-			chebMoms.Iterate_nonOrthogonal();
+		        chebMoms.Iterate_nonOrthogonal();
+			chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev1() ) ;
+			
 
 		}
 	}
