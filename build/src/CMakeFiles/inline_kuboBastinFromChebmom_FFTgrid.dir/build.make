@@ -73,15 +73,15 @@ src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FF
 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o: ../src/kuboBastinFromChebmom_FFTgrid.cpp
 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o: src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o -MF CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o.d -o CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom_FFTgrid.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o -MF CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o.d -o CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom_FFTgrid.cpp
 
 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom_FFTgrid.cpp > CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom_FFTgrid.cpp > CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.i
 
 src/CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom_FFTgrid.cpp -o CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom_FFTgrid.cpp -o CMakeFiles/inline_kuboBastinFromChebmom_FFTgrid.dir/kuboBastinFromChebmom_FFTgrid.s
 
 # Object files for target inline_kuboBastinFromChebmom_FFTgrid
 inline_kuboBastinFromChebmom_FFTgrid_OBJECTS = \

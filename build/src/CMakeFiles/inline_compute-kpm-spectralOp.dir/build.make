@@ -73,15 +73,15 @@ src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o
 src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o: ../src/inline_compute-kpm-spectralOp.cpp
 src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o: src/CMakeFiles/inline_compute-kpm-spectralOp.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o -MF CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o.d -o CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o -MF CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o.d -o CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp.cpp
 
 src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp.cpp > CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp.cpp > CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.i
 
 src/CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp.cpp -o CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp.cpp -o CMakeFiles/inline_compute-kpm-spectralOp.dir/inline_compute-kpm-spectralOp.s
 
 # Object files for target inline_compute-kpm-spectralOp
 inline_compute__kpm__spectralOp_OBJECTS = \

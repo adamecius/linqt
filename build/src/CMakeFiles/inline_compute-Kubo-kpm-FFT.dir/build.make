@@ -73,15 +73,15 @@ src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o: sr
 src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o: ../src/inline_compute-Kubo-kpm-FFT.cpp
 src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o: src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o -MF CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o.d -o CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-Kubo-kpm-FFT.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o -MF CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o.d -o CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-Kubo-kpm-FFT.cpp
 
 src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-Kubo-kpm-FFT.cpp > CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-Kubo-kpm-FFT.cpp > CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.i
 
 src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-Kubo-kpm-FFT.cpp -o CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-Kubo-kpm-FFT.cpp -o CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.s
 
 # Object files for target inline_compute-Kubo-kpm-FFT
 inline_compute__Kubo__kpm__FFT_OBJECTS = \

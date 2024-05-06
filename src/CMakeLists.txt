@@ -17,10 +17,15 @@ set(KPM_LIB_SOURCES
  "Greenwood_FFTs.cpp"
  "Bastin_FFTs.cpp"
 )
+#IF EIGEN BACKEND IS USED
+if( ${EIGEN} STREQUAL "TRUE" )
+	set(KPM_LIB_SOURCES "${KPM_LIB_SOURCES}" "eigen_sparse_matrix.cpp" "eigen_linear_algebra.cpp" )
+	message( ${KPM_LIB_SOURCES} )
+endif()
 
 #IF INTEL BACKEND IS USED
 if( ${INTEL_MKL} STREQUAL "TRUE" )
-	set(KPM_LIB_SOURCES "${KPM_LIB_SOURCES}" "mkl_sparse_matrix.cpp" "mkl_linear_algebra.cpp" )
+	set(KPM_LIB_SOURCES "${KPM_LIB_SOURCES}" "eigen_sparse_matrix.cpp" "eigen_linear_algebra.cpp" )
 	message( ${KPM_LIB_SOURCES} )
 endif()
 

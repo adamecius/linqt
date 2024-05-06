@@ -28,7 +28,7 @@ int chebyshev::ComputeMomTable( chebyshev::Vectors &chevVecL, chebyshev::Vectors
 	const size_t maxMR = sub.HighestMomentNumber(0);
 	const size_t maxML = sub.HighestMomentNumber(1);
 		
-	const int nthreads = mkl_get_max_threads();
+	const int nthreads = omp_get_num_threads();
 //	mkl_set_num_threads_local(1); 
 	for( auto m0 = 0; m0 < maxML; m0++)
 	{

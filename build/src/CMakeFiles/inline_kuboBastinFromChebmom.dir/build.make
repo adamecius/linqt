@@ -73,15 +73,15 @@ src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o: src/CMa
 src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o: ../src/kuboBastinFromChebmom.cpp
 src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o: src/CMakeFiles/inline_kuboBastinFromChebmom.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o -MF CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o.d -o CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o -MF CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o.d -o CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom.cpp
 
 src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom.cpp > CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom.cpp > CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.i
 
 src/CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom.cpp -o CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboBastinFromChebmom.cpp -o CMakeFiles/inline_kuboBastinFromChebmom.dir/kuboBastinFromChebmom.s
 
 # Object files for target inline_kuboBastinFromChebmom
 inline_kuboBastinFromChebmom_OBJECTS = \

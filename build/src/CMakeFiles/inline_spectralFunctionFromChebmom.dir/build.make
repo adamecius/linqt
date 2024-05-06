@@ -73,15 +73,15 @@ src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmo
 src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o: ../src/spectralFunctionFromChebmom.cpp
 src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o: src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o -MF CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o.d -o CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/spectralFunctionFromChebmom.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o -MF CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o.d -o CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/spectralFunctionFromChebmom.cpp
 
 src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/spectralFunctionFromChebmom.cpp > CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/spectralFunctionFromChebmom.cpp > CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.i
 
 src/CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/spectralFunctionFromChebmom.cpp -o CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/spectralFunctionFromChebmom.cpp -o CMakeFiles/inline_spectralFunctionFromChebmom.dir/spectralFunctionFromChebmom.s
 
 # Object files for target inline_spectralFunctionFromChebmom
 inline_spectralFunctionFromChebmom_OBJECTS = \

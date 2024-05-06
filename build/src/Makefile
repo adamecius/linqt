@@ -550,6 +550,36 @@ chebyshev_vectors.s:
 .PHONY : chebyshev_vectors.s
 
 # target to build an object file
+eigen_linear_algebra.o:
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o
+.PHONY : eigen_linear_algebra.o
+
+# target to preprocess a source file
+eigen_linear_algebra.i:
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.i
+.PHONY : eigen_linear_algebra.i
+
+# target to generate assembly for a file
+eigen_linear_algebra.s:
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.s
+.PHONY : eigen_linear_algebra.s
+
+# target to build an object file
+eigen_sparse_matrix.o:
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o
+.PHONY : eigen_sparse_matrix.o
+
+# target to preprocess a source file
+eigen_sparse_matrix.i:
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.i
+.PHONY : eigen_sparse_matrix.i
+
+# target to generate assembly for a file
+eigen_sparse_matrix.s:
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.s
+.PHONY : eigen_sparse_matrix.s
+
+# target to build an object file
 inline_compute-Kubo-kpm-FFT.o:
 	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/build.make src/CMakeFiles/inline_compute-Kubo-kpm-FFT.dir/inline_compute-Kubo-kpm-FFT.o
 .PHONY : inline_compute-Kubo-kpm-FFT.o
@@ -745,36 +775,6 @@ kuboGreenwoodFromChebmom_FFTgrid.s:
 .PHONY : kuboGreenwoodFromChebmom_FFTgrid.s
 
 # target to build an object file
-mkl_linear_algebra.o:
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o
-.PHONY : mkl_linear_algebra.o
-
-# target to preprocess a source file
-mkl_linear_algebra.i:
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.i
-.PHONY : mkl_linear_algebra.i
-
-# target to generate assembly for a file
-mkl_linear_algebra.s:
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.s
-.PHONY : mkl_linear_algebra.s
-
-# target to build an object file
-mkl_sparse_matrix.o:
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o
-.PHONY : mkl_sparse_matrix.o
-
-# target to preprocess a source file
-mkl_sparse_matrix.i:
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.i
-.PHONY : mkl_sparse_matrix.i
-
-# target to generate assembly for a file
-mkl_sparse_matrix.s:
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.s
-.PHONY : mkl_sparse_matrix.s
-
-# target to build an object file
 quantum_states.o:
 	cd /home/santiago/Projects/linqt-3.0.0_beta/build && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/kpm_lib.dir/build.make src/CMakeFiles/kpm_lib.dir/quantum_states.o
 .PHONY : quantum_states.o
@@ -923,6 +923,12 @@ help:
 	@echo "... chebyshev_vectors.o"
 	@echo "... chebyshev_vectors.i"
 	@echo "... chebyshev_vectors.s"
+	@echo "... eigen_linear_algebra.o"
+	@echo "... eigen_linear_algebra.i"
+	@echo "... eigen_linear_algebra.s"
+	@echo "... eigen_sparse_matrix.o"
+	@echo "... eigen_sparse_matrix.i"
+	@echo "... eigen_sparse_matrix.s"
 	@echo "... inline_compute-Kubo-kpm-FFT.o"
 	@echo "... inline_compute-Kubo-kpm-FFT.i"
 	@echo "... inline_compute-Kubo-kpm-FFT.s"
@@ -962,12 +968,6 @@ help:
 	@echo "... kuboGreenwoodFromChebmom_FFTgrid.o"
 	@echo "... kuboGreenwoodFromChebmom_FFTgrid.i"
 	@echo "... kuboGreenwoodFromChebmom_FFTgrid.s"
-	@echo "... mkl_linear_algebra.o"
-	@echo "... mkl_linear_algebra.i"
-	@echo "... mkl_linear_algebra.s"
-	@echo "... mkl_sparse_matrix.o"
-	@echo "... mkl_sparse_matrix.i"
-	@echo "... mkl_sparse_matrix.s"
 	@echo "... quantum_states.o"
 	@echo "... quantum_states.i"
 	@echo "... quantum_states.s"

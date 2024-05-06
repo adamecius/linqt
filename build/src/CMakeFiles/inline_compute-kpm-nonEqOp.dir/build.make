@@ -73,15 +73,15 @@ src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: src/
 src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: ../src/inline_compute-kpm-nonEqOp.cpp
 src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o: src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o -MF CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o.d -o CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o -MF CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o.d -o CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp
 
 src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp > CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp > CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.i
 
 src/CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp -o CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-nonEqOp.cpp -o CMakeFiles/inline_compute-kpm-nonEqOp.dir/inline_compute-kpm-nonEqOp.s
 
 # Object files for target inline_compute-kpm-nonEqOp
 inline_compute__kpm__nonEqOp_OBJECTS = \

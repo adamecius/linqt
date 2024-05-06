@@ -73,211 +73,211 @@ src/CMakeFiles/kpm_lib.dir/chebyshev_solver.o: src/CMakeFiles/kpm_lib.dir/flags.
 src/CMakeFiles/kpm_lib.dir/chebyshev_solver.o: ../src/chebyshev_solver.cpp
 src/CMakeFiles/kpm_lib.dir/chebyshev_solver.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/kpm_lib.dir/chebyshev_solver.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_solver.o -MF CMakeFiles/kpm_lib.dir/chebyshev_solver.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_solver.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_solver.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_solver.o -MF CMakeFiles/kpm_lib.dir/chebyshev_solver.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_solver.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_solver.cpp
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_solver.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/chebyshev_solver.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_solver.cpp > CMakeFiles/kpm_lib.dir/chebyshev_solver.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_solver.cpp > CMakeFiles/kpm_lib.dir/chebyshev_solver.i
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_solver.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/chebyshev_solver.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_solver.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_solver.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_solver.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_solver.s
 
 src/CMakeFiles/kpm_lib.dir/quantum_states.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/quantum_states.o: ../src/quantum_states.cpp
 src/CMakeFiles/kpm_lib.dir/quantum_states.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object src/CMakeFiles/kpm_lib.dir/quantum_states.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/quantum_states.o -MF CMakeFiles/kpm_lib.dir/quantum_states.o.d -o CMakeFiles/kpm_lib.dir/quantum_states.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/quantum_states.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/quantum_states.o -MF CMakeFiles/kpm_lib.dir/quantum_states.o.d -o CMakeFiles/kpm_lib.dir/quantum_states.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/quantum_states.cpp
 
 src/CMakeFiles/kpm_lib.dir/quantum_states.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/quantum_states.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/quantum_states.cpp > CMakeFiles/kpm_lib.dir/quantum_states.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/quantum_states.cpp > CMakeFiles/kpm_lib.dir/quantum_states.i
 
 src/CMakeFiles/kpm_lib.dir/quantum_states.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/quantum_states.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/quantum_states.cpp -o CMakeFiles/kpm_lib.dir/quantum_states.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/quantum_states.cpp -o CMakeFiles/kpm_lib.dir/quantum_states.s
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.o: ../src/chebyshev_vectors.cpp
 src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.o -MF CMakeFiles/kpm_lib.dir/chebyshev_vectors.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_vectors.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_vectors.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.o -MF CMakeFiles/kpm_lib.dir/chebyshev_vectors.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_vectors.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_vectors.cpp
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/chebyshev_vectors.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_vectors.cpp > CMakeFiles/kpm_lib.dir/chebyshev_vectors.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_vectors.cpp > CMakeFiles/kpm_lib.dir/chebyshev_vectors.i
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_vectors.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/chebyshev_vectors.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_vectors.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_vectors.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_vectors.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_vectors.s
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments.o: ../src/chebyshev_moments.cpp
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/CMakeFiles/kpm_lib.dir/chebyshev_moments.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_moments.o -MF CMakeFiles/kpm_lib.dir/chebyshev_moments.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_moments.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_moments.o -MF CMakeFiles/kpm_lib.dir/chebyshev_moments.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_moments.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments.cpp
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/chebyshev_moments.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments.cpp > CMakeFiles/kpm_lib.dir/chebyshev_moments.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments.cpp > CMakeFiles/kpm_lib.dir/chebyshev_moments.i
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/chebyshev_moments.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_moments.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_moments.s
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o: ../src/chebyshev_moments2D.cpp
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o -MF CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments2D.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o -MF CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_moments2D.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments2D.cpp
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/chebyshev_moments2D.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments2D.cpp > CMakeFiles/kpm_lib.dir/chebyshev_moments2D.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments2D.cpp > CMakeFiles/kpm_lib.dir/chebyshev_moments2D.i
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments2D.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/chebyshev_moments2D.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments2D.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_moments2D.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments2D.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_moments2D.s
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: ../src/chebyshev_moments1D.cpp
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o -MF CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o -MF CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_moments1D.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/chebyshev_moments1D.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp > CMakeFiles/kpm_lib.dir/chebyshev_moments1D.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp > CMakeFiles/kpm_lib.dir/chebyshev_moments1D.i
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_moments1D.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/chebyshev_moments1D.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_moments1D.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_moments1D.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_moments1D.s
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o: ../src/chebyshev_momentsTD.cpp
 src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o -MF CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_momentsTD.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o -MF CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o.d -o CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_momentsTD.cpp
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_momentsTD.cpp > CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_momentsTD.cpp > CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.i
 
 src/CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_momentsTD.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/chebyshev_momentsTD.cpp -o CMakeFiles/kpm_lib.dir/chebyshev_momentsTD.s
 
 src/CMakeFiles/kpm_lib.dir/sparse_matrix.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/sparse_matrix.o: ../src/sparse_matrix.cpp
 src/CMakeFiles/kpm_lib.dir/sparse_matrix.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object src/CMakeFiles/kpm_lib.dir/sparse_matrix.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/sparse_matrix.o -MF CMakeFiles/kpm_lib.dir/sparse_matrix.o.d -o CMakeFiles/kpm_lib.dir/sparse_matrix.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/sparse_matrix.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/sparse_matrix.o -MF CMakeFiles/kpm_lib.dir/sparse_matrix.o.d -o CMakeFiles/kpm_lib.dir/sparse_matrix.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/sparse_matrix.cpp
 
 src/CMakeFiles/kpm_lib.dir/sparse_matrix.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/sparse_matrix.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/sparse_matrix.cpp > CMakeFiles/kpm_lib.dir/sparse_matrix.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/sparse_matrix.cpp > CMakeFiles/kpm_lib.dir/sparse_matrix.i
 
 src/CMakeFiles/kpm_lib.dir/sparse_matrix.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/sparse_matrix.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/sparse_matrix.cpp -o CMakeFiles/kpm_lib.dir/sparse_matrix.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/sparse_matrix.cpp -o CMakeFiles/kpm_lib.dir/sparse_matrix.s
 
 src/CMakeFiles/kpm_lib.dir/special_functions.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/special_functions.o: ../src/special_functions.cpp
 src/CMakeFiles/kpm_lib.dir/special_functions.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object src/CMakeFiles/kpm_lib.dir/special_functions.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/special_functions.o -MF CMakeFiles/kpm_lib.dir/special_functions.o.d -o CMakeFiles/kpm_lib.dir/special_functions.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/special_functions.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/special_functions.o -MF CMakeFiles/kpm_lib.dir/special_functions.o.d -o CMakeFiles/kpm_lib.dir/special_functions.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/special_functions.cpp
 
 src/CMakeFiles/kpm_lib.dir/special_functions.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/special_functions.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/special_functions.cpp > CMakeFiles/kpm_lib.dir/special_functions.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/special_functions.cpp > CMakeFiles/kpm_lib.dir/special_functions.i
 
 src/CMakeFiles/kpm_lib.dir/special_functions.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/special_functions.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/special_functions.cpp -o CMakeFiles/kpm_lib.dir/special_functions.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/special_functions.cpp -o CMakeFiles/kpm_lib.dir/special_functions.s
 
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: ../src/Kubo_solver_FFT.cpp
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o -MF CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o.d -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o -MF CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o.d -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp
 
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp > CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp > CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.i
 
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT.cpp -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.s
 
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o: ../src/Kubo_solver_FFT_postProcess.cpp
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o -MF CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o.d -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT_postProcess.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o -MF CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o.d -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT_postProcess.cpp
 
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT_postProcess.cpp > CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT_postProcess.cpp > CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.i
 
 src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT_postProcess.cpp -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Kubo_solver_FFT_postProcess.cpp -o CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.s
 
 src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o: ../src/Greenwood_FFTs.cpp
 src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o -MF CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o.d -o CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Greenwood_FFTs.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o -MF CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o.d -o CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Greenwood_FFTs.cpp
 
 src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/Greenwood_FFTs.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Greenwood_FFTs.cpp > CMakeFiles/kpm_lib.dir/Greenwood_FFTs.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Greenwood_FFTs.cpp > CMakeFiles/kpm_lib.dir/Greenwood_FFTs.i
 
 src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/Greenwood_FFTs.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Greenwood_FFTs.cpp -o CMakeFiles/kpm_lib.dir/Greenwood_FFTs.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Greenwood_FFTs.cpp -o CMakeFiles/kpm_lib.dir/Greenwood_FFTs.s
 
 src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: src/CMakeFiles/kpm_lib.dir/flags.make
 src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: ../src/Bastin_FFTs.cpp
 src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o -MF CMakeFiles/kpm_lib.dir/Bastin_FFTs.o.d -o CMakeFiles/kpm_lib.dir/Bastin_FFTs.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o -MF CMakeFiles/kpm_lib.dir/Bastin_FFTs.o.d -o CMakeFiles/kpm_lib.dir/Bastin_FFTs.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp
 
 src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/Bastin_FFTs.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp > CMakeFiles/kpm_lib.dir/Bastin_FFTs.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp > CMakeFiles/kpm_lib.dir/Bastin_FFTs.i
 
 src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/Bastin_FFTs.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp -o CMakeFiles/kpm_lib.dir/Bastin_FFTs.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/Bastin_FFTs.cpp -o CMakeFiles/kpm_lib.dir/Bastin_FFTs.s
 
-src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o: src/CMakeFiles/kpm_lib.dir/flags.make
-src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o: ../src/mkl_sparse_matrix.cpp
-src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o -MF CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o.d -o CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_sparse_matrix.cpp
+src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o: src/CMakeFiles/kpm_lib.dir/flags.make
+src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o: ../src/eigen_sparse_matrix.cpp
+src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o -MF CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o.d -o CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/eigen_sparse_matrix.cpp
 
-src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_sparse_matrix.cpp > CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.i
+src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.i"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/eigen_sparse_matrix.cpp > CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.i
 
-src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_sparse_matrix.cpp -o CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.s
+src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.s"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/eigen_sparse_matrix.cpp -o CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.s
 
-src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: src/CMakeFiles/kpm_lib.dir/flags.make
-src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: ../src/mkl_linear_algebra.cpp
-src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o -MF CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o.d -o CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_linear_algebra.cpp
+src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o: src/CMakeFiles/kpm_lib.dir/flags.make
+src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o: ../src/eigen_linear_algebra.cpp
+src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o: src/CMakeFiles/kpm_lib.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o -MF CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o.d -o CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/eigen_linear_algebra.cpp
 
-src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/mkl_linear_algebra.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_linear_algebra.cpp > CMakeFiles/kpm_lib.dir/mkl_linear_algebra.i
+src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/kpm_lib.dir/eigen_linear_algebra.i"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/eigen_linear_algebra.cpp > CMakeFiles/kpm_lib.dir/eigen_linear_algebra.i
 
-src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/mkl_linear_algebra.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/mkl_linear_algebra.cpp -o CMakeFiles/kpm_lib.dir/mkl_linear_algebra.s
+src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/kpm_lib.dir/eigen_linear_algebra.s"
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/eigen_linear_algebra.cpp -o CMakeFiles/kpm_lib.dir/eigen_linear_algebra.s
 
 # Object files for target kpm_lib
 kpm_lib_OBJECTS = \
@@ -294,8 +294,8 @@ kpm_lib_OBJECTS = \
 "CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o" \
 "CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o" \
 "CMakeFiles/kpm_lib.dir/Bastin_FFTs.o" \
-"CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o" \
-"CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o"
+"CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o" \
+"CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o"
 
 # External object files for target kpm_lib
 kpm_lib_EXTERNAL_OBJECTS =
@@ -313,8 +313,8 @@ lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT.o
 lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/Kubo_solver_FFT_postProcess.o
 lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/Greenwood_FFTs.o
 lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/Bastin_FFTs.o
-lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/mkl_sparse_matrix.o
-lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/mkl_linear_algebra.o
+lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/eigen_sparse_matrix.o
+lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/eigen_linear_algebra.o
 lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/build.make
 lib/libkpm_lib.a: src/CMakeFiles/kpm_lib.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Linking CXX static library ../lib/libkpm_lib.a"

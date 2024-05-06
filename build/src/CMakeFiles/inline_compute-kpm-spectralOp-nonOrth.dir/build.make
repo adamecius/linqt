@@ -73,15 +73,15 @@ src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spec
 src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o: ../src/inline_compute-kpm-spectralOp-nonOrth.cpp
 src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o: src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o -MF CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o.d -o CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp-nonOrth.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o -MF CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o.d -o CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp-nonOrth.cpp
 
 src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp-nonOrth.cpp > CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp-nonOrth.cpp > CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.i
 
 src/CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp-nonOrth.cpp -o CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/inline_compute-kpm-spectralOp-nonOrth.cpp -o CMakeFiles/inline_compute-kpm-spectralOp-nonOrth.dir/inline_compute-kpm-spectralOp-nonOrth.s
 
 # Object files for target inline_compute-kpm-spectralOp-nonOrth
 inline_compute__kpm__spectralOp__nonOrth_OBJECTS = \

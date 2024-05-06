@@ -73,15 +73,15 @@ src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o: s
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o: ../src/kuboGreenwoodFromChebmom.cpp
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o: src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/santiago/Projects/linqt-3.0.0_beta/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o -MF CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o.d -o CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom.cpp
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o -MF CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o.d -o CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.o -c /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom.cpp
 
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.i"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom.cpp > CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.i
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom.cpp > CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.i
 
 src/CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.s"
-	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /opt/intel/oneapi/compiler/2024.1/bin/icpx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom.cpp -o CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.s
+	cd /home/santiago/Projects/linqt-3.0.0_beta/build/src && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/santiago/Projects/linqt-3.0.0_beta/src/kuboGreenwoodFromChebmom.cpp -o CMakeFiles/inline_kuboGreenwoodFromChebmom.dir/kuboGreenwoodFromChebmom.s
 
 # Object files for target inline_kuboGreenwoodFromChebmom
 inline_kuboGreenwoodFromChebmom_OBJECTS = \

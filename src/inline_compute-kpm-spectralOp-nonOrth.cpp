@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <chrono>
 
-
 #include "kpm_noneqop.hpp" //Message functions
 #include "chebyshev_moments.hpp"
 #include "sparse_matrix.hpp"

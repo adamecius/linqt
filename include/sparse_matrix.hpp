@@ -6,7 +6,13 @@
 #include <vector>
 #include <complex>
 #include <fstream>
-using namespace std;
+
+#include<eigen-3.4.0/Eigen/Core>
+#include<eigen-3.4.0/Eigen/Sparse>
+
+using std::complex;
+using std::vector;
+using std::string;
 
 namespace Sparse
 {
@@ -48,18 +54,11 @@ class SparseMatrixType  : public SparseMatrixType_BASE
 {
 public:
   SparseMatrixType()
-  {
-    descr.type = SPARSE_MATRIX_TYPE_HERMITIAN;
-    descr.mode = SPARSE_FILL_MODE_UPPER;
-    descr.diag = SPARSE_DIAG_NON_UNIT;
-  }
+  {}
+  ~SparseMatrixType() { delete matrix_; }
+    
   
-  inline
-  matrix_descr& mkl_descr()  { return  descr; }; 
-
-  sparse_matrix_t& mkl_matrix()  { return Matrix; };
-  
-  string matrixType() const { return "CSR Matrix from MKL Library."; };
+  string matrixType() const { return "CSR Matrix from Eigen."; };
   void Multiply(const value_t a, const value_t *x, const value_t b, value_t *y);
   void Multiply(const value_t a, const vector_t& x, const value_t b, vector_t& y);
   void Rescale(const value_t a,const value_t b);
@@ -79,8 +78,7 @@ public:
   vector<complex<double> >* vals(){return &vals_;};
 
 private:
-  struct matrix_descr descr;
-  sparse_matrix_t Matrix;
+  Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> >* matrix_;
   vector<int> rows_;
   vector<int> cols_;
   vector<complex<double> > vals_;
