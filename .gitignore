@@ -1,5 +1,5 @@
 .vscode*
 *.o 
-./build/*
+build/
 *.d
 .projectile
