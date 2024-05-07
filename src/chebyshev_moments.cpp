@@ -78,12 +78,10 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( Moments::vector
         vector_t tmp_(dim,0.0);
 
 
-
-        linalg::orthogonalize(*S_, this->Chebyshev0(), T0);
 	
-	
+	linalg::copy ( T0, this->Chebyshev0() );	
 	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
-        linalg::orthogonalize(*S_, this->Chebyshev1(), tmp_);
+        linalg::orthogonalize(*S_,  tmp_, this->Chebyshev1());
 	
 };
 
@@ -104,24 +102,15 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 	vector_t tmp_(dim,0.0);
 
 
+
 	linalg::copy ( T0, this->Chebyshev1() );
-	OP.Multiply( this->Chebyshev1(), this->Chebyshev0() );
-	this->Hamiltonian().Multiply( this->Chebyshev0(), this->Chebyshev1() );
-
-
-
-	
-
-	linalg::orthogonalize(*S_, tmp_, T0);
-	linalg::copy ( tmp_, this->Chebyshev1() );
         OP.Multiply( this->Chebyshev1(), this->Chebyshev0() );
 
 	
 	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
-        linalg::orthogonalize(*S_, this->Chebyshev1(), tmp_ );
+        linalg::orthogonalize(*S_, tmp_ , this->Chebyshev1());
 
 
-		
 	return ;
 };
 
@@ -137,8 +126,7 @@ int chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal( )
 	
 	this->Hamiltonian().Multiply( this->Chebyshev1(),tmp_);
 	
-       	linalg::orthogonalize(*S_, tmp_2_, tmp_);
-	//linalg::copy(tmp_, tmp_2_);
+       	linalg::orthogonalize(*S_, tmp_, tmp_2_);
 	
 	#pragma omp parallel for
 	for(std::size_t i=0; i< dim;i++){

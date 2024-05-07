@@ -224,7 +224,7 @@ LinQT_IS_TOP_LEVEL:STATIC=ON
 LinQT_SOURCE_DIR:STATIC=/home/santiago/Projects/linqt-3.0.0_beta
 
 //Dependencies for the target
-kpm_lib_LIB_DEPENDS:STATIC=general;-liomp5 -lpthread -lfftw3 -lm -ldl;
+kpm_lib_LIB_DEPENDS:STATIC=general;-lpthread -lfftw3 -lm -ldl;
 
 //Value Computed by CMake
 linQT_utilities_BINARY_DIR:STATIC=/home/santiago/Projects/linqt-3.0.0_beta/build/utilities/python

@@ -1,1 +1,1 @@
-/usr/bin/g++ -O3 --std=c++11 -Wall -Wextra -fopenmp  -rdynamic CMakeFiles/inline_compute-kpm-CorrOp.dir/inline_compute-kpm-CorrOp.o -o ../inline_compute-kpm-CorrOp   -L/home/santiago/Projects/linqt-3.0.0_beta/build/lib  ../lib/libkpm_lib.a -liomp5 -lpthread -lfftw3 -lm -ldl 
+/usr/bin/g++ -O3 --std=c++11 -Wall -Wextra -fopenmp  -rdynamic CMakeFiles/inline_compute-kpm-CorrOp.dir/inline_compute-kpm-CorrOp.o -o ../inline_compute-kpm-CorrOp   -L/home/santiago/Projects/linqt-3.0.0_beta/build/lib  ../lib/libkpm_lib.a -lpthread -lfftw3 -lm -ldl 

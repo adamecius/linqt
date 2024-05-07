@@ -77,7 +77,7 @@ endif()
 
 
 
-set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "/opt/intel/oneapi/tbb/2021.12/include;/opt/intel/oneapi/mpi/2021.12/include;/opt/intel/oneapi/mkl/2024.1/include;/opt/intel/oneapi/ippcp/2021.11/include;/opt/intel/oneapi/ipp/2021.11/include;/opt/intel/oneapi/dpl/2022.5/include;/opt/intel/oneapi/dpcpp-ct/2024.1/include;/opt/intel/oneapi/dnnl/2024.1/include;/opt/intel/oneapi/dev-utilities/2024.1/include;/opt/intel/oneapi/dal/2024.2/include/dal;/opt/intel/oneapi/compiler/2024.1/opt/oclfpga/include;/opt/intel/oneapi/ccl/2021.12/include;/usr/include/c++/11;/usr/include/x86_64-linux-gnu/c++/11;/usr/include/c++/11/backward;/usr/lib/gcc/x86_64-linux-gnu/11/include;/usr/local/include;/usr/include/x86_64-linux-gnu;/usr/include")
+set(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "/usr/include/c++/11;/usr/include/x86_64-linux-gnu/c++/11;/usr/include/c++/11/backward;/usr/lib/gcc/x86_64-linux-gnu/11/include;/usr/local/include;/usr/include/x86_64-linux-gnu;/usr/include")
 set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;m;gomp;gcc_s;gcc;pthread;c;gcc_s;gcc")
-set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "/opt/intel/oneapi/tbb/2021.12/lib/intel64/lib;/opt/intel/oneapi/mpi/2021.12/lib;/opt/intel/oneapi/mkl/2024.1/lib;/opt/intel/oneapi/ippcp/2021.11/lib;/opt/intel/oneapi/ipp/2021.11/lib;/opt/intel/oneapi/dpl/2022.5/lib;/opt/intel/oneapi/dnnl/2024.1/lib;/opt/intel/oneapi/dal/2024.2/lib;/opt/intel/oneapi/compiler/2024.1/lib;/opt/intel/oneapi/ccl/2021.12/lib;/usr/lib/gcc/x86_64-linux-gnu/11;/usr/lib/x86_64-linux-gnu;/usr/lib;/lib/x86_64-linux-gnu;/lib;/opt/intel/oneapi/tbb/2021.12/lib/intel64/gcc4.8")
+set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "/usr/lib/gcc/x86_64-linux-gnu/11;/usr/lib/x86_64-linux-gnu;/usr/lib;/lib/x86_64-linux-gnu;/lib")
 set(CMAKE_CXX_IMPLICIT_LINK_FRAMEWORK_DIRECTORIES "")

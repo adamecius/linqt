@@ -16,5 +16,5 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fopenmp")
 set(INTEL_MKL "FALSE")
 
 set(EIGEN "TRUE")
-set(BLAS_LIB "-liomp5 -lpthread -lfftw3 -lm -ldl")
+set(BLAS_LIB "-lpthread -lfftw3 -lm -ldl")
 

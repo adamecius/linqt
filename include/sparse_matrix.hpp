@@ -47,9 +47,6 @@ private:
 
 
 // MKL LIBRARIES
-#define MKL_Complex16 complex<double>
-#include "mkl.h"
-#include "mkl_spblas.h"
 class SparseMatrixType  : public SparseMatrixType_BASE
 {
 public:

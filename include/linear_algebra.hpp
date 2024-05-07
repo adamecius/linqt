@@ -40,7 +40,7 @@ void extract_segment( const std::vector< std::complex<double> >&x, size_t start_
    
 void introduce_segment( const std::vector< std::complex<double> >&x, std::vector< std::complex<double> >& y, size_t start_y );//size_y >> size_y
 
-void orthogonalize(SparseMatrixType &,  std::vector< std::complex<double> >&,  std::vector< std::complex<double> >& );
+void orthogonalize(SparseMatrixType &,  const std::vector< std::complex<double> >&,  std::vector< std::complex<double> >& );
   
 } // namespace linalg
 

@@ -145,7 +145,7 @@ void linalg::introduce_segment(const std::vector< std::complex<double> >&x, std:
 };  
 
 
-void linalg::orthogonalize(SparseMatrixType& S, std::vector< std::complex<double> >& orthogonalized, std::vector< std::complex<double> >& original){
+void linalg::orthogonalize(SparseMatrixType& S, const std::vector< std::complex<double> >& original, std::vector< std::complex<double> >& orthogonalized){
 
 
   int DIM = S.numRows(), NNZ=S.vals()->size();
@@ -156,8 +156,9 @@ void linalg::orthogonalize(SparseMatrixType& S, std::vector< std::complex<double
   std::complex<double> *values = S.vals()->data();
 
 
+  Eigen::Map<const Eigen::Vector<std::complex<double>, -1>>
+    eig_original(original.data(), DIM);
   Eigen::Map<Eigen::Vector<std::complex<double>, -1>>
-    eig_original(original.data(), DIM),
     eig_orthogonalized(orthogonalized.data(), DIM);
 
 
@@ -166,16 +167,16 @@ void linalg::orthogonalize(SparseMatrixType& S, std::vector< std::complex<double
 
   
   Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> > solver;
-  solver.setTolerance(0.0001); 
-  solver.setMaxIterations(2000); 
+  solver.setTolerance(0.000001); 
+  solver.setMaxIterations(20000); 
   solver.compute(eigen_S);
   eig_orthogonalized = solver.solve(eig_original);
   
-  /*
+  
   std::cout << "#iterations:     " << solver.iterations() << std::endl;
   std::cout << "  max#iterations:" << solver.maxIterations() << std::endl;
   std::cout << "estimated error: " << solver.error()      << std::endl;
   std::cout << "  tolerance :    " << solver.tolerance()      << std::endl;
   std::cout<<  "Vector norm :    " <<eig_original.norm()<<std::endl<<std::endl;    
-  */
+  
 };

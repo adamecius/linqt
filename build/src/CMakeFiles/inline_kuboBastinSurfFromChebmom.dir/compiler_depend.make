@@ -467,44 +467,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/allocated_ptr.h \
   /usr/include/c++/11/bits/list.tcc \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_version.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_types.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_blas.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_blas_64.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_trans.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_trans_names.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_cblas.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_cblas_64.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_spblas.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_lapack.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_lapacke.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_pardiso.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_dss.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_handle.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_rci.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_service.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vml.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vml_defines.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vml_types.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vml_functions.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vsl.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_defines.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_functions.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_types.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_functions_64.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_df.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_df_defines.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_df_functions.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_df_types.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_dfti.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_trig_transforms.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_poisson.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_solvers_ee.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_direct_call.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_compact.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h \
-  /opt/intel/oneapi/mkl/2024.1/include/mkl_spblas.h \
   ../include/chebyshev_moments.hpp \
   ../include/linear_algebra.hpp \
   ../include/vector_list.hpp \
@@ -529,26 +491,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/c++/11/ratio:
 
 ../include/vector_list.hpp:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_dfti.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_df_functions.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_df_defines.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_functions_64.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_types.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_defines.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vml_functions.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_blas_64.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_blas.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_version.h:
 
 /usr/include/c++/11/bits/list.tcc:
 
@@ -584,8 +526,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_Memory.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_df.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLUImpl.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/SparseLU/SparseLU_Structs.h:
@@ -597,8 +537,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/eigen-3.4.0/Eigen/src/OrderingMethods/Eigen_Colamd.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/OrderingMethods/Ordering.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vml_types.h:
 
 /usr/include/eigen-3.4.0/Eigen/OrderingMethods:
 
@@ -635,8 +573,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/c++/11/bits/stl_multimap.h:
 
 /usr/include/c++/11/bits/stl_tree.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_pardiso.h:
 
 /usr/include/c++/11/map:
 
@@ -690,8 +626,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/c++/11/bits/atomic_base.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_spblas.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/Core/products/Parallelizer.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/products/GeneralBlockPanelKernel.h:
@@ -705,8 +639,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/eigen-3.4.0/Eigen/src/Core/PermutationMatrix.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/SolverBase.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_service.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/ArrayWrapper.h:
 
@@ -786,8 +718,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/EigenBase.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vml_defines.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/plugins/MatrixCwiseUnaryOps.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/MatrixBase.h:
@@ -810,15 +740,11 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/functors/BinaryFunctors.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_types.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/Core/arch/Default/Settings.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/arch/SSE/MathFunctions.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/arch/SSE/TypeCasting.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_lapack.h:
 
 /usr/include/eigen-3.4.0/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h:
 
@@ -868,8 +794,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/c++/11/fstream:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_lapacke.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/Core/Solve.h:
 
 /usr/include/x86_64-linux-gnu/bits/endian.h:
@@ -916,13 +840,9 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/x86_64-linux-gnu/bits/endianness.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vsl.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/Core/products/SelfadjointRank2Update.h:
 
 /usr/include/x86_64-linux-gnu/bits/locale.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_cblas.h:
 
 /usr/include/locale.h:
 
@@ -952,8 +872,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/c++/11/clocale:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_solvers_ee.h:
-
 /usr/include/eigen-3.4.0/Eigen/src/Core/functors/UnaryFunctors.h:
 
 /usr/include/c++/11/bits/ostream.tcc:
@@ -961,8 +879,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/x86_64-linux-gnu/bits/struct_mutex.h:
 
 /usr/include/c++/11/bits/stl_iterator.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_cblas_64.h:
 
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
 
@@ -979,8 +895,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 ../include/chebyshev_solver.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/time_t.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_dss.h:
 
 /usr/include/c++/11/tuple:
 
@@ -1015,8 +929,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/eigen-3.4.0/Eigen/src/SparseCore/SparseCompressedBase.h:
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_direct_call.h:
 
 /usr/include/c++/11/bits/alloc_traits.h:
 
@@ -1070,8 +982,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/x86_64-linux-gnu/sys/single_threaded.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vml.h:
-
 /usr/include/c++/11/cmath:
 
 /usr/include/c++/11/bits/allocator.h:
@@ -1097,8 +1007,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h:
 
@@ -1140,11 +1048,7 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/x86_64-linux-gnu/bits/strings_fortified.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_qr.h:
-
 /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_poisson.h:
 
 /usr/include/c++/11/bits/stl_algobase.h:
 
@@ -1266,8 +1170,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/x86_64-linux-gnu/bits/byteswap.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_sparse_handle.h:
-
 /usr/include/x86_64-linux-gnu/bits/uintn-identity.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
@@ -1275,8 +1177,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/c++/11/cwchar:
 
 /usr/include/x86_64-linux-gnu/bits/select2.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_trig_transforms.h:
 
 /usr/include/alloca.h:
 
@@ -1301,8 +1201,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h:
 
 /usr/include/c++/11/cerrno:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_df_types.h:
 
 /usr/include/errno.h:
 
@@ -1346,8 +1244,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/c++/11/system_error:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_trans.h:
-
 /usr/include/c++/11/cstddef:
 
 /usr/include/c++/11/bits/stl_vector.h:
@@ -1361,8 +1257,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/x86_64-linux-gnu/c++/11/bits/error_constants.h:
 
 /usr/include/c++/11/stdexcept:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_trans_names.h:
 
 /usr/include/string.h:
 
@@ -1396,13 +1290,9 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 
 /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h:
 
-/opt/intel/oneapi/mkl/2024.1/include/mkl_vsl_functions.h:
-
 /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h:
 
 /usr/include/c++/11/bits/fstream.tcc:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_compact.h:
 
 /usr/include/c++/11/vector:
 
@@ -1417,8 +1307,6 @@ src/CMakeFiles/inline_kuboBastinSurfFromChebmom.dir/kuboBastinSurfFromChebmom.o:
 /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h:
 
 /usr/include/c++/11/bits/stl_bvector.h:
-
-/opt/intel/oneapi/mkl/2024.1/include/mkl_rci.h:
 
 /usr/include/c++/11/bits/vector.tcc:
 
