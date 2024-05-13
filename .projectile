@@ -1,1 +1,1 @@
-ignored-directories: build bin tmp
+ignored-directories: build bin tmp utilities

@@ -43,8 +43,9 @@ void SparseMatrixType::ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, 
 	vals_ = vector<complex<double> >(vals);
 
 	std::size_t NNZ = vals_.size();
+
 	
-	matrix_ = new Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> >(rows_.size()-1, rows_.size()-1, NNZ, rows_.data(), cols_.data(), vals_.data());
+	matrix_ = Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> >(rows_.size()-1, rows_.size()-1, NNZ, rows_.data(), cols_.data(), vals_.data());
 
        
 	setDimensions(rows_.size()-1, rows_.size()-1);
@@ -61,7 +62,7 @@ void SparseMatrixType::Multiply(const complex<double> a, const complex<double> *
 	  eig_y(y, numRows());
 
 
-	eig_y = a * ( *matrix_ ) * eig_x + b * eig_y; 
+	eig_y = a * matrix_ * eig_x + b * eig_y; 
 
 	return ;
 };
@@ -82,9 +83,9 @@ void SparseMatrixType::Rescale(const complex<double> a, const complex<double> b)
 	bID.setIdentity();
         bID *= b;
 	
-	(*matrix_) = (*matrix_) ;//+ bID;
+	matrix_ = matrix_ + bID;
 
-	(*matrix_) *= a;
+	matrix_ *= a;
 
 	return ;
 }

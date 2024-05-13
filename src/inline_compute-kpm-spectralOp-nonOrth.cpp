@@ -79,6 +79,8 @@ int main(int argc, char *argv[])
 
 
 	chebMoms.set_S(OP[2]);
+	chebMoms.set_Preconditioner();
+	
 	chebyshev::SpectralMoments_nonOrth(OP[1],chebMoms, gen);
 
 	auto prefix="SpectralOp-nonOrth-"+OP[1].ID();

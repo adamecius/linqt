@@ -205,6 +205,8 @@ class Moments1D_nonOrth: public Moments1D
 
 
         void set_S(SparseMatrixType &S) {S_ = &S;};
+        void set_Preconditioner();
+
   
 	void SetInitVectors_nonOrthogonal( vector_t& T0 );
 
@@ -216,6 +218,7 @@ class Moments1D_nonOrth: public Moments1D
 	private:
 
         SparseMatrixType *S_;
+        SparseMatrixType Sin_sparse_approx_;        
 
 };
 

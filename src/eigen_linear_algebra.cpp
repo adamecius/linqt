@@ -147,49 +147,20 @@ void linalg::introduce_segment(const std::vector< std::complex<double> >&x, std:
 
 void linalg::orthogonalize(SparseMatrixType& S, const std::vector< std::complex<double> >& original, std::vector< std::complex<double> >& orthogonalized){
 
-  
-
-  int DIM = S.numRows(), NNZ=S.vals()->size();
-
-
-  int *rowsPtr = S.rows()->data();
-  int *colsPtr = S.cols()->data();
-  std::complex<double> *values = S.vals()->data();
-
 
   Eigen::Map<const Eigen::Vector<std::complex<double>, -1>>
-    eig_original(original.data(), DIM);
+    eig_original(original.data(), original.size());
   Eigen::Map<Eigen::Vector<std::complex<double>, -1>>
-    eig_orthogonalized(orthogonalized.data(), DIM);
+    eig_orthogonalized(orthogonalized.data(), original.size());
 
 
 
-  Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> > eigen_S( DIM, DIM, NNZ, rowsPtr, colsPtr, values);
-
-  Eigen::IncompleteCholesky<std::complex<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> ichol(eigen_S);
-  std::cout << ichol.info() << std::endl;
-  Eigen::SparseMatrix<std::complex<double>> L = ichol.matrixL();
-  Eigen::VectorXcd Sichol = ichol.scalingS();
-  Eigen::MatrixXcd D = Sichol.asDiagonal().inverse();
-  Eigen::SparseMatrix<std::complex<double>> Dinv = D.sparseView();
-  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> P = ichol.permutationP();
-  Eigen::SparseMatrix<std::complex<double>> sparse_L_chol = Dinv * L ;
-  Eigen::SparseMatrix<std::complex<double>> sparse_S_approx = sparse_L_chol * sparse_L_chol.adjoint() ;
- 
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<std::complex<double>>> inverter;
-  
-  Eigen::SparseMatrix<std::complex<double>> I(DIM,DIM);
-  I.setIdentity();
-  inverter.compute(eigen_S);
-  Eigen::SparseMatrix<std::complex<double>> inverse_matrix = inverter.solve(I);
-
-  std::cout<<sparse_S_approx.block(0,0,10,10)<<std::endl<<std::endl<<eigen_S.block(0,0,10,10)<<std::endl<<std::endl;
 
     
-  Eigen::BiCGSTAB<Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> > solver;
-  solver.setTolerance(0.000001); 
+  Eigen::ConjugateGradient<  Eigen::SparseMatrix<std::complex<double>,  Eigen::RowMajor>, Eigen::Lower,  Eigen::DiagonalPreconditioner< std::complex<double>> > solver;
+  solver.setTolerance(0.00001); 
   solver.setMaxIterations(20000); 
-  solver.compute(eigen_S);
+  solver.compute(S.eigen_matrix());
   eig_orthogonalized = solver.solve(eig_original);
   
   

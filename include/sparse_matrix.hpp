@@ -52,7 +52,7 @@ class SparseMatrixType  : public SparseMatrixType_BASE
 public:
   SparseMatrixType()
   {}
-  ~SparseMatrixType() { delete matrix_; }
+  ~SparseMatrixType() {}
     
   
   string matrixType() const { return "CSR Matrix from Eigen."; };
@@ -73,9 +73,11 @@ public:
   vector<int>* rows() {return &rows_;};
   vector<int>* cols() {return &cols_;};
   vector<complex<double> >* vals(){return &vals_;};
-
+  Eigen::SparseMatrix<complex<double>, Eigen::RowMajor>& eigen_matrix(){return matrix_;};
+  void set_eigen_matrix(Eigen::SparseMatrix<complex<double>, Eigen::RowMajor>& new_matrix ){ matrix_ = new_matrix; setDimensions(new_matrix.rows(),new_matrix.cols()); };
+  
 private:
-  Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> >* matrix_;
+  Eigen::SparseMatrix<complex<double>, Eigen::RowMajor>  matrix_;
   vector<int> rows_;
   vector<int> cols_;
   vector<complex<double> > vals_;

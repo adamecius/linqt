@@ -115,6 +115,34 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 };
 
 
+void chebyshev::Moments1D_nonOrth::set_Preconditioner(){
+  Eigen::IncompleteCholesky<std::complex<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> ichol(S_->eigen_matrix());
+  std::cout <<"Incomplete Cholesky solver status:  "<< ichol.info() << std::endl;
+  Eigen::SparseMatrix<std::complex<double>> L = ichol.matrixL();
+  Eigen::VectorXcd Sichol = ichol.scalingS();
+  Eigen::MatrixXcd D = Sichol.asDiagonal().inverse();
+  Eigen::SparseMatrix<std::complex<double>> Dinv = D.sparseView();
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> P = ichol.permutationP();
+  Eigen::SparseMatrix<std::complex<double>> sparse_L_chol = Dinv * L ;
+  Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> sparse_S_approx = sparse_L_chol * sparse_L_chol.adjoint() ;
+
+
+  Sin_sparse_approx_.set_eigen_matrix(sparse_S_approx);
+  /*
+  //TEST
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<std::complex<double>>> inverter;
+  
+  Eigen::SparseMatrix<std::complex<double>> I(S_->eigen_matrix().rows(),S_->eigen_matrix().rows());
+  I.setIdentity();
+  inverter.compute(S_->eigen_matrix());
+  Eigen::SparseMatrix<std::complex<double>> inverse_matrix = inverter.solve(I);
+
+  std::cout<<sparse_S_approx.block(0,0,10,10)<<std::endl<<std::endl<<S_->eigen_matrix().block(0,0,10,10)<<std::endl<<std::endl;
+  */
+};
+
+
+
 int chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal( )
 {
 
