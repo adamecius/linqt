@@ -1,7 +1,7 @@
 #include "linear_algebra.hpp"
-#include <eigen-3.4.0/Eigen/Core>
-#include<eigen-3.4.0/Eigen/Sparse>
-#include<eigen-3.4.0/Eigen/IterativeLinearSolvers>
+#include <eigen3/Eigen/Core>
+#include<eigen3/Eigen/Sparse>
+#include<eigen3/Eigen/IterativeLinearSolvers>
 
 void linalg::scal(const std::complex<double>& a, std::vector< std::complex<double> >& x)
 {
