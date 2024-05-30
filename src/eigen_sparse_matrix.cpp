@@ -3,21 +3,21 @@
 
 const int MKL_SPMVMUL = 1000;
 
-void SparseMatrixType::ConvertFromCOO(vector<int> &rows, vector<int> &cols, vector<complex<double> > &vals)
+void SparseMatrixType::ConvertFromCOO(vector<indexType> &rows, vector<indexType> &cols, vector<complex<double> > &vals)
 {
-	rows_ = vector<int>(rows);
-	cols_ = vector<int>(cols);
+	rows_ = vector<indexType>(rows);
+	cols_ = vector<indexType>(cols);
 	vals_ = vector<complex<double> >(vals);
 
 	std::size_t NNZ = vals_.size();
 	
 
-        std::vector<Eigen::Triplet<std::complex<double>>> triplets;
+        std::vector<Eigen::Triplet<std::complex<double>,indexType>> triplets;
         triplets.reserve(NNZ);
 
 
         for (std::size_t i = 0; i < NNZ; ++i) {
-            triplets.push_back(Eigen::Triplet<std::complex<double>>(rows_[i], cols_[i], vals_[i]));
+	  triplets.push_back(Eigen::Triplet<std::complex<double>, indexType>(rows_[i], cols_[i], vals_[i]));
         }
 
 
@@ -26,7 +26,7 @@ void SparseMatrixType::ConvertFromCOO(vector<int> &rows, vector<int> &cols, vect
 
 
 
-        Eigen::SparseMatrix<std::complex<double>> matrix(num_rows, num_cols);
+        Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor, indexType> matrix(num_rows, num_cols);
         matrix.setFromTriplets(triplets.begin(), triplets.end());
 
 	
@@ -36,16 +36,16 @@ void SparseMatrixType::ConvertFromCOO(vector<int> &rows, vector<int> &cols, vect
 	//new (&matrix_) Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> >(rows_.size(), cols_.size(), NNZ, rows_.data(), cols_.data(), vals_.data());
 };
 
-void SparseMatrixType::ConvertFromCSR(vector<int> &rowIndex, vector<int> &cols, vector<complex<double> > &vals)
+void SparseMatrixType::ConvertFromCSR(vector<indexType> &rowIndex, vector<indexType> &cols, vector<complex<double> > &vals)
 {
-	rows_ = vector<int>(rowIndex);
-	cols_ = vector<int>(cols);
+	rows_ = vector<indexType>(rowIndex);
+	cols_ = vector<indexType>(cols);
 	vals_ = vector<complex<double> >(vals);
 
 	std::size_t NNZ = vals_.size();
 
 	
-	matrix_ = Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> >(rows_.size()-1, rows_.size()-1, NNZ, rows_.data(), cols_.data(), vals_.data());
+	matrix_ = Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType> >(rows_.size()-1, rows_.size()-1, NNZ, rows_.data(), cols_.data(), vals_.data());
 
        
 	setDimensions(rows_.size()-1, rows_.size()-1);
@@ -78,14 +78,19 @@ void SparseMatrixType::Multiply(const complex<double> a, const vector< complex<d
 void SparseMatrixType::Rescale(const complex<double> a, const complex<double> b)
 {
 	//Create Identity Matrix
-        Eigen::SparseMatrix<complex<double>, Eigen::RowMajor> bID(numRows(), numCols()); 
+        Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType> bID(numRows(), numCols()); 
 
 	bID.setIdentity();
         bID *= b;
 	
 	matrix_ = matrix_ + bID;
 
+	
+
 	matrix_ *= a;
+
+	
+
 
 	return ;
 }

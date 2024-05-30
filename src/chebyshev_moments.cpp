@@ -116,6 +116,7 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 
 
 void chebyshev::Moments1D_nonOrth::set_Preconditioner(){
+  /* This isnt working with long int eigen matrices?? 
   Eigen::IncompleteCholesky<std::complex<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> ichol(S_->eigen_matrix());
   std::cout <<"Incomplete Cholesky solver status:  "<< ichol.info() << std::endl;
   Eigen::SparseMatrix<std::complex<double>> L = ichol.matrixL();
@@ -123,11 +124,14 @@ void chebyshev::Moments1D_nonOrth::set_Preconditioner(){
   Eigen::MatrixXcd D = Sichol.asDiagonal().inverse();
   Eigen::SparseMatrix<std::complex<double>> Dinv = D.sparseView();
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> P = ichol.permutationP();
-  Eigen::SparseMatrix<std::complex<double>> sparse_L_chol = Dinv * L ;
-  Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> sparse_S_approx = sparse_L_chol * sparse_L_chol.adjoint() ;
+
+  //Eigen::SparseMatrix<std::complex<double>> sparse_L_chol = Dinv * L ;
+  //Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> sparse_S_approx = sparse_L_chol * sparse_L_chol.adjoint() ;
 
 
   Sin_sparse_approx_.set_eigen_matrix(sparse_S_approx);
+  */
+
   /*
   //TEST
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<std::complex<double>>> inverter;

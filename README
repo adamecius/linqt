@@ -5,4 +5,4 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-icc+mkl.cmake  ..
 cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-gcc.cmake  ..
 cmake --build .
 
-#Requires Eigen
+#Requires Eigen and FFTW

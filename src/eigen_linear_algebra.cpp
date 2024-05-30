@@ -157,7 +157,7 @@ void linalg::orthogonalize(SparseMatrixType& S, const std::vector< std::complex<
 
 
     
-  Eigen::ConjugateGradient<  Eigen::SparseMatrix<std::complex<double>,  Eigen::RowMajor>, Eigen::Lower,  Eigen::DiagonalPreconditioner< std::complex<double>> > solver;
+  Eigen::ConjugateGradient<  Eigen::SparseMatrix<std::complex<double>,  Eigen::RowMajor, indexType>, Eigen::Lower,  Eigen::DiagonalPreconditioner< std::complex<double>> > solver;
   solver.setTolerance(0.00001); 
   solver.setMaxIterations(20000); 
   solver.compute(S.eigen_matrix());
