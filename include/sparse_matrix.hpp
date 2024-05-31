@@ -76,7 +76,7 @@ public:
   vector<indexType>* cols() {return &cols_;};
   vector<complex<double> >* vals(){return &vals_;};
   Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType>& eigen_matrix(){return matrix_;};
-  void set_eigen_matrix(Eigen::SparseMatrix<complex<double>, Eigen::RowMajor>& new_matrix ){ matrix_ = new_matrix; setDimensions(new_matrix.rows(),new_matrix.cols()); };
+  void set_eigen_matrix(Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType>& new_matrix ){ matrix_ = new_matrix; setDimensions(new_matrix.rows(),new_matrix.cols()); };
   
 private:
   Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType>  matrix_;

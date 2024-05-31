@@ -22,7 +22,7 @@ bool Sparse::OPERATOR_FromCSRFile(const std::string input, int &dim, vector<inde
 
   //READ VALUES
   double rev, imv;
-  for (int i = 0; i < nnz; i++)
+  for (indexType i = 0; i < nnz; i++)
   {
     matrix_file >> rev >> imv;
     values[i] = complex<double>(rev, imv);
@@ -30,7 +30,7 @@ bool Sparse::OPERATOR_FromCSRFile(const std::string input, int &dim, vector<inde
 
   //READ COLUMNS
   indexType col;
-  for (int i = 0; i < nnz; i++)
+  for (indexType i = 0; i < nnz; i++)
   {
     matrix_file >> col;
     columns[i] = col;
@@ -39,7 +39,7 @@ bool Sparse::OPERATOR_FromCSRFile(const std::string input, int &dim, vector<inde
 
   //READ ROW_INDEX_ARRAY
   indexType rowIdx;
-  for (int i = 0; i < dim + 1; i++)
+  for (indexType i = 0; i < dim + 1; i++)
   {
     matrix_file >> rowIdx;
     rowIndex[i] = rowIdx;

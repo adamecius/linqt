@@ -72,8 +72,10 @@ int main(int argc, char *argv[])
 	if( argc == 5)
 		gen  = qstates::LoadStateFile(argv[4]);
 
-	gen.NumberOfStates(std::stoi(argv[4]));
-	
+		
+	//gen.NumberOfStates(std::stoi(argv[4]));
+
+
 
 
 	chebyshev::SpectralMoments(OP[1],chebMoms, gen);
@@ -102,7 +104,7 @@ int main(int argc, char *argv[])
 	
 	void spectral::printWelcomeMessage()
 	{
-		std::cout << "WELCOME: This program will compute a list needed for expanding the spectral function in Chebyshev polynomialms" << std::endl;
+		std::cout << "WELCOME: This program will compute a list needed for expanding the spectral function in Chebyshev polynomilams" << std::endl;
 	};
 
 

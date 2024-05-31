@@ -42,12 +42,37 @@ void SparseMatrixType::ConvertFromCSR(vector<indexType> &rowIndex, vector<indexT
 	cols_ = vector<indexType>(cols);
 	vals_ = vector<complex<double> >(vals);
 
-	std::size_t NNZ = vals_.size();
+        indexType NNZ = vals_.size();
 
 	
 	matrix_ = Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType> >(rows_.size()-1, rows_.size()-1, NNZ, rows_.data(), cols_.data(), vals_.data());
 
-       
+
+	/*
+	std::cout<<Eigen::Matrix<complex<double>, Eigen::Dynamic, Eigen::Dynamic>(matrix_).block(0,0,10,10)<<std::endl;
+
+	std::cout<<"HEERE 3: "<<matrix_.innerIndexPtr()[0]<<"  "<<matrix_.innerIndexPtr()[1]<<"  "<<matrix_.innerIndexPtr()[2]<<std::endl;
+	std::cout<<"HEERE 3: "<<matrix_.outerIndexPtr()[0]<<"  "<<matrix_.outerIndexPtr()[1]<<"  "<<matrix_.outerIndexPtr()[2]<<std::endl;
+	std::cout<<"HEERE 3: "<<matrix_.valuePtr()[0]<<"  "<<matrix_.valuePtr()[1]<<"  "<<matrix_.valuePtr()[2]<<std::endl;
+
+	std::complex<double> errVal=0.0;
+	double errCol=0.0, errRow=0.0;
+	
+	for(indexType i=0;i<(long int)NNZ;i++){
+	  errVal += matrix_.valuePtr()[i] - vals_[i];
+	  errRow += cols_[i] - matrix_.innerIndexPtr()[i];  
+	}
+
+	
+	for(indexType i = 0; i < rows_.size(); i++ ){
+	  errCol += rows_[i] - matrix_.outerIndexPtr()[i];  
+	}
+
+	
+	std::cout<<"Errors: val-"<<errVal<<" col-"<<errCol<<" row-"<< errRow<<std::endl;
+	*/
+
+	
 	setDimensions(rows_.size()-1, rows_.size()-1);
 
 }
@@ -79,6 +104,7 @@ void SparseMatrixType::Rescale(const complex<double> a, const complex<double> b)
 {
 	//Create Identity Matrix
         Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType> bID(numRows(), numCols()); 
+
 
 	bID.setIdentity();
         bID *= b;
