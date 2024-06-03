@@ -47,6 +47,7 @@ void SparseMatrixType::ConvertFromCSR(vector<indexType> &rowIndex, vector<indexT
 	
 	matrix_ = Eigen::Map<Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType> >(rows_.size()-1, rows_.size()-1, NNZ, rows_.data(), cols_.data(), vals_.data());
 
+	matrix_ = Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType>( matrix_.transpose() ) + matrix_; //sry wat??
 
 	/*
 	std::cout<<Eigen::Matrix<complex<double>, Eigen::Dynamic, Eigen::Dynamic>(matrix_).block(0,0,10,10)<<std::endl;
