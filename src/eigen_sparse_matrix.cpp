@@ -116,13 +116,7 @@ void SparseMatrixType::Rescale(const complex<double> a, const complex<double> b)
 	bID.setIdentity();
         bID *= b;
 	
-	matrix_ = matrix_ + bID;
-
-	
-
-	matrix_ *= a;
-
-	
+	matrix_ = a * matrix_ + bID;
 
 
 	return ;
