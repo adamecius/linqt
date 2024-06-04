@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	//Compute the chebyshev expansion table
 	qstates::generator gen;
 	if( argc == 5)
-		gen  = qstates::LoadStateFile(argv[4]);
+		gen  = qstates::LoadStateFile(argv[5]);
 
 		
 	//gen.NumberOfStates(std::stoi(argv[4]));

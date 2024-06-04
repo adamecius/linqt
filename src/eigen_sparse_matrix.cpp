@@ -50,9 +50,10 @@ void SparseMatrixType::ConvertFromCSR(vector<indexType> &rowIndex, vector<indexT
 	//Eigen::SelfAdjointView<Eigen::SparseMatrix<double>, Eigen::Upper> symmetric_view(sparse_matrix); ->Maybe saves half the memory? Couldnt see the documentation
 
 	Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType> transp = Eigen::SparseMatrix<complex<double>, Eigen::RowMajor, indexType>( matrix_.transpose() ); 
-	if( ( transp - matrix_ ).norm() != 0 )
+	if( ( transp - matrix_ ).norm() != 0 ){
+	  std::cout<<"Hamiltonian has been symmetrized."<<std::endl;
 	  matrix_ = transp + matrix_; 
-	
+       	}
 
 	/*
 	std::cout<<Eigen::Matrix<complex<double>, Eigen::Dynamic, Eigen::Dynamic>(matrix_).block(0,0,10,10)<<std::endl;
