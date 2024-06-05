@@ -41,7 +41,6 @@ double chebyshev::Moments::JacksonKernel(const double m,  const double Mom )
 
 
 
-
 void chebyshev::Moments::SetInitVectors( const Moments::vector_t& T0 )
 {
 	assert( T0.size() == this->SystemSize() );

@@ -95,6 +95,11 @@ add_executable(${MAIN} spectralFunctionFromChebmom_FFTgrid.cpp )
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
 
+set(MAIN inline_spectralFunctionFromChebmom_Lorentz)
+add_executable(${MAIN} spectralFunctionFromChebmom_Lorentz.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )
+
+
 set(MAIN inline_kuboGreenwoodFromChebmom_FFTgrid)
 add_executable(${MAIN} kuboGreenwoodFromChebmom_FFTgrid.cpp)
 target_link_libraries(${MAIN} ${KPM_LIB} )

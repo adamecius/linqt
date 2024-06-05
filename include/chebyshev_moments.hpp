@@ -182,6 +182,9 @@ class Moments1D: public Moments
 	//Transformation
 	void ApplyJacksonKernel( const double broad );
 
+	//Transformation
+        void ApplyLorentzKernel( const double broad, const double lambda );
+  
 	// Input/Output
 	void Print();
 

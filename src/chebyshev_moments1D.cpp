@@ -86,6 +86,27 @@ void chebyshev::Moments1D::ApplyJacksonKernel( const double broad )
 	}
 }
 
+void chebyshev::Moments1D::ApplyLorentzKernel( const double broad, const double lambda )
+{
+  assert( broad > 0);
+  const double eta = 2.0*broad/1000/this->BandWidth();
+  int maxMom =  ceil(M_PI/eta);
+  
+  if(  maxMom > this->HighestMomentNumber() )
+	maxMom = this->HighestMomentNumber();
+  std::cout << "Kernel reduced the number of moments to " << maxMom <<" for a broadening of "<<M_PI/maxMom << std::endl;
+  this->MomentNumber(maxMom);
+
+  const double phi_J = M_PI/(double)(maxMom+1.0);
+  double g_D_m;
+
+  for( size_t m = 0 ; m < maxMom ; m++)
+  {
+    g_D_m = std::sinh( lambda * (1.0 - double(m) / double(maxMom)) ) / std::sinh( lambda ); 
+    this->operator()(m) *= g_D_m;
+  }
+}
+
 
 	
 void chebyshev::Moments1D::saveIn(std::string filename)
