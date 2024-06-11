@@ -113,3 +113,7 @@ set(MAIN inline_compute-kpm-spectralOp-nonOrth )
 add_executable(${MAIN} inline_compute-kpm-spectralOp-nonOrth.cpp )
 target_link_libraries(${MAIN} ${KPM_LIB} )
 
+set(MAIN kpm-nonOrth-precision-test )
+add_executable(${MAIN} kpm-nonOrth-precision-test.cpp )
+target_link_libraries(${MAIN} ${KPM_LIB} )
+

@@ -217,6 +217,7 @@ class Moments1D_nonOrth: public Moments1D
   
         int Iterate_nonOrthogonal();
 
+        double Iterate_nonOrthogonal_test(SparseMatrixType &);
   
 	private:
 

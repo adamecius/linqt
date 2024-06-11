@@ -235,6 +235,52 @@ int chebyshev::SpectralMoments_nonOrth( SparseMatrixType &OP,  chebyshev::Moment
 };
 
 
+int chebyshev::SpectralMoments_nonOrth_test( SparseMatrixType &OP, SparseMatrixType &orth_Ham, chebyshev::Moments1D_nonOrth &chebMoms, qstates::generator& gen )
+{
+	const auto Dim = chebMoms.SystemSize();
+	const auto NumMoms = chebMoms.HighestMomentNumber();
+
+	std::vector<double> errors(NumMoms,0);
+
+	gen.SystemSize(Dim);
+	while( gen.getQuantumState() )
+	{		
+		auto Phi = gen.State();
+		//Set the evolved vector as initial vector of the chebyshev iterations
+		if (OP.isIdentity() )
+			chebMoms.SetInitVectors_nonOrthogonal( Phi );
+		else
+			chebMoms.SetInitVectors_nonOrthogonal( OP,Phi );
+
+		double scal=2.0/gen.NumberOfStates();
+		chebMoms(0) += 0.5*scal*linalg::vdot( Phi, chebMoms.Chebyshev0() ) ;
+		
+		
+		chebMoms(1) +=scal*linalg::vdot( Phi, chebMoms.Chebyshev1() ) ;
+		
+		
+		for(int m = 2 ; m < NumMoms ; m++ )
+		{
+		        errors[m] = chebMoms.Iterate_nonOrthogonal_test(orth_Ham);
+			chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev1() ) ;
+			
+
+		}
+	}
+
+	std::ofstream data;
+        data.open("orthogonalization_errors.dat");
+
+	for(int m = 0; m < NumMoms; m++)  
+          data<< m <<"  "<< errors[m] <<std::endl;
+	  
+        data.close();
+  
+
+	return 0;
+};
+
+
 int chebyshev::TimeDependentCorrelations(SparseMatrixType &OPL, SparseMatrixType &OPR,  chebyshev::MomentsTD &chebMoms, qstates::generator& gen  )
 {
 	const auto Dim = chebMoms.SystemSize();

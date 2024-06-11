@@ -115,7 +115,9 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 
 
 void chebyshev::Moments1D_nonOrth::set_Preconditioner(){
-  /* This isnt working with long int eigen matrices?? 
+  /* -------------------This isnt working with long int eigen matrices??----------------------// 
+
+
   Eigen::IncompleteCholesky<std::complex<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> ichol(S_->eigen_matrix());
   std::cout <<"Incomplete Cholesky solver status:  "<< ichol.info() << std::endl;
   Eigen::SparseMatrix<std::complex<double>> L = ichol.matrixL();
@@ -141,9 +143,45 @@ void chebyshev::Moments1D_nonOrth::set_Preconditioner(){
   Eigen::SparseMatrix<std::complex<double>> inverse_matrix = inverter.solve(I);
 
   std::cout<<sparse_S_approx.block(0,0,10,10)<<std::endl<<std::endl<<S_->eigen_matrix().block(0,0,10,10)<<std::endl<<std::endl;
+  
+
+  
+  // -------------------This isnt working with long int eigen matrices??----------------------// 
   */
 };
 
+
+
+double chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal_test( SparseMatrixType &orth_Ham )
+{
+
+        double error=0;  
+        std::size_t dim = Chebyshev0().size();
+        vector_t tmp_( dim, 0.0 ),
+	  tmp_2_( dim, 0.0),
+	  compare( dim, 0.0 );
+
+
+	
+	this->Hamiltonian().Multiply( this->Chebyshev1(),tmp_);
+       	linalg::orthogonalize(*S_, tmp_, tmp_2_);
+
+	orth_Ham.Multiply(this->Chebyshev1(), compare);
+	
+	
+	#pragma omp parallel for
+	for(std::size_t i=0; i< dim;i++){
+	  Chebyshev0()[i] = 2.0 * tmp_2_[i] - Chebyshev0()[i];
+
+	  error += std::abs( ( compare[i] - tmp_2_[i] ) );
+	}
+	
+	this->Chebyshev0().swap(this->Chebyshev1());
+
+	
+
+	return error/dim;
+};
 
 
 int chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal( )
