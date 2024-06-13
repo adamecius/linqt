@@ -83,7 +83,8 @@ namespace qstates
 						
 						
 					case RANDOM_STATE:
-					  //std::cout<<"HACKED for testing: random state set to atom in the middle. "<<count<<std::endl;
+					  std::srand(47);
+					  std::cout<<"HACKED for testing: random state set to atom in the middle. "<<count<<std::endl;
 						const double norm = sqrt(out.size());
 						for( auto&x : out )
 						{

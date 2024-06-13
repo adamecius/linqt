@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		
 	std::vector< double >  energies(num_div,0);
 	for( int i=0; i < num_div; i++){
-	  energies[i] = cos( M_PI * ( i +0.5 )/num_div );// -xbound + i*(2*xbound)/(num_div-1) ; //
+	  energies[i] = cos( M_PI * ( i + 0.5 ) / num_div );// -xbound + i*(2*xbound)/(num_div-1) ; //
 	}
 
 

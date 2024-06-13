@@ -261,10 +261,10 @@ int chebyshev::SpectralMoments_nonOrth_test( SparseMatrixType &OP, SparseMatrixT
 		
 		for(int m = 2 ; m < NumMoms ; m++ )
 		{
-		        errors[m] = chebMoms.Iterate_nonOrthogonal_test(orth_Ham);
-			chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev1() ) ;
-			
-
+		     std::cout<<m+1<<"/"<<NumMoms<<std::endl;
+		     errors[m] = chebMoms.Iterate_nonOrthogonal_test(orth_Ham);
+		     chebMoms(m) += scal*linalg::vdot( Phi, chebMoms.Chebyshev1() ) ;
+		     std::cout<<errors[m]<<std::endl<<std::endl<<std::endl;
 		}
 	}
 

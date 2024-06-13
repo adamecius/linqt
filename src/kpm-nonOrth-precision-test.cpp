@@ -65,7 +65,14 @@ int main(int argc, char *argv[])
 	chebMoms.SystemLabel(LABEL);
 	chebMoms.BandWidth ( (spectral_bounds[1]-spectral_bounds[0])*1.0);
 	chebMoms.BandCenter( (spectral_bounds[1]+spectral_bounds[0])*0.5);
-	chebMoms.SetAndRescaleHamiltonian(OP[0]);
+
+
+
+        chebMoms.SetAndRescaleHamiltonian(OP[0]);
+
+	OP[0].Rescale( 1, -chebMoms.ShiftFactor() );
+
+	OP[3].Rescale( chebMoms.ScaleFactor(), chebMoms.ShiftFactor() );
 	chebMoms.Print();
 
 

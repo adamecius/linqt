@@ -81,7 +81,14 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( Moments::vector
 	linalg::copy ( T0, this->Chebyshev0() );	
 	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
         linalg::orthogonalize(*S_,  tmp_, this->Chebyshev1());
+
 	
+	double b =  this->ShiftFactor();
+	
+ #pragma omp parallel for
+	for(std::size_t i=0; i< dim;i++)	  
+	  Chebyshev1()[i] += b * Chebyshev0()[i];
+
 };
 
 
@@ -108,6 +115,16 @@ void chebyshev::Moments1D_nonOrth::SetInitVectors_nonOrthogonal( SparseMatrixTyp
 	
 	this->Hamiltonian().Multiply( this->Chebyshev0(), tmp_ );
         linalg::orthogonalize(*S_, tmp_ , this->Chebyshev1());
+
+
+	double b =  this->ShiftFactor();
+	
+ #pragma omp parallel for
+	for(std::size_t i=0; i< dim;i++)	  
+	  Chebyshev1()[i] += b * Chebyshev0()[i];
+	
+
+
 
 
 	return ;
@@ -161,19 +178,23 @@ double chebyshev::Moments1D_nonOrth::Iterate_nonOrthogonal_test( SparseMatrixTyp
 	  tmp_2_( dim, 0.0),
 	  compare( dim, 0.0 );
 
+	double b =  this->ShiftFactor();
 
 	
 	this->Hamiltonian().Multiply( this->Chebyshev1(),tmp_);
        	linalg::orthogonalize(*S_, tmp_, tmp_2_);
 
+	
 	orth_Ham.Multiply(this->Chebyshev1(), compare);
 	
 	
 	#pragma omp parallel for
 	for(std::size_t i=0; i< dim;i++){
-	  Chebyshev0()[i] = 2.0 * tmp_2_[i] - Chebyshev0()[i];
+	  std::complex<double> tmp_2 = tmp_2_[i] + b * Chebyshev1()[i];
+	  
+	  Chebyshev0()[i] = 2.0 * tmp_2 - Chebyshev0()[i];
 
-	  error += std::abs( ( compare[i] - tmp_2_[i] ) );
+	  error += std::abs( ( compare[i] - tmp_2 ) / compare[i] );
 	}
 	
 	this->Chebyshev0().swap(this->Chebyshev1());
