@@ -36,6 +36,67 @@ class SparseMatrixOperator(LinearOperator):
 class IdentityOperator(LinearOperator):
     def __init__(self, dim: int) -> None: ...
 
+class LowdinOperator(LinearOperator):
+    def __init__(self, inverse_sqrt: LinearOperator, operator: LinearOperator) -> None: ...
+
+class MetricInverseProduct(LinearOperator):
+    def __init__(self, inverse: LinearOperator, operator: LinearOperator) -> None: ...
+
+class MetricPolicy:
+    @property
+    def is_orthogonal(self) -> bool: ...
+    @property
+    def overlap(self) -> LinearOperator: ...
+    @property
+    def inverse_overlap(self) -> LinearOperator: ...
+    @property
+    def inverse_sqrt_overlap(self) -> LinearOperator: ...
+
+class OrthogonalMetric(MetricPolicy):
+    def __init__(self, dim: int = 0) -> None: ...
+
+class NonOrthogonalMetric(MetricPolicy):
+    def __init__(
+        self, s: SparseMatrix, inverse: LinearOperator, inverse_sqrt: LinearOperator
+    ) -> None: ...
+
+class ExactInverseOverlap(LinearOperator):
+    def __init__(self, s: SparseMatrix, max_dimension: int = 4096) -> None: ...
+
+class ExactInverseSqrtOverlap(LinearOperator):
+    def __init__(self, s: SparseMatrix, max_dimension: int = 4096) -> None: ...
+
+class IschoInverseOverlap(LinearOperator):
+    def __init__(
+        self, s: SparseMatrix, tolerance: float = 1e-13, max_iterations: int = 200
+    ) -> None: ...
+    @property
+    def last_iterations(self) -> int: ...
+    @property
+    def last_error(self) -> float: ...
+
+class ChebyshevInverseOverlap(LinearOperator):
+    def __init__(
+        self,
+        s: SparseMatrix,
+        bounds_of_s: SpectralBounds,
+        order: int,
+        coeff_tol: float = 1e-12,
+    ) -> None: ...
+    @property
+    def effective_order(self) -> int: ...
+
+class ChebyshevInverseSqrtOverlap(LinearOperator):
+    def __init__(
+        self,
+        s: SparseMatrix,
+        bounds_of_s: SpectralBounds,
+        order: int,
+        coeff_tol: float = 1e-12,
+    ) -> None: ...
+    @property
+    def effective_order(self) -> int: ...
+
 class StateGenerator:
     @property
     def dimension(self) -> int: ...
@@ -83,7 +144,21 @@ class SpectralWindow:
     def center(self) -> float: ...
 
 class RescaledOperator(LinearOperator):
+    @overload
     def __init__(self, matrix: SparseMatrix, window: SpectralWindow) -> None: ...
+    @overload
+    def __init__(self, operator: LinearOperator, window: SpectralWindow) -> None: ...
+    @property
+    def window(self) -> SpectralWindow: ...
+
+class GeneralisedRescaledOperator(LinearOperator):
+    def __init__(
+        self,
+        h: SparseMatrix,
+        s: SparseMatrix,
+        inverse: LinearOperator,
+        window: SpectralWindow,
+    ) -> None: ...
     @property
     def window(self) -> SpectralWindow: ...
 

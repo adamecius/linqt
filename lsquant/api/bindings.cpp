@@ -21,6 +21,8 @@
 #include "compat/legacy_kernels.hpp"
 #include "core/algebra/composite_operators.hpp"
 #include "core/algebra/linear_operator.hpp"
+#include "core/algebra/metric_policy.hpp"
+#include "core/algebra/overlap_appliers.hpp"
 #include "core/algebra/sparse_matrix.hpp"
 #include "core/algebra/spectral_bounds.hpp"
 #include "core/algebra/state_generator.hpp"
@@ -171,6 +173,55 @@ PYBIND11_MODULE(_core, m) {
   py::class_<IdentityOperator, LinearOperator>(m, "IdentityOperator")
       .def(py::init<Index>(), py::arg("dim"));
 
+  py::class_<LowdinOperator, LinearOperator>(m, "LowdinOperator")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("inverse_sqrt"),
+           py::arg("operator"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<MetricInverseProduct, LinearOperator>(m, "MetricInverseProduct")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("inverse"),
+           py::arg("operator"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<MetricPolicy>(m, "MetricPolicy")
+      .def_property_readonly("is_orthogonal", &MetricPolicy::IsOrthogonal)
+      .def_property_readonly("overlap", &MetricPolicy::Overlap,
+                             py::return_value_policy::reference_internal)
+      .def_property_readonly("inverse_overlap", &MetricPolicy::InverseOverlap,
+                             py::return_value_policy::reference_internal)
+      .def_property_readonly("inverse_sqrt_overlap", &MetricPolicy::InverseSqrtOverlap,
+                             py::return_value_policy::reference_internal);
+
+  py::class_<OrthogonalMetric, MetricPolicy>(m, "OrthogonalMetric")
+      .def(py::init<Index>(), py::arg("dim") = 0);
+
+  py::class_<NonOrthogonalMetric, MetricPolicy>(m, "NonOrthogonalMetric")
+      .def(py::init<const SparseMatrix&, const LinearOperator&, const LinearOperator&>(),
+           py::arg("s"), py::arg("inverse"), py::arg("inverse_sqrt"), py::keep_alive<1, 2>(),
+           py::keep_alive<1, 3>(), py::keep_alive<1, 4>());
+
+  py::class_<ExactInverseOverlap, LinearOperator>(m, "ExactInverseOverlap")
+      .def(py::init<const SparseMatrix&, Index>(), py::arg("s"), py::arg("max_dimension") = 4096);
+
+  py::class_<ExactInverseSqrtOverlap, LinearOperator>(m, "ExactInverseSqrtOverlap")
+      .def(py::init<const SparseMatrix&, Index>(), py::arg("s"), py::arg("max_dimension") = 4096);
+
+  py::class_<IschoInverseOverlap, LinearOperator>(m, "IschoInverseOverlap")
+      .def(py::init<const SparseMatrix&, double, int>(), py::arg("s"),
+           py::arg("tolerance") = 1e-13, py::arg("max_iterations") = 200, py::keep_alive<1, 2>())
+      .def_property_readonly("last_iterations", &IschoInverseOverlap::LastIterations)
+      .def_property_readonly("last_error", &IschoInverseOverlap::LastError);
+
+  py::class_<ChebyshevInverseOverlap, LinearOperator>(m, "ChebyshevInverseOverlap")
+      .def(py::init<const SparseMatrix&, SpectralBounds, int, double>(), py::arg("s"),
+           py::arg("bounds_of_s"), py::arg("order"), py::arg("coeff_tol") = 1e-12,
+           py::keep_alive<1, 2>())
+      .def_property_readonly("effective_order", &ChebyshevInverseOverlap::EffectiveOrder);
+
+  py::class_<ChebyshevInverseSqrtOverlap, LinearOperator>(m, "ChebyshevInverseSqrtOverlap")
+      .def(py::init<const SparseMatrix&, SpectralBounds, int, double>(), py::arg("s"),
+           py::arg("bounds_of_s"), py::arg("order"), py::arg("coeff_tol") = 1e-12,
+           py::keep_alive<1, 2>())
+      .def_property_readonly("effective_order", &ChebyshevInverseSqrtOverlap::EffectiveOrder);
+
   py::class_<StateGenerator>(m, "StateGenerator")
       .def_property_readonly("dimension", &StateGenerator::Dimension)
       .def_property_readonly("number_of_states", &StateGenerator::NumberOfStates)
@@ -229,7 +280,16 @@ PYBIND11_MODULE(_core, m) {
   py::class_<RescaledOperator, LinearOperator>(m, "RescaledOperator")
       .def(py::init<const SparseMatrix&, const SpectralWindow&>(), py::arg("matrix"),
            py::arg("window"), py::keep_alive<1, 2>())
+      .def(py::init<const LinearOperator&, const SpectralWindow&>(), py::arg("operator"),
+           py::arg("window"), py::keep_alive<1, 2>())
       .def_property_readonly("window", &RescaledOperator::Window);
+
+  py::class_<GeneralisedRescaledOperator, LinearOperator>(m, "GeneralisedRescaledOperator")
+      .def(py::init<const SparseMatrix&, const SparseMatrix&, const LinearOperator&,
+                    const SpectralWindow&>(),
+           py::arg("h"), py::arg("s"), py::arg("inverse"), py::arg("window"),
+           py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>())
+      .def_property_readonly("window", &GeneralisedRescaledOperator::Window);
 
   py::class_<ApplyOperator>(m, "ApplyOperator")
       .def(py::init<int>(), py::arg("operator_index"))
