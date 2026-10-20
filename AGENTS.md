@@ -400,6 +400,23 @@ buildable until stage 7: it is the reference the goldens come from.
 - `qstates::FillWithRandomPhase` seeds from `time(0)`.
 - `recon_grid.hpp`: `alpha = 0.95` and `bounds_pad = 0.10` are environment knobs;
   they become explicit fields of `SpectralWindow` and of the coefficient-table grid.
+- **Batched rank-2 moments are wrong whenever `BATCH_SIZE < M`** (found by the tester in
+  stage 1): `Vectors::IterateAll` (`src/chebyshev_vectors.cpp`) leaves the recursion at
+  `(T_{B-1}, T_B)` after filling a block of `B` vectors, and `CorrelationExpansionMoments`
+  (`src/chebyshev_solver.cpp`) calls it again without restarting, so block `k` holds
+  `T_{k(B-1)}` onwards instead of `T_{kB}`: the off-diagonal blocks of `mu_mn` are
+  shifted by `k` columns (chain1d, `BATCH_SIZE=16`, `M=64`: 36 elements wrong, max
+  error 4.0). The default `BATCH_SIZE = M` hides it, so every committed golden is
+  unaffected. Evidence: `goldens/stage0/chain1d/legacy_defects/batch16/`. The batched
+  reference for the new engine is the unbatched G2 itself; a correct engine gives
+  byte-identical output for any batch size.
+- `test/graphene_reproduce.sh` parses the spectral bound as "the largest decimal in
+  the solver log", which includes the `[hh:mm:ss.mmm]` timestamp, so
+  `graphene_regression` fails about one run in six (whenever the run ends at second
+  50 or later). Legacy test; retire with the legacy tree.
+- `test/golden/operators/graphene_golden.HAM.desc` carries bounds `[-3, 3]` inside the
+  graphene spectrum (Gershgorin radius about 7.5); with the sidecar present the
+  moments diverge. The regeneration script deletes it before running.
 
 ---
 
