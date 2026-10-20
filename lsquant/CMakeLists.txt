@@ -23,9 +23,11 @@ target_compile_options(lsquant_core PUBLIC -Wall -Wextra)
 target_link_libraries(lsquant_core PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX)
 
 add_executable(stage1_moments apps/stage1_moments.cpp)
+set_target_properties(stage1_moments PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_options(stage1_moments PRIVATE -Wall -Wextra)
 target_link_libraries(stage1_moments PRIVATE lsquant_core)
 
 add_executable(stage_1_check "${PROJECT_SOURCE_DIR}/tests/dev/stage_1_check.cpp")
+set_target_properties(stage_1_check PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_options(stage_1_check PRIVATE -Wall -Wextra)
 target_link_libraries(stage_1_check PRIVATE lsquant_core)
