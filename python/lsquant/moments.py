@@ -209,7 +209,9 @@ def msd_plan(
     legacy ``MeanSquareDisplacement`` and ``MomentsTD::MSD_Evolve``:
 
     - Seed preparation: ``ApplySeries([])`` zeros ``seed[Ket]`` (``MSDWF``) while
-      ``seed[Aux]`` starts as ``|r>``, followed by ``MirrorToBra()``.
+      ``seed[Aux]`` starts as ``|r>``, followed by ``MirrorToBra()``. An empty
+      ``coeffs`` is the zero map (``v <- 0``), which is how a seed register is
+      cleared, and ``msd_plan`` relies on it.
     - ``TimeAxis(num_steps, evolve=[EvolveRegister(Ket, coeffs, phase),
       EvolveDerived(Ket, Aux, coeffs, velocity_index, phase),
       EvolveRegister(Aux, coeffs, phase)])``.

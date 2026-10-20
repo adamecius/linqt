@@ -65,7 +65,8 @@ struct Expand {
  * `MomentsTD::Evolve`: `cheb0 = v`, `cheb1 = H~ cheb0`, `v = 0`, and for
  * `n = 0 .. coeffs.size() - 1`: `axpy(coeffs[n], cheb0, v)`,
  * `cheb0 <- 2 H~ cheb1 - cheb0`, `swap(cheb0, cheb1)`, followed by a final
- * `scal(scale, v)`. When `coeffs` is empty, `v` is scaled by zero.
+ * `scal(scale, v)`. An empty `coeffs` is the zero map (`v <- 0`), which is how a seed
+ * register is cleared, and `msd_plan` relies on it.
  *
  * @warning Must appear before `Expand` on the active side.
  * @par Pitfall
@@ -84,7 +85,8 @@ struct ApplySeries {
  * `MomentsTD::Conv_Evolve`: `D_0 v = 0`, `D_1 v = O_k T_0 v`, and
  * `D_{n+1} v = 2 H~ D_n v - D_{n-1} v + 2 O_k T_n v`, where `k = operatorIndex`,
  * followed by a final `scal(scale, v)`. The `n = 0` term contributes zero regardless of
- * `coeffs[0]`.
+ * `coeffs[0]`. An empty `coeffs` is the zero map (`v <- 0`), which is how a seed
+ * register is cleared, and `msd_plan` relies on it.
  *
  * @warning `operatorIndex` must be in `[0, operators.size())` of the executing `MomentEngine`.
  * @par Pitfall
