@@ -116,10 +116,18 @@ def main() -> int:
     win_chain = _core.SpectralWindow(-2.0, 2.0)
     states_chain = _core.LocalStates(dim_chain, list(range(dim_chain)))
     mu_scipy = run_plan(
-        dos_plan(64, dim_chain), ham_from_scipy, win_chain, states_chain, batch_size=64
+        dos_plan(64, dim_chain, word="1 delta"),
+        ham_from_scipy,
+        win_chain,
+        states_chain,
+        batch_size=64,
     )
     mu_text = run_plan(
-        dos_plan(64, dim_chain), ham_from_text, win_chain, states_chain, batch_size=64
+        dos_plan(64, dim_chain, word="1 delta"),
+        ham_from_text,
+        win_chain,
+        states_chain,
+        batch_size=64,
     )
     csr_dos_equal = bool(np.array_equal(mu_scipy.data, mu_text.data))
     print(f"(0) SparseMatrix.from_csr (scipy) dos array_equal vs ReadCsrText: {csr_dos_equal}")
@@ -157,7 +165,7 @@ def main() -> int:
     h_states = _core.LocalStates(h_dim, list(range(h_dim)))
 
     mu_h_xy = run_plan(
-        kubo_plan(128, 0, 1),
+        kubo_plan(128, left_index=0, right_index=1, word="VX delta VY delta"),
         h_ham,
         h_win,
         h_states,
@@ -166,7 +174,7 @@ def main() -> int:
         symmetrise=True,
     )
     mu_h_xx = run_plan(
-        kubo_plan(128, 0, 0),
+        kubo_plan(128, left_index=0, right_index=0, word="VX delta VX delta"),
         h_ham,
         h_win,
         h_states,
@@ -200,7 +208,7 @@ def main() -> int:
     g_states = _core.RandomPhaseStates(g_dim, 1, 12345)
 
     mu_g4 = run_plan(
-        kubo_plan(64, 0, 0),
+        kubo_plan(64, left_index=0, right_index=0, word="VX delta VX delta"),
         g_ham,
         g_win,
         g_states,

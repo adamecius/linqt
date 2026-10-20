@@ -112,7 +112,7 @@ def run_tutorial01(out_dir: str) -> list[str]:
 
         ham = _core.ReadCsrText(csr_path)
         states = _core.LocalStates(n_sites, list(range(n_sites)))
-        plan = dos_plan(num_moments, n_sites)
+        plan = dos_plan(num_moments, n_sites, word="1 delta")
         mu = run_plan(plan, ham, window, states, batch_size=num_moments)
         mu.state_label = f"exact_{label}"
         moments_by_size[n_sites] = mu

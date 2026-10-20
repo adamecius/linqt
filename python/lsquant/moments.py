@@ -12,7 +12,7 @@ from typing import Sequence
 from . import _core
 
 
-def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
+def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
     """Build the rank-1 density-of-states bytecode :class:`~lsquant._core.Plan`.
 
     Solves the problem of expressing ``Tr[1 * delta(E - H)]`` as a ket-only
@@ -26,15 +26,19 @@ def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
         Number of Chebyshev moments ``M > 0``.
     num_states : int
         Number of trace vectors ``N_states > 0`` used for weight normalisation.
+    word : str
+        Symbolic correlator word recorded in the plan and moment tensor metadata
+        (e.g. ``"1 delta"``).
 
     Returns
     -------
     lsquant._core.Plan
-        Compiled bytecode plan with ``word = "1 delta"``.
+        Compiled bytecode plan with ``plan.word == word``.
 
     Warnings
     --------
-    Raises ``ValueError`` if ``num_moments <= 0`` or ``num_states <= 0``.
+    Raises ``ValueError`` if ``num_moments <= 0``, ``num_states <= 0``, or
+    ``word`` is empty.
 
     Notes
     -----
@@ -46,6 +50,8 @@ def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
         raise ValueError("dos_plan: num_moments must be positive")
     if num_states <= 0:
         raise ValueError("dos_plan: num_states must be positive")
+    if not word:
+        raise ValueError("dos_plan: word must be non-empty")
 
     weights: list[complex] = []
     base = 2.0 / float(num_states)
@@ -57,13 +63,15 @@ def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
         _core.Expand(num_moments),
         _core.Trace(weights),
     ]
-    return _core.Plan(code, "1 delta")
+    return _core.Plan(code, word)
 
 
 def kubo_plan(
     num_moments: int,
-    left_index: int = 0,
-    right_index: int = 0,
+    *,
+    left_index: int,
+    right_index: int,
+    word: str,
 ) -> _core.Plan:
     """Build the rank-2 Kubo correlation bytecode :class:`~lsquant._core.Plan`.
 
@@ -84,39 +92,38 @@ def kubo_plan(
     ----------
     num_moments : int
         Number of Chebyshev moments ``M > 0`` along each of the two axes.
-        (If called as ``kubo_plan(left_index, right_index, num_moments)`` with
-        small operator indices ``0, 1`` first and ``M >= 2`` third, the order
-        is normalised automatically.)
-    left_index : int, optional
-        Index of the bra-side operator ``O_left`` in the engine's operator list
-        (default ``0``).
-    right_index : int, optional
-        Index of the ket-side operator ``O_right`` in the engine's operator list
-        (default ``0``).
+    left_index : int
+        Keyword-only index of the bra-side operator ``O_left`` in the engine's
+        operator list.
+    right_index : int
+        Keyword-only index of the ket-side operator ``O_right`` in the engine's
+        operator list.
+    word : str
+        Keyword-only correlator word built by the caller from its operator names
+        (e.g. ``f"{left} delta {right} delta"``).
 
     Returns
     -------
     lsquant._core.Plan
-        Compiled bytecode plan.
+        Compiled bytecode plan with ``plan.word == word``.
 
     Warnings
     --------
-    Raises ``ValueError`` if ``num_moments <= 0`` or operator indices are
-    negative.
+    Raises ``ValueError`` if ``num_moments <= 0``, operator indices are
+    negative, or ``word`` is empty.
 
     Notes
     -----
     Pitfall: In legacy ``inline_compute-kpm-nonEqOp <label> <OP_R> <OP_L> <M>``,
-     the first CLI operator seeds the bra recursion (``left_index``) and the
+    the first CLI operator seeds the bra recursion (``left_index``) and the
     second is applied to the ket batch (``right_index``).
     """
-    if num_moments <= 1 and right_index >= 2:
-        num_moments, left_index, right_index = right_index, num_moments, left_index
-
     if num_moments <= 0:
         raise ValueError("kubo_plan: num_moments must be positive")
     if left_index < 0 or right_index < 0:
         raise ValueError("kubo_plan: operator indices must be non-negative")
+    if not word:
+        raise ValueError("kubo_plan: word must be non-empty")
 
     code = [
         _core.Expand(num_moments),
@@ -126,7 +133,6 @@ def kubo_plan(
         _core.Expand(num_moments),
         _core.Trace([complex(1.0, 0.0)]),
     ]
-    word = "VX delta VX delta" if left_index == right_index else "VX delta VY delta"
     return _core.Plan(code, word)
 
 

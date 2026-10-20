@@ -188,7 +188,9 @@ def run_tutorial03(
     states = _core.LocalStates(dim, list(range(dim)))
 
     # Hall response: VX (bra) - VY (ket)
-    plan_xy = kubo_plan(num_moments, 0, 1)
+    plan_xy = kubo_plan(
+        num_moments, left_index=0, right_index=1, word="VX delta VY delta"
+    )
     mu_xy = run_plan(
         plan_xy,
         ham,
@@ -202,7 +204,9 @@ def run_tutorial03(
     stem_xy = f"NonEqOpVX-VY{label}KPM_M{num_moments}x{num_moments}_stateexact"
 
     # Longitudinal response: VX (bra) - VX (ket)
-    plan_xx = kubo_plan(num_moments, 0, 0)
+    plan_xx = kubo_plan(
+        num_moments, left_index=0, right_index=0, word="VX delta VX delta"
+    )
     mu_xx = run_plan(
         plan_xx,
         ham,

@@ -64,9 +64,15 @@ def main() -> int:
     states = _core.LocalStates(dim, list(range(dim)))
     num_moments = 64
 
-    mu_dos = run_plan(dos_plan(num_moments, dim), ham, window, states, batch_size=num_moments)
+    mu_dos = run_plan(
+        dos_plan(num_moments, dim, word="1 delta"),
+        ham,
+        window,
+        states,
+        batch_size=num_moments,
+    )
     mu_kubo = run_plan(
-        kubo_plan(num_moments),
+        kubo_plan(num_moments, left_index=0, right_index=0, word="VX delta VX delta"),
         ham,
         window,
         states,

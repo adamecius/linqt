@@ -307,7 +307,13 @@ def main(argv: list[str] | None = None) -> int:
 
             num_moments = int(args.num_moments)
             batch_size = int(args.batch) if args.batch is not None else num_moments
-            plan = kubo_plan(num_moments, left_idx, right_idx)
+            word = f"{args.left} delta {args.right} delta"
+            plan = kubo_plan(
+                num_moments,
+                left_index=left_idx,
+                right_index=right_idx,
+                word=word,
+            )
             mu = run_plan(
                 plan,
                 ham,
