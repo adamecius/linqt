@@ -3,28 +3,30 @@
 Generates ``real`` and ``complex`` rotated basis fixtures for ``chain1d`` (``N = 2048``)
 and ``haldane`` (``N = 512``) under ``goldens/stage0/nonorth/<model>/<variant>/``,
 verifying generalised spectrum invariance ``max |eigvalsh(H', S') - eigvalsh(H)| < 1e-12``
-and ``spec(S') subset [0.4, 1.9]``.
+and ``cond(S') in [5.0, 10.0]``.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
 import sys
 
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "4")
-os.environ.setdefault("MKL_NUM_THREADS", "4")
-os.environ.setdefault("OMP_NUM_THREADS", "4")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
+os.environ.setdefault("MKL_NUM_THREADS", "2")
+os.environ.setdefault("OMP_NUM_THREADS", "2")
 
 import numpy as np
 import scipy.linalg as la
 
-# Ensure python/ is importable when invoked as a script from the repo root.
+# Ensure build/lsquant_core and python/ are importable when invoked as a script.
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT / "python") not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT / "python"))
+for _p in (_REPO_ROOT / "build" / "lsquant_core", _REPO_ROOT / "python"):
+    if _p.is_dir() and str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 from lsquant.models.nonorthogonal import (  # noqa: E402
     make_local_transform,
@@ -34,11 +36,16 @@ from lsquant.models.nonorthogonal import (  # noqa: E402
 )
 
 
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def build_fixture_variant(
     model: str,
     src_dir: Path,
     out_dir: Path,
     op_names: list[str],
+    window: list[float],
     alpha: float,
     complex_entries: bool,
     seed: int,
@@ -54,9 +61,11 @@ def build_fixture_variant(
     rotated = rotate_basis(ops, r_mat)
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    written_files = [f"{model}.S.CSR"] + [f"{model}.{name}.CSR" for name in op_names]
     write_csr_text(out_dir / f"{model}.S.CSR", rotated["S"])
     for name in op_names:
         write_csr_text(out_dir / f"{model}.{name}.CSR", rotated[name])
+    sha256_map = {fname: _sha256_file(out_dir / fname) for fname in written_files}
 
     s_dense = rotated["S"].toarray()
     h_prime_dense = rotated["HAM"].toarray()
@@ -65,16 +74,19 @@ def build_fixture_variant(
     s_eigs = la.eigvalsh(s_dense, driver="evd")
     lambda_min_s = float(np.min(s_eigs))
     lambda_max_s = float(np.max(s_eigs))
+    if lambda_min_s <= 0.0:
+        raise RuntimeError(
+            f"{model}/{out_dir.name}: S' is not positive definite (lambda_min={lambda_min_s})"
+        )
     cond_s = float(lambda_max_s / lambda_min_s)
 
     orth_eigs = la.eigvalsh(h_orth_dense, driver="evd")
     gen_eigs = la.eigvalsh(h_prime_dense, s_dense, driver="gvd")
     max_eig_diff = float(np.max(np.abs(gen_eigs - orth_eigs)))
 
-    if not (0.4 <= lambda_min_s and lambda_max_s <= 1.9):
+    if not (5.0 <= cond_s <= 10.0):
         raise RuntimeError(
-            f"{model}/{out_dir.name}: spec(S') = [{lambda_min_s}, {lambda_max_s}] "
-            "outside [0.4, 1.9]"
+            f"{model}/{out_dir.name}: cond(S') = {cond_s:.6f} outside [5.0, 10.0]"
         )
     if max_eig_diff >= 1e-12:
         raise RuntimeError(
@@ -88,12 +100,14 @@ def build_fixture_variant(
         "dimension": dim,
         "seed": int(seed),
         "alpha": float(alpha),
+        "window": [float(window[0]), float(window[1])],
         "lambda_min(S')": lambda_min_s,
         "lambda_max(S')": lambda_max_s,
         "cond(S')": cond_s,
         "nnz(S')": int(rotated["S"].nnz),
         "nnz(H')": int(rotated["HAM"].nnz),
         "max |eigvalsh(H', S') - eigvalsh(H)|": max_eig_diff,
+        "sha256": sha256_map,
     }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -110,7 +124,7 @@ def main() -> int:
         default=_REPO_ROOT,
         help="Repository root directory (default: auto-detected).",
     )
-    parser.add_argument("--alpha", type=float, default=0.2, help="Coupling amplitude alpha.")
+    parser.add_argument("--alpha", type=float, default=0.55, help="Coupling amplitude alpha.")
     parser.add_argument("--seed", type=int, default=12345, help="Deterministic RNG seed.")
     args = parser.parse_args()
 
@@ -120,15 +134,17 @@ def main() -> int:
             "chain1d",
             root / "goldens" / "stage0" / "chain1d" / "operators",
             ["HAM", "VX"],
+            [-2.0, 2.0],
         ),
         (
             "haldane",
             root / "goldens" / "stage0" / "haldane" / "operators",
             ["HAM", "VX", "VY"],
+            [-4.5, 4.5],
         ),
     ]
 
-    for model, src_dir, op_names in specs:
+    for model, src_dir, op_names, window in specs:
         for variant, is_complex in (("real", False), ("complex", True)):
             out_dir = root / "goldens" / "stage0" / "nonorth" / model / variant
             manifest = build_fixture_variant(
@@ -136,6 +152,7 @@ def main() -> int:
                 src_dir=src_dir,
                 out_dir=out_dir,
                 op_names=op_names,
+                window=window,
                 alpha=args.alpha,
                 complex_entries=is_complex,
                 seed=args.seed,
@@ -151,7 +168,8 @@ def main() -> int:
                 f"spec(S')=[{lmin:.6f}, {lmax:.6f}] "
                 f"cond(S')={cond:.6f} "
                 f"nnz(S')={nnz_s} nnz(H')={nnz_h} "
-                f"max_eig_diff={ediff:.3e}"
+                f"max_eig_diff={ediff:.3e}",
+                flush=True,
             )
     return 0
 

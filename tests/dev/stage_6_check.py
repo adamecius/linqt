@@ -31,8 +31,9 @@ import numpy as np
 import scipy.linalg as la
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(_REPO_ROOT / "python") not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT / "python"))
+for _p in (_REPO_ROOT / "build" / "lsquant_core", _REPO_ROOT / "python"):
+    if _p.is_dir() and str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 from lsquant.models.nonorthogonal import read_csr_text  # noqa: E402
 
@@ -240,10 +241,16 @@ def main() -> int:
                 ):
                     run_out = tmp_dir / f"{variant}_{route}_cheb_{order}"
                     run_out.mkdir(parents=True, exist_ok=True)
-                    mu, _ = run_dos(exe, fix_dir, route, "chebyshev", run_out, order=order)
+                    mu, out_line = run_dos(exe, fix_dir, route, "chebyshev", run_out, order=order)
                     err_delta = float(np.max(np.abs(mu - delta_m0)))
+                    kv = parse_kv_line(out_line)
+                    eff_str = (
+                        f", eff_order={kv['effective_order']}"
+                        if "effective_order" in kv
+                        else ""
+                    )
                     print(
-                        f"[3] {variant} route={route:<11} applier=chebyshev (M_S={order}) "
+                        f"[3] {variant} route={route:<11} applier=chebyshev (M_S={order}{eff_str}) "
                         f"applier_res={m_ord[res_key]:.6e} max|mu - delta_m0|={err_delta:.6e}",
                         flush=True,
                     )

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import numpy as np
+import scipy.linalg as la
 import scipy.sparse as sp
 
 
@@ -125,7 +126,7 @@ def write_csr_text(path: str | Path, matrix: sp.csr_matrix) -> None:
 
 def make_local_transform(
     H: sp.csr_matrix,
-    alpha: float = 0.2,
+    alpha: float = 0.55,
     complex_entries: bool = True,
     seed: int = 12345,
 ) -> sp.csr_matrix:
@@ -135,14 +136,15 @@ def make_local_transform(
     ``numpy.random.default_rng(seed)`` (either real non-symmetric when
     ``complex_entries=False`` or complex non-Hermitian ``K_r + i K_i`` when
     ``complex_entries=True``) and normalised so that ``||K||_2 == 1`` and
-    ``||alpha * K||_2 <= 0.35``. This guarantees that ``spec(S')`` with ``S' = R^+ R``
-    lies cleanly inside ``[0.4, 1.9]`` while keeping ``S'`` sparse and narrow-banded.
+    ``||alpha * K||_2 <= 0.55``. For ``N <= 4096``, verifies via dense ``eigvalsh``
+    that ``S' = R^+ R`` is positive definite and ``cond(S')`` lies in ``[5.0, 10.0]``,
+    raising ``ValueError`` outside that band.
 
     Parameters
     ----------
     H : scipy.sparse.csr_matrix
         Reference Hamiltonian defining the dimension ``N`` and off-diagonal sparsity graph.
-    alpha : float, default 0.2
+    alpha : float, default 0.55
         Coupling amplitude multiplying ``K`` in ``R = I + alpha * K``.
     complex_entries : bool, default True
         If True, generate complex non-Hermitian off-diagonal entries; if False, generate
@@ -181,13 +183,29 @@ def make_local_transform(
     if nnz_off > 0 and alpha != 0.0:
         sigma_max = float(np.linalg.norm(K.toarray(), ord=2))
         if sigma_max > 0.0:
-            target_k_norm = min(1.0, 0.35 / abs(float(alpha)))
+            target_k_norm = min(1.0, 0.55 / abs(float(alpha)))
             K = K * (target_k_norm / sigma_max)
 
     ident = sp.eye(dim, format="csr", dtype=np.complex128)
     R = (ident + float(alpha) * K).tocsr()
     R.sum_duplicates()
     R.sort_indices()
+
+    if dim <= 4096:
+        s_mat = hermitian_fold((R.conj().T @ R).tocsr())
+        s_eigs = la.eigvalsh(s_mat.toarray(), driver="evd")
+        lmin = float(np.min(s_eigs))
+        lmax = float(np.max(s_eigs))
+        if lmin <= 0.0:
+            raise ValueError(
+                f"make_local_transform: S' is not positive definite (lambda_min={lmin})"
+            )
+        cond_s = lmax / lmin
+        if not (5.0 <= cond_s <= 10.0):
+            raise ValueError(
+                f"make_local_transform: cond(S') = {cond_s:.6f} outside [5.0, 10.0]"
+            )
+
     return R
 
 
