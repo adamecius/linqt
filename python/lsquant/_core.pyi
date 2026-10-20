@@ -56,6 +56,16 @@ class UserStates(StateGenerator):
         self, states: Sequence[Union[npt.NDArray[np.complex128], Sequence[complex]]]
     ) -> None: ...
 
+class SpectralBounds:
+    lower: float
+    upper: float
+    def __init__(self, lower: float = 0.0, upper: float = 0.0) -> None: ...
+
+def GershgorinBounds(matrix: SparseMatrix, pad: float = 0.10) -> SpectralBounds: ...
+def LanczosBounds(
+    operator: LinearOperator, iterations: int = 40, seed: int = 12345
+) -> SpectralBounds: ...
+
 class SpectralWindow:
     lower: float
     upper: float
@@ -150,6 +160,54 @@ def ContractRank1(
 def ContractRank1(
     moments: ChebyshevMoments, table: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]: ...
+
+@overload
+def ContractRank2Imag(
+    moments: npt.NDArray[np.complex128],
+    table_a: npt.NDArray[np.float64],
+    table_b: npt.NDArray[np.complex128],
+) -> npt.NDArray[np.float64]: ...
+@overload
+def ContractRank2Imag(
+    moments: ChebyshevMoments,
+    table_a: npt.NDArray[np.float64],
+    table_b: npt.NDArray[np.complex128],
+) -> npt.NDArray[np.float64]: ...
+
+@overload
+def ContractRank2Real(
+    moments: npt.NDArray[np.complex128],
+    table_a: npt.NDArray[np.complex128],
+    table_b: npt.NDArray[np.complex128],
+) -> npt.NDArray[np.float64]: ...
+@overload
+def ContractRank2Real(
+    moments: ChebyshevMoments,
+    table_a: npt.NDArray[np.complex128],
+    table_b: npt.NDArray[np.complex128],
+) -> npt.NDArray[np.float64]: ...
+
+@overload
+def ContractRank2RealReal(
+    moments: npt.NDArray[np.complex128],
+    table_a: npt.NDArray[np.float64],
+    table_b: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]: ...
+@overload
+def ContractRank2RealReal(
+    moments: ChebyshevMoments,
+    table_a: npt.NDArray[np.float64],
+    table_b: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]: ...
+
 def WriteCurveText(
     path: str, x: npt.NDArray[np.float64], y: npt.NDArray[np.float64]
 ) -> None: ...
+
+class compat:
+    @staticmethod
+    def legacy_green_tables(
+        x_grid: Union[Sequence[float], npt.NDArray[np.float64]],
+        num_moments_0: int,
+        num_moments_1: int | None = None,
+    ) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.complex128]]: ...
