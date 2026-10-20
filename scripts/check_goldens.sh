@@ -13,6 +13,14 @@
 #            batched result must equal the unbatched G2); random-phase determinism
 #            (two runs, cmp);
 #            grep for "basis|std::cout|getenv" under lsquant/core (must be empty).
+#   stage 2  Python binding (build_dir/lsquant_core/_core*.so, handoff 0002): stage 1 in
+#            full, then python3 -m lsquant.apps.stage2_dos in its two forms at
+#            OMP_NUM_THREADS = 1 and 16 (PYTHONPATH=build_dir/lsquant_core:python):
+#            (a) --moments G1 -> JACKSON.dat vs G3; (b) --operators -> .chebmom1D vs G1
+#            and JACKSON.dat vs G3; grep for "delta|DOS|Kubo|basis|std::cout|getenv"
+#            under lsquant/core and lsquant/io on code lines only (lines whose first
+#            non-blank characters are //, * or /* are comments, excluded and listed;
+#            the code-line result must be empty).
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -178,9 +186,61 @@ core_grep() {
   fi
 }
 
+# ---------------------------------------------------------------- stage 2 (Python binding)
+G1F=SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+G3F=meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+
+stage2() {
+  local PYDIR="$BUILD/lsquant_core" T W rc
+  ls "$PYDIR"/_core*.so >/dev/null 2>&1 || PYDIR="$BUILD/lsquant"
+  ls "$PYDIR"/_core*.so >/dev/null 2>&1 || { echo "ERROR: _core*.so not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
+  echo "== stage 2: python3 -m lsquant.apps.stage2_dos, PYTHONPATH=$PYDIR:python, vs goldens/stage0/chain1d (KPM_SEED=$KPM_SEED)"
+  for T in 1 16; do
+    # form (a): reconstruct the G3 curve from the committed G1 moment file
+    W="$TMP/s2_T${T}_a"; mkdir -p "$W"
+    ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR:$REPO/python" python3 -m lsquant.apps.stage2_dos \
+        --moments "$GOLD/chain1d/$G1F" --broadening-meV 120 --out "$W" ) >"$W/run.log" 2>&1; rc=$?
+    [ $rc -eq 0 ] || echo "          [T=$T] stage2_dos form (a) exited $rc: $(tail -1 "$W/run.log")"
+    sed "s|$W/||; s|^|          [T=$T] (a) printed: |" "$W/run.log"
+    compare "$W/$G3F" "$GOLD/chain1d/$G3F" "[T=$T] (a) --moments G1 -> chain1d/$G3F (G3)"
+    # form (b): moments through MomentEngine from the golden operators, then reconstruct
+    W="$TMP/s2_T${T}_b"; mkdir -p "$W"
+    ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR:$REPO/python" python3 -m lsquant.apps.stage2_dos \
+        --operators "$GOLD/chain1d/operators" --label chain1d --window -2 2 --trace exact --states 2048 \
+        --moments 64 --broadening-meV 120 --out "$W" ) >"$W/run.log" 2>&1; rc=$?
+    [ $rc -eq 0 ] || echo "          [T=$T] stage2_dos form (b) exited $rc: $(tail -1 "$W/run.log")"
+    sed "s|$W/||; s|^|          [T=$T] (b) printed: |" "$W/run.log"
+    compare "$W/$G1F" "$GOLD/chain1d/$G1F" "[T=$T] (b) --operators -> chain1d/$G1F (G1)"
+    compare "$W/$G3F" "$GOLD/chain1d/$G3F" "[T=$T] (b) --operators -> chain1d/$G3F (G3)"
+  done
+}
+
+# physics names and side channels in the engine, on code lines only: a line whose first
+# non-blank characters are //, * or /* is a comment (e.g. the notation delta_{m0}) and is
+# excluded from the verdict, but listed below it.
+stage2_grep() {
+  local all hits coms pat='delta\|DOS\|Kubo\|basis\|std::cout\|getenv'
+  local com='^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)'
+  if [ ! -d "$REPO/lsquant/core" ] || [ ! -d "$REPO/lsquant/io" ]; then
+    echo "GREP      lsquant/core or lsquant/io missing"; NFAIL=$((NFAIL + 1)); return
+  fi
+  all="$(cd "$REPO" && grep -rn "$pat" lsquant/core lsquant/io)"
+  hits="$(printf '%s\n' "$all" | grep -Ev "$com" | grep -v '^$')"
+  coms="$(printf '%s\n' "$all" | grep -E "$com")"
+  if [ -z "$hits" ]; then
+    echo "GREP      grep -rn \"$pat\" lsquant/core lsquant/io, code lines: empty"
+  else
+    echo "GREP      grep -rn \"$pat\" lsquant/core lsquant/io, code lines: FOUND"
+    echo "$hits" | sed 's/^/          /'
+    NFAIL=$((NFAIL + 1))
+  fi
+  [ -z "$coms" ] || echo "$coms" | sed 's/^/          excluded comment line: /'
+}
+
 case "$STAGE" in
   0) stage0 ;;
   1) stage1; core_grep ;;
+  2) stage1; core_grep; stage2; stage2_grep ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
 
