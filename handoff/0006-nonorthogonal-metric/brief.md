@@ -20,8 +20,14 @@ must both reproduce them and agree with each other:
 - **Löwdin**: `H_L = S^-1/2 H' S^-1/2`, `V_L = S^-1/2 V' S^-1/2`; Hermitian; the stage-1
   engine unchanged.
 - **Generalised**: recursion on `H_G = S^-1 (a H' + b S') = a S^-1 H' + b`, with
-  `S^-1 V'` as the velocity in the word. (Note the rescale: `S^-1 (aH' + bS')`, never
-  `S^-1 (aH' + bI)`; AGENTS.md section 10.)
+  `S^-1 V'` as the velocity in the word and the adjoint bra of `theory.md` equations
+  2a to 2c. (Note the rescale: `S^-1 (aH' + bS')`, never `S^-1 (aH' + bI)`; AGENTS.md
+  section 10.)
+
+Read `theory.md` in this folder before coding: it derives both routes, the Hermitian
+velocity matrix, and lists the defects of the legacy non-orthogonal code that must not
+be reproduced (one-sided velocity, symmetric estimator with `S^-1 V` on both sides,
+`S^-1 (aH + bI)` rescale).
 
 Deliverables: the `MetricPolicy` and its four appliers, the two composites, the model
 generator in the Python library, the fixtures (chain1d and Haldane, rotated), the gate
@@ -117,9 +123,23 @@ applier is iterative or truncated), so matrix-free is fine here; the stage-1 con
 over a `SparseMatrix` stays as it is. The `dos` and `kubo` plans of stage 1 are reused
 unchanged, with `VX` replaced by `LowdinOperator(S^-1/2, V'_X)`.
 
-For the generalised route the plans are also unchanged, with `rescaledH =
-GeneralisedRescaledOperator(H', S', S^-1, window)` and `VX` replaced by
-`MetricInverseProduct(S^-1, V'_X)`.
+For the generalised route the Hamiltonian is `rescaledH =
+GeneralisedRescaledOperator(H', S', S^-1, window)`, but the plan is **not** the
+symmetric stage-1 one: `S^-1 V'` and `S^-1 H'` are not Hermitian matrices, so the bra
+side must carry the adjoint explicitly (`theory.md`, equations 2a to 2c):
+
+    ket: Expand(M), ApplyOperator(S^-1 V')
+    MirrorToBra
+    bra: ApplyOperator(S^-1), ApplyOperator(S^-1 V'), Expand(M), ApplyOperator(S)
+    Trace(1)
+
+(`ApplyOperator(S)` after `Expand` acts on the whole batch; the engine supports it.)
+For the DOS no `S` enters the bra at all. A third route, `naive`, is the symmetric plan
+with `S^-1 V'` on both sides; it is the legacy estimator and it is wrong (`theory.md`
+section 4.1): the gate runs it to demonstrate the defect, never to pass.
+
+`MetricPolicy::Overlap()` therefore matters in the plan: `S` itself is a
+`SparseMatrixOperator` registered in the engine's operator list like any other.
 
 ## 5. The fixtures: rotated chain1d and rotated Haldane (Python, part of the library)
 
@@ -150,7 +170,7 @@ stated condition number and that `eigvalsh(H', S')` equals `eigvalsh(H)` to 1e-1
 
 ```
 stage6_nonorth --fixture goldens/stage0/nonorth/<model>/<variant> --label <model> --window <lo> <hi>
-               --route lowdin|generalised --applier exact|ischo|chebyshev --order <P> --tol <t>
+               --route lowdin|generalised|naive --applier exact|ischo|chebyshev --order <P> --tol <t>
                --trace exact --states <N> --moments <M> --word dos|kubo[xy] --out <dir>
 ```
 
@@ -166,10 +186,11 @@ byte, and record it in the report).
 The gate (tester) compares with `scripts/golden_diff.py` against G1, G2 and G5 at these
 tolerances, both routes, and prints the max relative difference:
 
-| applier | expected max relative difference vs golden |
+| route / applier | expected max relative difference vs golden |
 |---|---|
-| `exact` (dense) | <= 1e-10 |
+| `lowdin` or `generalised`, `exact` (dense) | <= 1e-10 |
 | `ischo` (tol 1e-12) | <= 1e-9 |
+| `naive` (legacy estimator), any applier | reported, expected to FAIL on `kubo`/`kuboxy` and to pass on `dos`; this row is evidence, not a gate |
 | `chebyshev` (order chosen by the ctor truncation at coeffTol 1e-12) | <= 1e-8 |
 
 and the two routes against each other at the same levels. Then the Haldane Hall plateau:
