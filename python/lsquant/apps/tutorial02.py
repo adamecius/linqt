@@ -77,7 +77,7 @@ def _run_one_chain(
     dest_dir: str,
 ) -> list[tuple[str, str]]:
     """Build one disordered chain, compute MSD moments, and reconstruct ``energies``."""
-    label = str(make_mod.build(stage_dir, n_sites, w_val, disorder_seed))
+    label = str(make_mod.build_chain(n_sites, w_val, disorder_seed, outdir=stage_dir))
     op_dir = os.path.join(stage_dir, "operators")
     window = _read_bounds(os.path.join(stage_dir, "BOUNDS"))
 
@@ -87,7 +87,8 @@ def _run_one_chain(
     states = _core.RandomPhaseStates(n_sites, 1, int(kpm_seed))
 
     dt = time_step_from_tmax(NTIME, TMAX)
-    coeffs, phase = time_evolution_series(window, dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
     plan = msd_plan(
         M_MOMENTS,
         NTIME,

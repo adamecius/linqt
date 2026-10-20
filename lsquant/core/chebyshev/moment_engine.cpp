@@ -187,7 +187,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
     if (ta->numSteps <= 0) {
       throw std::invalid_argument("MomentEngine::Run: TimeAxis numSteps must be positive");
     }
-    for (const TimeEvolutionStep& ev : ta->evolve) {
+    for (const AxisStep& ev : ta->evolve) {
       if (const auto* ed = std::get_if<EvolveDerived>(&ev)) {
         if (ed->operatorIndex < 0 ||
             ed->operatorIndex >= static_cast<int>(operators_.size())) {
@@ -385,7 +385,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
           AccumulateWeightedDot(mu.At(stepIdx), traceWeights[wIdx], braInit, ketInit);
         }
 
-        for (const TimeEvolutionStep& ev : timeAxisSpec.evolve) {
+        for (const AxisStep& ev : timeAxisSpec.evolve) {
           if (const auto* er = std::get_if<EvolveRegister>(&ev)) {
             Vector& targetVec = SelectRegister(er->target, ketSeed, braSeed, auxSeed);
             RunApplySeries(*rescaledH_, er->coeffs, er->scale, targetVec, cheb0, cheb1);

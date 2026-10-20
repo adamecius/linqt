@@ -1,7 +1,7 @@
 """Reproduce Tutorial 04 (Larmor spin precession in a magnetic 1D chain) through the Python API.
 
 Evaluates the three projected time-evolution tensors ``TimeProj{SX,SY,SZ}-PX``
-on ``test/models/chain1d_mag/operators`` (``N = 128``, ``M = 32``, ``96`` time
+on ``goldens/stage0/chain1d_mag/operators`` (``N = 128``, ``M = 32``, ``96`` time
 steps, ``tmax = 95`` fs, exact trace, Gershgorin window ``[-2.31, 2.31]``),
 writes the legacy ``.chebmomTD`` files into ``<out>`` (and ``<out>/captured/``),
 and extracts the ``m = 0`` row ``S_a(t) = Re mu_0(t)``.
@@ -44,7 +44,7 @@ def run_tutorial04(
     resolved_op_dir = (
         os.path.abspath(operators_dir)
         if operators_dir is not None
-        else os.path.join(repo_root, "test", "models", "chain1d_mag", "operators")
+        else os.path.join(repo_root, "goldens", "stage0", "chain1d_mag", "operators")
     )
     os.makedirs(out_dir, exist_ok=True)
     captured_dir = os.path.join(out_dir, "captured")
@@ -54,7 +54,8 @@ def run_tutorial04(
     dim = ham.dimension
     window = window_from_gershgorin(ham)
     dt = time_step_from_tmax(NTIME, TMAX)
-    coeffs, phase = time_evolution_series(window, dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
 
     proj_mat = _core.ReadCsrText(
         os.path.join(resolved_op_dir, f"{LABEL}.{PROJECTOR}.CSR")
@@ -118,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument(
             "--operators",
             default=None,
-            help="Directory containing chain1d_mag.{HAM,SX,SY,SZ,PX}.CSR",
+            help="Directory containing chain1d_mag.{HAM,SX,SY,SZ,PX}.CSR (default: goldens/stage0/chain1d_mag/operators)",
         )
         args = parser.parse_args(argv)
         out_dir = (

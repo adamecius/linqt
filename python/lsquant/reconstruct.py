@@ -39,7 +39,7 @@ def dos_curve(
        ``x_i = -alpha + i * (2 * alpha) / (num_div - 1)``.
     4. Contract ``rho_i = sum_{m=0}^{M_eff-1} delta_chebF(x_i, m) * mu_real[m]``
        sequentially in ``m`` via :func:`lsquant._core.ContractRank1`.
-    5. Map to physical energy ``E_i = x_i / Scale + Shift`` and extensive value
+    5. Map to physical energy ``E_i = (x_i - Shift) / Scale`` and extensive value
        ``value_i = rho_i * (SystemSize * Scale)``.
 
     Complexity is ``O(M_eff * num_div) = O(30 * M_eff^2)`` time and memory.
@@ -112,7 +112,7 @@ def dos_curve(
     energies = np.empty(num_div, dtype=np.float64)
     values = np.empty(num_div, dtype=np.float64)
     for i in range(num_div):
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
         values[i] = float(rho[i]) * prefactor
 
     return energies, values
@@ -172,7 +172,7 @@ def kubo_greenwood(
     3. Contract ``out_i = sum_{m0, m1} delta(x_i, m0) * imag(greenR(x_i, m1) * mu[m0, m1])``
        via :func:`~lsquant._core.ContractRank2Imag`.
     4. Scale ``kernel_i = -1.0 * out_i * (N * scale * scale)`` and report the
-       first ``num_div - 1`` points at ``E_i = x_i / scale + shift``.
+       first ``num_div - 1`` points at ``E_i = (x_i - shift) / scale``.
 
     Parameters
     ----------
@@ -223,7 +223,7 @@ def kubo_greenwood(
     for i in range(n_out):
         kernel_i = -1.0 * float(out[i]) * pref_ext
         values[i] = kernel_i
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -300,7 +300,7 @@ def kubo_bastin(
     for i in range(n_out):
         acc += kernel[i] * (x_grid[i + 1] - x_grid[i])
         values[i] = acc
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -391,7 +391,7 @@ def kubo_bastin_sea(
         denerg = x_grid[i + 1] - x_grid[i]
         acc += 0.5 * (kernel[i] + kernel[i + 1]) * denerg
         values[i] = acc
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -465,7 +465,7 @@ def kubo_bastin_surf(
     values = np.empty(n_out, dtype=np.float64)
     for i in range(n_out):
         values[i] = (kernel[i + 1] + kernel[i]) / 2.0
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 

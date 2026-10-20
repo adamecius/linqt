@@ -154,13 +154,13 @@ class CopyRegister:
     to_reg: Register
     def __init__(self, from_reg: Register, to_reg: Register) -> None: ...
 
-TimeEvolutionStep = Union[EvolveRegister, EvolveDerived, CopyRegister]
+AxisStep = Union[EvolveRegister, EvolveDerived, CopyRegister]
 
 class TimeAxis:
     num_steps: int
-    evolve: list[TimeEvolutionStep]
+    evolve: list[AxisStep]
     def __init__(
-        self, num_steps: int, evolve: Sequence[TimeEvolutionStep] = ...
+        self, num_steps: int, evolve: Sequence[AxisStep] = ...
     ) -> None: ...
 
 class Trace:

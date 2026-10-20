@@ -83,7 +83,9 @@ def run_tutorial05(out_dir: str) -> list[str]:
 
     for w_val in W_LIST:
         with tempfile.TemporaryDirectory() as stage_dir:
-            label = str(make_square.build(stage_dir, L_SIDE, w_val, DISORDER_SEED))
+            label = str(
+                make_square.build_square(L_SIDE, w_val, DISORDER_SEED, outdir=stage_dir)
+            )
             op_dir = os.path.join(stage_dir, "operators")
             window = _read_bounds(os.path.join(stage_dir, "BOUNDS"))
 
@@ -94,7 +96,8 @@ def run_tutorial05(out_dir: str) -> list[str]:
 
             # 1. MSD at E_F = 2.0 eV
             states_msd = _core.RandomPhaseStates(dim, 1, KPM_SEED)
-            coeffs, phase = time_evolution_series(window, dt)
+            # Byte identity with the legacy captures requires the GSL Bessel values.
+            coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
             plan_msd = msd_plan(
                 M_MSD,
                 NTIME,

@@ -43,7 +43,7 @@ def time_evolution_series(
     window: _core.SpectralWindow,
     dt: float,
     tol: float = 1e-15,
-    use_legacy_bessel: bool = True,
+    use_legacy_bessel: bool = False,
 ) -> tuple[npt.NDArray[np.complex128], complex]:
     """Compute Bessel series coefficients and band-center phase for ``U(dt)``.
 
@@ -209,7 +209,9 @@ def msd_plan(
     legacy ``MeanSquareDisplacement`` and ``MomentsTD::MSD_Evolve``:
 
     - Seed preparation: ``ApplySeries([])`` zeros ``seed[Ket]`` (``MSDWF``) while
-      ``seed[Aux]`` starts as ``|r>``, followed by ``MirrorToBra()``.
+      ``seed[Aux]`` starts as ``|r>``, followed by ``MirrorToBra()``. An empty
+      ``coeffs`` is the zero map (``v <- 0``), which is how a seed register is
+      cleared, and ``msd_plan`` relies on it.
     - ``TimeAxis(num_steps, evolve=[EvolveRegister(Ket, coeffs, phase),
       EvolveDerived(Ket, Aux, coeffs, velocity_index, phase),
       EvolveRegister(Aux, coeffs, phase)])``.

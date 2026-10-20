@@ -4,7 +4,7 @@
  *
  * Defines the physical-name-free instruction set (`ApplyOperator`, `Expand`,
  * `ApplySeries`, `ApplyDerivedSeries`, `MirrorToBra`, `TimeAxis`, `Trace`),
- * register identifiers, time-evolution step descriptors, and `Plan` container
+ * register identifiers, register-update step descriptors, and `Plan` container
  * executed by `MomentEngine::Run`.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_PLAN_HPP_
@@ -23,8 +23,8 @@ namespace lsquant {
  *
  * `MomentEngine` maintains three vector registers of dimension `N` per trace state:
  * `Ket` (the active ket seed), `Bra` (the active bra seed), and `Aux` (an auxiliary
- * seed register used by coupled time-evolution recursions such as mean-square
- * displacement).
+ * seed register used by coupled register updates between slices of a trailing
+ * tensor axis).
  */
 enum class Register {
   Ket,
@@ -65,7 +65,8 @@ struct Expand {
  * `MomentsTD::Evolve`: `cheb0 = v`, `cheb1 = H~ cheb0`, `v = 0`, and for
  * `n = 0 .. coeffs.size() - 1`: `axpy(coeffs[n], cheb0, v)`,
  * `cheb0 <- 2 H~ cheb1 - cheb0`, `swap(cheb0, cheb1)`, followed by a final
- * `scal(scale, v)`. When `coeffs` is empty, `v` is scaled by zero.
+ * `scal(scale, v)`. An empty `coeffs` is the zero map (`v <- 0`), which is how a seed
+ * register is cleared, and `msd_plan` relies on it.
  *
  * @warning Must appear before `Expand` on the active side.
  * @par Pitfall
@@ -84,7 +85,8 @@ struct ApplySeries {
  * `MomentsTD::Conv_Evolve`: `D_0 v = 0`, `D_1 v = O_k T_0 v`, and
  * `D_{n+1} v = 2 H~ D_n v - D_{n-1} v + 2 O_k T_n v`, where `k = operatorIndex`,
  * followed by a final `scal(scale, v)`. The `n = 0` term contributes zero regardless of
- * `coeffs[0]`.
+ * `coeffs[0]`. An empty `coeffs` is the zero map (`v <- 0`), which is how a seed
+ * register is cleared, and `msd_plan` relies on it.
  *
  * @warning `operatorIndex` must be in `[0, operators.size())` of the executing `MomentEngine`.
  * @par Pitfall
@@ -111,7 +113,7 @@ struct ApplyDerivedSeries {
 struct MirrorToBra {};
 
 /**
- * @brief Time-evolution step evolving a single seed register via `ApplySeries`.
+ * @brief Register-update step between trailing-axis slices applying `ApplySeries` to `target`.
  *
  * Replaces `seed[target]` with `scale * sum_n coeffs[n] T_n(H~) seed[target]`.
  */
@@ -122,9 +124,9 @@ struct EvolveRegister {
 };
 
 /**
- * @brief Time-evolution step accumulating a derived Chebyshev series from `source` into `target`.
+ * @brief Register-update step between trailing-axis slices accumulating a derived Chebyshev series from `source` into `target`.
  *
- * Computes `phiT = scale * sum_n coeffs[n] D_n seed[source]` with commutator operator
+ * Computes `phiT = scale * sum_n coeffs[n] D_n seed[source]` with operator
  * `O_{operatorIndex}` (matching `MomentsTD::Conv_Evolve`) and accumulates
  * `seed[target] += phiT` via `axpy(1.0, phiT, seed[target])`.
  */
@@ -137,7 +139,7 @@ struct EvolveDerived {
 };
 
 /**
- * @brief Time-evolution step copying one seed register into another (`seed[to] = seed[from]`).
+ * @brief Register-update step between trailing-axis slices copying one seed register into another (`seed[to] = seed[from]`).
  */
 struct CopyRegister {
   Register from = Register::Ket;
@@ -145,12 +147,12 @@ struct CopyRegister {
 };
 
 /**
- * @brief Variant holding one register-evolution action executed at the end of each `TimeAxis` step.
+ * @brief Variant holding one register-update action executed between slices of a `TimeAxis`.
  */
-using TimeEvolutionStep = std::variant<EvolveRegister, EvolveDerived, CopyRegister>;
+using AxisStep = std::variant<EvolveRegister, EvolveDerived, CopyRegister>;
 
 /**
- * @brief Instruction opening a trailing time axis of length `numSteps` on the moment tensor.
+ * @brief Instruction opening a trailing tensor axis of length `numSteps` with register updates between slices.
  *
  * May appear at most once in a `Plan`, after all initial seed preparation. For each step
  * `n = 0 .. numSteps - 1`, executes the instructions following `TimeAxis` (the body) on
@@ -164,7 +166,7 @@ using TimeEvolutionStep = std::variant<EvolveRegister, EvolveDerived, CopyRegist
  */
 struct TimeAxis {
   int numSteps = 0;
-  std::vector<TimeEvolutionStep> evolve;
+  std::vector<AxisStep> evolve;
 };
 
 /**
