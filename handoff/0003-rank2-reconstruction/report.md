@@ -108,13 +108,13 @@ Zero compiler warnings were emitted under `lsquant/` with `-Wall -Wextra`.
 
 In legacy `inline_compute-kpm-nonEqOp <label> <OP_R> <OP_L> <M>`, the first CLI operator (`OP_R`, passed as `OPL` to `CorrelationExpansionMoments`) seeds the bra recursion (`chevVecL.SetInitVectors(OPL, PhiL)` -> `left_m = T_m OPL |r>`), and the second CLI operator (`OP_L`, passed as `OPR` to `CorrelationExpansionMoments`) is applied after the ket recursion (`chevVecR.IterateAll(); chevVecR.Multiply(OPR)` -> `right_n = OPR T_n |r>`), so `mu_{m,n} = <T_m OPL r | OPR T_n r>`.
 
-`moments.kubo_plan(num_moments, left_index, right_index)` emits:
+`moments.kubo_plan(num_moments: int, *, left_index: int, right_index: int, word: str)` takes `left_index`, `right_index`, and `word` as required keyword-only parameters (no default indices, no argument-order heuristics, and no hard-coded operator names; callers pass `word = f"{left} delta {right} delta"`). `moments.dos_plan(num_moments: int, num_states: int, word: str)` likewise takes `word` from the caller (`"1 delta"`). `kubo_plan` emits:
 - ket: `Expand(num_moments)`, `ApplyOperator(right_index)`
 - `MirrorToBra()`
 - bra: `ApplyOperator(left_index)`, `Expand(num_moments)`
 - `Trace([1])`
 
-Verified on G5 (`haldane` with `left_index = 0` for `VX` and `right_index = 1` for `VY`, `M = 128`, exact trace on `[-4.5, 4.5]`): the resulting `.chebmom2D` tensor matches `goldens/stage0/haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D` with `numpy.array_equal == True` (and identical file bytes).
+Verified on G5 (`haldane` with `left_index = 0` for `VX`, `right_index = 1` for `VY`, and `word = "VX delta VY delta"`, `M = 128`, exact trace on `[-4.5, 4.5]`): the resulting `.chebmom2D` tensor matches `goldens/stage0/haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D` with `numpy.array_equal == True` (and identical file bytes).
 
 Verified `moments.window_from_gershgorin(H)` on `graphene_golden.HAM.CSR`: `_core.GershgorinBounds(H, 0.10)` produces `BandWidth = (upper - lower) * 1.0 = 15.0366847652085`, matching the G4 `.chebmom2D` header `256 15.0366847652085  0` to the last digit.
 
@@ -225,8 +225,6 @@ Chern from gap plateau: C = +1.017 (+1.017016743089)
 
 1. **Both `numpy.ndarray` and `ChebyshevMoments` overloads for `ContractRank2Imag`, `ContractRank2Real`, and `ContractRank2RealReal`.**
    As in stage 2 (`ContractRank1`), `reconstruct.py` truncates and applies 2D Jackson damping to `moments.data` in Python before calling the C++ contraction kernels. Binding both a 2D `complex128` `numpy.ndarray` overload and a `ChebyshevMoments` overload for each of the three rank-2 contraction functions allows callers to pass either the damped 2D NumPy array directly or a `ChebyshevMoments` instance.
-2. **Backward-compatible `kubo_plan` argument order.**
-   `moments.kubo_plan(num_moments, left_index=0, right_index=0)` keeps `num_moments` as the first parameter with default `left_index=0, right_index=0` so existing stage-2 callers (`kubo_plan(M)`) continue to work, while also normalising `kubo_plan(left_index, right_index, num_moments)` when small operator indices (`0, 1`) are passed before `M >= 2`.
 
 ---
 
