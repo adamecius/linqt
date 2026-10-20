@@ -143,7 +143,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--batch",
         type=int,
         default=None,
-        help="Chebyshev batch size (default M)",
+        help="Chebyshev batch size (default M; does not apply to the time-axis path)",
     )
 
     args = parser.parse_args(argv)
