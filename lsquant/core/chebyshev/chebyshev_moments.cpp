@@ -11,9 +11,6 @@
 namespace lsquant {
 
 ChebyshevMoments::ChebyshevMoments(std::vector<int> dims) : dims_(std::move(dims)) {
-  if (dims_.size() > 2) {
-    throw std::invalid_argument("ChebyshevMoments: rank > 2 not supported in stage 1");
-  }
   std::size_t total = 1;
   for (int d : dims_) {
     if (d <= 0) {

@@ -27,8 +27,7 @@ namespace lsquant {
  * recording whether the `(2 - delta_{m0})` KPM weights (`kpmWeighted`) and Hermitian
  * transpose symmetrisation (`symmetrised`) have been applied.
  *
- * @warning In stage 1, `Rank()` is restricted to `0`, `1`, or `2`, and all dimensions
- *          must be strictly positive.
+ * @warning All dimensions in `dims` must be strictly positive.
  * @par Pitfall
  *      Never apply KPM `(2 - delta_{m0})` weights or symmetrisation twice; check
  *      `kpmWeighted` and `symmetrised` before post-processing.
@@ -40,7 +39,7 @@ public:
    *
    * @param dims Tensor dimensions per expanded Chebyshev slot (empty for rank 0).
    *
-   * @warning Throws `std::invalid_argument` if `dims.size() > 2` or any dimension `<= 0`.
+   * @warning Throws `std::invalid_argument` if any dimension `<= 0`.
    * @par Pitfall
    *      For rank 0 (`dims = {}`), `Data()` has size `1`, not `0`.
    */
@@ -49,7 +48,7 @@ public:
   /**
    * @brief Return the tensor rank (`dims.size()`).
    *
-   * @return Integer rank in `{0, 1, 2}`.
+   * @return Non-negative integer rank.
    */
   int Rank() const;
 
