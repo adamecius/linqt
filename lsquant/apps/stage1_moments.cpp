@@ -46,12 +46,6 @@ struct CliOptions {
 
 CliOptions ParseArgs(int argc, char* argv[]) {
   CliOptions opts;
-  if (const char* envSeed = std::getenv("KPM_SEED")) {
-    opts.seed = static_cast<unsigned>(std::stoul(envSeed));
-  }
-  if (const char* envBatch = std::getenv("BATCH_SIZE")) {
-    opts.batchSize = std::stoi(envBatch);
-  }
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
