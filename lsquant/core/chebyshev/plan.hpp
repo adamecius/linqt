@@ -4,7 +4,7 @@
  *
  * Defines the physical-name-free instruction set (`ApplyOperator`, `Expand`,
  * `ApplySeries`, `ApplyDerivedSeries`, `MirrorToBra`, `TimeAxis`, `Trace`),
- * register identifiers, time-evolution step descriptors, and `Plan` container
+ * register identifiers, register-update step descriptors, and `Plan` container
  * executed by `MomentEngine::Run`.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_PLAN_HPP_
@@ -23,8 +23,8 @@ namespace lsquant {
  *
  * `MomentEngine` maintains three vector registers of dimension `N` per trace state:
  * `Ket` (the active ket seed), `Bra` (the active bra seed), and `Aux` (an auxiliary
- * seed register used by coupled time-evolution recursions such as mean-square
- * displacement).
+ * seed register used by coupled register updates between slices of a trailing
+ * tensor axis).
  */
 enum class Register {
   Ket,
@@ -113,7 +113,7 @@ struct ApplyDerivedSeries {
 struct MirrorToBra {};
 
 /**
- * @brief Time-evolution step evolving a single seed register via `ApplySeries`.
+ * @brief Register-update step between trailing-axis slices applying `ApplySeries` to `target`.
  *
  * Replaces `seed[target]` with `scale * sum_n coeffs[n] T_n(H~) seed[target]`.
  */
@@ -124,9 +124,9 @@ struct EvolveRegister {
 };
 
 /**
- * @brief Time-evolution step accumulating a derived Chebyshev series from `source` into `target`.
+ * @brief Register-update step between trailing-axis slices accumulating a derived Chebyshev series from `source` into `target`.
  *
- * Computes `phiT = scale * sum_n coeffs[n] D_n seed[source]` with commutator operator
+ * Computes `phiT = scale * sum_n coeffs[n] D_n seed[source]` with operator
  * `O_{operatorIndex}` (matching `MomentsTD::Conv_Evolve`) and accumulates
  * `seed[target] += phiT` via `axpy(1.0, phiT, seed[target])`.
  */
@@ -139,7 +139,7 @@ struct EvolveDerived {
 };
 
 /**
- * @brief Time-evolution step copying one seed register into another (`seed[to] = seed[from]`).
+ * @brief Register-update step between trailing-axis slices copying one seed register into another (`seed[to] = seed[from]`).
  */
 struct CopyRegister {
   Register from = Register::Ket;
@@ -147,12 +147,12 @@ struct CopyRegister {
 };
 
 /**
- * @brief Variant holding one register-evolution action executed at the end of each `TimeAxis` step.
+ * @brief Variant holding one register-update action executed between slices of a `TimeAxis`.
  */
-using TimeEvolutionStep = std::variant<EvolveRegister, EvolveDerived, CopyRegister>;
+using AxisStep = std::variant<EvolveRegister, EvolveDerived, CopyRegister>;
 
 /**
- * @brief Instruction opening a trailing time axis of length `numSteps` on the moment tensor.
+ * @brief Instruction opening a trailing tensor axis of length `numSteps` with register updates between slices.
  *
  * May appear at most once in a `Plan`, after all initial seed preparation. For each step
  * `n = 0 .. numSteps - 1`, executes the instructions following `TimeAxis` (the body) on
@@ -166,7 +166,7 @@ using TimeEvolutionStep = std::variant<EvolveRegister, EvolveDerived, CopyRegist
  */
 struct TimeAxis {
   int numSteps = 0;
-  std::vector<TimeEvolutionStep> evolve;
+  std::vector<AxisStep> evolve;
 };
 
 /**

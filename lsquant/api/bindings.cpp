@@ -324,8 +324,8 @@ PYBIND11_MODULE(_core, m) {
       .def_readwrite("to_reg", &CopyRegister::to);
 
   py::class_<TimeAxis>(m, "TimeAxis")
-      .def(py::init<int, std::vector<TimeEvolutionStep>>(), py::arg("num_steps"),
-           py::arg("evolve") = std::vector<TimeEvolutionStep>{})
+      .def(py::init<int, std::vector<AxisStep>>(), py::arg("num_steps"),
+           py::arg("evolve") = std::vector<AxisStep>{})
       .def_readwrite("num_steps", &TimeAxis::numSteps)
       .def_readwrite("evolve", &TimeAxis::evolve);
 
