@@ -94,7 +94,8 @@ def run_tutorial05(out_dir: str) -> list[str]:
 
             # 1. MSD at E_F = 2.0 eV
             states_msd = _core.RandomPhaseStates(dim, 1, KPM_SEED)
-            coeffs, phase = time_evolution_series(window, dt)
+            # Byte identity with the legacy captures requires the GSL Bessel values.
+            coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
             plan_msd = msd_plan(
                 M_MSD,
                 NTIME,

@@ -284,7 +284,8 @@ def main(argv: list[str] | None = None) -> int:
         num_steps = int(args.steps)
         tmax = float(args.tmax)
         dt = time_step_from_tmax(num_steps, tmax)
-        coeffs, phase = time_evolution_series(window, dt)
+        # Byte identity with the legacy captures requires the GSL Bessel values.
+        coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
         batch_size = int(args.batch) if args.batch is not None else num_moments
 
         kept_matrices: list[_core.SparseMatrix] = []

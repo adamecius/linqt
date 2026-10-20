@@ -43,7 +43,7 @@ def time_evolution_series(
     window: _core.SpectralWindow,
     dt: float,
     tol: float = 1e-15,
-    use_legacy_bessel: bool = True,
+    use_legacy_bessel: bool = False,
 ) -> tuple[npt.NDArray[np.complex128], complex]:
     """Compute Bessel series coefficients and band-center phase for ``U(dt)``.
 

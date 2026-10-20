@@ -106,7 +106,10 @@ def main() -> int:
     mag_win = window_from_gershgorin(mag_ham)
     mag_bw = (mag_win.upper - mag_win.lower) * 1.0
     mag_dt = time_step_from_tmax(96, 95.0)
-    mag_coeffs, mag_phase = time_evolution_series(mag_win, mag_dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    mag_coeffs, mag_phase = time_evolution_series(
+        mag_win, mag_dt, use_legacy_bessel=True
+    )
     mag_states = _core.LocalStates(mag_dim, list(range(mag_dim)))
 
     print(
@@ -161,7 +164,10 @@ def main() -> int:
     b_win = _core.SpectralWindow(-2.0, 2.0)
     b_vx_op = _core.RescaledOperator(b_vx, b_win)
     b_dt = time_step_from_tmax(64, 20.0)
-    b_coeffs, b_phase = time_evolution_series(b_win, b_dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    b_coeffs, b_phase = time_evolution_series(
+        b_win, b_dt, use_legacy_bessel=True
+    )
     b_states = _core.LocalStates(b_dim, list(range(b_dim)))
 
     plan_g6 = msd_plan(
@@ -261,7 +267,10 @@ def main() -> int:
         ref_corr = _core.ReadChebmom(leg_corr_path)
 
     corr_dt = time_step_from_tmax(16, 5.0)
-    corr_coeffs, corr_phase = time_evolution_series(b_win, corr_dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    corr_coeffs, corr_phase = time_evolution_series(
+        b_win, corr_dt, use_legacy_bessel=True
+    )
     b_vx_static = _core.SparseMatrixOperator(b_vx)
     plan_corr = time_correlation_plan(
         64,

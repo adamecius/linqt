@@ -54,7 +54,8 @@ def run_tutorial04(
     dim = ham.dimension
     window = window_from_gershgorin(ham)
     dt = time_step_from_tmax(NTIME, TMAX)
-    coeffs, phase = time_evolution_series(window, dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
 
     proj_mat = _core.ReadCsrText(
         os.path.join(resolved_op_dir, f"{LABEL}.{PROJECTOR}.CSR")

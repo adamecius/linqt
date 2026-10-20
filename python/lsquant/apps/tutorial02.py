@@ -87,7 +87,8 @@ def _run_one_chain(
     states = _core.RandomPhaseStates(n_sites, 1, int(kpm_seed))
 
     dt = time_step_from_tmax(NTIME, TMAX)
-    coeffs, phase = time_evolution_series(window, dt)
+    # Byte identity with the legacy captures requires the GSL Bessel values.
+    coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
     plan = msd_plan(
         M_MOMENTS,
         NTIME,
