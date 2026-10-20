@@ -48,9 +48,10 @@ def _load_make_haldane() -> tuple[ModuleType, str]:
 
     Notes
     -----
-    Pitfall: Overrides ``module.GOLDEN`` with the absolute path to
-    ``test/golden/haldane/operators`` so staging works regardless of the caller's
-    working directory.
+    Pitfall: ``make_haldane`` is imported only for its descriptor writer
+    (``_write_desc``) and exact-state writer (``build``); its ``GOLDEN`` path is
+    overridden by the caller with ``goldens/stage0/haldane/operators`` (or
+    ``--operators``).
     """
     repo_root = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..", "..")
@@ -64,7 +65,6 @@ def _load_make_haldane() -> tuple[ModuleType, str]:
         raise RuntimeError(f"tutorial03: could not load spec for {script_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    module.GOLDEN = os.path.join(repo_root, "test", "golden", "haldane", "operators")
     return module, repo_root
 
 
@@ -142,6 +142,7 @@ def chern_from_plateau(
 
 def run_tutorial03(
     out_dir: str,
+    operators_dir: str | None = None,
     num_moments: int = 128,
     broadening_meV: float = 10.0,
 ) -> tuple[list[str], float]:
@@ -151,6 +152,9 @@ def run_tutorial03(
     ----------
     out_dir : str
         Destination directory for the four reconstructed ``.dat`` files.
+    operators_dir : str or None, optional
+        Directory containing ``haldane.{HAM,VX,VY}.CSR`` (defaults to
+        ``goldens/stage0/haldane/operators`` relative to the repository root).
     num_moments : int, optional
         Chebyshev expansion order along both axes (default ``128``).
     broadening_meV : float, optional
@@ -171,21 +175,32 @@ def run_tutorial03(
     ``.dat`` file read back via ``numpy.loadtxt`` so the reported ``C`` matches
     ``lsqhall.py`` to the last digit.
     """
-    make_haldane, _ = _load_make_haldane()
+    make_haldane, repo_root = _load_make_haldane()
+    resolved_op_dir = (
+        os.path.abspath(operators_dir)
+        if operators_dir is not None
+        else os.path.join(repo_root, "goldens", "stage0", "haldane", "operators")
+    )
+    make_haldane.GOLDEN = resolved_op_dir
     os.makedirs(out_dir, exist_ok=True)
     label = "haldane"
 
     with tempfile.TemporaryDirectory() as stage_dir:
         dim = int(make_haldane.build(stage_dir))
-        op_dir = os.path.join(stage_dir, "operators")
-        window = _read_desc_window(os.path.join(op_dir, f"{label}.HAM.desc"))
-        ham = _core.ReadCsrText(os.path.join(op_dir, f"{label}.HAM.CSR"))
-        vx = _core.ReadCsrText(os.path.join(op_dir, f"{label}.VX.CSR"))
-        vy = _core.ReadCsrText(os.path.join(op_dir, f"{label}.VY.CSR"))
+        staged_op_dir = os.path.join(stage_dir, "operators")
+        window = _read_desc_window(os.path.join(staged_op_dir, f"{label}.HAM.desc"))
+        with open(os.path.join(stage_dir, "exact"), encoding="utf-8") as fh:
+            state_lines = [ln.strip() for ln in fh if ln.strip()]
+        num_local = int(state_lines[1])
+        local_indices = [int(x) for x in state_lines[2 : 2 + num_local]]
+
+    ham = _core.ReadCsrText(os.path.join(resolved_op_dir, f"{label}.HAM.CSR"))
+    vx = _core.ReadCsrText(os.path.join(resolved_op_dir, f"{label}.VX.CSR"))
+    vy = _core.ReadCsrText(os.path.join(resolved_op_dir, f"{label}.VY.CSR"))
 
     vx_op = _core.SparseMatrixOperator(vx)
     vy_op = _core.SparseMatrixOperator(vy)
-    states = _core.LocalStates(dim, list(range(dim)))
+    states = _core.LocalStates(dim, local_indices)
 
     # Hall response: VX (bra) - VY (ket)
     plan_xy = kubo_plan(
@@ -285,13 +300,18 @@ def main(argv: list[str] | None = None) -> int:
         parser = argparse.ArgumentParser(prog="lsquant.apps.tutorial03")
         parser.add_argument("pos_out", nargs="?", default=None, help="Output directory")
         parser.add_argument("--out", "-o", dest="out", default=None, help="Output directory")
+        parser.add_argument(
+            "--operators",
+            default=None,
+            help="Directory containing haldane.{HAM,VX,VY}.CSR (default: goldens/stage0/haldane/operators)",
+        )
         args = parser.parse_args(argv)
         out_dir = (
             args.out
             if args.out is not None
             else (args.pos_out if args.pos_out is not None else ".")
         )
-        paths, c_val = run_tutorial03(out_dir)
+        paths, c_val = run_tutorial03(out_dir, operators_dir=args.operators)
         for p in paths:
             print(p)
         print(f"Chern from gap plateau: C = {c_val:+.3f} ({c_val:+.12f})")
