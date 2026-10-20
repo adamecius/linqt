@@ -166,6 +166,49 @@ $ OMP_NUM_THREADS=1 PYTHONPATH=build/lsquant_core:python python3 -u tests/dev/st
 (d) time_correlation_plan chain1d VX-VX (M=64, steps=16, tmax=5, exact) array_equal vs inline_compute-kpm-CorrOp: True
 ```
 
+### Review 3 Self-Check (`tests/dev/stage_3_check.py`) and Off-Centre Window `stage3_kubo` Run
+
+In `python/lsquant/reconstruct.py`, replaced all five occurrences of `energies[i] = x_grid[i] / scale + shift` (in `dos_curve`, `kubo_greenwood`, `kubo_bastin`, `kubo_bastin_sea`, and `kubo_bastin_surf`; `kubo_fft_grid` already mapped `energies[i] = x_grid[i] * hw + bc`) with `energies[i] = (x_grid[i] - shift) / scale` and updated the docstrings at lines 42 and 175.
+
+```
+$ OMP_NUM_THREADS=1 PYTHONPATH=build/lsquant_core:python python3 -u tests/dev/stage_3_check.py
+(0) SparseMatrix.from_csr (scipy) dos array_equal vs ReadCsrText: True
+(a) Haldane VX-VY array_equal vs G5: True
+(a) Haldane VX-VX array_equal vs G5: True
+(b) Graphene Gershgorin BandWidth = 15.0366847652085, array_equal vs G4: True
+(c) GreenRetarded.table vs compat max_abs_diff           = 1.148853e-14
+(c) GreenRetardedDerivative.table vs compat max_abs_diff = 2.702165e-13 (max_rel_diff = 7.173405e-15)
+(d) G5 Bastin (10 meV)           differing lines: 0 (total lines: 3839)
+(d) G5 Sea (10 meV)              differing lines: 0 (total lines: 3839)
+(d) G5 Surf (10 meV)             differing lines: 0 (total lines: 3839)
+(d) G5 Greenwood (10 meV)        differing lines: 0 (total lines: 127)
+(d) G4 Bastin (64 meV)           differing lines: 0 (total lines: 1919)
+(d) G4 Sea (10 meV)              differing lines: 0 (total lines: 1919)
+(d) G4 Surf (10 meV)             differing lines: 0 (total lines: 1919)
+(d) G4 Bastin FFTgrid (10 meV)   differing lines: 0 (total lines: 63)
+(d) G4 Greenwood FFTgrid (10 meV) differing lines: 0 (total lines: 63)
+
+$ OMP_NUM_THREADS=1 PYTHONPATH=build/lsquant_core:python python3 -u -m lsquant.apps.stage3_kubo \
+    --operators goldens/stage0/graphene/operators --label graphene_golden \
+    --left VX --right VX --window -3.5 2.5 --trace exact --moments 128 \
+    --formula bastin --broadening-meV 10 --out /tmp/agi_r3_g4c
+/tmp/agi_r3_g4c/NonEqOpVX-VXgraphene_goldenKPM_M128x128_stateexact.chebmom2D
+/tmp/agi_r3_g4c/NonEqOpVX-VXgraphene_goldenKPM_M128x128_stateexact.chebmom
+/tmp/agi_r3_g4c/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M128x128_stateexactJACKSON.dat
+
+$ head -n 3 /tmp/agi_r3_g4c/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M128x128_stateexactJACKSON.dat
+-3.35 1.00303e+150
+-3.34852 1.23827e+150
+-3.34703 6.85813e+149
+
+$ tail -n 3 /tmp/agi_r3_g4c/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M128x128_stateexactJACKSON.dat
+2.34555 2.44004e+152
+2.34703 2.00768e+152
+2.34852 1.46351e+152
+```
+
+For window `[-3.5, 2.5]` (`HalfWidth = 3.0`, `Center = -0.5`, `Scale = 1/3`, `Shift = 1/6`), the first and last grid points map to `E_0 = (-0.95 - 1/6) / (1/3) = -3.35` and `E_{3838} = 2.34852`, both strictly inside `[-3.5, 2.5]` (whereas the old `x / scale + shift` produced `[-2.68333, 3.01518]`, exceeding `+2.5`). Note for G4c closure: in the legacy C++ tree, `src/spectralFunctionFromChebmom.cpp:54` writes `grid[i].first / mu.ScaleFactor() + mu.ShiftFactor()` and `src/reconstruction.cpp:148,200,224` writes `e / sf - shf` (both missing `/ sf` on `shf`, whereas `src/inline_kpm-DOS-standalone.cpp:144` and `src/reconstruction.cpp:151` use `e * hw + bc`), and `[-3.5, 2.5]` is narrower than the `graphene_golden` spectrum (Gershgorin radius ~7.5).
+
 ---
 
 ## 5. Gate CLI (`stage4_time.py`) and Tutorials 02, 04, and 05 Runs on TCN
