@@ -3,8 +3,9 @@
  * @brief Algebraic composite operators implementing LinearOperator.
  *
  * Provides matrix-free operator combinators (`IdentityOperator`, `ScaledOperator`,
- * `OperatorSum`, `OperatorProduct`, `AdjointOperator`) so that linear combinations,
- * products, and conjugate transposes of operators can be passed into the Chebyshev
+ * `OperatorSum`, `OperatorProduct`, `AdjointOperator`, `LowdinOperator`,
+ * `MetricInverseProduct`) so that linear combinations, products, symmetric Löwdin
+ * sandwiches, and one-sided metric-inverse products can be passed into the Chebyshev
  * engine without materialising intermediate matrices.
  */
 #ifndef LSQUANT_CORE_ALGEBRA_COMPOSITE_OPERATORS_HPP_
@@ -312,6 +313,127 @@ private:
   std::optional<SparseMatrix> adjointMatrix_;
   const LinearOperator* forwardedOp_ = nullptr;
   bool isHermitian_ = false;
+};
+
+/**
+ * @brief Matrix-free symmetric Löwdin sandwich `S^{-1/2} O S^{-1/2}`.
+ *
+ * Solves the problem of transforming a non-orthogonal basis representation `O'` of a
+ * physical operator into the orthonormal Löwdin representation without materialising
+ * dense `N x N` matrices. Evaluates `t1 = S^{-1/2} x`, `t2 = O t1`, and
+ * `y = a * S^{-1/2} t2 + b * y` using two temporary vectors of length `Dimension()` per
+ * `Multiply` call. Complexity is `O(2 * cost(S^{-1/2}) + cost(O) + N)`.
+ *
+ * @warning Neither `inverseSqrt` nor `O` is owned; both must outlive this instance.
+ * @par Pitfall
+ *      Both factors must have identical `Dimension()` or the constructor throws
+ *      `std::invalid_argument`.
+ */
+class LowdinOperator : public LinearOperator {
+public:
+  /**
+   * @brief Construct the symmetric sandwich `inverseSqrt * O * inverseSqrt`.
+   *
+   * @param inverseSqrt Inverse square-root overlap applier `S^{-1/2}`.
+   * @param O           Inner operator `O'` in the non-orthogonal representation.
+   *
+   * @warning Throws `std::invalid_argument` if `inverseSqrt.Dimension() != O.Dimension()`.
+   * @par Pitfall
+   *      For `IsHermitian()` to return `true`, both `inverseSqrt` and `O` must report
+   *      `IsHermitian() == true`.
+   */
+  LowdinOperator(const LinearOperator& inverseSqrt, const LinearOperator& O);
+
+  /**
+   * @brief Return the common operator dimension `N`.
+   *
+   * @return Dimension `N >= 0`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Evaluate `y = a * (S^{-1/2} * O * S^{-1/2}) * x + b * y`.
+   *
+   * @param a Scalar multiplier for `(S^{-1/2} O S^{-1/2}) x`.
+   * @param x Input vector of length `Dimension()`.
+   * @param b Scalar multiplier for `y`.
+   * @param y Input/output vector of length `Dimension()`.
+   */
+  void Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const override;
+
+  using LinearOperator::Multiply;
+
+  /**
+   * @brief Return `true` iff both `inverseSqrt` and `O` are Hermitian.
+   *
+   * @return Hermiticity of `S^{-1/2} O S^{-1/2}`.
+   */
+  bool IsHermitian() const override;
+
+private:
+  const LinearOperator* inverseSqrt_;
+  const LinearOperator* op_;
+};
+
+/**
+ * @brief Matrix-free one-sided product `S^{-1} O` for the generalised non-orthogonal route.
+ *
+ * Solves the problem of representing the effective operator `S^{-1} O'` in the
+ * non-orthogonal basis where `O'` maps coordinates to covariant dual components and
+ * `S^{-1}` raises the index back to contravariant coordinates. Evaluates `t = O x` into a
+ * single temporary vector and then `y = a * S^{-1} t + b * y`. Complexity is
+ * `O(cost(S^{-1}) + cost(O) + N)`.
+ *
+ * @warning Reports `IsHermitian() == false` unconditionally because `S^{-1} O` is
+ *          `S`-self-adjoint rather than Euclidean-Hermitian whenever `S != I`.
+ * @par Pitfall
+ *      Never assume `(S^{-1} O)^+ = S^{-1} O`; the Euclidean adjoint is `O^+ S^{-1}`,
+ *      which is why the generalised Kubo bra path requires explicit `S^{-1}` and `S`
+ *      insertions.
+ */
+class MetricInverseProduct : public LinearOperator {
+public:
+  /**
+   * @brief Construct the one-sided product `inverse * O`.
+   *
+   * @param inverse Inverse overlap applier `S^{-1}`.
+   * @param O       Right factor `O'`.
+   *
+   * @warning Throws `std::invalid_argument` if `inverse.Dimension() != O.Dimension()`.
+   * @par Pitfall
+   *      Neither referenced operator is copied; both must outlive this object.
+   */
+  MetricInverseProduct(const LinearOperator& inverse, const LinearOperator& O);
+
+  /**
+   * @brief Return the common operator dimension `N`.
+   *
+   * @return Dimension `N >= 0`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Evaluate `y = a * S^{-1} * (O * x) + b * y`.
+   *
+   * @param a Scalar multiplier for `(S^{-1} O) x`.
+   * @param x Input vector of length `Dimension()`.
+   * @param b Scalar multiplier for `y`.
+   * @param y Input/output vector of length `Dimension()`.
+   */
+  void Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const override;
+
+  using LinearOperator::Multiply;
+
+  /**
+   * @brief Return `false` because `S^{-1} O` is not Euclidean-Hermitian in general.
+   *
+   * @return Always `false`.
+   */
+  bool IsHermitian() const override { return false; }
+
+private:
+  const LinearOperator* inverse_;
+  const LinearOperator* op_;
 };
 
 }  // namespace lsquant
