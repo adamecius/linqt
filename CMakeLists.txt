@@ -68,7 +68,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 add_subdirectory(src)
 
 if(LSQUANT_BUILD_NEW_CORE)
-    add_subdirectory(lsquant)
+    add_subdirectory(lsquant lsquant_core)
 endif()
 
 if(LSQUANT_BUILD_UTILITIES)

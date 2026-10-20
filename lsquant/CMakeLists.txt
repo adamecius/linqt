@@ -2,12 +2,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
-
-if(TARGET lsquant)
-    set_target_properties(lsquant PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/legacy_bin")
-endif()
-
 add_library(lsquant_core STATIC
     core/algebra/sparse_matrix.cpp
     core/algebra/composite_operators.cpp
