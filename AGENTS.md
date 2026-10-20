@@ -452,7 +452,7 @@ Three agents, three roles, never mixed:
 |---|---|---|---|
 | Orchestrator and reviewer | Fable (Claude) | this file, the `handoff/NNNN-<slug>/brief.md` and `codex.md` instructions, code review, checking Codex's `tests.md` and relaying the findings to Agi, the verdict on each handoff | write project source, the harness or the figure scripts |
 | Developer | Agi (on Argon 4) | all source under `lsquant/`, `python/`, `apps/`, CMake; the one `tests/dev/stage_N_check.cpp` self-check; `handoff/NNNN/report.md` | edit `scripts/check_goldens.sh`, `figures/` or `goldens/`; certify its own work; touch the legacy tree |
-| Tester | Codex | on TCN: the stage-0 golden generation from the legacy build, the golden harness `scripts/check_goldens.sh`, the figure scripts `figures/stage_N.py`, running every gate byte for byte, and when a gate fails, localising the defect (first differing file, element, step and thread count); `handoff/NNNN/tests.md` | edit source under `lsquant/`; write tests Fable did not ask for by name; relax a tolerance, a seed or a golden |
+| Tester | Codex, or an Opus subagent driven by Fable when Codex cannot be launched | on TCN: the stage-0 golden generation from the legacy build, the golden harness `scripts/check_goldens.sh`, the figure scripts `figures/stage_N.py`, running every gate byte for byte, and when a gate fails, localising the defect (first differing file, element, step and thread count); `handoff/NNNN/tests.md` | edit source under `lsquant/`; write tests Fable did not ask for by name; relax a tolerance, a seed or a golden |
 
 The cycle for every work item:
 
