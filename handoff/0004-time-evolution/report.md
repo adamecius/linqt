@@ -128,6 +128,25 @@ KPM_SEED=12345 OMP_NUM_THREADS=1 /home/ICN2/jgarcia/lsquant-unified/build/inline
 
 which writes `TimeCorrVX-VXchain1dKPM_M64_stateexact.chebmomTD`.
 
+### Review 1 Self-Check Rerun (`tests/dev/stage_4_check.py`)
+
+After updating `time_evolution_series` to default to `use_legacy_bessel=False` (with `stage4_time.py`, `tutorial02.py`, `tutorial04.py`, `tutorial05.py`, and the legacy-golden checks in `stage_4_check.py` passing `use_legacy_bessel=True` explicitly) and documenting the empty-`coeffs` zero-map semantics on `ApplySeries`, `ApplyDerivedSeries`, and `msd_plan`:
+
+```
+$ OMP_NUM_THREADS=1 PYTHONPATH=build/lsquant_core:python python3 -u tests/dev/stage_4_check.py
+(a) G7 chain1d_mag Gershgorin window = [-2.31, 2.31], BandWidth = 4.62
+(a) G7 TimeProjSX-PX array_equal vs golden: True
+(a) G7 TimeProjSY-PX array_equal vs golden: True
+(a) G7 TimeProjSZ-PX array_equal vs golden: True
+(b) G6 CorrelationVXchain1d array_equal vs golden: True
+(b) G6 EF=+0.0 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+0.5 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+1.0 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+1.5 curve differing lines: 0 (total lines: 64)
+(c) compat GSL Bessel vs SciPy jv max_abs_diff = 5.551115e-16
+(d) time_correlation_plan chain1d VX-VX (M=64, steps=16, tmax=5, exact) array_equal vs inline_compute-kpm-CorrOp: True
+```
+
 ---
 
 ## 5. Gate CLI (`stage4_time.py`) and Tutorial 04 Smoke Run on TCN
