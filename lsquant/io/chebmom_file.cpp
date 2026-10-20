@@ -161,6 +161,19 @@ ChebyshevMoments ReadChebmom(const std::string& filename) {
   moments.systemSize = systemSize;
   moments.window.lower = bandCenter - 0.5 * bandWidth;
   moments.window.upper = bandCenter + 0.5 * bandWidth;
+  moments.kpmWeighted = true;
+  moments.symmetrised = (moments.Rank() == 2);
+
+  const std::size_t slashPos = filename.find_last_of("/\\");
+  const std::string base =
+      (slashPos == std::string::npos) ? filename : filename.substr(slashPos + 1);
+  const std::size_t statePos = base.rfind("_state");
+  if (statePos != std::string::npos) {
+    const std::size_t start = statePos + 6;
+    const std::size_t dotPos = base.find('.', start);
+    moments.stateLabel = (dotPos == std::string::npos) ? base.substr(start)
+                                                       : base.substr(start, dotPos - start);
+  }
 
   for (auto& elem : moments.Data()) {
     double re = 0.0;

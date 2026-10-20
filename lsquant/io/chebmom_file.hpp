@@ -39,7 +39,9 @@ void WriteChebmom(const std::string& filename, const ChebyshevMoments& moments);
  * Auto-detects the file format from the first token: if the file begins with `"chebmom"`,
  * parses the version-1 `.chebmom` header and data; otherwise parses the legacy header
  * `systemSize bandwidth bandcenter` followed by one dimension (`.chebmom1D`) or two
- * dimensions (`.chebmom2D`) and row-major `re im` pairs. Complexity is `O(Data().size())`.
+ * dimensions (`.chebmom2D`) and row-major `re im` pairs, setting `kpmWeighted = true`,
+ * `symmetrised = (rank == 2)`, and `stateLabel` from the filename token after `_state`
+ * when present. Complexity is `O(Data().size())`.
  *
  * @param filename Path to the moment file.
  * @return         Populated `ChebyshevMoments` instance.
@@ -47,8 +49,8 @@ void WriteChebmom(const std::string& filename, const ChebyshevMoments& moments);
  * @warning Throws `std::runtime_error` if the file cannot be opened or has an invalid header
  *          or truncated data section.
  * @par Pitfall
- *      Legacy `.chebmom1D` and `.chebmom2D` files do not store `numberOfStates`, `stateLabel`,
- *      or `word`; those fields remain at their defaults when reading legacy files.
+ *      Legacy `.chebmom1D` and `.chebmom2D` files do not store `numberOfStates` or `word`;
+ *      those fields remain at their defaults when reading legacy files.
  */
 ChebyshevMoments ReadChebmom(const std::string& filename);
 
