@@ -210,6 +210,8 @@ $ OMP_NUM_THREADS=16 PYTHONPATH=build/lsquant_core:python python3 -m lsquant.app
 
 ## 7. Tutorial 03 Run (`python -m lsquant.apps.tutorial03`)
 
+`tutorial03` accepts `--operators` defaulting to `goldens/stage0/haldane/operators` (resolved from the repository root, using `make_haldane` only for the `.desc` sidecar and `exact` state file, without reading `test/golden`). To reproduce the legacy `lsqhall.py` pipeline artefact (where `.chebmom2D` was written at 15-digit `digits10` ASCII precision and re-read before reconstruction), `tutorial03` (and the `--formula` branch of `stage3_kubo` form 2) writes the `.chebmom2D` via `_core.WriteLegacyChebmom2D`, reads it back via `_core.ReadChebmom`, and reconstructs the curves from the re-read tensor.
+
 ```
 $ OMP_NUM_THREADS=16 PYTHONPATH=build/lsquant_core:python python3 -m lsquant.apps.tutorial03 --out /tmp/stage3_tut03
 /tmp/stage3_tut03/KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
