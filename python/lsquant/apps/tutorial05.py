@@ -83,7 +83,9 @@ def run_tutorial05(out_dir: str) -> list[str]:
 
     for w_val in W_LIST:
         with tempfile.TemporaryDirectory() as stage_dir:
-            label = str(make_square.build(stage_dir, L_SIDE, w_val, DISORDER_SEED))
+            label = str(
+                make_square.build_square(L_SIDE, w_val, DISORDER_SEED, outdir=stage_dir)
+            )
             op_dir = os.path.join(stage_dir, "operators")
             window = _read_bounds(os.path.join(stage_dir, "BOUNDS"))
 

@@ -77,7 +77,7 @@ def _run_one_chain(
     dest_dir: str,
 ) -> list[tuple[str, str]]:
     """Build one disordered chain, compute MSD moments, and reconstruct ``energies``."""
-    label = str(make_mod.build(stage_dir, n_sites, w_val, disorder_seed))
+    label = str(make_mod.build_chain(n_sites, w_val, disorder_seed, outdir=stage_dir))
     op_dir = os.path.join(stage_dir, "operators")
     window = _read_bounds(os.path.join(stage_dir, "BOUNDS"))
 
