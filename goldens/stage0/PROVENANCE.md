@@ -121,3 +121,16 @@ Parameters a README does not fix, and deviations:
 `scripts/check_goldens.sh 0 build` reran G1, G2, G5 (16 threads) and G1, G2 (1 and 64
 threads) in fresh temporary directories: every file byte-identical (see
 `handoff/0000-goldens/tests.md`, section 4).
+
+## Legacy defects (evidence only)
+
+Files under `chain1d/legacy_defects/` are legacy outputs known to be wrong. They are kept as
+evidence and **are not references**: no harness reads them.
+
+- `chain1d/legacy_defects/batch16/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D`:
+  G2 recomputed with `BATCH_SIZE=16`
+  (`BATCH_SIZE=16 KPM_SEED=12345 OMP_NUM_THREADS=16 inline_compute-kpm-nonEqOp chain1d VX VX 64 exact`,
+  legacy build at d9becf6). It is stable at 16 and 1 threads but wrong: legacy
+  `Vectors::IterateAll` does not carry the recursion across batches, so block k is shifted
+  by k orders. The command, the evidence and the cause are in its `README.md`. The batched
+  run of the new core is gated against G2 itself (`scripts/check_goldens.sh 1`).
