@@ -36,7 +36,7 @@
 - `tests/dev/stage_1_check.cpp`
 
 ### Modified Files
-- `CMakeLists.txt` (`option(LSQUANT_BUILD_NEW_CORE "" ON)` and guarded `add_subdirectory(lsquant)`)
+- `CMakeLists.txt` (`option(LSQUANT_BUILD_NEW_CORE "" ON)` and guarded `add_subdirectory(lsquant lsquant_core)`)
 
 ---
 
@@ -59,28 +59,99 @@ ssh jh-x "cd ~/lsquant-agi-build && cmake -S . -B build -DLSQUANT_BUILD_NEW_CORE
 -- Checking for module 'fftw3'
 --   Found fftw3, version 3.3.8
 -- wannier2sparse: /home/ICN2/jgarcia/lsquant-agi-build/.cache/wannier2sparse/build/wannier2sparse
--- Configuring finished
--- Generating finished
+-- Configuring done
+-- Generating done
 -- Build files have been written to: /home/ICN2/jgarcia/lsquant-agi-build/build
-[  1%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/algebra/sparse_matrix.cpp.o
-[  2%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/algebra/linalg.cpp.o
-[  3%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_vectors.cpp.o
-[  5%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/algebra/state_generator.cpp.o
-[  7%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/algebra/composite_operators.cpp.o
-[  7%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/algebra/spectral_bounds.cpp.o
-[  7%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/chebyshev/rescaled_operator.cpp.o
-[  8%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_recursion.cpp.o
-[ 18%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/chebyshev/moment_engine.cpp.o
-[ 19%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_moments.cpp.o
-[ 28%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/io/csr_text.cpp.o
-[ 30%] Building CXX object lsquant/CMakeFiles/lsquant_core.dir/io/chebmom_file.cpp.o
-[ 52%] Building CXX object lsquant/CMakeFiles/stage1_moments.dir/apps/stage1_moments.cpp.o
-[ 57%] Building CXX object lsquant/CMakeFiles/stage_1_check.dir/__/tests/dev/stage_1_check.cpp.o
-[ 58%] Built target stage1_moments
-[ 64%] Built target stage_1_check
+[  1%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/rescaled_operator.cpp.o
+[  1%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/composite_operators.cpp.o
+[  2%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_vectors.cpp.o
+[  3%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/sparse_matrix.cpp.o
+[  4%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/linalg.cpp.o
+[  5%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/state_generator.cpp.o
+[  7%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/spectral_bounds.cpp.o
+[  8%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_recursion.cpp.o
+[ 18%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_moments.cpp.o
+[ 20%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/moment_engine.cpp.o
+[ 22%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/io/csr_text.cpp.o
+[ 28%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/io/chebmom_file.cpp.o
+[ 76%] Building CXX object lsquant_core/CMakeFiles/stage1_moments.dir/apps/stage1_moments.cpp.o
+[ 79%] Building CXX object lsquant_core/CMakeFiles/stage_1_check.dir/__/tests/dev/stage_1_check.cpp.o
+[ 92%] Built target stage1_moments
+[ 98%] Built target stage_1_check
 [100%] Built target lsquant
 ```
 Compiler warnings under `lsquant/` and `tests/dev/stage_1_check.cpp` with `-Wall -Wextra`: 0.
+
+### Legacy CTest Summary (`ctest --test-dir build --output-on-failure` with `LSQUANT_BUILD_NEW_CORE=ON`)
+```text
+Test project /home/ICN2/jgarcia/lsquant-agi-build/build
+      Start  1: chain1d_analytic
+ 1/31 Test  #1: chain1d_analytic .................   Passed    0.01 sec
+      Start  2: chain1d_dos
+ 2/31 Test  #2: chain1d_dos ......................   Passed    0.01 sec
+      Start  3: dos_reconstructed
+ 3/31 Test  #3: dos_reconstructed ................   Passed    0.00 sec
+      Start  4: chain1d_reproducible
+ 4/31 Test  #4: chain1d_reproducible .............   Passed   22.77 sec
+      Start  5: spin_algebra
+ 5/31 Test  #5: spin_algebra .....................   Passed    0.02 sec
+      Start  6: graphene_regression
+ 6/31 Test  #6: graphene_regression ..............   Passed    0.13 sec
+      Start  7: reconstruction_nan_guard
+ 7/31 Test  #7: reconstruction_nan_guard .........   Passed    0.20 sec
+      Start  8: msd_ballistic
+ 8/31 Test  #8: msd_ballistic ....................   Passed   19.69 sec
+      Start  9: hall_haldane
+ 9/31 Test  #9: hall_haldane .....................   Passed    8.46 sec
+      Start 10: spin_precession
+10/31 Test #10: spin_precession ..................   Passed    7.94 sec
+      Start 11: recon_kernel_oracle
+11/31 Test #11: recon_kernel_oracle ..............   Passed    0.10 sec
+      Start 12: spmv_threaded_bitexact
+12/31 Test #12: spmv_threaded_bitexact ...........   Passed    0.01 sec
+      Start 13: spmm_batchmultiply_equiv
+13/31 Test #13: spmm_batchmultiply_equiv .........   Passed    0.01 sec
+      Start 14: greenwood_regression
+14/31 Test #14: greenwood_regression .............   Passed    0.05 sec
+      Start 15: safety_factors_guard
+15/31 Test #15: safety_factors_guard .............   Passed    0.37 sec
+      Start 16: descriptor_conformance
+16/31 Test #16: descriptor_conformance ...........   Passed    0.00 sec
+      Start 17: descriptor_bounds
+17/31 Test #17: descriptor_bounds ................   Passed    0.15 sec
+      Start 18: tb_descriptor
+18/31 Test #18: tb_descriptor ....................   Passed    0.00 sec
+      Start 19: config_equivalence
+19/31 Test #19: config_equivalence ...............   Passed    0.26 sec
+      Start 20: corrop_state_honored
+20/31 Test #20: corrop_state_honored .............   Passed    2.27 sec
+      Start 21: fft_grid_regression
+21/31 Test #21: fft_grid_regression ..............   Passed    0.09 sec
+      Start 22: sea_surf_regression
+22/31 Test #22: sea_surf_regression ..............   Passed    0.33 sec
+      Start 23: jackson_kernel
+23/31 Test #23: jackson_kernel ...................   Passed    0.00 sec
+      Start 24: jackson_g_scalar
+24/31 Test #24: jackson_g_scalar .................   Passed    0.00 sec
+      Start 25: phase6_wired
+25/31 Test #25: phase6_wired .....................   Passed    0.00 sec
+      Start 26: single_binary
+26/31 Test #26: single_binary ....................   Passed    0.69 sec
+      Start 27: reporting_smoke
+27/31 Test #27: reporting_smoke ..................   Passed    0.08 sec
+      Start 28: unified_io_smoke
+28/31 Test #28: unified_io_smoke .................   Passed    0.24 sec
+      Start 29: example_dos_smoke
+29/31 Test #29: example_dos_smoke ................   Passed    0.08 sec
+      Start 30: example_localization_smoke
+30/31 Test #30: example_localization_smoke .......   Passed    0.29 sec
+      Start 31: example_haldane_smoke
+31/31 Test #31: example_haldane_smoke ............   Passed   16.71 sec
+
+100% tests passed, 0 tests failed out of 31
+
+Total Test time (real) =  80.98 sec
+```
 
 ---
 
@@ -88,8 +159,8 @@ Compiler warnings under `lsquant/` and `tests/dev/stage_1_check.cpp` with `-Wall
 
 ### Commands
 ```bash
-OMP_NUM_THREADS=1 build/lsquant/stage_1_check
-OMP_NUM_THREADS=8 build/lsquant/stage_1_check
+OMP_NUM_THREADS=1 build/lsquant_core/stage_1_check
+OMP_NUM_THREADS=8 build/lsquant_core/stage_1_check
 ```
 
 ### Output (`OMP_NUM_THREADS=1`)
@@ -114,11 +185,11 @@ OMP_NUM_THREADS=1 vs 8 bit-identical: YES
 
 ### Commands
 ```bash
-OMP_NUM_THREADS=8 KPM_SEED=12345 build/lsquant/stage1_moments \
+OMP_NUM_THREADS=8 KPM_SEED=12345 build/lsquant_core/stage1_moments \
   --operators test/golden/chain1d/operators --label chain1d --window -2 2 \
   --trace exact --states 2048 --moments 64 --word dos --out /tmp/stage1_out
 
-OMP_NUM_THREADS=8 KPM_SEED=12345 build/lsquant/stage1_moments \
+OMP_NUM_THREADS=8 KPM_SEED=12345 build/lsquant_core/stage1_moments \
   --operators test/golden/chain1d/operators --label chain1d --window -2 2 \
   --trace exact --states 2048 --moments 64 --word kubo --out /tmp/stage1_out
 ```
@@ -185,12 +256,12 @@ data
 ## 5. Legacy Numerical Conventions Reproduced and Deviations
 
 ### Legacy Numerical Conventions Reproduced for Byte Identity
-1. **Hermiticity Fold in `SparseMatrix::FromCsr` (`0.5 * (transp + matrix_)`):** Legacy `SparseMatrixType::ConvertFromCSR` folds Hermitian inputs via `matrix_ = 0.5 * (transp + matrix_)`. In `.CSR` files such as `chain1d.VX.CSR`, off-diagonal entries contain `-0` real components (`-0 -1`) whose conjugate sum with `+0 1` converts `-0.0` into `+0.0`. `SparseMatrix::FromCsr` and `SparseMatrix::FromTriplets` apply this exact Eigen expression whenever `||M - M^+|| / ||M|| <= 1e-8`, preserving non-Hermitian matrices untouched when `||M - M^+|| / ||M|| > 1e-8`.
+1. **Hermiticity Fold in `ReadCsrText` via `SparseMatrix::HermitianFold()` (`0.5 * (transp + matrix_)`):** Legacy `SparseMatrixType::ConvertFromCSR` folds CSR file inputs unconditionally via `matrix_ = 0.5 * (transp + matrix_)`. In `.CSR` files such as `chain1d.VX.CSR`, off-diagonal entries contain `-0` real components (`-0 -1`) whose conjugate sum with `+0 1` converts `-0.0` into `+0.0`. `SparseMatrix::FromCsr` and `SparseMatrix::FromTriplets` preserve their inputs untouched without folding, while `ReadCsrText` calls `SparseMatrix::HermitianFold()` unconditionally as the legacy reader does.
 2. **Real Scalar Weight Multiplication in `MomentEngine::Run` (`Trace`):** Legacy `SpectralMoments` evaluates `scal * linalg::vdot(...)` where `scal` is a `double`. Multiplying `double * std::complex<double>` scales the real and imaginary parts independently (`(scal * re, scal * im)`), whereas multiplying `std::complex<double>(scal, 0.0) * std::complex<double>(re, im)` evaluates `scal * im + 0.0 * re`, turning `-0.0` imaginary parts into `+0.0`. `MomentEngine::Run` checks `weight.imag() == 0.0` and uses `weight.real() * d` so IEEE-754 signed zeros match legacy `vdot` scaling and raw accumulation (`2 -0` in `kubo`).
 3. **Legacy `.chebmom2D` Header Whitespace:** `WriteLegacyChebmom2D` emits two spaces between `BandWidth` and `BandCenter` (`"2048 4  0"`) and a trailing space after each dimension on line 2 (`"64 64 "`), matching `chebyshev::Moments2D::saveIn`.
 
 ### Deviations from the Brief
-1. **Legacy `lsquant` Target Output Directory in `lsquant/CMakeLists.txt`:** The root `CMakeLists.txt` sets `CMAKE_RUNTIME_OUTPUT_DIRECTORY` to `${CMAKE_BINARY_DIR}`, and `src/CMakeLists.txt` defines an executable target named `lsquant` whose default output path is `${CMAKE_BINARY_DIR}/lsquant`. Adding `add_subdirectory(lsquant)` creates the directory `${CMAKE_BINARY_DIR}/lsquant/`, causing `/usr/bin/ld: cannot open output file ../lsquant: Is a directory` when linking the legacy `lsquant` executable. Without touching `src/CMakeLists.txt`, `lsquant/CMakeLists.txt` sets `RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/legacy_bin"` on `TARGET lsquant` when `LSQUANT_BUILD_NEW_CORE` is enabled, while placing `stage1_moments` and `stage_1_check` in `${CMAKE_BINARY_DIR}/lsquant/`.
+1. **Binary Subdirectory `add_subdirectory(lsquant lsquant_core)` in `CMakeLists.txt`:** To avoid a path collision between the legacy `build/lsquant` executable and the `lsquant/` subdirectory build tree, the root `CMakeLists.txt` uses `add_subdirectory(lsquant lsquant_core)` (note: because root `CMakeLists.txt` sets `CMAKE_RUNTIME_OUTPUT_DIRECTORY` to `${CMAKE_BINARY_DIR}`, CMake links `stage1_moments` and `stage_1_check` into `build/`; symlinks in `build/lsquant_core/` are also present on TCN).
 2. **Const Accessors on `ChebyshevMoments`:** In addition to `std::vector<Scalar>& Data()`, `const std::vector<Scalar>& Data() const` was added alongside the `const` overloads of `At(...)` so `WriteChebmom`, `WriteLegacyChebmom1D`, and `WriteLegacyChebmom2D` can take `const ChebyshevMoments&`.
 
 ---
