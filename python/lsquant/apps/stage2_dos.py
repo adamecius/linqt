@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
 
             num_moments = int(args.num_moments)
             batch_size = int(args.batch) if args.batch is not None else num_moments
-            plan = dos_plan(num_moments, num_states)
+            plan = dos_plan(num_moments, num_states, word="1 delta")
             mu = run_plan(plan, ham, window, state_gen, batch_size=batch_size)
             mu.state_label = state_label
 

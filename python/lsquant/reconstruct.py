@@ -1,8 +1,10 @@
-"""Rank-1 Chebyshev spectral reconstruction routines.
+"""Rank-1 and rank-2 Chebyshev spectral and conductivity reconstruction routines.
 
-Reconstructs the extensive density of states curve from a rank-1
-:class:`~lsquant._core.ChebyshevMoments` tensor using Jackson damping and the
-legacy uniform reconstruction grid.
+Reconstructs the density of states (:func:`dos_curve`) and the four rank-2
+conductivity curves (:func:`kubo_greenwood`, :func:`kubo_bastin`,
+:func:`kubo_bastin_sea`, :func:`kubo_bastin_surf`) plus the Chebyshev FFT-node
+grid variants (:func:`kubo_fft_grid`) in the exact floating-point operation
+order of the legacy C++ reconstruction routines.
 """
 
 from __future__ import annotations
@@ -12,8 +14,8 @@ import numpy as np
 import numpy.typing as npt
 
 from . import _core
-from .kernels import jackson_damping
-from .spectral_functions import legacy_delta_table
+from .kernels import jackson_damping, jackson_damping_2d
+from .spectral_functions import legacy_delta_table, legacy_green_tables
 
 
 def dos_curve(
@@ -112,5 +114,465 @@ def dos_curve(
     for i in range(num_div):
         energies[i] = x_grid[i] / scale + shift
         values[i] = float(rho[i]) * prefactor
+
+    return energies, values
+
+
+def _truncate_and_damp_2d(
+    moments: _core.ChebyshevMoments,
+    b0_meV: float,
+    b1_meV: float,
+) -> tuple[npt.NDArray[np.complex128], int, int]:
+    """Truncate and apply 2D Jackson damping as ``Moments2D::ApplyJacksonKernel`` does."""
+    if moments.rank != 2:
+        raise ValueError("rank-2 reconstruction requires moments.rank == 2")
+    if b0_meV <= 0.0 or b1_meV <= 0.0:
+        raise ValueError("broadening_meV must be positive")
+
+    band_width = (moments.window.upper - moments.window.lower) * 1.0
+    if band_width <= 0.0:
+        raise ValueError("spectral window must have positive width")
+
+    eta0 = 2.0 * float(b0_meV) / 1000.0 / band_width
+    eta1 = 2.0 * float(b1_meV) / 1000.0 / band_width
+
+    num_moms0 = int(moments.dims[0])
+    num_moms1 = int(moments.dims[1])
+    max_mom0 = int(math.ceil(math.pi / eta0))
+    max_mom1 = int(math.ceil(math.pi / eta1))
+    if max_mom0 > num_moms0 or max_mom0 <= 0:
+        max_mom0 = num_moms0
+    if max_mom1 > num_moms1 or max_mom1 <= 0:
+        max_mom1 = num_moms1
+
+    w2d = jackson_damping_2d(max_mom0, max_mom1)
+    raw = moments.data
+    damped = np.empty((max_mom0, max_mom1), dtype=np.complex128)
+    for m0 in range(max_mom0):
+        for m1 in range(max_mom1):
+            damped[m0, m1] = raw[m0, m1] * float(w2d[m0, m1])
+
+    return damped, max_mom0, max_mom1
+
+
+def kubo_greenwood(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    alpha: float = 0.95,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct the Kubo-Greenwood conductivity curve on the uniform grid.
+
+    Solves the problem of evaluating the longitudinal Kubo-Greenwood response
+    from a rank-2 moment tensor ``mu_{m0, m1}`` in the exact operation order of
+    legacy ``reconstruct_kubo(mu, KUBO_GREENWOOD, GRID_UNIFORM)``:
+
+    1. Truncate and damp ``mu`` with :func:`jackson_damping_2d` to ``(M0, M1)``,
+       ``M = max(M0, M1)``.
+    2. Build ``num_div = M`` uniform points on ``[-alpha, alpha]``.
+    3. Contract ``out_i = sum_{m0, m1} delta(x_i, m0) * imag(greenR(x_i, m1) * mu[m0, m1])``
+       via :func:`~lsquant._core.ContractRank2Imag`.
+    4. Scale ``kernel_i = -1.0 * out_i * (N * scale * scale)`` and report the
+       first ``num_div - 1`` points at ``E_i = x_i / scale + shift``.
+
+    Parameters
+    ----------
+    moments : lsquant._core.ChebyshevMoments
+        Rank-2 Chebyshev moment tensor.
+    broadening_meV : float
+        Jackson Gaussian broadening in meV (``broadening_meV > 0``).
+    alpha : float, optional
+        Chebyshev domain cutoff ``(0 < alpha < 1)``, default ``0.95``.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Pair ``(energies, values)`` of 1D ``float64`` arrays of length
+        ``max(M0, M1) - 1``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``moments.rank != 2``, ``broadening_meV <= 0``, or
+    ``!(0 < alpha < 1)``.
+
+    Notes
+    -----
+    Pitfall: Drops the last grid point (``i = num_div - 1``) so the output length
+    matches legacy ``accumulate(..., integrate=false)``.
+    """
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("kubo_greenwood: alpha must lie strictly between 0 and 1")
+
+    damped, m0, m1 = _truncate_and_damp_2d(moments, broadening_meV, broadening_meV)
+    m_max = m1 if m1 > m0 else m0
+    num_div = 1 * m_max
+    x_grid = [
+        -alpha + i * (2.0 * alpha) / (num_div - 1) for i in range(num_div)
+    ]
+
+    delta_tbl = legacy_delta_table(x_grid, m0)
+    green_r_tbl, _ = legacy_green_tables(x_grid, m1, m1)
+    out = _core.ContractRank2Imag(damped, delta_tbl, green_r_tbl)
+
+    scale = moments.window.scale
+    shift = moments.window.shift
+    pref_ext = float(moments.system_size) * scale * scale
+
+    n_out = max(0, num_div - 1)
+    energies = np.empty(n_out, dtype=np.float64)
+    values = np.empty(n_out, dtype=np.float64)
+    for i in range(n_out):
+        kernel_i = -1.0 * float(out[i]) * pref_ext
+        values[i] = kernel_i
+        energies[i] = x_grid[i] / scale + shift
+
+    return energies, values
+
+
+def kubo_bastin(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    alpha: float = 0.95,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct the Kubo-Bastin conductivity curve on the uniform grid.
+
+    Solves the problem of evaluating the full Fermi-sea Kubo-Bastin conductivity
+    from a rank-2 moment tensor ``mu_{m0, m1}`` in the exact operation order of
+    legacy ``reconstruct_kubo(mu, KUBO_BASTIN, GRID_UNIFORM)``:
+
+    1. Truncate and damp ``mu`` with :func:`jackson_damping_2d` to ``(M0, M1)``,
+       ``M = max(M0, M1)``.
+    2. Build ``num_div = 30 * M`` uniform points on ``[-alpha, alpha]``.
+    3. Contract ``out_i = sum_{m0, m1} delta(x_i, m0) * imag(DgreenR(x_i, m1) * mu[m0, m1])``
+       via :func:`~lsquant._core.ContractRank2Imag`.
+    4. Scale ``kernel_i = -2.0 * out_i * (N * scale * scale)`` and integrate
+       cumulatively via the forward rectangle rule
+       ``acc += kernel_i * (x_{i+1} - x_i)`` for ``i < num_div - 1``.
+
+    Parameters
+    ----------
+    moments : lsquant._core.ChebyshevMoments
+        Rank-2 Chebyshev moment tensor.
+    broadening_meV : float
+        Jackson Gaussian broadening in meV (``broadening_meV > 0``).
+    alpha : float, optional
+        Chebyshev domain cutoff ``(0 < alpha < 1)``, default ``0.95``.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Pair ``(energies, values)`` of 1D ``float64`` arrays of length
+        ``30 * max(M0, M1) - 1``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``moments.rank != 2``, ``broadening_meV <= 0``, or
+    ``!(0 < alpha < 1)``.
+
+    Notes
+    -----
+    Pitfall: Accumulates ``acc += kernel_i * (x_{i+1} - x_i)`` in dimensionless
+    ``x`` coordinates while ``pref_ext = N * scale * scale`` carries the second
+    factor of ``scale``.
+    """
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("kubo_bastin: alpha must lie strictly between 0 and 1")
+
+    damped, m0, m1 = _truncate_and_damp_2d(moments, broadening_meV, broadening_meV)
+    m_max = m1 if m1 > m0 else m0
+    num_div = 30 * m_max
+    x_grid = [
+        -alpha + i * (2.0 * alpha) / (num_div - 1) for i in range(num_div)
+    ]
+
+    delta_tbl = legacy_delta_table(x_grid, m0)
+    _, dgreen_r_tbl = legacy_green_tables(x_grid, m0, m1)
+    out = _core.ContractRank2Imag(damped, delta_tbl, dgreen_r_tbl)
+
+    scale = moments.window.scale
+    shift = moments.window.shift
+    pref_ext = float(moments.system_size) * scale * scale
+    kernel = [-2.0 * float(out[i]) * pref_ext for i in range(num_div)]
+
+    n_out = max(0, num_div - 1)
+    energies = np.empty(n_out, dtype=np.float64)
+    values = np.empty(n_out, dtype=np.float64)
+    acc = 0.0
+    for i in range(n_out):
+        acc += kernel[i] * (x_grid[i + 1] - x_grid[i])
+        values[i] = acc
+        energies[i] = x_grid[i] / scale + shift
+
+    return energies, values
+
+
+def kubo_bastin_sea(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    alpha: float = 0.95,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct the Fermi-sea contribution of Kubo-Bastin conductivity.
+
+    Solves the problem of evaluating the Green-difference Fermi-sea part of
+    Kubo-Bastin in the exact operation order of legacy
+    ``reconstruct_kubo_bastin_sea``:
+
+    1. Truncate and damp ``mu`` with :func:`jackson_damping_2d` to ``(M0, M1)``,
+       ``M = max(M0, M1)``.
+    2. Build ``num_div = 30 * M`` uniform points on ``[-alpha, alpha]``.
+    3. Build ``A = Gr - Ga`` with ``Ga = conj(Gr)`` and ``B = DGr + DGa`` with
+       ``DGr = real(DgreenR)`` and ``DGa = complex(DGr, 0.0)`` (matching C++
+       ``std::conj(double)``), then contract
+       ``out_i = sum_{m0, m1} real((A[m0, i] * B[m1, i]) * mu[m0, m1])`` via
+       :func:`~lsquant._core.ContractRank2Real`.
+    4. Set ``kernel_i = -out_i``, multiply by ``N * scale * scale / 2 / pi``,
+       and integrate cumulatively with the trapezoid rule
+       ``acc += 0.5 * (kernel_i + kernel_{i+1}) * (x_{i+1} - x_i)``.
+
+    Parameters
+    ----------
+    moments : lsquant._core.ChebyshevMoments
+        Rank-2 Chebyshev moment tensor.
+    broadening_meV : float
+        Jackson Gaussian broadening in meV (``broadening_meV > 0``).
+    alpha : float, optional
+        Chebyshev domain cutoff ``(0 < alpha < 1)``, default ``0.95``.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Pair ``(energies, values)`` of 1D ``float64`` arrays of length
+        ``30 * max(M0, M1) - 1``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``moments.rank != 2``, ``broadening_meV <= 0``, or
+    ``!(0 < alpha < 1)``.
+
+    Notes
+    -----
+    Pitfall: Preserve the two sequential divisions ``/ 2.0 / math.pi`` in the
+    prefactor to match legacy ``/ 2 / M_PI`` rounding.
+    """
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("kubo_bastin_sea: alpha must lie strictly between 0 and 1")
+
+    damped, m0, m1 = _truncate_and_damp_2d(moments, broadening_meV, broadening_meV)
+    m_max = m1 if m1 > m0 else m0
+    num_div = 30 * m_max
+    x_grid = [
+        -alpha + i * (2.0 * alpha) / (num_div - 1) for i in range(num_div)
+    ]
+
+    gr_tbl, dgr_tbl = legacy_green_tables(x_grid, m0, m1)
+    ga_tbl = np.conj(gr_tbl)
+    a_tbl = np.ascontiguousarray(gr_tbl - ga_tbl, dtype=np.complex128)
+
+    dgr_real = dgr_tbl.real
+    dga_tbl = np.array(dgr_real, dtype=np.complex128)
+    b_tbl = np.ascontiguousarray(dgr_real + dga_tbl, dtype=np.complex128)
+
+    out = _core.ContractRank2Real(damped, a_tbl, b_tbl)
+
+    scale = moments.window.scale
+    shift = moments.window.shift
+    pref_sea = float(moments.system_size) * scale * scale / 2.0 / math.pi
+
+    kernel = [0.0] * num_div
+    for i in range(num_div):
+        k_val = -float(out[i])
+        k_val *= pref_sea
+        kernel[i] = k_val
+
+    n_out = max(0, num_div - 1)
+    energies = np.empty(n_out, dtype=np.float64)
+    values = np.empty(n_out, dtype=np.float64)
+    acc = 0.0
+    for i in range(n_out):
+        denerg = x_grid[i + 1] - x_grid[i]
+        acc += 0.5 * (kernel[i] + kernel[i + 1]) * denerg
+        values[i] = acc
+        energies[i] = x_grid[i] / scale + shift
+
+    return energies, values
+
+
+def kubo_bastin_surf(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    alpha: float = 0.95,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct the Fermi-surface contribution of Kubo-Bastin conductivity.
+
+    Solves the problem of evaluating the double-delta Fermi-surface part of
+    Kubo-Bastin in the exact operation order of legacy
+    ``reconstruct_kubo_bastin_surf``:
+
+    1. Truncate and damp ``mu`` with :func:`jackson_damping_2d` to ``(M0, M1)``,
+       ``M = max(M0, M1)``.
+    2. Build ``num_div = 30 * M`` uniform points on ``[-alpha, alpha]``.
+    3. Contract
+       ``out_i = sum_{m0, m1} (delta(x_i, m0) * delta(x_i, m1)) * real(mu[m0, m1])``
+       via :func:`~lsquant._core.ContractRank2RealReal`.
+    4. Scale ``kernel_i = out_i * (pi * N * scale * scale)`` and report the
+       midpoint average ``(kernel_{i+1} + kernel_i) / 2.0``.
+
+    Parameters
+    ----------
+    moments : lsquant._core.ChebyshevMoments
+        Rank-2 Chebyshev moment tensor.
+    broadening_meV : float
+        Jackson Gaussian broadening in meV (``broadening_meV > 0``).
+    alpha : float, optional
+        Chebyshev domain cutoff ``(0 < alpha < 1)``, default ``0.95``.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Pair ``(energies, values)`` of 1D ``float64`` arrays of length
+        ``30 * max(M0, M1) - 1``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``moments.rank != 2``, ``broadening_meV <= 0``, or
+    ``!(0 < alpha < 1)``.
+
+    Notes
+    -----
+    Pitfall: Evaluate ``math.pi * float(moments.system_size) * scale * scale``
+    left to right before multiplying ``out_i`` to match C++ ``*=`` evaluation.
+    """
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("kubo_bastin_surf: alpha must lie strictly between 0 and 1")
+
+    damped, m0, m1 = _truncate_and_damp_2d(moments, broadening_meV, broadening_meV)
+    m_max = m1 if m1 > m0 else m0
+    num_div = 30 * m_max
+    x_grid = [
+        -alpha + i * (2.0 * alpha) / (num_div - 1) for i in range(num_div)
+    ]
+
+    delta_0 = legacy_delta_table(x_grid, m0)
+    delta_1 = delta_0 if m1 == m0 else legacy_delta_table(x_grid, m1)
+    out = _core.ContractRank2RealReal(damped, delta_0, delta_1)
+
+    scale = moments.window.scale
+    shift = moments.window.shift
+    pref_surf = math.pi * float(moments.system_size) * scale * scale
+    kernel = [float(out[i]) * pref_surf for i in range(num_div)]
+
+    n_out = max(0, num_div - 1)
+    energies = np.empty(n_out, dtype=np.float64)
+    values = np.empty(n_out, dtype=np.float64)
+    for i in range(n_out):
+        values[i] = (kernel[i + 1] + kernel[i]) / 2.0
+        energies[i] = x_grid[i] / scale + shift
+
+    return energies, values
+
+
+def kubo_fft_grid(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    formula: str | bool = "bastin",
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct Kubo-Greenwood or Kubo-Bastin on the Chebyshev FFT-node grid.
+
+    Solves the problem of evaluating ``reconstruct_kubo(mu, obs, GRID_FFT_NODES)``
+    on the ``M`` Chebyshev nodes ``x_i = cos(pi * (2 * i + 0.5) / M)`` in the
+    exact operation order of legacy ``kuboGreenwoodFromChebmom_FFTgrid`` and
+    ``kuboBastinFromChebmom_FFTgrid``:
+
+    1. Truncate and damp ``mu`` with :func:`jackson_damping_2d` to ``(M0, M1)``,
+       ``M = max(M0, M1)``.
+    2. Build ``x_i = cos(pi * (2 * i + 0.5) / M)`` for ``i = 0 .. M - 1``, and
+       when integrating (Bastin) rearrange ``x_grid`` to ascending order via
+       ``rearrange_crescent_order``.
+    3. Contract with :func:`~lsquant._core.ContractRank2Imag` against
+       ``greenR`` (Greenwood) or ``DgreenR`` (Bastin).
+    4. Scale by ``pref_ext = N / hw / hw`` and ``-1.0`` (Greenwood) or ``-2.0``
+       (Bastin), accumulate, and map energies as ``E_i = x_i * hw + bc``.
+
+    Parameters
+    ----------
+    moments : lsquant._core.ChebyshevMoments
+        Rank-2 Chebyshev moment tensor.
+    broadening_meV : float
+        Jackson Gaussian broadening in meV (``broadening_meV > 0``).
+    formula : str or bool, optional
+        ``"bastin"`` / ``"bastin_fft"`` / ``True`` for Kubo-Bastin, or
+        ``"greenwood"`` / ``"greenwood_fft"`` / ``False`` for Kubo-Greenwood
+        (default ``"bastin"``).
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Pair ``(energies, values)`` of 1D ``float64`` arrays of length
+        ``max(M0, M1) - 1``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``moments.rank != 2``, ``broadening_meV <= 0``, or
+    ``formula`` is not recognised.
+
+    Notes
+    -----
+    Pitfall: Use ``N / hw / hw`` (two sequential divisions by ``half_width``)
+    and ``E_i = x_i * hw + bc`` on the FFT-node grid rather than ``scale`` and
+    ``shift``; although algebraically equal, they differ by 1 ULP for general
+    bandwidths.
+    """
+    if isinstance(formula, bool):
+        integrate = formula
+    else:
+        key = formula.strip().lower()
+        if key in ("bastin", "bastin_fft"):
+            integrate = True
+        elif key in ("greenwood", "greenwood_fft"):
+            integrate = False
+        else:
+            raise ValueError(
+                f"kubo_fft_grid: unknown formula '{formula}' "
+                "(expected 'bastin' or 'greenwood')"
+            )
+
+    damped, m0, m1 = _truncate_and_damp_2d(moments, broadening_meV, broadening_meV)
+    num_div = m1 if m1 > m0 else m0
+    disp = 0.5
+    x_grid = [
+        math.cos(math.pi * (2 * i + disp) / num_div) for i in range(num_div)
+    ]
+
+    if integrate:
+        orig = list(x_grid)
+        for k in range(num_div // 2):
+            x_grid[2 * k] = orig[k]
+            x_grid[2 * k + 1] = orig[num_div - k - 1]
+        for k in range(num_div // 2):
+            t = x_grid[k]
+            x_grid[k] = x_grid[num_div - k - 1]
+            x_grid[num_div - k - 1] = t
+
+    delta_tbl = legacy_delta_table(x_grid, m0)
+    green_r_tbl, dgreen_r_tbl = legacy_green_tables(x_grid, m0, m1)
+    b_tbl = dgreen_r_tbl if integrate else green_r_tbl
+    out = _core.ContractRank2Imag(damped, delta_tbl, b_tbl)
+
+    hw = moments.window.half_width
+    bc = moments.window.center
+    pref_ext = float(moments.system_size) / hw / hw
+    obs_pref = -2.0 if integrate else -1.0
+    kernel = [obs_pref * float(out[i]) * pref_ext for i in range(num_div)]
+
+    n_out = max(0, num_div - 1)
+    energies = np.empty(n_out, dtype=np.float64)
+    values = np.empty(n_out, dtype=np.float64)
+    acc = 0.0
+    for i in range(n_out):
+        if integrate:
+            acc += kernel[i] * (x_grid[i + 1] - x_grid[i])
+            values[i] = acc
+        else:
+            values[i] = kernel[i]
+        energies[i] = x_grid[i] * hw + bc
 
     return energies, values

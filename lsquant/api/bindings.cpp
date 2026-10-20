@@ -3,9 +3,11 @@
  * @brief pybind11 module `lsquant._core` exposing the C++ Chebyshev engine to Python.
  *
  * Binds `SparseMatrix`, the `LinearOperator` hierarchy, `StateGenerator` implementations,
- * `SpectralWindow`, `RescaledOperator`, the five bytecode instructions and `Plan`,
- * `MomentEngine`, `ChebyshevMoments` (with a zero-copy NumPy `complex128` view), file I/O
- * routines, and rank-1 series contraction (`ContractRank1`, `WriteCurveText`).
+ * `SpectralBounds` and `GershgorinBounds`, `SpectralWindow`, `RescaledOperator`, the five
+ * bytecode instructions and `Plan`, `MomentEngine`, `ChebyshevMoments` (with a zero-copy
+ * NumPy `complex128` view), file I/O routines, rank-1 and rank-2 series contractions
+ * (`ContractRank1`, `ContractRank2Imag`, `ContractRank2Real`, `ContractRank2RealReal`,
+ * `WriteCurveText`), and the gate-only `_core.compat` submodule.
  */
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -13,11 +15,14 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "compat/legacy_kernels.hpp"
 #include "core/algebra/composite_operators.hpp"
 #include "core/algebra/linear_operator.hpp"
 #include "core/algebra/sparse_matrix.hpp"
+#include "core/algebra/spectral_bounds.hpp"
 #include "core/algebra/state_generator.hpp"
 #include "core/algebra/types.hpp"
 #include "core/chebyshev/chebyshev_moments.hpp"
@@ -34,6 +39,43 @@ namespace py = pybind11;
 
 namespace lsquant {
 namespace {
+
+/**
+ * @brief Validate that a Python object is a 1D C-contiguous NumPy array of exact element type `T`.
+ *
+ * Rejects non-arrays, non-1D arrays, non-contiguous slices, or mismatched dtypes without
+ * implicit conversion (`forcecast` off), raising a Python `TypeError` that names `argName`.
+ *
+ * @tparam T            Expected C++ element type (`Index` or `Scalar`).
+ * @param obj           Input Python handle.
+ * @param argName       Parameter name included in the `TypeError` message on failure.
+ * @param expectedDtype Human-readable NumPy dtype name (`"int64"` or `"complex128"`).
+ * @param expectedKind  NumPy dtype kind character (`'i'` for signed integer, `'c'` for complex).
+ * @param outSize       Output element count.
+ * @return              Const pointer to the first element of the validated buffer.
+ */
+template <typename T>
+const T* ValidateCsrBuffer1D(py::handle obj, const char* argName, const char* expectedDtype,
+                             char expectedKind, Index& outSize) {
+  if (!py::isinstance<py::array>(obj)) {
+    throw py::type_error(std::string("SparseMatrix.from_csr: argument '") + argName +
+                         "' must be a 1D C-contiguous " + expectedDtype + " numpy.ndarray");
+  }
+  auto arr = py::reinterpret_borrow<py::array>(obj);
+  const bool dtypeOk = (arr.dtype().kind() == expectedKind) &&
+                       (arr.itemsize() == static_cast<py::ssize_t>(sizeof(T)));
+  const bool shapeOk = (arr.ndim() == 1);
+  const bool contigOk =
+      ((arr.flags() & py::array::c_style) != 0) &&
+      (arr.ndim() == 1 &&
+       (arr.size() <= 1 || arr.strides(0) == static_cast<py::ssize_t>(sizeof(T))));
+  if (!dtypeOk || !shapeOk || !contigOk) {
+    throw py::type_error(std::string("SparseMatrix.from_csr: argument '") + argName +
+                         "' must be a 1D C-contiguous " + expectedDtype + " numpy.ndarray");
+  }
+  outSize = static_cast<Index>(arr.size());
+  return static_cast<const T*>(arr.data());
+}
 
 /**
  * @brief Validate a 2D `float64` NumPy array and contract it with a strided real moment vector.
@@ -67,6 +109,27 @@ py::array_t<double> ContractRank1Buffer(const double* momentsPtr, Index momentSt
   return result;
 }
 
+template <typename TableAType, typename TableBType>
+Index ValidateRank2Tables(const char* funcName, Index m0, Index m1, const TableAType& tableA,
+                          const TableBType& tableB) {
+  if (tableA.ndim() != 2 || tableB.ndim() != 2) {
+    throw std::invalid_argument(std::string(funcName) + ": tables must be 2D arrays");
+  }
+  if (static_cast<Index>(tableA.shape(0)) != m0) {
+    throw std::invalid_argument(std::string(funcName) +
+                                ": table_a.shape[0] must match moments axis 0");
+  }
+  if (static_cast<Index>(tableB.shape(0)) != m1) {
+    throw std::invalid_argument(std::string(funcName) +
+                                ": table_b.shape[0] must match moments axis 1");
+  }
+  if (tableA.shape(1) != tableB.shape(1)) {
+    throw std::invalid_argument(std::string(funcName) +
+                                ": table_a.shape[1] and table_b.shape[1] must match");
+  }
+  return static_cast<Index>(tableA.shape(1));
+}
+
 }  // namespace
 }  // namespace lsquant
 
@@ -79,17 +142,17 @@ PYBIND11_MODULE(_core, m) {
       .def(py::init<>())
       .def_static(
           "from_csr",
-          [](Index dim, const py::array_t<Index, py::array::c_style>& rowPointers,
-             const py::array_t<Index, py::array::c_style>& columns,
-             const py::array_t<Scalar, py::array::c_style>& values) {
-            if (rowPointers.ndim() != 1 || columns.ndim() != 1 || values.ndim() != 1) {
-              throw std::invalid_argument(
-                  "SparseMatrix.from_csr: row_pointers, columns, and values must be 1D arrays");
-            }
-            std::vector<Index> rp(rowPointers.data(), rowPointers.data() + rowPointers.size());
-            std::vector<Index> cols(columns.data(), columns.data() + columns.size());
-            std::vector<Scalar> vals(values.data(), values.data() + values.size());
-            return SparseMatrix::FromCsr(dim, std::move(rp), std::move(cols), std::move(vals));
+          [](Index dim, py::object rowPointers, py::object columns, py::object values) {
+            Index rpSize = 0;
+            Index colSize = 0;
+            Index valSize = 0;
+            const Index* rpPtr =
+                ValidateCsrBuffer1D<Index>(rowPointers, "row_pointers", "int64", 'i', rpSize);
+            const Index* colPtr =
+                ValidateCsrBuffer1D<Index>(columns, "columns", "int64", 'i', colSize);
+            const Scalar* valPtr =
+                ValidateCsrBuffer1D<Scalar>(values, "values", "complex128", 'c', valSize);
+            return SparseMatrix::FromCsr(dim, rpSize, rpPtr, colSize, colPtr, valSize, valPtr);
           },
           py::arg("dim"), py::arg("row_pointers"), py::arg("columns"), py::arg("values"))
       .def_property_readonly("dimension", &SparseMatrix::Dimension)
@@ -143,6 +206,15 @@ PYBIND11_MODULE(_core, m) {
            }),
            py::arg("states"))
       .def(py::init<std::vector<Vector>>(), py::arg("states"));
+
+  py::class_<SpectralBounds>(m, "SpectralBounds")
+      .def(py::init<double, double>(), py::arg("lower") = 0.0, py::arg("upper") = 0.0)
+      .def_readwrite("lower", &SpectralBounds::lower)
+      .def_readwrite("upper", &SpectralBounds::upper);
+
+  m.def("GershgorinBounds", &GershgorinBounds, py::arg("matrix"), py::arg("pad") = 0.10);
+  m.def("LanczosBounds", &LanczosBounds, py::arg("operator"), py::arg("iterations") = 40,
+        py::arg("seed") = 12345u);
 
   py::class_<SpectralWindow>(m, "SpectralWindow")
       .def(py::init<>())
@@ -272,6 +344,118 @@ PYBIND11_MODULE(_core, m) {
       py::arg("moments"), py::arg("table"));
 
   m.def(
+      "ContractRank2Imag",
+      [](const py::array_t<Scalar, py::array::c_style>& moments,
+         const py::array_t<double, py::array::c_style>& tableA,
+         const py::array_t<Scalar, py::array::c_style>& tableB) {
+        if (moments.ndim() != 2) {
+          throw std::invalid_argument("ContractRank2Imag: moments must be a 2D complex128 array");
+        }
+        const Index m0 = static_cast<Index>(moments.shape(0));
+        const Index m1 = static_cast<Index>(moments.shape(1));
+        const Index numPoints =
+            ValidateRank2Tables("ContractRank2Imag", m0, m1, tableA, tableB);
+        py::array_t<double> result(static_cast<py::ssize_t>(numPoints));
+        ContractRank2Imag(moments.data(), m0, m1, tableA.data(), tableB.data(), numPoints,
+                          result.mutable_data());
+        return result;
+      },
+      py::arg("moments"), py::arg("table_a"), py::arg("table_b"));
+
+  m.def(
+      "ContractRank2Imag",
+      [](const ChebyshevMoments& moments, const py::array_t<double, py::array::c_style>& tableA,
+         const py::array_t<Scalar, py::array::c_style>& tableB) {
+        if (moments.Rank() != 2) {
+          throw std::invalid_argument("ContractRank2Imag: ChebyshevMoments must have rank 2");
+        }
+        const Index m0 = static_cast<Index>(moments.Dims()[0]);
+        const Index m1 = static_cast<Index>(moments.Dims()[1]);
+        const Index numPoints =
+            ValidateRank2Tables("ContractRank2Imag", m0, m1, tableA, tableB);
+        py::array_t<double> result(static_cast<py::ssize_t>(numPoints));
+        ContractRank2Imag(moments.Data().data(), m0, m1, tableA.data(), tableB.data(), numPoints,
+                          result.mutable_data());
+        return result;
+      },
+      py::arg("moments"), py::arg("table_a"), py::arg("table_b"));
+
+  m.def(
+      "ContractRank2Real",
+      [](const py::array_t<Scalar, py::array::c_style>& moments,
+         const py::array_t<Scalar, py::array::c_style>& tableA,
+         const py::array_t<Scalar, py::array::c_style>& tableB) {
+        if (moments.ndim() != 2) {
+          throw std::invalid_argument("ContractRank2Real: moments must be a 2D complex128 array");
+        }
+        const Index m0 = static_cast<Index>(moments.shape(0));
+        const Index m1 = static_cast<Index>(moments.shape(1));
+        const Index numPoints =
+            ValidateRank2Tables("ContractRank2Real", m0, m1, tableA, tableB);
+        py::array_t<double> result(static_cast<py::ssize_t>(numPoints));
+        ContractRank2Real(moments.data(), m0, m1, tableA.data(), tableB.data(), numPoints,
+                          result.mutable_data());
+        return result;
+      },
+      py::arg("moments"), py::arg("table_a"), py::arg("table_b"));
+
+  m.def(
+      "ContractRank2Real",
+      [](const ChebyshevMoments& moments, const py::array_t<Scalar, py::array::c_style>& tableA,
+         const py::array_t<Scalar, py::array::c_style>& tableB) {
+        if (moments.Rank() != 2) {
+          throw std::invalid_argument("ContractRank2Real: ChebyshevMoments must have rank 2");
+        }
+        const Index m0 = static_cast<Index>(moments.Dims()[0]);
+        const Index m1 = static_cast<Index>(moments.Dims()[1]);
+        const Index numPoints =
+            ValidateRank2Tables("ContractRank2Real", m0, m1, tableA, tableB);
+        py::array_t<double> result(static_cast<py::ssize_t>(numPoints));
+        ContractRank2Real(moments.Data().data(), m0, m1, tableA.data(), tableB.data(), numPoints,
+                          result.mutable_data());
+        return result;
+      },
+      py::arg("moments"), py::arg("table_a"), py::arg("table_b"));
+
+  m.def(
+      "ContractRank2RealReal",
+      [](const py::array_t<Scalar, py::array::c_style>& moments,
+         const py::array_t<double, py::array::c_style>& tableA,
+         const py::array_t<double, py::array::c_style>& tableB) {
+        if (moments.ndim() != 2) {
+          throw std::invalid_argument(
+              "ContractRank2RealReal: moments must be a 2D complex128 array");
+        }
+        const Index m0 = static_cast<Index>(moments.shape(0));
+        const Index m1 = static_cast<Index>(moments.shape(1));
+        const Index numPoints =
+            ValidateRank2Tables("ContractRank2RealReal", m0, m1, tableA, tableB);
+        py::array_t<double> result(static_cast<py::ssize_t>(numPoints));
+        ContractRank2RealReal(moments.data(), m0, m1, tableA.data(), tableB.data(), numPoints,
+                              result.mutable_data());
+        return result;
+      },
+      py::arg("moments"), py::arg("table_a"), py::arg("table_b"));
+
+  m.def(
+      "ContractRank2RealReal",
+      [](const ChebyshevMoments& moments, const py::array_t<double, py::array::c_style>& tableA,
+         const py::array_t<double, py::array::c_style>& tableB) {
+        if (moments.Rank() != 2) {
+          throw std::invalid_argument("ContractRank2RealReal: ChebyshevMoments must have rank 2");
+        }
+        const Index m0 = static_cast<Index>(moments.Dims()[0]);
+        const Index m1 = static_cast<Index>(moments.Dims()[1]);
+        const Index numPoints =
+            ValidateRank2Tables("ContractRank2RealReal", m0, m1, tableA, tableB);
+        py::array_t<double> result(static_cast<py::ssize_t>(numPoints));
+        ContractRank2RealReal(moments.Data().data(), m0, m1, tableA.data(), tableB.data(), numPoints,
+                              result.mutable_data());
+        return result;
+      },
+      py::arg("moments"), py::arg("table_a"), py::arg("table_b"));
+
+  m.def(
       "WriteCurveText",
       [](const std::string& path, const py::array_t<double>& x, const py::array_t<double>& y) {
         if (x.ndim() != 1 || y.ndim() != 1) {
@@ -290,4 +474,28 @@ PYBIND11_MODULE(_core, m) {
                        static_cast<Index>(x.shape(0)));
       },
       py::arg("path"), py::arg("x"), py::arg("y"));
+
+  py::module_ compatMod = m.def_submodule(
+      "compat", "Gate-only compatibility kernels reproducing legacy libstdc++ rounding.");
+  compatMod.def(
+      "legacy_green_tables",
+      [](const py::array_t<double, py::array::c_style | py::array::forcecast>& xGrid,
+         Index numMoments0, py::object numMoments1Obj) {
+        if (xGrid.ndim() != 1) {
+          throw std::invalid_argument("legacy_green_tables: x_grid must be a 1D float64 array");
+        }
+        const Index m1 = numMoments1Obj.is_none() ? numMoments0 : numMoments1Obj.cast<Index>();
+        if (numMoments0 <= 0 || m1 <= 0) {
+          throw std::invalid_argument("legacy_green_tables: moment counts must be positive");
+        }
+        const Index numPoints = static_cast<Index>(xGrid.shape(0));
+        py::array_t<Scalar> greenR({static_cast<py::ssize_t>(numMoments0),
+                                    static_cast<py::ssize_t>(numPoints)});
+        py::array_t<Scalar> dgreenR({static_cast<py::ssize_t>(m1),
+                                     static_cast<py::ssize_t>(numPoints)});
+        compat::ComputeLegacyGreenTables(xGrid.data(), numPoints, numMoments0, m1,
+                                         greenR.mutable_data(), dgreenR.mutable_data());
+        return std::make_pair(std::move(greenR), std::move(dgreenR));
+      },
+      py::arg("x_grid"), py::arg("num_moments_0"), py::arg("num_moments_1") = py::none());
 }

@@ -1,10 +1,10 @@
 /**
  * @file contraction.hpp
- * @brief Rank-1 contraction of Chebyshev moment vectors against coefficient tables.
+ * @brief Rank-1 and rank-2 contractions of Chebyshev moment tensors against coefficient tables.
  *
- * Evaluates the point-by-point series contraction `values[i] = sum_m table[m, i] * moments[m]`
- * with a deterministic sequential sum over the moment index `m` for each evaluation point `i`,
- * parallelised across `i` with OpenMP static scheduling.
+ * Evaluates point-by-point series contractions with deterministic sequential summation over
+ * the moment indices for each evaluation point `i`, parallelised across `i` with OpenMP
+ * static scheduling.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_CONTRACTION_HPP_
 #define LSQUANT_CORE_CHEBYSHEV_CONTRACTION_HPP_
@@ -53,7 +53,7 @@ void ContractRank1(const double* moments, Index momentStride, Index numMoments,
  * Evaluates `values[i] = sum_{m=0}^{M-1} table[m * N + i] * moments[m]` sequentially in `m`
  * for each grid index `i in 0 .. N - 1`. Complexity is `O(M * N)` time and `O(N)` output space.
  *
- * @param momentsContiguous real moment vector of length `M`.
+ * @param moments Contiguous real moment vector of length `M`.
  * @param table   Row-major coefficient table of length `M * N`.
  * @return        Vector of `N` contracted values.
  *
@@ -85,8 +85,152 @@ std::vector<double> ContractRank1(const std::vector<double>& moments,
 std::vector<double> ContractRank1(const ChebyshevMoments& moments,
                                   const std::vector<double>& table);
 
+/**
+ * @brief Contract a rank-2 complex moment tensor with a real table `A` and a complex table `B`
+ *        using the imaginary-part bilinear form.
+ *
+ * Solves the problem of evaluating the 2D Chebyshev double series
+ * `values[i] = sum_{m0=0}^{M0-1} sum_{m1=0}^{M1-1} A[m0, i] * imag(B[m1, i] * mu[m0, m1])`
+ * at `numPoints` grid coordinates with strict sequential summation over `m0` (outer) and `m1`
+ * (inner) for each point `i`, parallelised across `i` with OpenMP static scheduling. All
+ * inputs and outputs are dimensionless in the rescaled Chebyshev domain `[-1, 1]`. Complexity
+ * is `O(M0 * M1 * numPoints)` time and `O(1)` auxiliary space.
+ *
+ * @param moments     Row-major complex moment buffer of shape `(numMoments0, numMoments1)`.
+ * @param numMoments0 Number of moments `M0 >= 0` along the first axis.
+ * @param numMoments1 Number of moments `M1 >= 0` along the second axis.
+ * @param tableA      Row-major real coefficient table of shape `(numMoments0, numPoints)`.
+ * @param tableB      Row-major complex coefficient table of shape `(numMoments1, numPoints)`.
+ * @param numPoints   Number of evaluation grid points `N >= 0`.
+ * @param values      Output buffer of length `numPoints`.
+ *
+ * @warning Throws `std::invalid_argument` if any extent is negative or any required pointer is
+ *          null when its extent is positive.
+ * @par Pitfall
+ *      Keep the exact operation order `tableA[m0, i] * (tableB[m1, i] * mu[m0, m1]).imag()`
+ *      inside the sequential `m0, m1` loops; hoisting `tableA[m0, i]` outside the `m1` sum
+ *      changes IEEE-754 rounding.
+ */
+void ContractRank2Imag(const Scalar* moments, Index numMoments0, Index numMoments1,
+                       const double* tableA, const Scalar* tableB, Index numPoints,
+                       double* values);
+
+/**
+ * @brief Contract a rank-2 `ChebyshevMoments` tensor with a real table `A` and complex table `B`
+ *        using `ContractRank2Imag`.
+ *
+ * @param moments Rank-2 `ChebyshevMoments` tensor of dimensions `(M0, M1)`.
+ * @param tableA  Row-major real coefficient table of length `M0 * N`.
+ * @param tableB  Row-major complex coefficient table of length `M1 * N`.
+ * @return        Vector of `N` contracted values.
+ *
+ * @warning Throws `std::invalid_argument` if `moments.Rank() != 2` or table sizes do not match
+ *          a common grid length `N`.
+ * @par Pitfall
+ *      `moments` must already be truncated and damped before calling this overload.
+ */
+std::vector<double> ContractRank2Imag(const ChebyshevMoments& moments,
+                                      const std::vector<double>& tableA,
+                                      const std::vector<Scalar>& tableB);
+
+/**
+ * @brief Contract a rank-2 complex moment tensor with two complex tables `A` and `B` using the
+ *        real-part bilinear form.
+ *
+ * Solves the problem of evaluating the 2D Chebyshev double series
+ * `values[i] = sum_{m0=0}^{M0-1} sum_{m1=0}^{M1-1} real((A[m0, i] * B[m1, i]) * mu[m0, m1])`
+ * at `numPoints` grid coordinates with strict sequential summation over `m0` (outer) and `m1`
+ * (inner) for each point `i`, parallelised across `i` with OpenMP static scheduling. All
+ * inputs and outputs are dimensionless in the rescaled Chebyshev domain `[-1, 1]`. Complexity
+ * is `O(M0 * M1 * numPoints)` time and `O(1)` auxiliary space.
+ *
+ * @param moments     Row-major complex moment buffer of shape `(numMoments0, numMoments1)`.
+ * @param numMoments0 Number of moments `M0 >= 0` along the first axis.
+ * @param numMoments1 Number of moments `M1 >= 0` along the second axis.
+ * @param tableA      Row-major complex coefficient table of shape `(numMoments0, numPoints)`.
+ * @param tableB      Row-major complex coefficient table of shape `(numMoments1, numPoints)`.
+ * @param numPoints   Number of evaluation grid points `N >= 0`.
+ * @param values      Output buffer of length `numPoints`.
+ *
+ * @warning Throws `std::invalid_argument` if any extent is negative or any required pointer is
+ *          null when its extent is positive.
+ * @par Pitfall
+ *      Multiply `(A[m0, i] * B[m1, i])` before multiplying by `mu[m0, m1]` to preserve the
+ *      exact left-to-right complex multiplication rounding of the reference loop.
+ */
+void ContractRank2Real(const Scalar* moments, Index numMoments0, Index numMoments1,
+                       const Scalar* tableA, const Scalar* tableB, Index numPoints,
+                       double* values);
+
+/**
+ * @brief Contract a rank-2 `ChebyshevMoments` tensor with two complex tables `A` and `B`
+ *        using `ContractRank2Real`.
+ *
+ * @param moments Rank-2 `ChebyshevMoments` tensor of dimensions `(M0, M1)`.
+ * @param tableA  Row-major complex coefficient table of length `M0 * N`.
+ * @param tableB  Row-major complex coefficient table of length `M1 * N`.
+ * @return        Vector of `N` contracted values.
+ *
+ * @warning Throws `std::invalid_argument` if `moments.Rank() != 2` or table sizes do not match
+ *          a common grid length `N`.
+ * @par Pitfall
+ *      `moments` must already be truncated and damped before calling this overload.
+ */
+std::vector<double> ContractRank2Real(const ChebyshevMoments& moments,
+                                      const std::vector<Scalar>& tableA,
+                                      const std::vector<Scalar>& tableB);
+
+/**
+ * @brief Contract the real part of a rank-2 complex moment tensor with two real tables `A` and `B`.
+ *
+ * Solves the problem of evaluating the 2D Chebyshev double series
+ * `values[i] = sum_{m0=0}^{M0-1} sum_{m1=0}^{M1-1} (A[m0, i] * B[m1, i]) * real(mu[m0, m1])`
+ * at `numPoints` grid coordinates with strict sequential summation over `m0` (outer) and `m1`
+ * (inner) for each point `i`, parallelised across `i` with OpenMP static scheduling. All
+ * inputs and outputs are dimensionless in the rescaled Chebyshev domain `[-1, 1]`. Complexity
+ * is `O(M0 * M1 * numPoints)` time and `O(1)` auxiliary space.
+ *
+ * @param moments     Row-major complex moment buffer of shape `(numMoments0, numMoments1)`.
+ * @param numMoments0 Number of moments `M0 >= 0` along the first axis.
+ * @param numMoments1 Number of moments `M1 >= 0` along the second axis.
+ * @param tableA      Row-major real coefficient table of shape `(numMoments0, numPoints)`.
+ * @param tableB      Row-major real coefficient table of shape `(numMoments1, numPoints)`.
+ * @param numPoints   Number of evaluation grid points `N >= 0`.
+ * @param values      Output buffer of length `numPoints`.
+ *
+ * @warning Throws `std::invalid_argument` if any extent is negative or any required pointer is
+ *          null when its extent is positive.
+ * @par Pitfall
+ *      Multiply `(A[m0, i] * B[m1, i])` first and then multiply by `mu[m0, m1].real()` inside
+ *      the inner loop to preserve the exact left-to-right floating-point rounding order.
+ */
+void ContractRank2RealReal(const Scalar* moments, Index numMoments0, Index numMoments1,
+                           const double* tableA, const double* tableB, Index numPoints,
+                           double* values);
+
+/**
+ * @brief Contract a rank-2 `ChebyshevMoments` tensor with two real tables `A` and `B`
+ *        using `ContractRank2RealReal`.
+ *
+ * @param moments Rank-2 `ChebyshevMoments` tensor of dimensions `(M0, M1)`.
+ * @param tableA  Row-major real coefficient table of length `M0 * N`.
+ * @param tableB  Row-major real coefficient table of length `M1 * N`.
+ * @return        Vector of `N` contracted values.
+ *
+ * @warning Throws `std::invalid_argument` if `moments.Rank() != 2` or table sizes do not match
+ *          a common grid length `N`.
+ * @par Pitfall
+ *      `moments` must already be truncated and damped before calling this overload.
+ */
+std::vector<double> ContractRank2RealReal(const ChebyshevMoments& moments,
+                                          const std::vector<double>& tableA,
+                                          const std::vector<double>& tableB);
+
 namespace chebyshev {
 using lsquant::ContractRank1;
+using lsquant::ContractRank2Imag;
+using lsquant::ContractRank2Real;
+using lsquant::ContractRank2RealReal;
 }  // namespace chebyshev
 
 }  // namespace lsquant

@@ -39,7 +39,10 @@ target_link_libraries(stage_1_check PRIVATE lsquant_core)
 
 if(LSQUANT_BUILD_PYTHON)
     find_package(pybind11 CONFIG REQUIRED)
-    pybind11_add_module(_core MODULE api/bindings.cpp)
+    pybind11_add_module(_core MODULE
+        api/bindings.cpp
+        compat/legacy_kernels.cpp
+    )
     set_target_properties(_core PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"

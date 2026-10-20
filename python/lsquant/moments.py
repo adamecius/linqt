@@ -1,8 +1,9 @@
-"""Bytecode plan constructors and execution helpers for Chebyshev moments.
+"""Bytecode plan constructors, spectral window helpers, and execution routines.
 
-Defines the stage-1 rank-1 density-of-states plan (:func:`dos_plan`) and rank-2
-Kubo correlation plan (:func:`kubo_plan`) as data over the five-instruction C++
-engine grammar, together with :func:`run_plan`.
+Defines the rank-1 density-of-states plan (:func:`dos_plan`) and generalised
+rank-2 Kubo correlation plan (:func:`kubo_plan`) as data over the
+five-instruction C++ engine grammar, together with
+:func:`window_from_gershgorin` and :func:`run_plan`.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ from typing import Sequence
 from . import _core
 
 
-def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
+def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
     """Build the rank-1 density-of-states bytecode :class:`~lsquant._core.Plan`.
 
     Solves the problem of expressing ``Tr[1 * delta(E - H)]`` as a ket-only
@@ -25,15 +26,19 @@ def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
         Number of Chebyshev moments ``M > 0``.
     num_states : int
         Number of trace vectors ``N_states > 0`` used for weight normalisation.
+    word : str
+        Symbolic correlator word recorded in the plan and moment tensor metadata
+        (e.g. ``"1 delta"``).
 
     Returns
     -------
     lsquant._core.Plan
-        Compiled bytecode plan with ``word = "1 delta"``.
+        Compiled bytecode plan with ``plan.word == word``.
 
     Warnings
     --------
-    Raises ``ValueError`` if ``num_moments <= 0`` or ``num_states <= 0``.
+    Raises ``ValueError`` if ``num_moments <= 0``, ``num_states <= 0``, or
+    ``word`` is empty.
 
     Notes
     -----
@@ -45,6 +50,8 @@ def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
         raise ValueError("dos_plan: num_moments must be positive")
     if num_states <= 0:
         raise ValueError("dos_plan: num_states must be positive")
+    if not word:
+        raise ValueError("dos_plan: word must be non-empty")
 
     weights: list[complex] = []
     base = 2.0 / float(num_states)
@@ -56,19 +63,27 @@ def dos_plan(num_moments: int, num_states: int) -> _core.Plan:
         _core.Expand(num_moments),
         _core.Trace(weights),
     ]
-    return _core.Plan(code, "1 delta")
+    return _core.Plan(code, word)
 
 
-def kubo_plan(num_moments: int) -> _core.Plan:
+def kubo_plan(
+    num_moments: int,
+    *,
+    left_index: int,
+    right_index: int,
+    word: str,
+) -> _core.Plan:
     """Build the rank-2 Kubo correlation bytecode :class:`~lsquant._core.Plan`.
 
     Solves the problem of expressing the two-operator correlation trace
-    ``Tr[O_0 T_m(H~) O_0 T_n(H~)]`` in the exact ket/bra evaluation order of
-    legacy ``CorrelationExpansionMoments``:
+    ``mu_{m,n} = Tr[O_left T_m(H~) O_right T_n(H~)]`` in the exact ket/bra
+    evaluation order of legacy ``CorrelationExpansionMoments(OPL, OPR)``:
 
-    - ket: ``Expand(M)``, ``ApplyOperator(0)`` (computes ``O_0 T_n |r>``);
+    - ket: ``Expand(M)``, ``ApplyOperator(right_index)``
+      (computes ``O_right T_n |r>``);
     - ``MirrorToBra()``;
-    - bra: ``ApplyOperator(0)``, ``Expand(M)`` (computes ``T_m O_0 |r>``);
+    - bra: ``ApplyOperator(left_index)``, ``Expand(M)``
+      (computes ``T_m O_left |r>``);
     - ``Trace([1])`` (accumulates raw inner products across states).
 
     Complexity is ``O(1)``.
@@ -77,34 +92,86 @@ def kubo_plan(num_moments: int) -> _core.Plan:
     ----------
     num_moments : int
         Number of Chebyshev moments ``M > 0`` along each of the two axes.
+    left_index : int
+        Keyword-only index of the bra-side operator ``O_left`` in the engine's
+        operator list.
+    right_index : int
+        Keyword-only index of the ket-side operator ``O_right`` in the engine's
+        operator list.
+    word : str
+        Keyword-only correlator word built by the caller from its operator names
+        (e.g. ``f"{left} delta {right} delta"``).
 
     Returns
     -------
     lsquant._core.Plan
-        Compiled bytecode plan with ``word = "VX delta VX delta"``.
+        Compiled bytecode plan with ``plan.word == word``.
 
     Warnings
     --------
-    Raises ``ValueError`` if ``num_moments <= 0``.
+    Raises ``ValueError`` if ``num_moments <= 0``, operator indices are
+    negative, or ``word`` is empty.
 
     Notes
     -----
-    Pitfall: This plan accumulates unweighted state sums; call
-    :func:`lsquant._core.ApplyKpmWeights` with ``symmetrise=True`` after
-    ``MomentEngine.run`` to complete the legacy post-processing.
+    Pitfall: In legacy ``inline_compute-kpm-nonEqOp <label> <OP_R> <OP_L> <M>``,
+    the first CLI operator seeds the bra recursion (``left_index``) and the
+    second is applied to the ket batch (``right_index``).
     """
     if num_moments <= 0:
         raise ValueError("kubo_plan: num_moments must be positive")
+    if left_index < 0 or right_index < 0:
+        raise ValueError("kubo_plan: operator indices must be non-negative")
+    if not word:
+        raise ValueError("kubo_plan: word must be non-empty")
 
     code = [
         _core.Expand(num_moments),
-        _core.ApplyOperator(0),
+        _core.ApplyOperator(right_index),
         _core.MirrorToBra(),
-        _core.ApplyOperator(0),
+        _core.ApplyOperator(left_index),
         _core.Expand(num_moments),
         _core.Trace([complex(1.0, 0.0)]),
     ]
-    return _core.Plan(code, "VX delta VX delta")
+    return _core.Plan(code, word)
+
+
+def window_from_gershgorin(
+    hamiltonian: _core.SparseMatrix, pad: float = 0.10
+) -> _core.SpectralWindow:
+    """Compute the symmetric Gershgorin :class:`~lsquant._core.SpectralWindow` for ``hamiltonian``.
+
+    Solves the problem of enclosing the spectrum of ``hamiltonian`` when no
+    explicit ``BOUNDS`` or ``.desc`` sidecar is supplied, reproducing the legacy
+    ``utility::SpectralBounds`` fallback ``[-rho * (1 + pad), +rho * (1 + pad)]``
+    where ``rho = max_i sum_j |H_{ij}|`` is the infinity norm of ``hamiltonian``.
+    Complexity is ``O(dim + nnz)``.
+
+    Parameters
+    ----------
+    hamiltonian : lsquant._core.SparseMatrix
+        Compressed sparse Hamiltonian matrix.
+    pad : float, optional
+        Relative safety padding fraction (default ``0.10``).
+
+    Returns
+    -------
+    lsquant._core.SpectralWindow
+        Symmetric spectral window ``[-rho * (1 + pad), +rho * (1 + pad)]``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``pad < 0``.
+
+    Notes
+    -----
+    Pitfall: Ensure ``hamiltonian`` has undergone :meth:`hermitian_fold` (as
+    :func:`~lsquant._core.ReadCsrText` does) before computing Gershgorin row
+    sums so that the resulting ``BandWidth`` matches legacy files to the last
+    bit.
+    """
+    bounds = _core.GershgorinBounds(hamiltonian, float(pad))
+    return _core.SpectralWindow(bounds.lower, bounds.upper)
 
 
 def run_plan(
