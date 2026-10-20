@@ -61,10 +61,6 @@ class SpectralFunction:
         self.expr: sp.Expr = expr
         self._fn = sp.lambdify((self.m, self.x), self.expr, modules="numpy")
 
-    def __call__(self) -> SpectralFunction:
-        """Return ``self`` so the instance can also be invoked as a factory."""
-        return self
-
     def table(
         self, x_grid: Sequence[float] | npt.NDArray[np.float64], num_moments: int
     ) -> npt.NDArray[np.float64]:
