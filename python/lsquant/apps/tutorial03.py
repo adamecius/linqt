@@ -219,24 +219,37 @@ def run_tutorial03(
     mu_xx.state_label = "exact"
     stem_xx = f"NonEqOpVX-VX{label}KPM_M{num_moments}x{num_moments}_stateexact"
 
+    # Legacy pipeline artefact: legacy lsqhall.py wrote the .chebmom2D file at
+    # 15-digit ASCII precision (digits10) and reconstructed from the re-read
+    # file; the text round-trip drops the last two digits of the in-memory
+    # double-precision moments. The library itself keeps full precision; the
+    # tutorial app round-trips through WriteLegacyChebmom2D / ReadChebmom so
+    # its four output curves are byte-identical to the stage-0 capture.
+    xy_mom_path = os.path.join(out_dir, f"{stem_xy}.chebmom2D")
+    xx_mom_path = os.path.join(out_dir, f"{stem_xx}.chebmom2D")
+    _core.WriteLegacyChebmom2D(xy_mom_path, mu_xy)
+    _core.WriteLegacyChebmom2D(xx_mom_path, mu_xx)
+    mu_xy_disk = _core.ReadChebmom(xy_mom_path)
+    mu_xx_disk = _core.ReadChebmom(xx_mom_path)
+
     written: list[str] = []
 
-    e_bastin, s_bastin = kubo_bastin(mu_xy, broadening_meV)
+    e_bastin, s_bastin = kubo_bastin(mu_xy_disk, broadening_meV)
     bastin_path = os.path.join(out_dir, f"KuboBastin_{stem_xy}JACKSON.dat")
     _core.WriteCurveText(bastin_path, e_bastin, s_bastin)
     written.append(bastin_path)
 
-    e_sea, s_sea = kubo_bastin_sea(mu_xy, broadening_meV)
+    e_sea, s_sea = kubo_bastin_sea(mu_xy_disk, broadening_meV)
     sea_path = os.path.join(out_dir, f"KuboBastinSea_{stem_xy}JACKSON.dat")
     _core.WriteCurveText(sea_path, e_sea, s_sea)
     written.append(sea_path)
 
-    e_surf, s_surf = kubo_bastin_surf(mu_xy, broadening_meV)
+    e_surf, s_surf = kubo_bastin_surf(mu_xy_disk, broadening_meV)
     surf_path = os.path.join(out_dir, f"KuboBastinSurf_{stem_xy}JACKSON.dat")
     _core.WriteCurveText(surf_path, e_surf, s_surf)
     written.append(surf_path)
 
-    e_gw, s_gw = kubo_greenwood(mu_xx, broadening_meV)
+    e_gw, s_gw = kubo_greenwood(mu_xx_disk, broadening_meV)
     gw_path = os.path.join(out_dir, f"KuboGreenWood_{stem_xx}JACKSON.dat")
     _core.WriteCurveText(gw_path, e_gw, s_gw)
     written.append(gw_path)
