@@ -478,12 +478,15 @@ The cycle for every work item:
 A brief is the contract: if the implementation needs to deviate, the deviation goes
 in `report.md` and Fable amends the brief; the code never silently diverges.
 
-**How instructions travel.** Agi and Codex each work from their own clone of
-`origin/cpp-unified` and read their instructions from the repository
-(`handoff/NNNN-<slug>/brief.md` for Agi, `codex.md` for Codex); nothing is passed
-by chat. Agi commits its work and `report.md` on a branch `handoff/NNNN-agi`,
-Codex commits the harness, figures and `tests.md` on `handoff/NNNN-codex`; both
-are pushed to `origin`. Fable merges a closed handoff into `cpp-unified`.
+**How instructions travel.** Agi and Codex each read their instructions from the
+repository (`handoff/NNNN-<slug>/brief.md` for Agi, `codex.md` for Codex); nothing
+is passed by chat. Agi works in its own clone of `origin/cpp-unified` on the
+maintainer's machine (`C:\Users\adame\LSQUANT\lsquant-agi`, branch
+`handoff/NNNN-agi`), commits there and never pushes. Fable reviews that clone,
+carries the branch to `origin` (through TCN), and Codex pulls it in
+`~/lsquant-unified` on TCN, runs the gate and commits the harness, figures and
+`tests.md` on `handoff/NNNN-codex`. When the gate passes and the review is clean,
+Fable commits the closed handoff into `cpp-unified` and pushes it.
 
 **Verification machine.** Every gate, golden generation and figure runs on TCN
 (`fatnode-tacn`, 64 cores, 2 TB RAM, g++ 11.4, cmake 3.22, Python 3.10), reached
