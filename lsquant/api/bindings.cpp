@@ -36,6 +36,43 @@ namespace lsquant {
 namespace {
 
 /**
+ * @brief Validate that a Python object is a 1D C-contiguous NumPy array of exact element type `T`.
+ *
+ * Rejects non-arrays, non-1D arrays, non-contiguous slices, or mismatched dtypes without
+ * implicit conversion (`forcecast` off), raising a Python `TypeError` that names `argName`.
+ *
+ * @tparam T            Expected C++ element type (`Index` or `Scalar`).
+ * @param obj           Input Python handle.
+ * @param argName       Parameter name included in the `TypeError` message on failure.
+ * @param expectedDtype Human-readable NumPy dtype name (`"int64"` or `"complex128"`).
+ * @param expectedKind  NumPy dtype kind character (`'i'` for signed integer, `'c'` for complex).
+ * @param outSize       Output element count.
+ * @return              Const pointer to the first element of the validated buffer.
+ */
+template <typename T>
+const T* ValidateCsrBuffer1D(py::handle obj, const char* argName, const char* expectedDtype,
+                             char expectedKind, Index& outSize) {
+  if (!py::isinstance<py::array>(obj)) {
+    throw py::type_error(std::string("SparseMatrix.from_csr: argument '") + argName +
+                         "' must be a 1D C-contiguous " + expectedDtype + " numpy.ndarray");
+  }
+  auto arr = py::reinterpret_borrow<py::array>(obj);
+  const bool dtypeOk = (arr.dtype().kind() == expectedKind) &&
+                       (arr.itemsize() == static_cast<py::ssize_t>(sizeof(T)));
+  const bool shapeOk = (arr.ndim() == 1);
+  const bool contigOk =
+      ((arr.flags() & py::array::c_style) != 0) &&
+      (arr.ndim() == 1 &&
+       (arr.size() <= 1 || arr.strides(0) == static_cast<py::ssize_t>(sizeof(T))));
+  if (!dtypeOk || !shapeOk || !contigOk) {
+    throw py::type_error(std::string("SparseMatrix.from_csr: argument '") + argName +
+                         "' must be a 1D C-contiguous " + expectedDtype + " numpy.ndarray");
+  }
+  outSize = static_cast<Index>(arr.size());
+  return static_cast<const T*>(arr.data());
+}
+
+/**
  * @brief Validate a 2D `float64` NumPy array and contract it with a strided real moment vector.
  *
  * @param momentsPtr   Pointer to the first real moment element.
@@ -79,17 +116,17 @@ PYBIND11_MODULE(_core, m) {
       .def(py::init<>())
       .def_static(
           "from_csr",
-          [](Index dim, const py::array_t<Index, py::array::c_style>& rowPointers,
-             const py::array_t<Index, py::array::c_style>& columns,
-             const py::array_t<Scalar, py::array::c_style>& values) {
-            if (rowPointers.ndim() != 1 || columns.ndim() != 1 || values.ndim() != 1) {
-              throw std::invalid_argument(
-                  "SparseMatrix.from_csr: row_pointers, columns, and values must be 1D arrays");
-            }
-            std::vector<Index> rp(rowPointers.data(), rowPointers.data() + rowPointers.size());
-            std::vector<Index> cols(columns.data(), columns.data() + columns.size());
-            std::vector<Scalar> vals(values.data(), values.data() + values.size());
-            return SparseMatrix::FromCsr(dim, std::move(rp), std::move(cols), std::move(vals));
+          [](Index dim, py::object rowPointers, py::object columns, py::object values) {
+            Index rpSize = 0;
+            Index colSize = 0;
+            Index valSize = 0;
+            const Index* rpPtr =
+                ValidateCsrBuffer1D<Index>(rowPointers, "row_pointers", "int64", 'i', rpSize);
+            const Index* colPtr =
+                ValidateCsrBuffer1D<Index>(columns, "columns", "int64", 'i', colSize);
+            const Scalar* valPtr =
+                ValidateCsrBuffer1D<Scalar>(values, "values", "complex128", 'c', valSize);
+            return SparseMatrix::FromCsr(dim, rpSize, rpPtr, colSize, colPtr, valSize, valPtr);
           },
           py::arg("dim"), py::arg("row_pointers"), py::arg("columns"), py::arg("values"))
       .def_property_readonly("dimension", &SparseMatrix::Dimension)

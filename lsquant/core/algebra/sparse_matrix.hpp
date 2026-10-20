@@ -42,6 +42,33 @@ public:
   SparseMatrix() = default;
 
   /**
+   * @brief Build a compressed CSR sparse matrix directly from raw CSR buffers.
+   *
+   * Maps the supplied row pointer, column index, and value buffers directly into an Eigen
+   * row-major sparse matrix via `Eigen::Map<const Eigen::SparseMatrix<...>>` without staging
+   * into intermediate `std::vector` containers. Performs a single copy from the mapped buffers
+   * into the owned `Eigen::SparseMatrix` storage. Complexity is `O(dim + nnz)`.
+   *
+   * @param dim             Square matrix dimension `N >= 0`.
+   * @param rowPointersSize Number of elements in `rowPointers` (must equal `dim + 1`).
+   * @param rowPointers     Pointer to CSR row offset buffer of length `dim + 1`.
+   * @param columnsSize     Number of elements in `columns` (must equal `nnz`).
+   * @param columns         Pointer to CSR column index buffer of length `nnz`.
+   * @param valuesSize      Number of elements in `values` (must equal `nnz`).
+   * @param values          Pointer to complex non-zero values buffer of length `nnz`.
+   * @return                Constructed and compressed `SparseMatrix`.
+   *
+   * @warning Throws `std::invalid_argument` if buffer sizes, pointers, row pointer monotonicity,
+   *          or column bounds are violated.
+   * @par Pitfall
+   *      Column indices within each row should be sorted in ascending order for canonical
+   *      Eigen CSR layout.
+   */
+  static SparseMatrix FromCsr(Index dim, Index rowPointersSize, const Index* rowPointers,
+                              Index columnsSize, const Index* columns, Index valuesSize,
+                              const Scalar* values);
+
+  /**
    * @brief Build a compressed CSR sparse matrix from raw CSR arrays.
    *
    * Maps the supplied row pointer, column index, and value arrays directly into an Eigen
