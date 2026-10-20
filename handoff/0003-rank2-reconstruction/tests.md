@@ -7,23 +7,22 @@ checkout `~/lsquant-unified`, branch `handoff/0003-codex` cut from `cpp-unified`
 `OMP_NUM_THREADS` (16, and 1 where the gate says so; the stage-1 part of the harness
 keeps its own 1, 8 and 64).
 
-The developer branch was tested twice:
+The developer branch was tested three times, each after a merge, a fresh build and a
+rerun of the self-check, the gate and the figure script:
 
-| Run | `origin/handoff/0003-agi` | merge into `handoff/0003-codex` | logs |
-|---|---|---|---|
-| 1 | `c01b026` | fast-forward, no conflict | `figures/out/stage_3/*_run1_c01b026.log` |
-| 2 (final) | `0774db7` (review-1 change: keyword-only `kubo_plan(M, *, left_index, right_index, word)`, `dos_plan(M, N, word)`) | fast-forward, no conflict (`merge_run2.log`) | `figures/out/stage_3/{build,stage_3_check,check_goldens_stage3,figure_run}.log` |
+| Run | `origin/handoff/0003-agi` | merge into `handoff/0003-codex` | gate | tutorial 03 | logs in `figures/out/stage_3/` |
+|---|---|---|---|---|---|
+| 1 | `c01b026` | fast-forward | PASS, 41/41 | 1 of 4 IDENTICAL | `*_run1_c01b026.log` |
+| 2 | `0774db7` (review 1: keyword-only `kubo_plan`, `word` in `dos_plan`) | fast-forward | PASS, 41/41 | 1 of 4 IDENTICAL | `*_run2_0774db7.log`, `fig_stage_3_run2_0774db7.caption.txt`, `merge_run2.log` |
+| **3 (final)** | **`cac5da6`** (review 2: `tutorial03` and `stage3_kubo` form 2 `--formula` round-trip the moments through `WriteLegacyChebmom2D`/`ReadChebmom`; `tutorial03 --operators` defaults to `goldens/stage0/haldane/operators`) | merge commit `3dfa53c`, no conflict (`merge_run3.log`) | **PASS, 41/41** | **4 of 4 IDENTICAL** | `build.log`, `stage_3_check.log`, `check_goldens_stage3.log`, `figure_run.log`, `fig_stage_3.caption.txt` |
 
-**Result (final run, `0774db7`): GATE PASS (stage 3), 41 of 41 files IDENTICAL at
-OMP_NUM_THREADS 16 and 1; both greps empty. Run 1 (`c01b026`) gave the same 41
-IDENTICAL verdicts. Tutorial 03 from Python: 1 of 4 files IDENTICAL, 3 DIFFER
-(Bastin, Sea, Greenwood); C = +1.017016743089, equal to the golden's C to all printed
-digits. The cause is localised (section 6): `tutorial03.py` reconstructs from the
-in-memory moments, while the legacy tutorial reconstructed from the `.chebmom2D` file
-it had written at legacy text precision. Through that write/read round trip all four
-files are IDENTICAL.**
+**Result (final run, `cac5da6`): GATE PASS (stage 3), 41 of 41 files IDENTICAL at
+OMP_NUM_THREADS 16 and 1; both greps empty. Tutorial 03 from Python: 4 of 4 files
+IDENTICAL. C = +1.017016743089, equal to the golden's C. `figures/stage_3.py` exits 0.**
+In runs 1 and 2, tutorial 03 was 1 of 4 IDENTICAL. The localisation that led to the
+review-2 change is kept in section 6.
 
-## 1. Build (fresh, both runs)
+## 1. Build (fresh, every run)
 
 ```
 $ rm -rf build
@@ -37,14 +36,15 @@ $ cmake --build build -j 32
 build exit: 0
 ```
 
-Full logs: `figures/out/stage_3/build.log` (final) and `build_run1_c01b026.log`.
-`compat/legacy_kernels.cpp` compiles into `_core` with the same `-O3 -Wall -Wextra`
-flags (`-flto=auto` on `_core`). Warnings: **0 under `lsquant/`** (core, io, api,
-compat, apps). The 101 warnings in each log are all in the legacy tree, as in stages 1
-and 2: 62 in `include/chebyshev_moments.hpp`, 32 in `include/units.hpp`, 7 in
+Full logs: `figures/out/stage_3/build.log` (final run), `build_run2_0774db7.log` and
+`build_run1_c01b026.log`. `compat/legacy_kernels.cpp` compiles into `_core` with the
+same `-O3 -Wall -Wextra` flags (`-flto=auto` on `_core`). Warnings: **0 under
+`lsquant/`** (core, io, api, compat, apps) in all three runs. The 101 warnings in each
+log are all in the legacy tree, as in stages 1 and 2: 62 in
+`include/chebyshev_moments.hpp`, 32 in `include/units.hpp`, 7 in
 `src/chebyshev_momentsLocal.cpp`.
 
-## 2. Developer self-check (final run, `0774db7`)
+## 2. Developer self-check (final run, `cac5da6`)
 
 ```
 $ PYTHONPATH=build/lsquant_core:python OMP_NUM_THREADS=16 python3 tests/dev/stage_3_check.py
@@ -63,12 +63,12 @@ $ PYTHONPATH=build/lsquant_core:python OMP_NUM_THREADS=16 python3 tests/dev/stag
 (d) G4 Surf (10 meV)             differing lines: 0 (total lines: 1919)
 (d) G4 Bastin FFTgrid (10 meV)   differing lines: 0 (total lines: 63)
 (d) G4 Greenwood FFTgrid (10 meV) differing lines: 0 (total lines: 63)
-wall 27.12 s
+wall 26.66 s
 exit: 0
 ```
 
-Exit 0. Run 1 (`c01b026`) printed the same lines (only the wall time differs, 27.42 s).
-It matches the developer's report.
+Exit 0. Runs 1 and 2 printed the same lines (only the wall time differs: 27.42 s and
+27.12 s). It matches the developer's report.
 
 ## 3. Item 0 of the brief (`SparseMatrix.from_csr`), tester check
 
@@ -76,7 +76,7 @@ Done with a scratch script that is not committed (the brief asks for this check 
 it is not a test suite). It parses `goldens/stage0/chain1d/operators/chain1d.HAM.CSR`
 into a `scipy.sparse.csr_matrix` (scipy gives `int32` indices), passes the arrays
 converted to `int64`/`complex128` to `from_csr`, and then tries the wrong buffers.
-Output at `0774db7`:
+Output at `0774db7` (review 2 does not touch the binding):
 
 ```
 scipy csr: shape (2048, 2048) nnz 4096 dtypes int32 int32 complex128
@@ -119,102 +119,10 @@ stage 2 in full (their comparisons and greps). It then runs
    is part of the stage-2 rerun.
 
 Command: `OMP_NUM_THREADS=16 bash scripts/check_goldens.sh 3 build 2>&1 | tee
-figures/out/stage_3/check_goldens_stage3.log`.
+figures/out/stage_3/check_goldens_stage3.log`. (In the final run, the wrapper appended
+the exit status as the last line of the log.)
 
-### 4.1 Final run (`0774db7`), verbatim — exit 0
-
-```
-== stage 1: /home/ICN2/jgarcia/lsquant-unified/build/lsquant_core/stage1_moments vs goldens/stage0/chain1d (KPM_SEED=12345)
-IDENTICAL [T=1] chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D (G1)
-IDENTICAL [T=1] chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D (G2)
-IDENTICAL [T=8] chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D (G1)
-IDENTICAL [T=8] chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D (G2)
-IDENTICAL [T=64] chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D (G1)
-IDENTICAL [T=64] chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D (G2)
-IDENTICAL [T=8, batch 16] chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D (G2, batched)
-IDENTICAL [random, run2 vs run1] NonEqOpVX-VXchain1dKPM_M64x64_statedefault.chebmom
-IDENTICAL [random, run2 vs run1] NonEqOpVX-VXchain1dKPM_M64x64_statedefault.chebmom2D
-IDENTICAL [random, run2 vs run1] SpectralOp1chain1dKPM_M64_statedefault.chebmom
-IDENTICAL [random, run2 vs run1] SpectralOp1chain1dKPM_M64_statedefault.chebmom1D
-GREP      grep -rn "basis\|std::cout\|getenv" lsquant/core: empty
-== stage 2: python3 -m lsquant.apps.stage2_dos, PYTHONPATH=/home/ICN2/jgarcia/lsquant-unified/build/lsquant_core:python, vs goldens/stage0/chain1d (KPM_SEED=12345)
-          [T=1] (a) printed: meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
-IDENTICAL [T=1] (a) --moments G1 -> chain1d/meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat (G3)
-          [T=1] (b) printed: SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
-          [T=1] (b) printed: meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
-IDENTICAL [T=1] (b) --operators -> chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D (G1)
-IDENTICAL [T=1] (b) --operators -> chain1d/meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat (G3)
-          [T=16] (a) printed: meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
-IDENTICAL [T=16] (a) --moments G1 -> chain1d/meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat (G3)
-          [T=16] (b) printed: SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
-          [T=16] (b) printed: meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
-IDENTICAL [T=16] (b) --operators -> chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D (G1)
-IDENTICAL [T=16] (b) --operators -> chain1d/meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat (G3)
-GREP      grep -rn "delta\|DOS\|Kubo\|basis\|std::cout\|getenv" lsquant/core lsquant/io, code lines: empty
-          excluded comment line: lsquant/core/chebyshev/chebyshev_moments.hpp:27: * recording whether the `(2 - delta_{m0})` KPM weights (`kpmWeighted`) and Hermitian
-          excluded comment line: lsquant/core/chebyshev/chebyshev_moments.hpp:32: *      Never apply KPM `(2 - delta_{m0})` weights or symmetrisation twice; check
-          excluded comment line: lsquant/core/chebyshev/chebyshev_moments.hpp:158: * @brief Apply the legacy rank-2 KPM `(2 - delta_{m0})` weights and optional Hermitian symmetrisation.
-== stage 3: python3 -m lsquant.apps.stage3_kubo, PYTHONPATH=/home/ICN2/jgarcia/lsquant-unified/build/lsquant_core:python, vs goldens/stage0/{haldane,graphene}
-          [T=16] G5 VX-VY moments printed: NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
-          [T=16] G5 VX-VY moments printed: NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom
-          [T=16] G5 VX-VX moments printed: NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D
-          [T=16] G5 VX-VX moments printed: NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom
-IDENTICAL [T=16] haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D (G5 moments)
-IDENTICAL [T=16] haldane/NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D (G5 moments)
-          [T=16] G5 bastin printed: KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-          [T=16] G5 sea printed: KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-          [T=16] G5 surf printed: KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-          [T=16] G5 greenwood printed: KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
-IDENTICAL [T=16] haldane/KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-IDENTICAL [T=16] haldane/KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-IDENTICAL [T=16] haldane/KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-IDENTICAL [T=16] haldane/KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-          [T=16] G4 VX-VX moments printed: NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault.chebmom2D
-          [T=16] G4 VX-VX moments printed: NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault.chebmom
-IDENTICAL [T=16] graphene/NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault.chebmom2D (G4 moments)
-          [T=16] G4 bastin 64 meV printed: KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat
-          [T=16] G4 sea 10 meV printed: KuboBastinSea_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat
-          [T=16] G4 surf 10 meV printed: KuboBastinSurf_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat
-          [T=16] G4 greenwood_fft 10 meV printed: KuboGreenWood_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat
-          [T=16] G4 bastin_fft 10 meV printed: KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat
-IDENTICAL [T=16] graphene/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat (G4 curve, 64 meV)
-IDENTICAL [T=16] graphene/sea_surf/KuboBastinSea_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat (G4 curve, 10 meV)
-IDENTICAL [T=16] graphene/sea_surf/KuboBastinSurf_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat (G4 curve, 10 meV)
-IDENTICAL [T=16] graphene/fft_grid/KuboGreenWood_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat (G4 curve, 10 meV)
-IDENTICAL [T=16] graphene/fft_grid/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat (G4 curve, 10 meV)
-          [T=1] G5 VX-VY moments printed: NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
-          [T=1] G5 VX-VY moments printed: NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom
-          [T=1] G5 VX-VX moments printed: NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D
-          [T=1] G5 VX-VX moments printed: NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom
-IDENTICAL [T=1] haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D (G5 moments)
-IDENTICAL [T=1] haldane/NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D (G5 moments)
-          [T=1] G5 bastin printed: KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-          [T=1] G5 sea printed: KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-          [T=1] G5 surf printed: KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-          [T=1] G5 greenwood printed: KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
-IDENTICAL [T=1] haldane/KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-IDENTICAL [T=1] haldane/KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-IDENTICAL [T=1] haldane/KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-IDENTICAL [T=1] haldane/KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat (G5 curve)
-          [T=1] G4 VX-VX moments printed: NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault.chebmom2D
-          [T=1] G4 VX-VX moments printed: NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault.chebmom
-IDENTICAL [T=1] graphene/NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault.chebmom2D (G4 moments)
-          [T=1] G4 bastin 64 meV printed: KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat
-          [T=1] G4 sea 10 meV printed: KuboBastinSea_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat
-          [T=1] G4 surf 10 meV printed: KuboBastinSurf_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat
-          [T=1] G4 greenwood_fft 10 meV printed: KuboGreenWood_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat
-          [T=1] G4 bastin_fft 10 meV printed: KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat
-IDENTICAL [T=1] graphene/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat (G4 curve, 64 meV)
-IDENTICAL [T=1] graphene/sea_surf/KuboBastinSea_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat (G4 curve, 10 meV)
-IDENTICAL [T=1] graphene/sea_surf/KuboBastinSurf_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON.dat (G4 curve, 10 meV)
-IDENTICAL [T=1] graphene/fft_grid/KuboGreenWood_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat (G4 curve, 10 meV)
-IDENTICAL [T=1] graphene/fft_grid/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefaultJACKSON_FFTgrid.dat (G4 curve, 10 meV)
-GREP      grep -rn "compat/" lsquant/core lsquant/io: empty
-== 41 files compared; failures: 0
-GATE PASS (stage 3)
-```
-
-### 4.2 Run 1 (`c01b026`, before the review-1 change), verbatim — exit 0
+### 4.1 Final run (`cac5da6`), verbatim — exit 0
 
 ```
 == stage 1: /home/ICN2/jgarcia/lsquant-unified/build/lsquant_core/stage1_moments vs goldens/stage0/chain1d (KPM_SEED=12345)
@@ -305,9 +213,33 @@ IDENTICAL [T=1] graphene/fft_grid/KuboBastin_NonEqOpVX-VXgraphene_goldenKPM_M64x
 GREP      grep -rn "compat/" lsquant/core lsquant/io: empty
 == 41 files compared; failures: 0
 GATE PASS (stage 3)
+gate exit: 0
 ```
 
-The two runs give identical verdicts, line by line.
+### 4.2 Earlier runs
+
+- Run 2 (`0774db7`): `figures/out/stage_3/check_goldens_stage3_run2_0774db7.log`,
+  exit 0, GATE PASS, 41/41.
+- Run 1 (`c01b026`): `figures/out/stage_3/check_goldens_stage3_run1_c01b026.log`,
+  exit 0, GATE PASS, 41/41.
+
+The verdict lines (IDENTICAL/DIFFERS/GREP) of the three runs are identical line by
+line.
+
+### 4.3 Extra check of the review-2 path that the gate does not exercise
+
+Form 2 with `--formula` now reconstructs from the round-tripped moments. Running
+`stage3_kubo --operators goldens/stage0/haldane/operators --label haldane --left VX
+--right VY|VX --window -4.5 4.5 --trace exact --states 512 --moments 128 --formula
+<f> --broadening-meV 10` at `cac5da6`, OMP_NUM_THREADS=16, and running `cmp` against
+`goldens/stage0/haldane/` gives:
+
+```
+IDENTICAL KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
+```
 
 ## 5. Figure (`figures/stage_3.py`)
 
@@ -315,11 +247,11 @@ The two runs give identical verdicts, line by line.
 `python3 -m lsquant.apps.tutorial03 --out <tmp>`. It compares the four `.dat` files
 by name with `goldens/stage0/tutorials/03/`, which are byte-identical to the G5
 `.dat` files in `goldens/stage0/haldane/` (md5 checked). It then draws the two panels.
-Output: `figures/out/stage_3/fig_stage_3.png` and `fig_stage_3.caption.txt`; run log
-in `figure_run.log`. The script exits 1 because files differ, and says so in the
-caption.
+Output: **`figures/out/stage_3/fig_stage_3.png`** and `fig_stage_3.caption.txt`; run
+log in `figure_run.log`. The run-2 caption is kept as
+`fig_stage_3_run2_0774db7.caption.txt`.
 
-tutorial03 output and `cmp` list (final run):
+tutorial03 output and `cmp` list (final run, `cac5da6`):
 
 ```
 tutorial03 printed (5 lines):
@@ -329,13 +261,13 @@ tutorial03 printed (5 lines):
   <tmp>/KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
   Chern from gap plateau: C = +1.017 (+1.017016743089)
 cmp list:
-  KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS
-  KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS
+  KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
+  KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
   KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
-  KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS
+  KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
 C new = +1.017016743089, C golden = +1.017016743089
 wrote /home/ICN2/jgarcia/lsquant-unified/figures/out/stage_3/fig_stage_3.png
-exit: 1
+exit: 0
 ```
 
 **C = +1.017016743089** from the new Bastin curve (tutorial03 prints `C = +1.017`),
@@ -343,73 +275,36 @@ and **C = +1.017016743089** from the golden curve.
 
 Caption (verbatim, `fig_stage_3.caption.txt`):
 
-> FIG. 3. Stage 3 (handoff 0003): tutorial 03, the Hall and longitudinal conductivity of the Haldane model (t1 = -1, t2 = 0.15, phi = pi/2), reproduced from Python by python3 -m lsquant.apps.tutorial03 (lsquant package over the pybind11 module lsquant._core, OMP_NUM_THREADS = 16): N = 512 orbitals, window [-4.5, 4.5] eV, exact trace over all N site states, M = 128 x 128 Chebyshev moments (VX-VY for sigma_xy, VX-VX for sigma_xx), Jackson kernel at eta = 10 meV; conductivities in units of e^2/h as lsqhall.py normalises them (divided by (N/2) A_cell e^2/h, A_cell = 3 sqrt(3)/2, e = hbar = 1). (a) sigma_xy: Kubo-Bastin total, Fermi-sea and Fermi-surface parts; new as lines, the stage-0 golden (goldens/stage0/tutorials/03) as open markers (48 evenly spaced points per curve), dotted line at 1; residual new - golden below. (b) sigma_xx (Kubo-Greenwood), same encoding. Chern number from the gap plateau, C = (mean over |E| < 0.5 eV of sigma_xy / A) 2 pi with A = (N/2) A_cell: C = +1.017016743089 from the new curve (tutorial03 prints +1.017016743089), C = +1.017016743089 from the golden curve. Max |new - golden| over the four curves: 9.4e-13 e^2/h, max energy-axis difference 0.0e+00 eV. Byte comparison with goldens/stage0/tutorials/03 by name (cmp criterion), 1 of 4 IDENTICAL: KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS; KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS; KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL; KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS. AT LEAST ONE FILE DIFFERS.
+> FIG. 3. Stage 3 (handoff 0003): tutorial 03, the Hall and longitudinal conductivity of the Haldane model (t1 = -1, t2 = 0.15, phi = pi/2), reproduced from Python by python3 -m lsquant.apps.tutorial03 (lsquant package over the pybind11 module lsquant._core, OMP_NUM_THREADS = 16): N = 512 orbitals, window [-4.5, 4.5] eV, exact trace over all N site states, M = 128 x 128 Chebyshev moments (VX-VY for sigma_xy, VX-VX for sigma_xx), Jackson kernel at eta = 10 meV; conductivities in units of e^2/h as lsqhall.py normalises them (divided by (N/2) A_cell e^2/h, A_cell = 3 sqrt(3)/2, e = hbar = 1). (a) sigma_xy: Kubo-Bastin total, Fermi-sea and Fermi-surface parts; new as lines, the stage-0 golden (goldens/stage0/tutorials/03) as open markers (48 evenly spaced points per curve), dotted line at 1; residual new - golden below. (b) sigma_xx (Kubo-Greenwood), same encoding. Chern number from the gap plateau, C = (mean over |E| < 0.5 eV of sigma_xy / A) 2 pi with A = (N/2) A_cell: C = +1.017016743089 from the new curve (tutorial03 prints +1.017016743089), C = +1.017016743089 from the golden curve. Max |new - golden| over the four curves: 0.0e+00 e^2/h, max energy-axis difference 0.0e+00 eV. Byte comparison with goldens/stage0/tutorials/03 by name (cmp criterion), 4 of 4 IDENTICAL: KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL; KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL; KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL; KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL. All files IDENTICAL.
 
-## 6. Localisation of the tutorial-03 DIFFERS (not fixed)
+## 6. Runs 1 and 2: localisation of the tutorial-03 DIFFERS (history; fixed by review 2)
 
-`cmp` then `golden_diff.py` on the four files (final run). Surf: `cmp` prints nothing because the file is IDENTICAL; the "no line differs" line is `golden_diff.py` run on an identical pair.
-
-```
-== KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-<out>/KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat goldens/stage0/tutorials/03/KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat differ: byte 14, line 1
-first-diff line 1 col 2, new=2.18661e-08 golden=2.1866e-08; max abs diff 1.000e-10 at line 186 col 2; max rel diff 9.711e-06 at line 186 col 2; DEFECT level (>= 1e-12)
-== KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-<out>/KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat goldens/stage0/tutorials/03/KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat differ: byte 35, line 2
-first-diff line 2 col 2, new=4.60745e-08 golden=4.60743e-08; max abs diff 1.000e-10 at line 411 col 2; max rel diff 3.567e-01 at line 3839 col 2; DEFECT level (>= 1e-12)
-== KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
-no line differs (difference is in line endings or trailing bytes)
-== KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
-<out>/KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat goldens/stage0/tutorials/03/KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat differ: byte 13, line 1
-first-diff line 1 col 2, new=5.06063e-08 golden=5.06082e-08; max abs diff 1.900e-12 at line 1 col 2; max rel diff 3.754e-05 at line 1 col 2; DEFECT level (>= 1e-12)
-```
-
-(Abs diffs are in raw units: 1e-10 raw is 9.4e-13 e^2/h. The large relative differences are on values near zero printed with 6 significant
-digits. Every residual is at most 9.4e-13 e^2/h, and the energy axis is
-identical.)
-
-Diagnosis. The operators that `make_haldane` stages from `test/golden/haldane` are
-byte-identical to `goldens/stage0/haldane/operators`. The `.desc` window is exactly
-[-4.5, 4.5]. The gate shows the moments (`.chebmom2D`) and each formula applied to
-the golden moment file are IDENTICAL. So moments and formulas are right. The
-in-memory moments that `run_plan` returns differ from the golden file at the last
-bits:
-
-- `VX-VY`: max |dIm| 4.9e-15, real parts at 1e-31.
-- `VX-VX`: max |dRe| 5.3e-15.
-- About 15,400 of 16,384 elements are not bitwise equal.
-
-The golden file holds them at the legacy text precision. The legacy `lsqhall.py`
-wrote the `.chebmom2D` and reconstructed by running the `*FromChebmom` drivers on that
-file. `tutorial03.py` instead passes the unrounded `ChebyshevMoments` straight to
-`kubo_bastin` and the other formulas. Surf is IDENTICAL because it uses only
-`real(mu)` of `VX-VY`, which sits at 1e-31.
-
-Direct check (scratch script, same build):
+At `c01b026` and `0774db7`, tutorial 03 gave 1 of 4 IDENTICAL: Surf was IDENTICAL;
+Bastin, Sea and Greenwood DIFFERED, with max |new - golden| 9.4e-13 e^2/h and an
+identical energy axis. `golden_diff.py` at `0774db7`:
 
 ```
-in-memory moments (as tutorial03 does):
-  KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS
-  KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS
-  KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
-  KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat: DIFFERS
-moments after WriteLegacyChebmom2D + ReadChebmom:
-  KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
-  KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
-  KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
-  KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat: IDENTICAL
+KuboBastin:    first-diff line 1 col 2, new=2.18661e-08 golden=2.1866e-08; max abs diff 1.000e-10 at line 186 col 2; max rel diff 9.711e-06
+KuboBastinSea: first-diff line 2 col 2, new=4.60745e-08 golden=4.60743e-08; max abs diff 1.000e-10 at line 411 col 2; max rel diff 3.567e-01 at line 3839 (near-zero value)
+KuboGreenWood: first-diff line 1 col 2, new=5.06063e-08 golden=5.06082e-08; max abs diff 1.900e-12 at line 1 col 2; max rel diff 3.754e-05
 ```
 
-Where: `python/lsquant/apps/tutorial03.py`, `run_tutorial03`. `mu_xy` and `mu_xx` go
-to the reconstruction functions without the legacy file round trip. The gate
-program `stage3_kubo` form 2 + `--formula` has the same property: it reconstructs from
-the in-memory `mu` after writing the file. The gate does not exercise that path,
-because it reconstructs from the golden moment files. Self-check (a) compares
-moments only after `_roundtrip_legacy_2d`, so it cannot show this. The developer's
-report and review 1 ("tutorial 03 gives C = +1.017, the legacy value") are true for C,
-but the four files are not byte-identical. The decision on whether tutorial 03
-should reconstruct from the written file (the legacy pipeline) belongs to Fable.
+Diagnosis at that time:
+- The staged operators were byte-identical to the goldens, and the `.desc` window was
+  exactly [-4.5, 4.5].
+- The gate showed the moments and the formulas byte-identical.
+- The in-memory moments from `run_plan` differed from the golden file in the last bits
+  (`VX-VY` max |dIm| 4.9e-15; `VX-VX` max |dRe| 5.3e-15; about 15,400 of 16,384
+  elements). The golden file holds them at legacy text precision.
+- The legacy `lsqhall.py` reconstructed from the written `.chebmom2D`, while
+  `tutorial03.py` reconstructed from the unrounded in-memory moments.
+- Surf was IDENTICAL because it uses only `real(mu)` of `VX-VY` (about 1e-31).
+- Check: in-memory moments gave 1 of 4 IDENTICAL; the same moments passed through
+  `WriteLegacyChebmom2D` + `ReadChebmom` gave 4 of 4 IDENTICAL.
 
-## 7. Smells
+Review 2 adopted that round trip, and run 3 confirms it.
+
+## 7. Smells (final state)
 
 - **Formula or grid in `core/`: none found.** `contraction.cpp` gains only the three
   rank-2 kernels (`m0` outer, `m1` inner, OpenMP over `i`, tables passed in). A grep of
@@ -431,9 +326,10 @@ should reconstruct from the written file (the legacy pipeline) belongs to Fable.
   7.2e-15 rel).
 - **Copy in `from_csr`:** only the accepted Eigen `Map` copy remains; strict dtypes and
   contiguity are enforced with a `TypeError` naming the argument (section 3).
-- **tutorial03 not byte-identical** (section 6): the reconstruction skips the legacy
-  write/read of the moments. The self-check's round trip hides this.
-- `tutorial03.py` stages from `test/golden/haldane/operators` in the legacy tree,
-  through `make_haldane.GOLDEN`, rather than from `goldens/stage0/haldane/operators`.
-  The two are byte-identical today, but stage 7 deletes the legacy tree.
+- Self-check (a) still compares moments only after `_roundtrip_legacy_2d`. That is
+  correct now that every reconstruction path round-trips, but it is the reason the
+  run-1/2 tutorial-03 difference did not show in the self-check.
+- Resolved by review 2: tutorial 03 now reconstructs from round-tripped moments, and
+  `--operators` defaults to `goldens/stage0/haldane/operators`, so it no longer
+  depends on the legacy `test/` tree.
 - No golden, seed or tolerance was touched; `goldens/` is unchanged.
