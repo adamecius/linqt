@@ -1,10 +1,11 @@
 /**
  * @file plan.hpp
- * @brief Five-instruction bytecode representation of a KPM operator word.
+ * @brief Bytecode representation of a KPM operator word.
  *
  * Defines the physical-name-free instruction set (`ApplyOperator`, `Expand`,
- * `ApplySeries`, `MirrorToBra`, `Trace`) and `Plan` container executed by
- * `MomentEngine::Run`.
+ * `ApplySeries`, `ApplyDerivedSeries`, `MirrorToBra`, `TimeAxis`, `Trace`),
+ * register identifiers, time-evolution step descriptors, and `Plan` container
+ * executed by `MomentEngine::Run`.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_PLAN_HPP_
 #define LSQUANT_CORE_CHEBYSHEV_PLAN_HPP_
@@ -16,6 +17,20 @@
 #include "core/algebra/types.hpp"
 
 namespace lsquant {
+
+/**
+ * @brief Seed-vector register identifier for `MomentEngine` state machines.
+ *
+ * `MomentEngine` maintains three vector registers of dimension `N` per trace state:
+ * `Ket` (the active ket seed), `Bra` (the active bra seed), and `Aux` (an auxiliary
+ * seed register used by coupled time-evolution recursions such as mean-square
+ * displacement).
+ */
+enum class Register {
+  Ket,
+  Bra,
+  Aux,
+};
 
 /**
  * @brief Instruction applying registered static operator `O_{operatorIndex}` to every live vector.
@@ -35,8 +50,7 @@ struct ApplyOperator {
  *
  * Replaces a live vector `v` on the active side with the sequence `{T_0(H~) v, ..., T_{M-1}(H~) v}`.
  *
- * @warning `numMoments` must be strictly positive; at most one `Expand` per side is supported
- *          in stage 1.
+ * @warning `numMoments` must be strictly positive; at most one `Expand` per side is supported.
  * @par Pitfall
  *      Each `Expand` increases the rank of the output `ChebyshevMoments` tensor by 1.
  */
@@ -45,37 +59,120 @@ struct Expand {
 };
 
 /**
- * @brief Instruction contracting a Chebyshev series `sum_m coeffs[m] T_m(H~) v` on the fly.
+ * @brief Instruction contracting a Chebyshev series `scale * sum_n coeffs[n] T_n(H~) v` on the fly.
  *
- * Present in the `Instruction` variant type to fix the five-instruction bytecode grammar;
- * execution belongs to stage 4 (`MomentEngine::Run` throws in stage 1).
+ * Replaces the active seed vector `v` using the forward three-term recursion of legacy
+ * `MomentsTD::Evolve`: `cheb0 = v`, `cheb1 = H~ cheb0`, `v = 0`, and for
+ * `n = 0 .. coeffs.size() - 1`: `axpy(coeffs[n], cheb0, v)`,
+ * `cheb0 <- 2 H~ cheb1 - cheb0`, `swap(cheb0, cheb1)`, followed by a final
+ * `scal(scale, v)`. When `coeffs` is empty, `v` is scaled by zero.
  *
- * @warning Executing `ApplySeries` in stage 1 throws `std::runtime_error("ApplySeries: not implemented in stage 1")`.
+ * @warning Must appear before `Expand` on the active side.
  * @par Pitfall
- *      Do not emit `ApplySeries` in stage-1 plans.
+ *      Keep the global phase factor in `scale` rather than folding it into `coeffs` when
+ *      bit-identical reproduction of legacy `MomentsTD::Evolve` is required.
  */
 struct ApplySeries {
   std::vector<Scalar> coeffs;
+  Scalar scale = Scalar(1.0, 0.0);
 };
 
 /**
- * @brief Instruction switching execution from the ket side to the bra side on a fresh copy of `|r>`.
+ * @brief Instruction contracting a derived Chebyshev series `scale * sum_n coeffs[n] D_n v` on the fly.
  *
- * May appear at most once in a `Plan`. All instructions prior to `MirrorToBra` act on the ket
- * side; instructions between `MirrorToBra` and `Trace` act on the bra side starting from `|r>`.
+ * Replaces the active seed vector `v` using the coupled `(T_n, D_n)` recursion of legacy
+ * `MomentsTD::Conv_Evolve`: `D_0 v = 0`, `D_1 v = O_k T_0 v`, and
+ * `D_{n+1} v = 2 H~ D_n v - D_{n-1} v + 2 O_k T_n v`, where `k = operatorIndex`,
+ * followed by a final `scal(scale, v)`. The `n = 0` term contributes zero regardless of
+ * `coeffs[0]`.
  *
- * @warning Throws `std::invalid_argument` if `MirrorToBra` appears more than once in a `Plan`.
+ * @warning `operatorIndex` must be in `[0, operators.size())` of the executing `MomentEngine`.
  * @par Pitfall
- *      If `MirrorToBra` is omitted, the bra side remains the unmodified initial trace state `|r>`.
+ *      The recursion order per step (`T` update, `D` update, `+2 O_k T_n` accumulation, then
+ *      swaps) must match `MomentsTD::Conv_Evolve` verbatim.
+ */
+struct ApplyDerivedSeries {
+  std::vector<Scalar> coeffs;
+  int operatorIndex = 0;
+  Scalar scale = Scalar(1.0, 0.0);
+};
+
+/**
+ * @brief Instruction switching execution from the ket side to the bra side on a copy of the current ket seed.
+ *
+ * Sets the active bra seed to a copy of the current ket seed at the moment `MirrorToBra`
+ * is encountered, and directs subsequent seed-level instructions in the current scope
+ * (seed preparation or `TimeAxis` body) to the bra side.
+ *
+ * @warning May appear at most once in seed preparation and at most once inside a `TimeAxis` body.
+ * @par Pitfall
+ *      If `MirrorToBra` is omitted, the bra seed remains the initial trace state `|r>`.
  */
 struct MirrorToBra {};
+
+/**
+ * @brief Time-evolution step evolving a single seed register via `ApplySeries`.
+ *
+ * Replaces `seed[target]` with `scale * sum_n coeffs[n] T_n(H~) seed[target]`.
+ */
+struct EvolveRegister {
+  Register target = Register::Ket;
+  std::vector<Scalar> coeffs;
+  Scalar scale = Scalar(1.0, 0.0);
+};
+
+/**
+ * @brief Time-evolution step accumulating a derived Chebyshev series from `source` into `target`.
+ *
+ * Computes `phiT = scale * sum_n coeffs[n] D_n seed[source]` with commutator operator
+ * `O_{operatorIndex}` (matching `MomentsTD::Conv_Evolve`) and accumulates
+ * `seed[target] += phiT` via `axpy(1.0, phiT, seed[target])`.
+ */
+struct EvolveDerived {
+  Register target = Register::Ket;
+  Register source = Register::Aux;
+  std::vector<Scalar> coeffs;
+  int operatorIndex = 0;
+  Scalar scale = Scalar(1.0, 0.0);
+};
+
+/**
+ * @brief Time-evolution step copying one seed register into another (`seed[to] = seed[from]`).
+ */
+struct CopyRegister {
+  Register from = Register::Ket;
+  Register to = Register::Bra;
+};
+
+/**
+ * @brief Variant holding one register-evolution action executed at the end of each `TimeAxis` step.
+ */
+using TimeEvolutionStep = std::variant<EvolveRegister, EvolveDerived, CopyRegister>;
+
+/**
+ * @brief Instruction opening a trailing time axis of length `numSteps` on the moment tensor.
+ *
+ * May appear at most once in a `Plan`, after all initial seed preparation. For each step
+ * `n = 0 .. numSteps - 1`, executes the instructions following `TimeAxis` (the body) on
+ * working copies of `seed[Ket]` and `seed[Bra]`, accumulating into slice `mu[..., n]`, and
+ * then applies `evolve` in order to update the persistent `seed` registers.
+ *
+ * @warning `numSteps` must be strictly positive.
+ * @par Pitfall
+ *      Body instructions act on per-step working copies of `seed[Ket]` and `seed[Bra]` so
+ *      that pre-expansion operators inside the body do not corrupt the evolving seeds.
+ */
+struct TimeAxis {
+  int numSteps = 0;
+  std::vector<TimeEvolutionStep> evolve;
+};
 
 /**
  * @brief Terminal instruction contracting live bra and ket vectors into the moment tensor.
  *
  * Accumulates `mu[i_bra..., i_ket...] += weights[...] * dot(bra_{i_bra}, ket_{i_ket})` for each
- * trace state. `weights` must have size `1` (uniform scalar weight) or match the total element
- * count of `mu`.
+ * trace state. `weights` must have size `1` (uniform scalar weight), match the moment-axis
+ * length `M` (for `TimeAxis` plans), or match the total element count of `mu`.
  *
  * @warning Must appear as the final instruction of every `Plan`.
  * @par Pitfall
@@ -87,9 +184,10 @@ struct Trace {
 };
 
 /**
- * @brief Variant holding any one of the five engine instructions.
+ * @brief Variant holding any one of the engine instructions.
  */
-using Instruction = std::variant<ApplyOperator, Expand, ApplySeries, MirrorToBra, Trace>;
+using Instruction = std::variant<ApplyOperator, Expand, ApplySeries, ApplyDerivedSeries,
+                                 MirrorToBra, TimeAxis, Trace>;
 
 /**
  * @brief Compiled instruction sequence and descriptive word string for `MomentEngine::Run`.

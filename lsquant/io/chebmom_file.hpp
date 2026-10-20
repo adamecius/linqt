@@ -91,11 +91,33 @@ void WriteLegacyChebmom1D(const std::string& filename, const ChebyshevMoments& m
  */
 void WriteLegacyChebmom2D(const std::string& filename, const ChebyshevMoments& moments);
 
+/**
+ * @brief Write a rank-2 time-dependent `ChebyshevMoments` tensor in the byte-exact legacy `.chebmomTD` layout.
+ *
+ * Reproduces `chebyshev::MomentsTD::saveIn` verbatim: sets stream precision to
+ * `std::numeric_limits<double>::digits10`, writes
+ * `systemSize " " bandwidth " " center " " maxTimeStep " " timeDiff " \n"` (with a trailing
+ * space before the newline), writes `numMoms " " maxTimeStep " \n"` (with a trailing space
+ * before the newline), and writes each moment in `m`-major (`m` outer, `n` inner) order as
+ * `re " " im "\n"`.
+ *
+ * @param filename Destination `.chebmomTD` file path.
+ * @param moments  Rank-2 `(numMoms, numTimes)` `ChebyshevMoments` tensor.
+ *
+ * @warning Throws `std::invalid_argument` if `moments.Rank() != 2` and `std::runtime_error`
+ *          if the file cannot be opened.
+ * @par Pitfall
+ *      Both header lines carry a single trailing space before the newline in legacy
+ *      `MomentsTD::saveIn`; omitting either breaks byte-for-byte comparison with G6/G7 goldens.
+ */
+void WriteLegacyChebmomTD(const std::string& filename, const ChebyshevMoments& moments);
+
 namespace io {
 using lsquant::ReadChebmom;
 using lsquant::WriteChebmom;
 using lsquant::WriteLegacyChebmom1D;
 using lsquant::WriteLegacyChebmom2D;
+using lsquant::WriteLegacyChebmomTD;
 }  // namespace io
 
 }  // namespace lsquant
