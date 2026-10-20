@@ -337,8 +337,11 @@ def main(argv: list[str] | None = None) -> int:
             print(new_path)
 
             if args.formula is not None:
+                # Re-read the written .chebmom2D (15-digit legacy ASCII precision)
+                # so form 2 with --formula agrees byte-for-byte with form 1.
+                mu_disk = _core.ReadChebmom(leg_path)
                 dat_path = _reconstruct_one(
-                    mu, stem, args.formula, float(args.broadening_meV), args.out
+                    mu_disk, stem, args.formula, float(args.broadening_meV), args.out
                 )
                 print(dat_path)
 
