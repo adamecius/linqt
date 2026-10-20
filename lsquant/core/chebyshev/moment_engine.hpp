@@ -59,8 +59,7 @@ public:
    *
    * Validates `plan.code`, rewinds `states` via `Reset()`, and runs the ket/bra state machine
    * sequentially over every trace vector. Populates `systemSize`, `numberOfStates`,
-   * `stateLabel`, `word`, and (when `rescaledH` is a `RescaledOperator`) `window` on the
-   * returned `ChebyshevMoments`.
+   * `stateLabel`, and `word` on the returned `ChebyshevMoments`; the caller sets `window`.
    *
    * @param plan Instruction sequence ending with `Trace`.
    * @return     Accumulated `ChebyshevMoments` tensor of rank equal to the number of `Expand`

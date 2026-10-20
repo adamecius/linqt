@@ -12,7 +12,6 @@
 #include "core/algebra/linalg.hpp"
 #include "core/chebyshev/chebyshev_recursion.hpp"
 #include "core/chebyshev/chebyshev_vectors.hpp"
-#include "core/chebyshev/rescaled_operator.hpp"
 
 namespace lsquant {
 
@@ -148,9 +147,6 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   mu.numberOfStates = static_cast<int>(states_->NumberOfStates());
   mu.stateLabel = states_->Label();
   mu.word = plan.word;
-  if (const auto* rescaledOp = dynamic_cast<const RescaledOperator*>(rescaledH_)) {
-    mu.window = rescaledOp->Window();
-  }
 
   const std::size_t tensorSize = mu.Data().size();
   if (traceWeights.size() != 1 && traceWeights.size() != tensorSize) {
