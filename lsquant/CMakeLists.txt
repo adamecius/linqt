@@ -2,6 +2,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(LSQUANT_BUILD_PYTHON "Build the pybind11 module lsquant._core" ON)
+
 add_library(lsquant_core STATIC
     core/algebra/sparse_matrix.cpp
     core/algebra/composite_operators.cpp
@@ -13,10 +15,13 @@ add_library(lsquant_core STATIC
     core/chebyshev/chebyshev_vectors.cpp
     core/chebyshev/chebyshev_moments.cpp
     core/chebyshev/moment_engine.cpp
+    core/chebyshev/contraction.cpp
     io/csr_text.cpp
     io/chebmom_file.cpp
+    io/curve_text.cpp
 )
 
+set_target_properties(lsquant_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(lsquant_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_features(lsquant_core PUBLIC cxx_std_17)
 target_compile_options(lsquant_core PUBLIC -Wall -Wextra)
@@ -31,3 +36,14 @@ add_executable(stage_1_check "${PROJECT_SOURCE_DIR}/tests/dev/stage_1_check.cpp"
 set_target_properties(stage_1_check PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_options(stage_1_check PRIVATE -Wall -Wextra)
 target_link_libraries(stage_1_check PRIVATE lsquant_core)
+
+if(LSQUANT_BUILD_PYTHON)
+    find_package(pybind11 CONFIG REQUIRED)
+    pybind11_add_module(_core MODULE api/bindings.cpp)
+    set_target_properties(_core PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    )
+    target_compile_options(_core PRIVATE -Wall -Wextra)
+    target_link_libraries(_core PRIVATE lsquant_core)
+endif()
