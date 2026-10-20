@@ -1,0 +1,13 @@
+{
+  "model": "chain1d",
+  "variant": "complex",
+  "dimension": 2048,
+  "seed": 12345,
+  "alpha": 0.2,
+  "lambda_min(S')": 0.7246054670422337,
+  "lambda_max(S')": 1.3259502278293853,
+  "cond(S')": 1.829892663164384,
+  "nnz(S')": 10240,
+  "nnz(H')": 14336,
+  "max |eigvalsh(H', S') - eigvalsh(H)|": 6.217248937900877e-15
+}

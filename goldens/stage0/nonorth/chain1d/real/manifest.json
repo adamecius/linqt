@@ -1,0 +1,13 @@
+{
+  "model": "chain1d",
+  "variant": "real",
+  "dimension": 2048,
+  "seed": 12345,
+  "alpha": 0.2,
+  "lambda_min(S')": 0.7032008650483048,
+  "lambda_max(S')": 1.352076700392037,
+  "cond(S')": 1.922746070995176,
+  "nnz(S')": 10240,
+  "nnz(H')": 14336,
+  "max |eigvalsh(H', S') - eigvalsh(H)|": 7.993605777301127e-15
+}

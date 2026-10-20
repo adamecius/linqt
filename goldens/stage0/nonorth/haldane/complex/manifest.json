@@ -1,0 +1,13 @@
+{
+  "model": "haldane",
+  "variant": "complex",
+  "dimension": 512,
+  "seed": 12345,
+  "alpha": 0.2,
+  "lambda_min(S')": 0.7367400475481392,
+  "lambda_max(S')": 1.324598043711703,
+  "cond(S')": 1.7979177976274634,
+  "nnz(S')": 15872,
+  "nnz(H')": 32768,
+  "max |eigvalsh(H', S') - eigvalsh(H)|": 1.021405182655144e-14
+}
