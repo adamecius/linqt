@@ -107,16 +107,6 @@ struct Plan {
   std::string word;
 };
 
-namespace chebyshev {
-using lsquant::ApplyOperator;
-using lsquant::ApplySeries;
-using lsquant::Expand;
-using lsquant::Instruction;
-using lsquant::MirrorToBra;
-using lsquant::Plan;
-using lsquant::Trace;
-}  // namespace chebyshev
-
 }  // namespace lsquant
 
 #endif  // LSQUANT_CORE_CHEBYSHEV_PLAN_HPP_
