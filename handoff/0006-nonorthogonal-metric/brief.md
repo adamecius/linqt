@@ -159,7 +159,10 @@ section 4.1): the gate runs it to demonstrate the defect, never to pass.
   `goldens/stage0/chain1d/operators`, `HAM`, `VX`) and `haldane`
   (`goldens/stage0/haldane/operators`, `HAM`, `VX`, `VY`), the variants `real` and
   `complex`, as `goldens/stage0/nonorth/<model>/<variant>/<model>.{HAM,S,VX[,VY]}.CSR`
-  with the legacy CSR writer of `_core` (`WriteCsrText`), plus `manifest.json`
+  in the legacy CSR text layout (`dim nnz` / values as `re im` pairs / columns / row
+  pointers; read `lsquant/io/csr_text.cpp` and `examples/01_dos_1d_chain/make_chain.py`
+  for the exact layout) written with scipy and Python's `repr` of doubles, so this stage
+  does not wait for the stage-2 binding; plus `manifest.json`
   (epsilon, kind, seed, `cond(S)`, `lambda_min(S)`, `lambda_max(S)`, the spectral
   window of `H`, and the sha256 of each file). Deterministic: seed 12345.
 
