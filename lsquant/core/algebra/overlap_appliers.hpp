@@ -205,6 +205,9 @@ public:
    * @param x Input vector of length `Dimension()`.
    * @param b Scalar multiplier for `y`.
    * @param y Input/output vector of length `Dimension()`.
+   *
+   * @warning Throws `std::runtime_error` if `p^+ S p <= 0` or if `maxIterations` is reached
+   *          with relative residual `relErr > tolerance`.
    */
   void Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const override;
 

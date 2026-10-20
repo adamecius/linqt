@@ -8,6 +8,7 @@
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 #include <stdexcept>
 
 namespace lsquant {
@@ -315,8 +316,14 @@ void IschoInverseOverlap::Multiply(Scalar a, const Vector& x, Scalar b, Vector& 
   for (iter = 1; iter <= maxIterations_; ++iter) {
     Ap.noalias() = matS * p;
     const double pAp = p.dot(Ap).real();
-    if (pAp <= 0.0) {
-      break;
+    if (!(pAp > 0.0)) {
+      lastIterations_ = iter;
+      lastError_ = relErr;
+      std::ostringstream oss;
+      oss << "IschoInverseOverlap::Multiply: non-positive curvature p^+ S p = " << pAp
+          << " at iteration " << iter << " (maxIterations=" << maxIterations_
+          << ", residual=" << relErr << ", tolerance=" << tolerance_ << ")";
+      throw std::runtime_error(oss.str());
     }
     const double alpha = rzOld / pAp;
     sol.noalias() += alpha * p;
@@ -336,6 +343,12 @@ void IschoInverseOverlap::Multiply(Scalar a, const Vector& x, Scalar b, Vector& 
 
   lastIterations_ = std::min(iter, maxIterations_);
   lastError_ = relErr;
+  if (!(relErr <= tolerance_)) {
+    std::ostringstream oss;
+    oss << "IschoInverseOverlap::Multiply: failed to converge within maxIterations="
+        << maxIterations_ << " (residual=" << relErr << " > tolerance=" << tolerance_ << ")";
+    throw std::runtime_error(oss.str());
+  }
 
   if (b == Scalar(0.0, 0.0)) {
     yMap = a * sol;
