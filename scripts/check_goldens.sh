@@ -9,7 +9,9 @@
 #            (chain1d, exact trace, M = 64) and G5 (Haldane, exact trace, M = 128)
 #            pipelines at OMP_NUM_THREADS=16, then G1 and G2 again at 1 and 64 threads.
 #   stage 1  new core (build_dir/lsquant_core/stage1_moments, handoff 0001): G1 and G2
-#            at OMP_NUM_THREADS = 1, 8, 64; random-phase determinism (two runs, cmp);
+#            at OMP_NUM_THREADS = 1, 8, 64; G2 again with --batch 16 at 8 threads (the
+#            batched result must equal the unbatched G2); random-phase determinism
+#            (two runs, cmp);
 #            grep for "basis|std::cout|getenv" under lsquant/core (must be empty).
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
@@ -136,6 +138,14 @@ stage1() {
             "$GOLD/chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D" \
             "[T=$T] chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D (G2)"
   done
+  # G2 with batching (batchSize 16 < M = 64), T = 8: must equal the unbatched G2
+  W="$TMP/s1_batch16"; mkdir -p "$W"
+  OMP_NUM_THREADS=8 "$EXE" --operators "$GOLD/chain1d/operators" --label chain1d --window -2 2 \
+    --trace exact --seed 12345 --states 2048 --moments 64 --word kubo --batch 16 --out "$W" >"$W/kubo.log" 2>&1 \
+    || echo "          [T=8 batch 16] stage1_moments --word kubo exited non-zero: $(tail -1 "$W/kubo.log")"
+  compare "$W/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D" \
+          "$GOLD/chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D" \
+          "[T=8, batch 16] chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D (G2, batched)"
   # random-phase determinism: no golden; two identical runs are the criterion
   for R in 1 2; do
     W="$TMP/s1_random$R"; mkdir -p "$W"
