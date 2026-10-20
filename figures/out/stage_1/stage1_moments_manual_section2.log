@@ -1,0 +1,28 @@
+[T=1] dos exit=0 : stage1_moments: word=dos dim=2048 states=2048 (exact) M=64 -> /home/ICN2/jgarcia/s1_manual/T1/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+[T=1] kubo exit=0 : stage1_moments: word=kubo dim=2048 states=2048 (exact) M=64x64 -> /home/ICN2/jgarcia/s1_manual/T1/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL [T=1] SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL [T=1] NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+[T=8] dos exit=0 : stage1_moments: word=dos dim=2048 states=2048 (exact) M=64 -> /home/ICN2/jgarcia/s1_manual/T8/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+[T=8] kubo exit=0 : stage1_moments: word=kubo dim=2048 states=2048 (exact) M=64x64 -> /home/ICN2/jgarcia/s1_manual/T8/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL [T=8] SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL [T=8] NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+[T=64] dos exit=0 : stage1_moments: word=dos dim=2048 states=2048 (exact) M=64 -> /home/ICN2/jgarcia/s1_manual/T64/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+[T=64] kubo exit=0 : stage1_moments: word=kubo dim=2048 states=2048 (exact) M=64x64 -> /home/ICN2/jgarcia/s1_manual/T64/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL [T=64] SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL [T=64] NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+[random 1] dos exit=0
+[random 1] kubo exit=0
+[random 2] dos exit=0
+[random 2] kubo exit=0
+IDENTICAL [random run2 vs run1] NonEqOpVX-VXchain1dKPM_M64x64_statedefault.chebmom
+IDENTICAL [random run2 vs run1] NonEqOpVX-VXchain1dKPM_M64x64_statedefault.chebmom2D
+IDENTICAL [random run2 vs run1] SpectralOp1chain1dKPM_M64_statedefault.chebmom
+IDENTICAL [random run2 vs run1] SpectralOp1chain1dKPM_M64_statedefault.chebmom1D
+IDENTICAL [random T=1 vs T=64] NonEqOpVX-VXchain1dKPM_M64x64_statedefault.chebmom
+IDENTICAL [random T=1 vs T=64] NonEqOpVX-VXchain1dKPM_M64x64_statedefault.chebmom2D
+IDENTICAL [random T=1 vs T=64] SpectralOp1chain1dKPM_M64_statedefault.chebmom
+IDENTICAL [random T=1 vs T=64] SpectralOp1chain1dKPM_M64_statedefault.chebmom1D
+GREP: 0 hits
+nnz HAM: -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 
+2048 4096
+-1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 -1 0 
