@@ -414,6 +414,11 @@ buildable until stage 7: it is the reference the goldens come from.
   the solver log", which includes the `[hh:mm:ss.mmm]` timestamp, so
   `graphene_regression` fails about one run in six (whenever the run ends at second
   50 or later). Legacy test; retire with the legacy tree.
+- The legacy pipelines write moment files at `precision(digits10)` (15 significant digits) and
+  reconstruct from the re-read file, so every legacy curve carries a text round trip that
+  loses the last two bits of the moments (tutorial 03: 1e-13 in `sigma_xy`). The new library
+  keeps full precision in memory; the tutorial apps round-trip on purpose to stay byte-identical
+  with the stage-0 captures, and say so in a comment.
 - `test/golden/operators/graphene_golden.HAM.desc` carries bounds `[-3, 3]` inside the
   graphene spectrum (Gershgorin radius about 7.5); with the sidecar present the
   moments diverge. The regeneration script deletes it before running.
