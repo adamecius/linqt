@@ -25,6 +25,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # --- Options -----------------------------------------------------------------
 option(LSQUANT_BUILD_UTILITIES   "Build the Python helper utilities" OFF)
+option(LSQUANT_BUILD_NEW_CORE    "" ON)
 option(LSQUANT_BUILD_INPUT_TOOLS "Fetch + build the external wannier2sparse for tests" ON)
 # OFF by default: normal builds and the test suite never touch Doxygen/Graphviz.
 option(BUILD_DOCS                "Build the Doxygen documentation (needs doxygen + graphviz)" OFF)
@@ -65,6 +66,10 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # --- Targets -----------------------------------------------------------------
 add_subdirectory(src)
+
+if(LSQUANT_BUILD_NEW_CORE)
+    add_subdirectory(lsquant lsquant_core)
+endif()
 
 if(LSQUANT_BUILD_UTILITIES)
     add_subdirectory(utilities)
