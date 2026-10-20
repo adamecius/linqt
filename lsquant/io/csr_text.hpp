@@ -16,14 +16,17 @@
 namespace lsquant {
 
 /**
- * @brief Read an ASCII `.CSR` operator file and construct a `SparseMatrix`.
+ * @brief Read an ASCII `.CSR` operator file and construct a Hermitian-folded `SparseMatrix`.
  *
  * Parses `dim` and `nnz`, followed by `nnz` complex value pairs `(re, im)`, `nnz` column
- * indices, and `dim + 1` row offsets, and assembles the matrix via `SparseMatrix::FromCsr`.
- * Complexity is `O(dim + nnz)` in time and memory.
+ * indices, and `dim + 1` row offsets, assembles the matrix via `SparseMatrix::FromCsr`, and
+ * unconditionally applies `SparseMatrix::HermitianFold()` (`0.5 * (M + M^+)`) to match the
+ * legacy `SparseMatrixType::ConvertFromCSR` reader convention (which also normalises `-0.0`
+ * to `+0.0`). Complexity is `O(dim + nnz)` in time and memory.
  *
  * @param filename Path to the `.CSR` text file.
- * @return         Compressed `SparseMatrix` built from the file contents.
+ * @return         Compressed `SparseMatrix` built from the file contents and folded with
+ *                 `HermitianFold()`.
  *
  * @warning Throws `std::runtime_error` if the file cannot be opened or is truncated/malformed,
  *          and `std::invalid_argument` if CSR invariants fail.

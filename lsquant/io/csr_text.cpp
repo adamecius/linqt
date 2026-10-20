@@ -52,7 +52,8 @@ SparseMatrix ReadCsrText(const std::string& filename) {
   }
 
   return SparseMatrix::FromCsr(dim, std::move(rowPointers), std::move(columns),
-                               std::move(values));
+                               std::move(values))
+      .HermitianFold();
 }
 
 void WriteCsrText(const std::string& filename, const SparseMatrix& matrix) {

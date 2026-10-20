@@ -44,11 +44,8 @@ public:
   /**
    * @brief Build a compressed CSR sparse matrix from raw CSR arrays.
    *
-   * Maps the supplied row pointer, column index, and value arrays into an Eigen row-major
-   * sparse matrix. When the input matrix is Hermitian within relative tolerance `1e-8`,
-   * applies the legacy Hermiticity fold `0.5 * (M^H + M)` so that signed zeros and
-   * conjugate pairs match the legacy `ConvertFromCSR` path exactly. Complexity is
-   * `O(dim + nnz)`.
+   * Maps the supplied row pointer, column index, and value arrays directly into an Eigen
+   * row-major sparse matrix without altering stored values. Complexity is `O(dim + nnz)`.
    *
    * @param dim         Square matrix dimension `N >= 0`.
    * @param rowPointers CSR row offset array of length `dim + 1`, starting at `0` and ending at `nnz`.
@@ -69,10 +66,8 @@ public:
    * @brief Build a compressed CSR sparse matrix from coordinate (COO) triplets.
    *
    * Assembles a `dim x dim` sparse matrix from parallel arrays of row indices, column
-   * indices, and complex values, summing duplicate coordinates via Eigen's `setFromTriplets`.
-   * When the resulting matrix is Hermitian within relative tolerance `1e-8`, applies the
-   * Hermiticity fold `0.5 * (M^H + M)` for canonical representation. Complexity is
-   * `O(nnz log(nnz / dim))`.
+   * indices, and complex values, summing duplicate coordinates via Eigen's `setFromTriplets`
+   * without folding or altering values. Complexity is `O(nnz log(nnz / dim))`.
    *
    * @param dim  Square matrix dimension `N >= 0`.
    * @param rows Row indices of length `nnz` in `[0, dim)`.
@@ -166,6 +161,24 @@ public:
    *      diagonal imaginary parts.
    */
   SparseMatrix Adjoint() const;
+
+  /**
+   * @brief Return the Hermitian fold `0.5 * (M + M^+)` using the legacy Eigen expression.
+   *
+   * Evaluates `transp = matrix_.adjoint(); result = 0.5 * (transp + matrix_)` exactly as
+   * legacy `SparseMatrixType::ConvertFromCSR` does. This is the legacy CSR-reader convention
+   * that enforces exact self-adjointness and normalises IEEE-754 `-0.0` components to `+0.0`
+   * when paired with `+0.0` in the conjugate transpose. Complexity is `O(dim + nnz)`.
+   *
+   * @return New compressed `SparseMatrix` holding `0.5 * (M^+ + M)`.
+   *
+   * @warning Only meaningful for matrices intended to represent Hermitian operators; applying
+   *          this to a non-Hermitian matrix projects onto its Hermitian part.
+   * @par Pitfall
+   *      Omitting this fold when loading legacy `.CSR` files leaves `-0.0` real parts in
+   *      purely imaginary velocity operators (`VX`), shifting signed zeros in moment outputs.
+   */
+  SparseMatrix HermitianFold() const;
 
   /**
    * @brief Test whether the matrix is self-adjoint within relative Frobenius tolerance `tol`.

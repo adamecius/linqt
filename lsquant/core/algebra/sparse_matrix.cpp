@@ -51,13 +51,6 @@ SparseMatrix SparseMatrix::FromCsr(Index dim, std::vector<Index> rowPointers,
   result.matrix_ = Eigen::Map<Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index>>(
       dim, dim, nnz, rowPointers.data(), columns.data(), values.data());
 
-  Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index> transp(result.matrix_.adjoint());
-  const double num = (result.matrix_ - transp).norm();
-  const double den = std::max(result.matrix_.norm(), 1e-300);
-  if (num / den <= 1e-8) {
-    result.matrix_ = 0.5 * (transp + result.matrix_);
-  }
-
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
@@ -86,13 +79,6 @@ SparseMatrix SparseMatrix::FromTriplets(Index dim, const std::vector<Index>& row
   SparseMatrix result;
   result.matrix_.resize(dim, dim);
   result.matrix_.setFromTriplets(triplets.begin(), triplets.end());
-
-  Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index> transp(result.matrix_.adjoint());
-  const double num = (result.matrix_ - transp).norm();
-  const double den = std::max(result.matrix_.norm(), 1e-300);
-  if (num / den <= 1e-8) {
-    result.matrix_ = 0.5 * (transp + result.matrix_);
-  }
 
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
@@ -149,6 +135,19 @@ SparseMatrix SparseMatrix::Rescaled(Scalar a, Scalar b) const {
 SparseMatrix SparseMatrix::Adjoint() const {
   SparseMatrix result;
   result.matrix_ = Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index>(matrix_.adjoint());
+  if (!result.matrix_.isCompressed()) {
+    result.matrix_.makeCompressed();
+  }
+  return result;
+}
+
+SparseMatrix SparseMatrix::HermitianFold() const {
+  SparseMatrix result;
+  if (Dimension() == 0) {
+    return result;
+  }
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index> transp(matrix_.adjoint());
+  result.matrix_ = 0.5 * (transp + matrix_);
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
