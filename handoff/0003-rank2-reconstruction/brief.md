@@ -17,6 +17,20 @@ Python, moments and curves, and tutorial 03 from Python.
 Out of scope: `ApplySeries`, optical conductivity (`GammaAC`), the FFT *contraction*
 backend (stage 8), any basis or metric work, parser, CLI.
 
+**Item 0, carried from stage 2 (required, first commit of this handoff).**
+`SparseMatrix.from_csr` in `lsquant/api/bindings.cpp` copies the three CSR buffers into
+`std::vector`s and silently converts non-`int64` or non-contiguous arrays
+(`py::array_t<..., c_style>` with forcecast). Make it what the stage-2 brief required:
+accept only C-contiguous `int64` row pointers and columns and `complex128` values
+(`py::array::forcecast` off; raise `TypeError` naming the offending argument otherwise),
+and build the matrix from those buffers without an intermediate copy. `FromCsr` may keep
+its by-value signature if a move from a mapped buffer is not possible; then document
+in the report which single copy remains and why (Eigen's `Map` of CSR into an owned
+`SparseMatrix` is itself one copy; that one is accepted, the `std::vector` staging is
+not). `tests/dev/stage_3_check.py` adds one line: load `chain1d.HAM.CSR` with scipy,
+pass its `indptr`, `indices`, `data` (converted to `int64`/`complex128`) to `from_csr`,
+and assert the `dos` moments equal those from `ReadCsrText` after `hermitian_fold()`.
+
 ## 1. Where things go
 
 ```
