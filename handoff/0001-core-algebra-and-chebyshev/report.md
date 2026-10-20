@@ -45,16 +45,25 @@
 ### Commands
 ```bash
 rsync -a --delete --exclude .git --exclude build /root/lsquant-agi/ jh-x:~/lsquant-agi-build/
-ssh jh-x "cd ~/lsquant-agi-build && cmake -S . -B build -DLSQUANT_BUILD_NEW_CORE=ON && cmake --build build -j 16"
+ssh jh-x "cd ~/lsquant-agi-build && rm -rf build && cmake -S . -B build -DLSQUANT_BUILD_NEW_CORE=ON && cmake --build build -j 16 && ls build/lsquant_core"
 ```
 
 ### Output
 ```text
 -- The CXX compiler identification is GNU 11.4.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
 -- Found OpenMP_CXX: -fopenmp (found version "4.5")
 -- Found OpenMP: TRUE (found version "4.5")
 -- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.2")
 -- Found GSL: /usr/include (found version "2.7.1")
+-- Looking for C++ include pthread.h
+-- Looking for C++ include pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
 -- Found Threads: TRUE
 -- Checking for module 'fftw3'
 --   Found fftw3, version 3.3.8
@@ -62,25 +71,40 @@ ssh jh-x "cd ~/lsquant-agi-build && cmake -S . -B build -DLSQUANT_BUILD_NEW_CORE
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /home/ICN2/jgarcia/lsquant-agi-build/build
-[  1%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/rescaled_operator.cpp.o
-[  1%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/composite_operators.cpp.o
-[  2%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_vectors.cpp.o
-[  3%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/sparse_matrix.cpp.o
-[  4%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/linalg.cpp.o
-[  5%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/state_generator.cpp.o
-[  7%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/spectral_bounds.cpp.o
-[  8%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_recursion.cpp.o
-[ 18%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_moments.cpp.o
-[ 20%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/moment_engine.cpp.o
-[ 22%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/io/csr_text.cpp.o
-[ 28%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/io/chebmom_file.cpp.o
+[ 11%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/sparse_matrix.cpp.o
+[ 16%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/composite_operators.cpp.o
+[ 21%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/linalg.cpp.o
+[ 24%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/state_generator.cpp.o
+[ 26%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/algebra/spectral_bounds.cpp.o
+[ 26%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/rescaled_operator.cpp.o
+[ 27%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_recursion.cpp.o
+[ 30%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_vectors.cpp.o
+[ 32%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/chebyshev_moments.cpp.o
+[ 32%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/core/chebyshev/moment_engine.cpp.o
+[ 34%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/io/csr_text.cpp.o
+[ 34%] Building CXX object lsquant_core/CMakeFiles/lsquant_core.dir/io/chebmom_file.cpp.o
+[ 37%] Linking CXX static library ../lib/liblsquant_core.a
+[ 37%] Built target lsquant_core
 [ 76%] Building CXX object lsquant_core/CMakeFiles/stage1_moments.dir/apps/stage1_moments.cpp.o
 [ 79%] Building CXX object lsquant_core/CMakeFiles/stage_1_check.dir/__/tests/dev/stage_1_check.cpp.o
-[ 92%] Built target stage1_moments
+[ 88%] Linking CXX executable stage1_moments
+[ 88%] Built target stage1_moments
+[ 98%] Linking CXX executable stage_1_check
 [ 98%] Built target stage_1_check
+[100%] Linking CXX executable ../lsquant
 [100%] Built target lsquant
 ```
 Compiler warnings under `lsquant/` and `tests/dev/stage_1_check.cpp` with `-Wall -Wextra`: 0.
+
+### `ls build/lsquant_core` (fresh build from scratch)
+```text
+CMakeFiles
+cmake_install.cmake
+Makefile
+stage_1_check
+stage1_moments
+```
+(`ls -la build/lsquant_core` confirms both executables are regular files produced directly by CMake in `build/lsquant_core/`.)
 
 ### Legacy CTest Summary (`ctest --test-dir build --output-on-failure` with `LSQUANT_BUILD_NEW_CORE=ON`)
 ```text
@@ -181,23 +205,28 @@ OMP_NUM_THREADS=1 vs 8 bit-identical: YES
 
 ## 4. `stage1_moments` Output on `test/golden/chain1d/operators`
 
-(`goldens/stage0` is not present in this branch yet; executed against `test/golden/chain1d/operators` with `--window -2 2 --trace exact --states 2048 --moments 64`.)
+(`goldens/stage0` is not present in this branch yet; executed against `test/golden/chain1d/operators` with `--window -2 2 --trace exact --seed 12345 --states 2048 --moments 64`, plus the `--word kubo --batch 16` run into `/tmp/stage1_out_b16`.)
 
 ### Commands
 ```bash
-OMP_NUM_THREADS=8 KPM_SEED=12345 build/lsquant_core/stage1_moments \
+OMP_NUM_THREADS=8 build/lsquant_core/stage1_moments \
   --operators test/golden/chain1d/operators --label chain1d --window -2 2 \
-  --trace exact --states 2048 --moments 64 --word dos --out /tmp/stage1_out
+  --trace exact --seed 12345 --states 2048 --moments 64 --word dos --out /tmp/stage1_out
 
-OMP_NUM_THREADS=8 KPM_SEED=12345 build/lsquant_core/stage1_moments \
+OMP_NUM_THREADS=8 build/lsquant_core/stage1_moments \
   --operators test/golden/chain1d/operators --label chain1d --window -2 2 \
-  --trace exact --states 2048 --moments 64 --word kubo --out /tmp/stage1_out
+  --trace exact --seed 12345 --states 2048 --moments 64 --word kubo --out /tmp/stage1_out
+
+OMP_NUM_THREADS=8 build/lsquant_core/stage1_moments \
+  --operators test/golden/chain1d/operators --label chain1d --window -2 2 \
+  --trace exact --seed 12345 --states 2048 --moments 64 --word kubo --batch 16 --out /tmp/stage1_out_b16
 ```
 
 ### Standard Output
 ```text
 stage1_moments: word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage1_out/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
 stage1_moments: word=kubo dim=2048 states=2048 (exact) M=64x64 -> /tmp/stage1_out/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+stage1_moments: word=kubo dim=2048 states=2048 (exact) M=64x64 -> /tmp/stage1_out_b16/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
 ```
 
 ### Leading Lines of Produced Files
@@ -249,6 +278,34 @@ word VX delta VX delta
 kpm_weighted 1
 symmetrised 1
 data
+
+==> /tmp/stage1_out_b16/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D <==
+2048 4  0
+64 64 
+2 -0
+0 0
+-2 0
+0 0
+0 0
+0 0
+0 0
+0 0
+0 0
+0 0
+
+==> /tmp/stage1_out_b16/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom <==
+chebmom 1
+rank 2
+dims 64 64
+window -2 2
+system_size 2048
+states exact 2048
+word VX delta VX delta
+kpm_weighted 1
+symmetrised 1
+data
+2 -0
+0 0
 ```
 
 ---
@@ -261,7 +318,7 @@ data
 3. **Legacy `.chebmom2D` Header Whitespace:** `WriteLegacyChebmom2D` emits two spaces between `BandWidth` and `BandCenter` (`"2048 4  0"`) and a trailing space after each dimension on line 2 (`"64 64 "`), matching `chebyshev::Moments2D::saveIn`.
 
 ### Deviations from the Brief
-1. **Binary Subdirectory `add_subdirectory(lsquant lsquant_core)` in `CMakeLists.txt`:** To avoid a path collision between the legacy `build/lsquant` executable and the `lsquant/` subdirectory build tree, the root `CMakeLists.txt` uses `add_subdirectory(lsquant lsquant_core)` (note: because root `CMakeLists.txt` sets `CMAKE_RUNTIME_OUTPUT_DIRECTORY` to `${CMAKE_BINARY_DIR}`, CMake links `stage1_moments` and `stage_1_check` into `build/`; symlinks in `build/lsquant_core/` are also present on TCN).
+1. **Binary Subdirectory `add_subdirectory(lsquant lsquant_core)` and Target `RUNTIME_OUTPUT_DIRECTORY` (and Review-1 Symlink Episode):** To avoid a path collision between the legacy `build/lsquant` executable and the `lsquant/` subdirectory build tree, the root `CMakeLists.txt` uses `add_subdirectory(lsquant lsquant_core)` instead of `add_subdirectory(lsquant)`. Because the root `CMakeLists.txt` sets `CMAKE_RUNTIME_OUTPUT_DIRECTORY` to `${CMAKE_BINARY_DIR}`, removing the directory-wide override in review 1 caused CMake to link `stage1_moments` and `stage_1_check` into `build/` rather than `build/lsquant_core/`. During review 1, Agi created manual symlinks in `~/lsquant-agi-build/build/lsquant_core/` pointing to `../stage1_moments` and `../stage_1_check` on TCN instead of setting the target property in CMake, so a clean build did not match the paths stated in the report. This is now fixed in `lsquant/CMakeLists.txt` via `set_target_properties(<target> PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")` on both `stage1_moments` and `stage_1_check`; all manual symlinks and the old `build/` directory on TCN were deleted, and a fresh configure and build from scratch places both executables directly in `build/lsquant_core/`.
 2. **Const Accessors on `ChebyshevMoments`:** In addition to `std::vector<Scalar>& Data()`, `const std::vector<Scalar>& Data() const` was added alongside the `const` overloads of `At(...)` so `WriteChebmom`, `WriteLegacyChebmom1D`, and `WriteLegacyChebmom2D` can take `const ChebyshevMoments&`.
 
 ---
