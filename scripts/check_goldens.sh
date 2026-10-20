@@ -30,6 +30,16 @@
 #            seed 12345, 1 state, M = 64); G4 curves bastin at 64 meV, sea and surf
 #            at 10 meV (sea_surf/), greenwood_fft and bastin_fft at 10 meV
 #            (fft_grid/); grep -rn "compat/" lsquant/core lsquant/io must be empty.
+#   stage 4  time evolution (handoff 0004): stages 1 to 3 in full, then
+#            python3 -m lsquant.apps.stage4_time at OMP_NUM_THREADS = 16 and 1:
+#            G6 moments (chain1d_ballistic, --word msd --velocity VX, window [-2, 2],
+#            exact trace, 256 states, M = 256, 64 steps, tmax 20) vs the golden
+#            .chebmomTD; the four G6 curves (10 meV, E_F = 0, 0.5, 1.0, 1.5) from the
+#            golden moment file and again from the produced one; G7 moments
+#            (chain1d_mag, --word projected, SX, SY, SZ with PX, --window gershgorin,
+#            exact trace, 128 states, M = 32, 96 steps, tmax 95); grep -rnwE
+#            "time|velocity|spin|projector|bessel|gsl" (whole lowercase words) on code
+#            lines of lsquant/core and lsquant/io must be empty.
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -323,11 +333,92 @@ stage3_grep() {
   fi
 }
 
+# ---------------------------------------------------------------- stage 4 (time evolution)
+# One stage4_time invocation in its own directory; prints the app's output lines.
+run_s4() {   # <threads> <workdir> <tag> <args...>
+  local T="$1" W="$2" tag="$3" rc; shift 3
+  mkdir -p "$W"
+  ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR4:$REPO/python" python3 -m lsquant.apps.stage4_time \
+      "$@" --out "$W" ) >"$W/run.log" 2>"$W/err.log"; rc=$?
+  [ $rc -eq 0 ] || echo "          [T=$T] $tag exited $rc: $(tail -1 "$W/err.log")"
+  sed "s|$W/||; s|^|          [T=$T] $tag printed: |" "$W/run.log"
+  : >"$W/run.log"
+}
+
+G6M=CorrelationVXchain1dKPM_M256_state20exact
+G6EF="0.000000 0.500000 1.000000 1.500000"
+
+stage4() {
+  local T W ef OP s e
+  PYDIR4="$BUILD/lsquant_core"
+  ls "$PYDIR4"/_core*.so >/dev/null 2>&1 || PYDIR4="$BUILD/lsquant"
+  ls "$PYDIR4"/_core*.so >/dev/null 2>&1 || { echo "ERROR: _core*.so not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
+  echo "== stage 4: python3 -m lsquant.apps.stage4_time, PYTHONPATH=$PYDIR4:python, vs goldens/stage0/{chain1d_ballistic,chain1d_mag}"
+  for T in 16 1; do
+    # 1. G6 moments: chain1d ballistic MSD, VX, window [-2, 2], exact trace 256 states, M = 256, 64 steps, tmax 20
+    W="$TMP/s4_T${T}_g6m"; s=$(date +%s)
+    run_s4 $T "$W" "G6 msd moments" --operators "$GOLD/chain1d_ballistic/operators" --label chain1d --velocity VX \
+      --window -2 2 --trace exact --states 256 --moments 256 --steps 64 --tmax 20 --word msd
+    e=$(date +%s); echo "          [T=$T] G6 msd moments wall $((e - s)) s"
+    compare "$W/$G6M.chebmomTD" "$GOLD/chain1d_ballistic/$G6M.chebmomTD" "[T=$T] chain1d_ballistic/$G6M.chebmomTD (G6 moments)"
+    # 1b. G6 curves (10 meV, E_F = 0, 0.5, 1.0, 1.5) from the committed golden moment file
+    W="$TMP/s4_T${T}_g6c_gold"
+    run_s4 $T "$W" "G6 curves (golden moments)" --moments "$GOLD/chain1d_ballistic/$G6M.chebmomTD" \
+      --broadening-meV 10 --fermi-energy 0 0.5 1.0 1.5
+    for ef in $G6EF; do
+      compare "$W/mean${G6M}EF${ef}JACKSON.dat" "$GOLD/chain1d_ballistic/mean${G6M}EF${ef}JACKSON.dat" \
+              "[T=$T] chain1d_ballistic/mean${G6M}EF${ef}JACKSON.dat (G6 curve from golden moments)"
+    done
+    # 1c. the same four curves from the moment file just produced in step 1
+    W="$TMP/s4_T${T}_g6c_new"
+    run_s4 $T "$W" "G6 curves (new moments)" --moments "$TMP/s4_T${T}_g6m/$G6M.chebmomTD" \
+      --broadening-meV 10 --fermi-energy 0 0.5 1.0 1.5
+    for ef in $G6EF; do
+      compare "$W/mean${G6M}EF${ef}JACKSON.dat" "$GOLD/chain1d_ballistic/mean${G6M}EF${ef}JACKSON.dat" \
+              "[T=$T] chain1d_ballistic/mean${G6M}EF${ef}JACKSON.dat (G6 curve from new moments)"
+    done
+    # 2. G7 moments: chain1d_mag, S_a with projector PX, Gershgorin window (legacy SpectralBounds
+    #    without BOUNDS file: [-2.31, 2.31]), exact trace 128 states, M = 32, 96 steps, tmax 95
+    W="$TMP/s4_T${T}_g7m"
+    for OP in SX SY SZ; do
+      s=$(date +%s)
+      run_s4 $T "$W" "G7 $OP-PX moments" --operators "$GOLD/chain1d_mag/operators" --label chain1d_mag --operator $OP \
+        --projector PX --window gershgorin --trace exact --states 128 --moments 32 --steps 96 --tmax 95 --word projected
+      e=$(date +%s); echo "          [T=$T] G7 $OP-PX moments wall $((e - s)) s"
+    done
+    for OP in SX SY SZ; do
+      compare "$W/TimeProj$OP-PXchain1d_magKPM_M32_stateexact.chebmomTD" \
+              "$GOLD/chain1d_mag/TimeProj$OP-PXchain1d_magKPM_M32_stateexact.chebmomTD" \
+              "[T=$T] chain1d_mag/TimeProj$OP-PXchain1d_magKPM_M32_stateexact.chebmomTD (G7 moments)"
+    done
+  done
+}
+
+# physics names in the engine (stage 4), on code lines only, whole lowercase words; the
+# identifiers TimeAxis, EvolveRegister, EvolveDerived, ApplyDerivedSeries are allowed (they
+# are not lowercase whole words, so -w with a case-sensitive pattern never matches them).
+stage4_grep() {
+  local all hits coms pat='time|velocity|spin|projector|bessel|gsl'
+  local com='^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)'
+  all="$(cd "$REPO" && grep -rnwE "$pat" lsquant/core lsquant/io)"
+  hits="$(printf '%s\n' "$all" | grep -Ev "$com" | grep -v '^$')"
+  coms="$(printf '%s\n' "$all" | grep -E "$com")"
+  if [ -z "$hits" ]; then
+    echo "GREP      grep -rnwE \"$pat\" lsquant/core lsquant/io, code lines: empty"
+  else
+    echo "GREP      grep -rnwE \"$pat\" lsquant/core lsquant/io, code lines: FOUND"
+    echo "$hits" | sed 's/^/          /'
+    NFAIL=$((NFAIL + 1))
+  fi
+  [ -z "$coms" ] || echo "$coms" | sed 's/^/          excluded comment line: /'
+}
+
 case "$STAGE" in
   0) stage0 ;;
   1) stage1; core_grep ;;
   2) stage1; core_grep; stage2; stage2_grep ;;
   3) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep ;;
+  4) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
 
