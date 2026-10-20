@@ -10,29 +10,36 @@
 
 namespace lsquant {
 
-SparseMatrix SparseMatrix::FromCsr(Index dim, std::vector<Index> rowPointers,
-                                   std::vector<Index> columns, std::vector<Scalar> values) {
+SparseMatrix SparseMatrix::FromCsr(Index dim, Index rowPointersSize, const Index* rowPointers,
+                                   Index columnsSize, const Index* columns, Index valuesSize,
+                                   const Scalar* values) {
   if (dim < 0) {
     throw std::invalid_argument("SparseMatrix::FromCsr: negative dimension");
   }
-  if (static_cast<Index>(rowPointers.size()) != dim + 1) {
+  if (rowPointersSize != dim + 1) {
     throw std::invalid_argument("SparseMatrix::FromCsr: rowPointers size must equal dim + 1");
   }
-  if (columns.size() != values.size()) {
+  if (columnsSize != valuesSize || columnsSize < 0) {
     throw std::invalid_argument("SparseMatrix::FromCsr: columns and values size mismatch");
   }
-  const Index nnz = static_cast<Index>(values.size());
-  if (rowPointers[0] != 0 || rowPointers[static_cast<std::size_t>(dim)] != nnz) {
+  if (rowPointers == nullptr) {
+    throw std::invalid_argument("SparseMatrix::FromCsr: rowPointers pointer is null");
+  }
+  const Index nnz = valuesSize;
+  if (nnz > 0 && (columns == nullptr || values == nullptr)) {
+    throw std::invalid_argument("SparseMatrix::FromCsr: columns or values pointer is null");
+  }
+  if (rowPointers[0] != 0 || rowPointers[dim] != nnz) {
     throw std::invalid_argument("SparseMatrix::FromCsr: invalid rowPointers endpoints");
   }
   for (Index r = 0; r < dim; ++r) {
-    const Index start = rowPointers[static_cast<std::size_t>(r)];
-    const Index end = rowPointers[static_cast<std::size_t>(r + 1)];
+    const Index start = rowPointers[r];
+    const Index end = rowPointers[r + 1];
     if (start > end) {
       throw std::invalid_argument("SparseMatrix::FromCsr: rowPointers must be non-decreasing");
     }
     for (Index p = start; p < end; ++p) {
-      const Index col = columns[static_cast<std::size_t>(p)];
+      const Index col = columns[p];
       if (col < 0 || col >= dim) {
         throw std::invalid_argument("SparseMatrix::FromCsr: column index out of range");
       }
@@ -43,14 +50,26 @@ SparseMatrix SparseMatrix::FromCsr(Index dim, std::vector<Index> rowPointers,
   if (dim == 0) {
     return result;
   }
+  if (nnz == 0) {
+    result.matrix_.resize(dim, dim);
+    result.matrix_.makeCompressed();
+    return result;
+  }
 
-  result.matrix_ = Eigen::Map<Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index>>(
-      dim, dim, nnz, rowPointers.data(), columns.data(), values.data());
+  result.matrix_ = Eigen::Map<const Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index>>(
+      dim, dim, nnz, rowPointers, columns, values);
 
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
   return result;
+}
+
+SparseMatrix SparseMatrix::FromCsr(Index dim, std::vector<Index> rowPointers,
+                                   std::vector<Index> columns, std::vector<Scalar> values) {
+  return FromCsr(dim, static_cast<Index>(rowPointers.size()), rowPointers.data(),
+                 static_cast<Index>(columns.size()), columns.data(),
+                 static_cast<Index>(values.size()), values.data());
 }
 
 SparseMatrix SparseMatrix::FromTriplets(Index dim, const std::vector<Index>& rows,

@@ -22,7 +22,10 @@ Extend the harness with stage 2:
    then `cmp` of both the `.chebmom1D` (against G1) and the `JACKSON.dat` (against G3).
 3. Both at `OMP_NUM_THREADS=1` and `16`.
 4. Stage 1 must still pass: run `check_goldens.sh 1` as part of stage 2.
-5. `grep -rn "delta\|DOS\|Kubo\|basis\|std::cout\|getenv" lsquant/core lsquant/io` must be empty.
+5. `grep -rn "delta\|DOS\|Kubo\|basis\|std::cout\|getenv" lsquant/core lsquant/io` on
+   **code lines only** (exclude lines whose first non-blank characters are `//`, `*`
+   or `/*`) must be empty; the mathematical notation `delta_{m0}` in stage-1 comments
+   is not a finding.
 
 A `DIFFERS` on the `.dat` is localised with `scripts/golden_diff.py`: first differing
 line, both values, and whether the difference is in the 6th significant digit only (a
@@ -34,10 +37,13 @@ flips (summation order or libm). Do not fix.
 
 ## 3. The figure (`figures/stage_2.py`)
 
-Tutorial 01 reproduced from Python: run `python -m lsquant.apps.tutorial01` into a
-temporary directory, `cmp` every produced `.chebmom1D` and `JACKSON.dat` with the
-corresponding file under `goldens/stage0/tutorials/01/captured/` (match by name
-after the numeric prefix), and draw: (a) `rho(E)` for `N = 256, 1024, 4096` at 20 meV,
+Tutorial 01 reproduced from Python: run `python -m lsquant.apps.tutorial01 --out <tmp>`;
+it writes the moment files with their legacy names at the top of `<tmp>` and the curves
+under `<tmp>/eta<meV>/`. Match them to `goldens/stage0/tutorials/01/captured/` by the
+tutorial's order of operations (the captured prefixes follow `lsqplot.py`): the moment
+files by name after the prefix; the curves at 20 meV for `N = 256, 1024, 4096` are
+`0013_`, `0015_`, `0017_`; the `N = 256` curves at 80, 24, 10 meV are `0019_`, `0020_`,
+`0021_`. `cmp` each pair and draw: (a) `rho(E)` for `N = 256, 1024, 4096` at 20 meV,
 new as lines, golden as markers, the analytic `1/(pi sqrt(4 - E^2))` as a thin
 reference, residual new minus golden below; (b) `N = 256` at 80, 24, 10 meV, same
 encoding. Caption `FIG. 2.` with sizes, `M = 512`, broadenings, the `cmp` results.

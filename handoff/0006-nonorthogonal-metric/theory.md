@@ -194,3 +194,53 @@ Weiße et al. and its `S`-weighted trace; the non-orthogonal tight-binding veloc
 `c_n^+ [dH - 1/2 (E_n + E_m) dS] c_m`; Siesta/LCAO linear-scaling conductivity papers;
 the ISCHO reference. Any disagreement with sections 1 to 3 will be stated here
 explicitly.)
+
+### 6.1 Result of the survey (`literature.md`, 19 DOIs; OpenAlex, arXiv, OSTI, sisl source)
+
+No published work writes Kubo-Greenwood or Kubo-Bastin in Chebyshev/KPM form with
+`S != I`. The closest, Röder, Silver, Drabold, Dong (PRB 55, 15382, 1997; 1996 conference
+precursor), runs KPM on `S^-1 H` with PCG and the incomplete stabilised Cholesky
+("ISCHO") for the **DOS only**, with a plain stochastic trace; that is the source the
+legacy appliers quote. Weiße et al. RMP 2006 has no generalised-eigenproblem section;
+Fan et al. Phys. Rep. 2021 is orthogonal only (`V_ij = (i/hbar) t_ij (R_i - R_j)`); the
+ICN2/TCN output of 2021-2026 does not treat `S`. So sections 1 to 3 above are our own
+algebra on top of published ingredients, and the stage-6 gate is the test of it.
+
+### 6.2 Agreement with the sources
+
+- Trace and functions of `H`: `Tr O = Tr[S^-1 O]`, `f(H) -> f(S^-1 H)`, plain random
+  vectors: as in section 1 (Röder for the DOS; the rest is algebra).
+- Velocity in `k`: Lee, Lee, Fukuda, Ozaki (PRB 98, 115115, 2018, Eq. 7), Jin et al.
+  (PYATB, 2021, Eq. 24) and Esteve-Paredes, Palacios (SciPost Phys. Core 6, 002, 2023,
+  Eq. 45) give `hbar v_mn = C_m^+ (dH - eps_m dS) C_n + i (eps_m - eps_n) C_m^+ A C_n`
+  with `A(k) = sum_R e^{ikR} <0a| r |Rb>`. Its eigenvector-free Hermitian form is
+  `V = dH - 1/2 (H S^-1 dS + dS S^-1 H) + i (H S^-1 A - A S^-1 H)`: equation (4) plus the
+  connection term, as stated in section 3.
+- Real space: `V = (i/hbar)(H S^-1 R - R S^-1 H)`, covariant under `T`: equation (3).
+- The one-sided form `C_m^+ (dH - eps_m dS) C_n` is what sisl computes (`state.py`): it
+  differs from the symmetric one by `1/2 (eps_m - eps_n) C_m^+ dS C_n`. **Refinement of
+  section 3**: that difference is harmless for the on-shell Kubo-Greenwood (`eps_m =
+  eps_n`), but it changes the Fermi-sea term and therefore `sigma_xy`. The legacy's
+  `sigma_xx` with the one-sided velocity is thus less wrong than its `sigma_xy`; the
+  estimator defect of section 4.1 affects both.
+- Löwdin: build `V_L = S^-1/2 V S^-1/2` from `V`; `d/dk` of `H_L` is not the velocity
+  for interband elements (literature item 17). Section 3 already says this.
+- Green's functions with `S`: `G^± = ((E ± i eta) S - H)^-1 S`, i.e. `eta` multiplies
+  `S`; this is automatically what the coefficient tables of `f(S^-1 H)` produce, so
+  stage 3 needs no special case.
+
+### 6.3 Two warnings for the fixtures (new, from the survey)
+
+- Rebuilding a velocity from `(H', S', positions)` with the tight-binding convention
+  `R ~ 1/2 (X S + S X)` does **not** give `T^+ V T` (the transformation induces
+  intra-atomic `r` elements, Sandu 2005 Eqs. 10-13). The stage-6 fixture therefore uses
+  `V' = T^+ V T` as the velocity matrix, never a velocity rebuilt from positions. A
+  real Siesta model (handoff 0006b) needs the `A` term or accepts the diagonal
+  approximation knowingly.
+- `Tr[V' delta(E - H') V' delta(E - H')]` with no `S` at all is wrong even for the DOS
+  (`T^+ H T` is congruent to `H`, not similar). The `naive` route of the brief keeps
+  `S^-1` on `H` and on `V` and is wrong only through the estimator; both are recorded.
+
+Not confirmed by the survey (and not needed by the gate): Graf-Vogl 1995 and Boykin 2001
+were catalogued, not read; no source compares the variance of plain, Löwdin and
+Cholesky-weighted random-vector estimators.
