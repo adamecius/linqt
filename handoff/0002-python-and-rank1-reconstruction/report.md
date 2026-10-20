@@ -153,13 +153,12 @@ $ OMP_NUM_THREADS=1 PYTHONPATH=build/lsquant_core:python python3 -m lsquant.apps
 /tmp/stage2_tut01/moments_chain1d_N1024_M512.chebmom1D
 /tmp/stage2_tut01/SpectralOp1chain1d_N4096KPM_M512_stateexact_chain1d_N4096.chebmom1D
 /tmp/stage2_tut01/moments_chain1d_N4096_M512.chebmom1D
-/tmp/stage2_tut01/meanSpectralOp1chain1d_N256KPM_M512_stateexact_chain1d_N256JACKSON.dat
-/tmp/stage2_tut01/0013_meanmoments_chain1d_N256_M512JACKSON.dat
-/tmp/stage2_tut01/0015_meanmoments_chain1d_N1024_M512JACKSON.dat
-/tmp/stage2_tut01/0017_meanmoments_chain1d_N4096_M512JACKSON.dat
-/tmp/stage2_tut01/0019_meanmoments_chain1d_N256_M512JACKSON.dat
-/tmp/stage2_tut01/0020_meanmoments_chain1d_N256_M512JACKSON.dat
-/tmp/stage2_tut01/0021_meanmoments_chain1d_N256_M512JACKSON.dat
+/tmp/stage2_tut01/eta20/meanmoments_chain1d_N256_M512JACKSON.dat
+/tmp/stage2_tut01/eta20/meanmoments_chain1d_N1024_M512JACKSON.dat
+/tmp/stage2_tut01/eta20/meanmoments_chain1d_N4096_M512JACKSON.dat
+/tmp/stage2_tut01/eta80/meanmoments_chain1d_N256_M512JACKSON.dat
+/tmp/stage2_tut01/eta24/meanmoments_chain1d_N256_M512JACKSON.dat
+/tmp/stage2_tut01/eta10/meanmoments_chain1d_N256_M512JACKSON.dat
 ```
 
 ---
@@ -169,7 +168,7 @@ $ OMP_NUM_THREADS=1 PYTHONPATH=build/lsquant_core:python python3 -m lsquant.apps
 1. **Both real-vector and `ChebyshevMoments` overloads for `ContractRank1`.**
    Section 3 of the brief writes `ContractRank1(moments, table: float64[M, N]) -> float64[N]`, while section 4 specifies `_core.ContractRank1(moments_real, table)` taking a real `float64[M]` moment vector (specifically the `.real` view of the damped complex moments). To satisfy both sections without copying buffers, `contraction.hpp` and `bindings.cpp` provide both overloads: one accepting any 1D strided `float64` array (so `damped.real` with 16-byte stride is read directly in place without copying) and one accepting a rank-1 `ChebyshevMoments` instance directly.
 2. **Disambiguation of the four `N = 256` broadening curves in `tutorial01.py`.**
-   In `examples/01_dos_1d_chain/lsqplot.py`, `moments_chain1d_N256_M512.chebmom1D` is reconstructed four times (at `20, 80, 24, 10` meV) inside separate `tempfile.TemporaryDirectory` contexts, so all four produce the legacy basename `meanmoments_chain1d_N256_M512JACKSON.dat` and are stored in `goldens/stage0/tutorials/01/captured/` with capture prefixes `0013_`, `0019_`, `0020_`, and `0021_`. `tutorial01.py` writes those prefixed files directly in `<out>` (and the full `0000_`..`0021_` sequence in `<out>/captured/` as well as unprefixed files in `<out>/eta<broadening>/`) so that all four `N = 256` curves coexist without overwriting each other.
+   In `examples/01_dos_1d_chain/lsqplot.py`, `moments_chain1d_N256_M512.chebmom1D` is reconstructed four times (at `20, 80, 24, 10` meV) inside separate `tempfile.TemporaryDirectory` contexts, so all four produce the legacy basename `meanmoments_chain1d_N256_M512JACKSON.dat`. `tutorial01.py` writes the moment files at the top of `<out>` and places the reconstructed curves under `<out>/eta<meV>/meanmoments_chain1d_N<N>_M512JACKSON.dat` so that all four `N = 256` curves keep their legacy basename without overwriting each other.
 
 ---
 
