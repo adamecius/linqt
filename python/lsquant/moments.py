@@ -8,8 +8,64 @@ five-instruction C++ engine grammar, together with
 
 from __future__ import annotations
 
+import cmath
 from typing import Sequence
+import numpy as np
+import numpy.typing as npt
+
 from . import _core
+from .spectral_functions import (
+    bessel_series_coefficients,
+    legacy_bessel_coefficients,
+)
+
+HBAR: float = 0.6582119624
+
+
+def _kpm_weights_1d(num_moments: int, num_states: int) -> list[complex]:
+    """Build the 1D KPM ``(2 - delta_{m,0}) / num_states`` weight vector."""
+    weights: list[complex] = []
+    base = 2.0 / float(num_states)
+    for m in range(num_moments):
+        scal = base * 0.5 if m == 0 else base
+        weights.append(complex(scal, 0.0))
+    return weights
+
+
+def time_step_from_tmax(num_steps: int, tmax: float) -> float:
+    """Compute the legacy uniform time step ``dt = tmax / (num_steps - 1)``."""
+    if num_steps <= 1:
+        raise ValueError("time_step_from_tmax: num_steps must be > 1")
+    return float(tmax) / float(num_steps - 1)
+
+
+def time_evolution_series(
+    window: _core.SpectralWindow,
+    dt: float,
+    tol: float = 1e-15,
+    use_legacy_bessel: bool = True,
+) -> tuple[npt.NDArray[np.complex128], complex]:
+    """Compute Bessel series coefficients and band-center phase for ``U(dt)``.
+
+    Reproduces the ``MomentsTD::Evolve`` parameters verbatim:
+    ``x = dt * (BandWidth / 2.0 / 1.0 / HBAR)``,
+    ``exp0 = exp(-i * (BandCenter / HBAR) * dt)``.
+    """
+    band_width = (window.upper - window.lower) * 1.0
+    if band_width <= 0.0:
+        raise ValueError("time_evolution_series: window must have positive width")
+    half_width = band_width / 2.0
+    band_center = (window.upper + window.lower) * 0.5
+    cheb_freq = half_width / 1.0 / HBAR
+    cheb_freq_0 = band_center / HBAR
+    x = float(dt) * cheb_freq
+    coeffs = (
+        legacy_bessel_coefficients(x, tol=tol)
+        if use_legacy_bessel
+        else bessel_series_coefficients(x, tol=tol)
+    )
+    phase = cmath.exp(complex(0.0, -1.0) * cheb_freq_0 * float(dt))
+    return coeffs, phase
 
 
 def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
@@ -136,6 +192,167 @@ def kubo_plan(
     return _core.Plan(code, word)
 
 
+def msd_plan(
+    num_moments: int,
+    num_steps: int,
+    num_states: int,
+    coeffs: Sequence[complex] | npt.NDArray[np.complex128],
+    *,
+    velocity_index: int = 0,
+    phase: complex = 1.0 + 0.0j,
+    word: str = "[X, U(t)]^+ delta [X, U(t)]",
+) -> _core.Plan:
+    """Build the mean-square displacement bytecode :class:`~lsquant._core.Plan`.
+
+    Solves the problem of evaluating ``Tr[[X, U(t)]^+ delta(E - H) [X, U(t)]]``
+    via the coupled ``(Ket = MSDWF, Aux = PhiR)`` time-evolution recursion of
+    legacy ``MeanSquareDisplacement`` and ``MomentsTD::MSD_Evolve``:
+
+    - Seed preparation: ``ApplySeries([])`` zeros ``seed[Ket]`` (``MSDWF``) while
+      ``seed[Aux]`` starts as ``|r>``, followed by ``MirrorToBra()``.
+    - ``TimeAxis(num_steps, evolve=[EvolveRegister(Ket, coeffs, phase),
+      EvolveDerived(Ket, Aux, coeffs, velocity_index, phase),
+      EvolveRegister(Aux, coeffs, phase)])``.
+    - Body: ``Expand(num_moments)``, ``MirrorToBra()`` (sets ``workBra = workKet``
+      for that step), ``Trace(w)``.
+    """
+    if num_moments <= 0:
+        raise ValueError("msd_plan: num_moments must be positive")
+    if num_steps <= 0:
+        raise ValueError("msd_plan: num_steps must be positive")
+    if num_states <= 0:
+        raise ValueError("msd_plan: num_states must be positive")
+    if velocity_index < 0:
+        raise ValueError("msd_plan: velocity_index must be non-negative")
+    if not word:
+        raise ValueError("msd_plan: word must be non-empty")
+
+    weights = _kpm_weights_1d(num_moments, num_states)
+    evolve = [
+        _core.EvolveRegister(_core.Register.Ket, coeffs, phase),
+        _core.EvolveDerived(
+            _core.Register.Ket,
+            _core.Register.Aux,
+            coeffs,
+            velocity_index,
+            phase,
+        ),
+        _core.EvolveRegister(_core.Register.Aux, coeffs, phase),
+    ]
+    code = [
+        _core.ApplySeries([], complex(1.0, 0.0)),
+        _core.MirrorToBra(),
+        _core.TimeAxis(num_steps, evolve),
+        _core.Expand(num_moments),
+        _core.MirrorToBra(),
+        _core.Trace(weights),
+    ]
+    return _core.Plan(code, word)
+
+
+def projected_evolution_plan(
+    num_moments: int,
+    num_steps: int,
+    num_states: int,
+    coeffs: Sequence[complex] | npt.NDArray[np.complex128],
+    *,
+    operator_index: int,
+    projector_index: int,
+    phase: complex = 1.0 + 0.0j,
+    word: str = "P U(t)^+ O U(t) delta P",
+) -> _core.Plan:
+    """Build the time-evolved projected operator bytecode :class:`~lsquant._core.Plan`.
+
+    Solves the problem of evaluating ``Tr[P U(t)^+ O U(t) delta(E - H) P]`` in
+    the exact evaluation order of legacy ``TimeEvolvedProjectedOperator(OP, P)``:
+
+    - Seed preparation: ``ApplyOperator(projector_index)`` sets
+      ``seed[Ket] = P |r>``, followed by ``MirrorToBra()`` so
+      ``seed[Bra] = P |r>``.
+    - ``TimeAxis(num_steps, evolve=[EvolveRegister(Bra, coeffs, phase),
+      EvolveRegister(Ket, coeffs, phase)])``.
+    - Body: ``Expand(num_moments)``, ``ApplyOperator(operator_index)`` (post),
+      ``Trace(w)``.
+    """
+    if num_moments <= 0:
+        raise ValueError("projected_evolution_plan: num_moments must be positive")
+    if num_steps <= 0:
+        raise ValueError("projected_evolution_plan: num_steps must be positive")
+    if num_states <= 0:
+        raise ValueError("projected_evolution_plan: num_states must be positive")
+    if operator_index < 0 or projector_index < 0:
+        raise ValueError(
+            "projected_evolution_plan: operator indices must be non-negative"
+        )
+    if not word:
+        raise ValueError("projected_evolution_plan: word must be non-empty")
+
+    weights = _kpm_weights_1d(num_moments, num_states)
+    evolve = [
+        _core.EvolveRegister(_core.Register.Bra, coeffs, phase),
+        _core.EvolveRegister(_core.Register.Ket, coeffs, phase),
+    ]
+    code = [
+        _core.ApplyOperator(projector_index),
+        _core.MirrorToBra(),
+        _core.TimeAxis(num_steps, evolve),
+        _core.Expand(num_moments),
+        _core.ApplyOperator(operator_index),
+        _core.Trace(weights),
+    ]
+    return _core.Plan(code, word)
+
+
+def time_correlation_plan(
+    num_moments: int,
+    num_steps: int,
+    num_states: int,
+    coeffs: Sequence[complex] | npt.NDArray[np.complex128],
+    *,
+    left_index: int,
+    right_index: int,
+    phase: complex = 1.0 + 0.0j,
+    word: str = "A delta U(t)^+ B U(t)",
+) -> _core.Plan:
+    """Build the time-dependent two-operator correlation :class:`~lsquant._core.Plan`.
+
+    Solves the problem of evaluating ``Tr[O_left U(t) delta(E - H) O_right U(t)^+]``
+    in the exact evaluation order of legacy ``TimeDependentCorrelations(OPL, OPR)``:
+
+    - Seed preparation: ``MirrorToBra()``, ``ApplyOperator(left_index)`` so
+      ``seed[Bra] = O_left |r>`` while ``seed[Ket] = |r>``.
+    - ``TimeAxis(num_steps, evolve=[EvolveRegister(Bra, coeffs, phase),
+      EvolveRegister(Ket, coeffs, phase)])``.
+    - Body: ``ApplyOperator(right_index)`` (pre, on a copy of ``seed[Ket]``),
+      ``Expand(num_moments)``, ``Trace(w)``.
+    """
+    if num_moments <= 0:
+        raise ValueError("time_correlation_plan: num_moments must be positive")
+    if num_steps <= 0:
+        raise ValueError("time_correlation_plan: num_steps must be positive")
+    if num_states <= 0:
+        raise ValueError("time_correlation_plan: num_states must be positive")
+    if left_index < 0 or right_index < 0:
+        raise ValueError("time_correlation_plan: operator indices must be non-negative")
+    if not word:
+        raise ValueError("time_correlation_plan: word must be non-empty")
+
+    weights = _kpm_weights_1d(num_moments, num_states)
+    evolve = [
+        _core.EvolveRegister(_core.Register.Bra, coeffs, phase),
+        _core.EvolveRegister(_core.Register.Ket, coeffs, phase),
+    ]
+    code = [
+        _core.MirrorToBra(),
+        _core.ApplyOperator(left_index),
+        _core.TimeAxis(num_steps, evolve),
+        _core.ApplyOperator(right_index),
+        _core.Expand(num_moments),
+        _core.Trace(weights),
+    ]
+    return _core.Plan(code, word)
+
+
 def window_from_gershgorin(
     hamiltonian: _core.SparseMatrix, pad: float = 0.10
 ) -> _core.SpectralWindow:
@@ -182,6 +399,7 @@ def run_plan(
     operators: Sequence[_core.LinearOperator] = (),
     batch_size: int | None = None,
     symmetrise: bool = True,
+    dt: float | None = None,
 ) -> _core.ChebyshevMoments:
     """Execute a bytecode :class:`~lsquant._core.Plan` and populate tensor metadata.
 
@@ -238,8 +456,10 @@ def run_plan(
     mu.number_of_states = int(states.number_of_states)
     mu.state_label = states.label
     mu.word = plan.word
+    if dt is not None:
+        mu.time_step = float(dt)
 
-    if mu.rank == 1:
+    if mu.rank == 1 or mu.number_of_time_steps > 0:
         mu.kpm_weighted = True
         mu.symmetrised = False
     elif mu.rank == 2 and not mu.kpm_weighted:

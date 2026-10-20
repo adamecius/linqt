@@ -576,3 +576,69 @@ def kubo_fft_grid(
         energies[i] = x_grid[i] * hw + bc
 
     return energies, values
+
+
+def time_correlation_curve(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    fermi_energy: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct a time-dependent correlation curve at fixed ``fermi_energy``.
+
+    Reproduces the operation order of legacy ``timeCorrelationsFromChebmom``
+    byte for byte:
+
+    1. ``eta = 2.0 * broadening_meV / 1000 / BandWidth``,
+       ``M_eff = min(ceil(pi / eta), M)``.
+    2. Multiply ``mu[m, n]`` by the 1D Jackson kernel ``g(m, M_eff)`` along
+       ``m = 0 .. M_eff - 1``.
+    3. Rescale ``x_F = (fermi_energy - BandCenter) / HalfWidth`` and evaluate
+       ``delta_chebF(x_F, m)`` for ``m = 0 .. M_eff - 1``.
+    4. For each time step ``n = 0 .. N_t - 1``, accumulate
+       ``val_n = (sum_{m=0}^{M_eff-1} delta_chebF(x_F, m) * mu[m, n].real) * ScaleFactor``
+       at ``t_n = n * dt``.
+    """
+    if moments.rank != 2:
+        raise ValueError("time_correlation_curve: moments must have rank 2 (M, N_t)")
+    if broadening_meV <= 0.0:
+        raise ValueError("time_correlation_curve: broadening_meV must be positive")
+
+    band_width = (moments.window.upper - moments.window.lower) * 1.0
+    if band_width <= 0.0:
+        raise ValueError(
+            "time_correlation_curve: spectral window must have positive width"
+        )
+    half_width = band_width / 2.0
+    band_center = (moments.window.upper + moments.window.lower) * 0.5
+    scale_factor = 1.0 / half_width
+
+    eta = 2.0 * float(broadening_meV) / 1000.0 / band_width
+    max_mom = int(math.ceil(math.pi / eta))
+    num_moms = int(moments.dims[0])
+    num_times = int(moments.dims[1])
+    if max_mom > num_moms:
+        max_mom = num_moms
+
+    g = jackson_damping(max_mom)
+    raw = moments.data
+    damped = np.empty((max_mom, num_times), dtype=np.complex128)
+    for m_idx in range(max_mom):
+        g_m = float(g[m_idx])
+        for n_idx in range(num_times):
+            damped[m_idx, n_idx] = raw[m_idx, n_idx] * g_m
+
+    x_fermi = (float(fermi_energy) - band_center) / half_width
+    delta_col = legacy_delta_table([x_fermi], max_mom)[:, 0]
+
+    dt = float(moments.time_step)
+    times = np.empty(num_times, dtype=np.float64)
+    values = np.empty(num_times, dtype=np.float64)
+    for n_idx in range(num_times):
+        out_val = 0.0
+        for m_idx in range(max_mom):
+            out_val += float(delta_col[m_idx]) * float(damped[m_idx, n_idx].real)
+        out_val *= scale_factor
+        times[n_idx] = float(n_idx) * dt
+        values[n_idx] = out_val
+
+    return times, values

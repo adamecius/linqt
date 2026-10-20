@@ -18,7 +18,18 @@ except ImportError:
 
 from . import kernels, moments, reconstruct, spectral_functions
 from .kernels import jackson_damping, jackson_damping_2d
-from .moments import dos_plan, kubo_plan, run_plan, window_from_gershgorin
+from .moments import (
+    HBAR,
+    dos_plan,
+    kubo_plan,
+    msd_plan,
+    projected_evolution_plan,
+    run_plan,
+    time_correlation_plan,
+    time_evolution_series,
+    time_step_from_tmax,
+    window_from_gershgorin,
+)
 from .reconstruct import (
     dos_curve,
     kubo_bastin,
@@ -26,12 +37,17 @@ from .reconstruct import (
     kubo_bastin_surf,
     kubo_fft_grid,
     kubo_greenwood,
+    time_correlation_curve,
 )
 from .spectral_functions import (
     DeltaFunction,
     GreenRetarded,
     GreenRetardedDerivative,
     SpectralFunction,
+    TimeEvolution,
+    TimeEvolutionFunction,
+    bessel_series_coefficients,
+    legacy_bessel_coefficients,
     legacy_delta_table,
     legacy_green_tables,
 )
@@ -44,8 +60,14 @@ __all__ = [
     "spectral_functions",
     "jackson_damping",
     "jackson_damping_2d",
+    "HBAR",
     "dos_plan",
     "kubo_plan",
+    "msd_plan",
+    "projected_evolution_plan",
+    "time_correlation_plan",
+    "time_evolution_series",
+    "time_step_from_tmax",
     "window_from_gershgorin",
     "run_plan",
     "dos_curve",
@@ -54,10 +76,15 @@ __all__ = [
     "kubo_bastin_sea",
     "kubo_bastin_surf",
     "kubo_fft_grid",
+    "time_correlation_curve",
     "SpectralFunction",
     "DeltaFunction",
     "GreenRetarded",
     "GreenRetardedDerivative",
+    "TimeEvolutionFunction",
+    "TimeEvolution",
+    "bessel_series_coefficients",
+    "legacy_bessel_coefficients",
     "legacy_delta_table",
     "legacy_green_tables",
 ]
