@@ -109,12 +109,14 @@ public:
    * @brief Compute the row-parallel sparse matrix-vector product `y = a * M * x + b * y`.
    *
    * Evaluates each row `i` as an independent sequential sum `acc = sum_p vl[p] * x[cl[p]]`
-   * in stored column order, then writes `y[i] = a * acc + b * y[i]`. For matrices with more
-   * than `30000` non-zeros, rows are distributed across OpenMP threads with static scheduling;
-   * smaller matrices run serially to avoid fork/join overhead. Because each row reduction is
-   * owned by a single thread in stored order, the output is bit-identical across all thread
-   * counts and matches the Eigen sparse product on recursion scalars `(a, b) in {(1,0), (2,-1)}`.
-   * Complexity is `O(nnz)` work and `O(Dimension())` parallel tasks.
+   * in stored column order, then writes `y[i] = a * acc + b * y[i]`. Rows are always
+   * distributed across OpenMP threads with static scheduling (`#pragma omp parallel for
+   * schedule(static)`). Because each row reduction is owned by a single thread and summed
+   * strictly in stored column order without cross-thread reductions, the IEEE-754 rounding
+   * sequence for every `y[i]` is independent of the thread count, guaranteeing bit-identical
+   * results across all OpenMP thread counts and matching the Eigen sparse product on recursion
+   * scalars `(a, b) in {(1,0), (2,-1)}`. Complexity is `O(nnz)` work and `O(Dimension())`
+   * parallel tasks.
    *
    * @param a Scalar multiplier for `M * x`.
    * @param x Input vector of length `Dimension()`.

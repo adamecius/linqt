@@ -10,10 +10,6 @@
 
 namespace lsquant {
 
-namespace {
-constexpr Index kMinParallelNnz = 30000;
-}  // namespace
-
 SparseMatrix SparseMatrix::FromCsr(Index dim, std::vector<Index> rowPointers,
                                    std::vector<Index> columns, std::vector<Scalar> values) {
   if (dim < 0) {
@@ -108,7 +104,7 @@ void SparseMatrix::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) cons
   const Scalar* const xp = x.data();
   Scalar* const yp = y.data();
 
-#pragma omp parallel for schedule(static) if (rp[n] > kMinParallelNnz)
+#pragma omp parallel for schedule(static)
   for (Index i = 0; i < n; ++i) {
     Scalar acc(0.0, 0.0);
     for (Index p = rp[i]; p < rp[i + 1]; ++p) {
