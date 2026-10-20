@@ -2,8 +2,10 @@
 
 Defines the symbolic :class:`SpectralFunction` representation in the rescaled
 Chebyshev variable ``x in (-1, 1)`` and moment order ``m``, the Dirac delta
-expansion :data:`DeltaFunction`, and the bit-exact legacy evaluator
-:func:`legacy_delta_table`.
+expansion :data:`DeltaFunction`, the retarded Green's function expansion
+:data:`GreenRetarded` and its derivative :data:`GreenRetardedDerivative`, and
+the bit-exact legacy evaluators :func:`legacy_delta_table` and
+:func:`legacy_green_tables`.
 """
 
 from __future__ import annotations
@@ -13,6 +15,8 @@ from typing import Sequence
 import numpy as np
 import numpy.typing as npt
 import sympy as sp
+
+from . import _core
 
 
 class SpectralFunction:
@@ -42,10 +46,11 @@ class SpectralFunction:
 
     Notes
     -----
-    Pitfall: NumPy's vectorised ``cos`` and ``arccos`` inside ``lambdify`` agree
-    with ``libm`` to machine precision (``< 1e-14``) but may differ by 1 ULP;
-    use :func:`legacy_delta_table` when byte-for-byte identity with legacy C++
-    streams is required.
+    Pitfall: NumPy's vectorised ``cos``, ``arccos``, and ``exp`` inside
+    ``lambdify`` agree with ``libm`` and ``libstdc++`` to machine precision
+    (``< 1e-12``) but may differ in the last few ULPs; use
+    :func:`legacy_delta_table` and :func:`legacy_green_tables` when byte-for-byte
+    identity with legacy C++ streams is required.
     """
 
     def __init__(
@@ -63,7 +68,7 @@ class SpectralFunction:
 
     def table(
         self, x_grid: Sequence[float] | npt.NDArray[np.float64], num_moments: int
-    ) -> npt.NDArray[np.float64]:
+    ) -> npt.NDArray[np.float64] | npt.NDArray[np.complex128]:
         """Evaluate the ``(num_moments, len(x_grid))`` Chebyshev coefficient table.
 
         Broadcasts the lambdified SymPy expression over column vector
@@ -80,7 +85,8 @@ class SpectralFunction:
         Returns
         -------
         numpy.ndarray
-            Contiguous 2D ``float64`` array of shape ``(M, N)``.
+            Contiguous 2D ``float64`` (for real kernels) or ``complex128`` (for
+            complex kernels) array of shape ``(M, N)``.
 
         Warnings
         --------
@@ -97,8 +103,9 @@ class SpectralFunction:
         x_arr = np.asarray(x_grid, dtype=np.float64)[np.newaxis, :]
         m_arr = np.arange(num_moments, dtype=np.float64)[:, np.newaxis]
         evaluated = self._fn(m_arr, x_arr)
+        out_dtype = np.complex128 if np.iscomplexobj(evaluated) else np.float64
         broadcasted = np.broadcast_to(evaluated, (num_moments, x_arr.shape[1]))
-        return np.ascontiguousarray(broadcasted, dtype=np.float64)
+        return np.ascontiguousarray(broadcasted, dtype=out_dtype)
 
 
 _x_sym = sp.Symbol("x", real=True)
@@ -106,6 +113,18 @@ _m_sym = sp.Symbol("m", integer=True, nonnegative=True)
 
 DeltaFunction = SpectralFunction(
     sp.cos(_m_sym * sp.acos(_x_sym)) / (sp.pi * sp.sqrt(1 - _x_sym**2)),
+    x=_x_sym,
+    m=_m_sym,
+)
+
+GreenRetarded = SpectralFunction(
+    -sp.I * sp.exp(-sp.I * _m_sym * sp.acos(_x_sym)) / sp.sqrt(1 - _x_sym**2),
+    x=_x_sym,
+    m=_m_sym,
+)
+
+GreenRetardedDerivative = SpectralFunction(
+    sp.diff(GreenRetarded.expr, _x_sym),
     x=_x_sym,
     m=_m_sym,
 )
@@ -170,3 +189,50 @@ def legacy_delta_table(
             table[m_idx, i] = fm / f0 / pi
 
     return table
+
+
+def legacy_green_tables(
+    x: Sequence[float] | npt.NDArray[np.float64],
+    num_moments_0: int,
+    num_moments_1: int | None = None,
+) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.complex128]]:
+    """Compute the legacy ``(greenR, DgreenR)`` tables via ``_core.compat``.
+
+    Solves the problem of reproducing C++ ``greenR_chebF(x, m)`` and
+    ``DgreenR_chebF(x, m)`` bit for bit by delegating to
+    :func:`lsquant._core.compat.legacy_green_tables`, which uses ``libstdc++``
+    ``std::pow(std::complex<double>, double)`` and three sequential divisions by
+    ``f0 = sqrt(1 - x*x)``. Complexity is
+    ``O((num_moments_0 + num_moments_1) * len(x))``.
+
+    Parameters
+    ----------
+    x : Sequence[float] or numpy.ndarray
+        Rescaled coordinate grid ``x_i in (-1, 1)`` of length ``N``.
+    num_moments_0 : int
+        Number of Chebyshev moments ``M_0 > 0`` for the ``greenR`` table.
+    num_moments_1 : int or None, optional
+        Number of Chebyshev moments ``M_1 > 0`` for the ``DgreenR`` table
+        (defaults to ``num_moments_0``).
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Pair ``(green_r, dgreen_r)`` of 2D C-contiguous ``complex128`` arrays of
+        shapes ``(num_moments_0, len(x))`` and ``(num_moments_1, len(x))``.
+
+    Warnings
+    --------
+    Raises ``ValueError`` if ``num_moments_0 <= 0`` or ``num_moments_1 <= 0``.
+
+    Notes
+    -----
+    Pitfall: Python's built-in complex ``**`` operator uses repeated
+    multiplication for small integer exponents and does not match
+    ``std::pow(std::complex<double>, double)`` at the last bit.
+    """
+    m1 = num_moments_0 if num_moments_1 is None else num_moments_1
+    if num_moments_0 <= 0 or m1 <= 0:
+        raise ValueError("legacy_green_tables: moment counts must be positive")
+    x_arr = np.asarray(x, dtype=np.float64)
+    return _core.compat.legacy_green_tables(x_arr, int(num_moments_0), int(m1))
