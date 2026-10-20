@@ -345,6 +345,8 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lsquant::LinearOperator> inverseApplier;
     std::unique_ptr<lsquant::LinearOperator> inverseSqrtApplier;
     std::unique_ptr<lsquant::MetricPolicy> metric;
+    const lsquant::IschoInverseOverlap* ischoPtr = nullptr;
+    int effectiveOrder = -1;
 
     if (opts.route == "naive") {
       metric = std::make_unique<lsquant::OrthogonalMetric>(dim);
@@ -359,8 +361,10 @@ int main(int argc, char* argv[]) {
           inverseSqrtApplier = std::make_unique<lsquant::ExactInverseSqrtOverlap>(*sMat);
         } else {
           const lsquant::SpectralBounds boundsOfS = ComputePaddedOverlapBounds(sOp);
-          inverseSqrtApplier = std::make_unique<lsquant::ChebyshevInverseSqrtOverlap>(
+          auto chebSqrt = std::make_unique<lsquant::ChebyshevInverseSqrtOverlap>(
               *sMat, boundsOfS, opts.order);
+          effectiveOrder = chebSqrt->EffectiveOrder();
+          inverseSqrtApplier = std::move(chebSqrt);
         }
         metric = std::make_unique<lsquant::NonOrthogonalMetric>(
             *sMat, *inverseApplier, *inverseSqrtApplier);
@@ -368,12 +372,16 @@ int main(int argc, char* argv[]) {
         if (opts.applier == "exact") {
           inverseApplier = std::make_unique<lsquant::ExactInverseOverlap>(*sMat);
         } else if (opts.applier == "ischo") {
-          inverseApplier =
+          auto ischo =
               std::make_unique<lsquant::IschoInverseOverlap>(*sMat, opts.tol, opts.maxIter);
+          ischoPtr = ischo.get();
+          inverseApplier = std::move(ischo);
         } else {
           const lsquant::SpectralBounds boundsOfS = ComputePaddedOverlapBounds(sOp);
-          inverseApplier = std::make_unique<lsquant::ChebyshevInverseOverlap>(
+          auto cheb = std::make_unique<lsquant::ChebyshevInverseOverlap>(
               *sMat, boundsOfS, opts.order);
+          effectiveOrder = cheb->EffectiveOrder();
+          inverseApplier = std::move(cheb);
         }
         inverseSqrtApplier = std::make_unique<lsquant::IdentityOperator>(dim);
         metric = std::make_unique<lsquant::NonOrthogonalMetric>(
@@ -507,10 +515,39 @@ int main(int argc, char* argv[]) {
       lsquant::WriteChebmom(newPath, mu);
     }
 
+    double residual = 0.0;
+    if (ischoPtr != nullptr) {
+      residual = ischoPtr->LastError();
+    } else if (!metric->IsOrthogonal()) {
+      lsquant::RandomPhaseStates rng(dim, 1, opts.seed);
+      lsquant::Vector v(static_cast<std::size_t>(dim), lsquant::Scalar(0.0, 0.0));
+      lsquant::Vector sinvV(static_cast<std::size_t>(dim), lsquant::Scalar(0.0, 0.0));
+      lsquant::Vector sSinvV(static_cast<std::size_t>(dim), lsquant::Scalar(0.0, 0.0));
+      rng.Next(v);
+      if (opts.route == "lowdin") {
+        lsquant::Vector tmp(static_cast<std::size_t>(dim), lsquant::Scalar(0.0, 0.0));
+        metric->InverseSqrtOverlap().Multiply(v, tmp);
+        metric->InverseSqrtOverlap().Multiply(tmp, sinvV);
+      } else {
+        metric->InverseOverlap().Multiply(v, sinvV);
+      }
+      metric->Overlap().Multiply(sinvV, sSinvV);
+      residual = RelativeDifference(sSinvV, v);
+    }
+
     std::cout << "stage6_nonorth: route=" << opts.route << " applier=" << opts.applier
               << " word=" << opts.word << " dim=" << dim << " states=" << mu.numberOfStates
               << " (" << stateLabel << ") M=" << opts.numMoments << " -> " << legacyPath
-              << "\n";
+              << " order=" << opts.order;
+    if (effectiveOrder >= 0) {
+      std::cout << " effective_order=" << effectiveOrder;
+    }
+    std::cout << std::scientific << std::setprecision(6) << " tol=" << opts.tol
+              << std::defaultfloat << " max_iterations=" << opts.maxIter;
+    if (ischoPtr != nullptr) {
+      std::cout << " iterations=" << ischoPtr->LastIterations();
+    }
+    std::cout << std::scientific << std::setprecision(6) << " residual=" << residual << "\n";
     return 0;
   } catch (const std::exception& ex) {
     std::cerr << "stage6_nonorth error: " << ex.what() << "\n";
