@@ -16,6 +16,7 @@ objects and is completely agnostic of which basis adapter produced them.
 from __future__ import annotations
 
 import json
+import math
 import os
 from typing import Sequence
 import numpy as np
@@ -24,6 +25,7 @@ import numpy.typing as npt
 from . import _core
 from .models.wannier import WannierModel
 from .moments import window_from_gershgorin
+from .spectral_functions import GaussianDelta
 
 
 def make_anderson_disorder(
@@ -548,6 +550,83 @@ class EigenBasis:
             width = 2.0
         margin = float(pad) * width
         return _core.SpectralWindow(emin - margin, emax + margin)
+
+    def exact_dos(
+        self,
+        energies: Sequence[float] | npt.NDArray[np.float64],
+        eta: float | Sequence[float] | npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        """Evaluate the exact per-cell Gaussian density of states on the block eigenvalues.
+
+        Computes ``(1 / N_k) sum_{k, n} g(E - eps_n(k); eta)`` where the
+        Gaussian ``g(x; eta) = exp(-x^2 / (2 * eta^2)) / (sqrt(2 * pi) * eta)``
+        is evaluated via the stage-2 SymPy
+        :data:`~lsquant.spectral_functions.GaussianDelta`
+        :class:`~lsquant.spectral_functions.SpectralFunction`.
+
+        Parameters
+        ----------
+        energies : Sequence[float] or numpy.ndarray
+            1D energy grid in eV.
+        eta : float or numpy.ndarray
+            Gaussian broadening width in eV (``eta > 0``).
+
+        Returns
+        -------
+        numpy.ndarray
+            1D ``float64`` array of length ``len(energies)`` giving the density
+            of states per unit cell in ``1 / eV``.
+        """
+        e_arr = np.asarray(energies, dtype=np.float64).ravel()
+        eta_arr = np.asarray(eta, dtype=np.float64)
+        if np.any(eta_arr <= 0.0):
+            raise ValueError("EigenBasis.exact_dos: eta must be positive")
+        if eta_arr.ndim == 1:
+            eta_arr = eta_arr[:, None, None]
+        diff = e_arr[:, None, None] - self.eigenvalues[None, :, :]  # (N_E, N_k, W)
+        g_vals = np.asarray(GaussianDelta.evaluate(diff, eta_arr), dtype=np.float64)
+        dos_per_cell = np.sum(g_vals, axis=(1, 2)) / float(self.num_cells)
+        return np.ascontiguousarray(dos_per_cell, dtype=np.float64)
+
+    def exact_sigma_xx(
+        self,
+        energies: Sequence[float] | npt.NDArray[np.float64],
+        eta: float | Sequence[float] | npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        """Evaluate the exact Gaussian Kubo-Greenwood conductivity ``sigma_xx(E)``.
+
+        Computes ``pi * sum_{k, n, m} |v_{x, nm}(k)|^2 g(E - eps_n(k); eta) g(E - eps_m(k); eta)``
+        with the same normalisation as stage-3 :func:`~lsquant.reconstruct.kubo_greenwood`
+        so that the two curves are directly comparable (multiply by
+        ``2 * pi / (A_cell * N_k)`` to convert to ``hr_exactdiag.py``'s
+        ``e^2 / h`` per-area convention).
+
+        Parameters
+        ----------
+        energies : Sequence[float] or numpy.ndarray
+            1D energy grid in eV.
+        eta : float or numpy.ndarray
+            Gaussian broadening width in eV (``eta > 0``).
+
+        Returns
+        -------
+        numpy.ndarray
+            1D ``float64`` array of length ``len(energies)``.
+        """
+        e_arr = np.asarray(energies, dtype=np.float64).ravel()
+        eta_arr = np.asarray(eta, dtype=np.float64)
+        if np.any(eta_arr <= 0.0):
+            raise ValueError("EigenBasis.exact_sigma_xx: eta must be positive")
+        if eta_arr.ndim == 1:
+            eta_arr = eta_arr[:, None, None]
+        vx_eig = self.rotate_blocks(self.model.dHk(self.k_points, "VX"))
+        vx2 = np.abs(vx_eig) ** 2  # (N_k, W, W)
+        diff = e_arr[:, None, None] - self.eigenvalues[None, :, :]  # (N_E, N_k, W)
+        g_vals = np.asarray(GaussianDelta.evaluate(diff, eta_arr), dtype=np.float64)
+        sigma_ext = math.pi * np.einsum(
+            "ekn,knm,ekm->e", g_vals, vx2, g_vals, optimize=True
+        )
+        return np.ascontiguousarray(sigma_ext, dtype=np.float64)
 
 
 def make_basis(

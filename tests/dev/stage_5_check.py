@@ -148,36 +148,6 @@ def _generate_graphene_and_haldane(tmp_dir: str) -> tuple[str, str]:
     return g_dir, h_dir
 
 
-def _exact_eigen_dos_and_kubo(
-    eig_basis: EigenBasis,
-    energies: np.ndarray,
-    sigma_eV: float | np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Evaluate the exact eigenbasis Gaussian DOS and Kubo-Greenwood sigma_xx (`hr_exactdiag.py`)."""
-    eps = eig_basis.eigenvalues  # (N_k, W)
-    vx_eig = eig_basis.rotate_blocks(
-        eig_basis.model.dHk(eig_basis.k_points, "VX")
-    )  # (N_k, W, W)
-    vx2 = np.abs(vx_eig) ** 2  # (N_k, W, W)
-
-    sig = np.asarray(sigma_eV, dtype=np.float64)
-    if sig.ndim == 1:
-        sig = sig[:, None, None]
-    diff = energies[:, None, None] - eps[None, :, :]  # (N_E, N_k, W)
-    delta = np.exp(-0.5 * (diff / sig) ** 2) / (
-        math.sqrt(2.0 * math.pi) * sig
-    )
-
-    # Extensive DOS = sum_{k, n} delta(E - eps_{k,n})
-    dos_ext = np.sum(delta, axis=(1, 2))
-
-    # Extensive Kubo-Greenwood = pi * sum_{k, a, b} |v_{ab}(k)|^2 delta(E - eps_a) delta(E - eps_b)
-    kubo_ext = math.pi * np.einsum(
-        "ekn,knm,ekm->e", delta, vx2, delta, optimize=True
-    )
-    return dos_ext, kubo_ext
-
-
 def _dense_from_operator(op: _core.LinearOperator) -> np.ndarray:
     """Materialise a small ``LinearOperator`` as a dense ``(dim, dim)`` matrix."""
     dim = int(op.dimension)
@@ -320,6 +290,7 @@ def main() -> int:
                         "--no-log-file",
                     ],
                     check=True,
+                    stdout=subprocess.DEVNULL,
                 )
                 real_w2s = RealBasis(mdl, sc64, csr_dir=w2s_out64)
                 h_built_dense = _dense_from_operator(h_csr_op)
@@ -373,6 +344,7 @@ def main() -> int:
                     "--no-log-file",
                 ],
                 check=True,
+                stdout=subprocess.DEVNULL,
             )
             real_hal48 = RealBasis(haldane, sc48, csr_dir=w2s_hal48)
             bloch_hal48 = BlochBasis(haldane, sc48)
@@ -505,18 +477,20 @@ def main() -> int:
             assert d_mu_dos < 1e-11 and d_cv_dos_rel < 1e-11
             assert d_mu_kubo < 1e-11 and d_cv_kubo_per_site < 1e-11 and d_cv_kubo_rel < 1e-11
 
-        # Compare Jackson-reconstructed KPM curve with direct Gaussian eigenbasis sum
+        # Compare Jackson-reconstructed KPM curve with EigenBasis.exact_dos / exact_sigma_xx
         e_dos, y_dos_kpm = dos_curves["eigen"]
         e_kubo, y_kubo_kpm = kubo_curves["eigen"]
-        sigma_theta = math.pi / float(m16 + 1)
+        eta16 = 2.0 * (broad16 / 1000.0) / (win16.upper - win16.lower)
+        m_eff16 = min(int(math.ceil(math.pi / eta16)), m16)
+        sigma_theta = math.pi / float(m_eff16 + 1)
         sigma_e_dos = sigma_theta * np.sqrt(
             np.maximum(1e-12, win16.half_width**2 - (e_dos - win16.center) ** 2)
         )
         sigma_e_kubo = sigma_theta * np.sqrt(
             np.maximum(1e-12, win16.half_width**2 - (e_kubo - win16.center) ** 2)
         )
-        dos_gauss, _ = _exact_eigen_dos_and_kubo(b_eigen, e_dos, sigma_e_dos)
-        _, kubo_gauss = _exact_eigen_dos_and_kubo(b_eigen, e_kubo, sigma_e_kubo)
+        dos_gauss = float(b_eigen.num_cells) * b_eigen.exact_dos(e_dos, sigma_e_dos)
+        kubo_gauss = b_eigen.exact_sigma_xx(e_kubo, sigma_e_kubo)
         rel_l2_dos = float(
             np.linalg.norm(y_dos_kpm - dos_gauss) / np.linalg.norm(dos_gauss)
         )
@@ -528,6 +502,87 @@ def main() -> int:
             f"rel_L2(DOS)={rel_l2_dos:.3e}, rel_L2(KuboXX)={rel_l2_kubo:.3e}"
         )
         assert rel_l2_dos < 0.03 and rel_l2_kubo < 0.05
+
+        # EigenBasis.exact_dos and exact_sigma_xx vs hr_exactdiag wrapped on Gamma mesh of 12x12 graphene
+        w2s_tools_dir = os.environ.get(
+            "W2S_TOOLS", os.path.expanduser("~/wannier2sparse/tools")
+        )
+        hr_ed_path = os.path.join(w2s_tools_dir, "hr_exactdiag.py")
+        if w2s_bin is not None and os.path.isfile(hr_ed_path):
+            sc12 = (12, 12, 1)
+            eig12 = EigenBasis(graphene, sc12)
+            e_grid12 = np.linspace(-3.0, 3.0, 241, dtype=np.float64)
+            eta12 = 0.04
+            dos_eig12 = eig12.exact_dos(e_grid12, eta12)
+            sig_eig12 = eig12.exact_sigma_xx(e_grid12, eta12)
+
+            w2s_b12 = os.path.join(tmp_dir, "w2s_graphene_bundle")
+            subprocess.run(
+                [
+                    w2s_bin,
+                    "graphene",
+                    "1",
+                    "1",
+                    "1",
+                    "VX",
+                    "--mode",
+                    "bundle",
+                    "-p",
+                    g_dir,
+                    "-o",
+                    w2s_b12,
+                    "--quiet",
+                    "--no-log-file",
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+            )
+            vx_hr_path = os.path.join(
+                w2s_b12, "graphene.w2sp", "operators", "VX.hr.dat"
+            )
+            if w2s_tools_dir not in sys.path:
+                sys.path.insert(0, w2s_tools_dir)
+            from hr_exactdiag import opk as hr_opk, read_hr as hr_read_hr  # type: ignore[import-not-found]
+
+            ir_h, h_r = hr_read_hr(os.path.join(g_dir, "graphene_hr.dat"))
+            ir_vx, vx_r = hr_read_hr(vx_hr_path)
+            n12 = np.arange(12, dtype=np.float64) / 12.0
+            k12 = np.stack(np.meshgrid(n12, n12, indexing="ij"), -1).reshape(-1, 2)
+            kf12 = np.c_[k12, np.zeros(len(k12), dtype=np.float64)]
+            hk12 = hr_opk(ir_h, h_r, kf12)
+            hk12 = 0.5 * (hk12 + np.conj(np.transpose(hk12, (0, 2, 1))))
+            w12, u12 = np.linalg.eigh(hk12)
+            g12 = np.exp(
+                -((e_grid12[None, None, :] - w12[:, :, None]) ** 2)
+                / (2.0 * eta12**2)
+            ) / (math.sqrt(2.0 * math.pi) * eta12)
+            dos_hr12 = g12.sum((0, 1)) / float(len(kf12))
+            va12 = np.einsum(
+                "kmi,kmn,knj->kij", np.conj(u12), hr_opk(ir_vx, vx_r, kf12), u12
+            )
+            a_hr12 = abs(float(graphene.uc[0, 0] * graphene.uc[1, 1]))
+            sig_hr12 = (
+                np.einsum("knm,kne,kme->e", np.abs(va12) ** 2, g12, g12)
+                * (2.0 * math.pi**2 / a_hr12)
+                / float(len(kf12))
+            )
+            sig_eig12_e2h = sig_eig12 * (
+                2.0 * math.pi / (a_hr12 * float(eig12.num_cells))
+            )
+            rel_dos_hr12 = float(
+                np.max(np.abs(dos_eig12 - dos_hr12)) / np.max(np.abs(dos_hr12))
+            )
+            rel_sig_hr12 = float(
+                np.max(np.abs(sig_eig12_e2h - sig_hr12)) / np.max(np.abs(sig_hr12))
+            )
+            print(
+                f"[check e] (graphene 12x12x1) EigenBasis.exact_dos/exact_sigma_xx vs hr_exactdiag (Gamma mesh): "
+                f"rel_dos={rel_dos_hr12:.3e}, rel_sigma_xx={rel_sig_hr12:.3e}"
+            )
+            assert rel_dos_hr12 < 1e-10 and rel_sig_hr12 < 1e-10, (
+                f"EigenBasis vs hr_exactdiag mismatch on 12x12 graphene: "
+                f"dos={rel_dos_hr12}, sigma_xx={rel_sig_hr12}"
+            )
 
         # ------------------------------------------------------------------
         # Check (f): G1-G8 regression checks against committed goldens

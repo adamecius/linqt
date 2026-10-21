@@ -108,10 +108,29 @@ class SpectralFunction:
         broadcasted = np.broadcast_to(evaluated, (num_moments, x_arr.shape[1]))
         return np.ascontiguousarray(broadcasted, dtype=out_dtype)
 
+    def evaluate(
+        self,
+        x_values: Sequence[float] | npt.NDArray[np.float64] | float,
+        param: Sequence[float] | npt.NDArray[np.float64] | float,
+    ) -> npt.NDArray[np.float64] | npt.NDArray[np.complex128]:
+        """Evaluate the lambdified SymPy expression at ``(param, x_values)``."""
+        x_arr = np.asarray(x_values, dtype=np.float64)
+        p_arr = np.asarray(param, dtype=np.float64)
+        evaluated = self._fn(p_arr, x_arr)
+        out_dtype = np.complex128 if np.iscomplexobj(evaluated) else np.float64
+        return np.ascontiguousarray(evaluated, dtype=out_dtype)
+
 
 _x_sym = sp.Symbol("x", real=True)
 _m_sym = sp.Symbol("m", integer=True, nonnegative=True)
 _t_sym = sp.Symbol("t", real=True)
+_eta_sym = sp.Symbol("eta", real=True, positive=True)
+
+GaussianDelta = SpectralFunction(
+    sp.exp(-(_x_sym**2) / (2 * _eta_sym**2)) / (sp.sqrt(2 * sp.pi) * _eta_sym),
+    x=_x_sym,
+    m=_eta_sym,
+)
 
 DeltaFunction = SpectralFunction(
     sp.cos(_m_sym * sp.acos(_x_sym)) / (sp.pi * sp.sqrt(1 - _x_sym**2)),
