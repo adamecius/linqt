@@ -97,7 +97,7 @@ def _write_wannier_triplet(
 def _generate_graphene_and_haldane(tmp_dir: str) -> tuple[str, str]:
     """Generate the ``wannier2sparse/examples/gen_models.py`` graphene and Haldane models in ``tmp_dir``."""
     uc_str = "1.5 0.8660254 0\n1.5 -0.8660254 0\n0 0 10\n"
-    xyz_str = "2\ngraphene/haldane basis\nCA 0 0 0\nCB 1 0 0\n"
+    xyz_str = "2\nCA 0 0 0\nCB 1 0 0\n"
 
     def write_sparse(
         out_dir: str,

@@ -206,25 +206,51 @@ def read_uc(path: str) -> npt.NDArray[np.float64]:
     return np.array(rows, dtype=np.float64)
 
 
+def _try_parse_xyz_coord(line: str) -> list[float] | None:
+    """Attempt to parse an orbital line ``<label> <x> <y> <z>``."""
+    parts = line.split()
+    if len(parts) < 4:
+        return None
+    try:
+        return [float(parts[1]), float(parts[2]), float(parts[3])]
+    except ValueError:
+        return None
+
+
 def read_xyz(path: str) -> npt.NDArray[np.float64]:
-    """Read the ``W`` orbital positions ``tau_alpha`` in Angstrom from ``<seed>.xyz``."""
+    """Read the ``W`` orbital positions ``tau_alpha`` in Angstrom from ``<seed>.xyz``.
+
+    Accepts both ``wannier2sparse``'s single-header layout (count line followed
+    directly by ``W`` ``<label> <x> <y> <z>`` lines with no comment line) and
+    the two-header XYZ layout (count line, comment line, then ``W`` orbital
+    lines).
+    """
     with open(path, encoding="utf-8") as fh:
-        raw_lines = [ln.rstrip("\n") for ln in fh]
-    if len(raw_lines) < 2:
+        raw_lines = [ln.strip() for ln in fh.read().splitlines()]
+    non_empty = [ln for ln in raw_lines if ln]
+    if len(non_empty) < 2:
         raise ValueError(f"read_xyz: truncated .xyz file '{path}'")
 
-    num_orbs = int(raw_lines[0].strip().split()[0])
+    num_orbs = int(non_empty[0].split()[0])
+    if num_orbs <= 0:
+        raise ValueError(f"read_xyz: invalid orbital count {num_orbs} in '{path}'")
+
+    rest = non_empty[1:]
+    if len(rest) == num_orbs:
+        orb_lines = rest
+    elif len(rest) >= num_orbs + 1 and (
+        _try_parse_xyz_coord(rest[0]) is None or len(rest) == num_orbs + 1
+    ):
+        orb_lines = rest[1 : 1 + num_orbs]
+    else:
+        orb_lines = rest[:num_orbs]
+
     coords: list[list[float]] = []
-    for line in raw_lines[2:]:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        parts = stripped.split()
-        if len(parts) < 4:
+    for line in orb_lines:
+        parsed = _try_parse_xyz_coord(line)
+        if parsed is None:
             raise ValueError(f"read_xyz: malformed orbital line '{line}' in '{path}'")
-        coords.append([float(parts[1]), float(parts[2]), float(parts[3])])
-        if len(coords) == num_orbs:
-            break
+        coords.append(parsed)
     if len(coords) != num_orbs:
         raise ValueError(
             f"read_xyz: expected {num_orbs} orbital lines in '{path}', found {len(coords)}"
