@@ -54,9 +54,10 @@ struct CliOptions {
   std::string route = "lowdin";
   std::string applier = "exact";
   int order = 60;
+  double coeffTol = 1e-12;
   double tol = 1e-13;
   int maxIter = 200;
-  double dropTol = 1e-3;
+  lsquant::Index maxDim = 4096;
   std::string traceMode = "exact";
   unsigned seed = 12345;
   bool hasSeed = false;
@@ -73,7 +74,8 @@ void PrintUsage(std::ostream& os) {
   os << "Usage: stage6_nonorth --fixture <dir> --label <model> --window <lower> <upper>\n"
      << "                      [--route lowdin|generalised|naive]\n"
      << "                      [--applier exact|ischo|chebyshev]\n"
-     << "                      [--order <P>] [--tol <t>] [--max-iter <n>]\n"
+     << "                      [--order <P>] [--coeff-tol <ctol>] [--tol <t>]\n"
+     << "                      [--max-iter <n>] [--max-dim <Nmax>]\n"
      << "                      [--trace exact|random] [--seed <s>] [--states <R>]\n"
      << "                      [--moments <M>] [--batch <B>] --word dos|kubo|kuboxy\n"
      << "                      [--out <dir>] [--check-appliers]\n\n"
@@ -118,12 +120,14 @@ CliOptions ParseArgs(int argc, char* argv[]) {
       opts.applier = requireNext("--applier");
     } else if (arg == "--order") {
       opts.order = std::stoi(requireNext("--order"));
+    } else if (arg == "--coeff-tol") {
+      opts.coeffTol = std::stod(requireNext("--coeff-tol"));
     } else if (arg == "--tol") {
       opts.tol = std::stod(requireNext("--tol"));
     } else if (arg == "--max-iter") {
       opts.maxIter = std::stoi(requireNext("--max-iter"));
-    } else if (arg == "--drop-tol") {
-      opts.dropTol = std::stod(requireNext("--drop-tol"));
+    } else if (arg == "--max-dim") {
+      opts.maxDim = std::stoll(requireNext("--max-dim"));
     } else if (arg == "--trace") {
       opts.traceMode = requireNext("--trace");
     } else if (arg == "--seed") {
@@ -151,6 +155,12 @@ CliOptions ParseArgs(int argc, char* argv[]) {
   }
   if (opts.label.empty()) {
     throw std::invalid_argument("stage6_nonorth: --label <label> is required");
+  }
+  if (opts.coeffTol < 0.0 || !std::isfinite(opts.coeffTol)) {
+    throw std::invalid_argument("stage6_nonorth: --coeff-tol must be non-negative and finite");
+  }
+  if (opts.maxDim <= 0) {
+    throw std::invalid_argument("stage6_nonorth: --max-dim must be positive");
   }
   if (opts.checkAppliers) {
     return opts;
@@ -214,12 +224,13 @@ int RunApplierChecks(const CliOptions& opts) {
   std::unique_ptr<lsquant::ExactInverseOverlap> exactInv;
   std::unique_ptr<lsquant::ExactInverseSqrtOverlap> exactInvSqrt;
   if (includeExact) {
-    exactInv = std::make_unique<lsquant::ExactInverseOverlap>(sMat);
-    exactInvSqrt = std::make_unique<lsquant::ExactInverseSqrtOverlap>(sMat);
+    exactInv = std::make_unique<lsquant::ExactInverseOverlap>(sMat, opts.maxDim);
+    exactInvSqrt = std::make_unique<lsquant::ExactInverseSqrtOverlap>(sMat, opts.maxDim);
   }
   const lsquant::IschoInverseOverlap ischoInv(sMat, opts.tol, opts.maxIter);
-  const lsquant::ChebyshevInverseOverlap chebInv(sMat, boundsOfS, opts.order);
-  const lsquant::ChebyshevInverseSqrtOverlap chebInvSqrt(sMat, boundsOfS, opts.order);
+  const lsquant::ChebyshevInverseOverlap chebInv(sMat, boundsOfS, opts.order, opts.coeffTol);
+  const lsquant::ChebyshevInverseSqrtOverlap chebInvSqrt(sMat, boundsOfS, opts.order,
+                                                         opts.coeffTol);
 
   lsquant::RandomPhaseStates rng(dim, 10, opts.seed);
   lsquant::Vector v(static_cast<std::size_t>(dim), lsquant::Scalar(0.0, 0.0));
@@ -278,7 +289,8 @@ int RunApplierChecks(const CliOptions& opts) {
 
   std::cout << std::scientific << std::setprecision(16)
             << "stage6_nonorth: check_appliers label=" << opts.label << " dim=" << dim
-            << " order=" << opts.order << " tol=" << opts.tol
+            << " order=" << opts.order << " coeff_tol=" << opts.coeffTol << " tol=" << opts.tol
+            << " max_iterations=" << opts.maxIter << " max_dim=" << opts.maxDim
             << " max_rel_diff_sinv_cheb_vs_exact=" << maxDiffChebVsExact
             << " max_rel_diff_sinv_ischo_vs_exact=" << maxDiffIschoVsExact
             << " max_rel_diff_sinvsqrt_cheb_vs_exact=" << maxDiffSqrtChebVsExact
@@ -393,11 +405,11 @@ int main(int argc, char* argv[]) {
       if (opts.route == "lowdin") {
         inverseApplier = std::make_unique<lsquant::IdentityOperator>(dim);
         if (opts.applier == "exact") {
-          inverseSqrtApplier = std::make_unique<lsquant::ExactInverseSqrtOverlap>(*sMat);
+          inverseSqrtApplier = std::make_unique<lsquant::ExactInverseSqrtOverlap>(*sMat, opts.maxDim);
         } else {
           const lsquant::SpectralBounds boundsOfS = ComputePaddedOverlapBounds(sOp);
           auto chebSqrt = std::make_unique<lsquant::ChebyshevInverseSqrtOverlap>(
-              *sMat, boundsOfS, opts.order);
+              *sMat, boundsOfS, opts.order, opts.coeffTol);
           effectiveOrder = chebSqrt->EffectiveOrder();
           inverseSqrtApplier = std::move(chebSqrt);
         }
@@ -405,7 +417,7 @@ int main(int argc, char* argv[]) {
             *sMat, *inverseApplier, *inverseSqrtApplier);
       } else {
         if (opts.applier == "exact") {
-          inverseApplier = std::make_unique<lsquant::ExactInverseOverlap>(*sMat);
+          inverseApplier = std::make_unique<lsquant::ExactInverseOverlap>(*sMat, opts.maxDim);
         } else if (opts.applier == "ischo") {
           auto ischo =
               std::make_unique<lsquant::IschoInverseOverlap>(*sMat, opts.tol, opts.maxIter);
@@ -414,7 +426,7 @@ int main(int argc, char* argv[]) {
         } else {
           const lsquant::SpectralBounds boundsOfS = ComputePaddedOverlapBounds(sOp);
           auto cheb = std::make_unique<lsquant::ChebyshevInverseOverlap>(
-              *sMat, boundsOfS, opts.order);
+              *sMat, boundsOfS, opts.order, opts.coeffTol);
           effectiveOrder = cheb->EffectiveOrder();
           inverseApplier = std::move(cheb);
         }
@@ -596,8 +608,9 @@ int main(int argc, char* argv[]) {
     if (effectiveOrder >= 0) {
       std::cout << " effective_order=" << effectiveOrder;
     }
-    std::cout << std::scientific << std::setprecision(6) << " tol=" << opts.tol
-              << std::defaultfloat << " max_iterations=" << opts.maxIter;
+    std::cout << std::scientific << std::setprecision(6) << " coeff_tol=" << opts.coeffTol
+              << " tol=" << opts.tol << std::defaultfloat << " max_iterations=" << opts.maxIter
+              << " max_dim=" << opts.maxDim;
     if (ischoPtr != nullptr) {
       std::cout << " iterations=" << ischoPtr->LastIterations();
     }
