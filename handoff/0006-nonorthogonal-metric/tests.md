@@ -9,7 +9,17 @@ edited or added: `scripts/check_goldens.sh` (stage 6), `figures/stage_6.py`,
 `figures/stage_6_fixtures.py` (section 1 verification), `figures/out/stage_6/*`,
 `goldens/stage0/PROVENANCE.md` (a G10 paragraph), this file.
 
-**Result.** Fixtures: 4 of 4 ACCEPTED. Stage-6 rows: 74 of 74 PASS (40 route/applier rows
+**Closure run (section 6, at the end; supersedes sections 2 to 4 where they differ):**
+`origin/handoff/0006-agi` at `8305f11` (review 2, plus `cpp-unified` with stages 4 and 5),
+merged into `handoff/0006-codex`. Stages 1 to 5: 103 files IDENTICAL, 52 stage-5 rows PASS,
+5 greps empty, 0 failures. Stage 6: 74 of 74 rows PASS (40 vs goldens, 24 route vs route,
+10 Hall plateaus), C = +1.017017 on every route and applier. Naive evidence: DOS PASS
+(4.7e-16, 1.0e-15), Kubo FAIL by O(1) (0.17 to 0.20; Hall C = 1.19, 1.20). 1-thread
+repeat of the 24 chain1d runs: 20 IDENTICAL, **4 DIFFERS, all `lowdin/exact`** (rounding
+level, 3e-16 to 1.1e-14; confirmed on a second machine). Harness exit: `GATE FAIL
+(stage 6only)`, 98 compared, 4 failures, these 4 thread-count rows.
+
+**First run, result (sections 1 to 5, at `a5108e3`).** Fixtures: 4 of 4 ACCEPTED. Stage-6 rows: 74 of 74 PASS (40 route/applier rows
 vs the goldens, 24 route-vs-route rows, 10 Hall plateaus); 8 `lowdin/ischo` rows N/A; 10
 `naive` rows reported as evidence. Stages 1 to 3 inside the same run: 41 of 41 files
 IDENTICAL, the stage-2 comment-aware grep and the stage-3 `compat/` grep empty. **The
@@ -264,3 +274,209 @@ integrand is large; it does not touch the plateau.
   `fig_stage_6.png`, `fig_stage_6.caption.txt`, `stage_6_figure.log`,
   `data/gate_table.tsv`, `data/chern.tsv`.
 - `goldens/stage0/PROVENANCE.md`: G10 paragraph (fixtures verified, not regenerated).
+
+## 6. Closure run (`8305f11`)
+
+### 6.1 Branch, build, self-check
+
+- `handoff/0006-codex`: merged `c05fd7b` (review 2, as `bace579`), then `8305f11` (the
+  developer's merge `092da48` of `origin/cpp-unified` with stages 4 and 5, plus the report)
+  as `4fb389c`. Two conflicts, resolved by keeping both sides: `scripts/check_goldens.sh`
+  (the stage-4/5 sections from `cpp-unified`, plus my stage-6 section; the stage-6 case now
+  runs stages 1 to 5 in full, then stage 6) and `goldens/stage0/PROVENANCE.md` (the
+  `offcentre_axis` bullet of `cpp-unified`, then the G10 paragraph). `85046a7` adds a
+  `6only` case (stage-6 part alone, as stage 5 has `5only`) and keeps the first run's
+  outputs under `*_run1_a5108e3` names.
+- Fresh `build6` (TCN, g++ 11.4): `BUILD_EXIT 0` (`figures/out/stage_6/build.log`).
+- Self-check `tests/dev/stage_6_check.py --exe build6/lsquant_core/stage6_nonorth`, 16
+  threads: `Stage 6 Self-Check PASSED`, wall 47 min (`figures/out/stage_6/stage_6_check.log`).
+  Its first launch failed: the script defaults to `build/lsquant_core/stage6_nonorth`
+  (smell 11); I passed `--exe`.
+- Harness changes for review 2:
+  - `--max-dim 4096` (exact), `--tol 1e-12 --max-iter 200` (ischo) and
+    `--order 60 --coeff-tol 1e-12` (chebyshev) are now explicit on every command line.
+    The program echoes them as `coeff_tol=`, `max_dim=`, `max_iterations=`; the fields the
+    harness reads (`residual=`, `iterations=`, `effective_order=`) are unchanged.
+  - The symlink workaround is gone.
+  - New: the chain1d runs are repeated at `OMP_NUM_THREADS=1` and `cmp`'d with the
+    16-thread runs. Haldane is not repeated, to save time.
+
+### 6.2 Runs and wall times
+
+| run | what | result | wall |
+|---|---|---|---|
+| run 1 of the closure | `check_goldens.sh 6 build6`, stages 1 to 5 complete, stage 6 up to chain1d/complex dos | killed by SIGTERM (`GATE_EXIT 143`); stages 1 to 5 complete and all clean | 8078 s until killed |
+| run 2 of the closure | `check_goldens.sh 6only build6` (stage 6 only, plus the 1-thread chain1d repeat) | 98 compared, 4 failures (section 6.7) | 37702 s (10.5 h) |
+| Aron cross-check | 24 chain1d runs at T = 16 (one after another) and T = 1 (24 processes, one thread each) | 20 IDENTICAL, 4 DIFFERS | 7001 s |
+
+- **The SIGTERM in run 1** was not mine. Another session's (the stage-7 tester's) `pkill`
+  matched my gate by program name; the coordinator confirmed it. Run 1's log is
+  `figures/out/stage_6/check_goldens_stage6_stages1to5.log`.
+- **Run 2 is on the same build.** It reruns only the stage-6 part, because stages 1 to 5
+  had already finished on this build.
+- **The orphaned subshell.** After the kill, one stage-6 subshell of run 1 was still
+  running. I stopped it by its PID (4000895, 4000896), after checking from its command
+  line that it was my own process.
+- **Slow 1-thread repeat.** With the fat node under load (load average 35 to 70), each
+  1-thread chain1d run took about 10 minutes. The lowdin/exact runs, with a dense
+  2048 x 2048 `S^-1/2`, were the slowest.
+
+### 6.3 Stages 1 to 5 (closure run 1)
+
+| stage | files IDENTICAL | other rows | grep |
+|---|---:|---|---|
+| 1 | 11 | | `basis\|std::cout\|getenv` on `lsquant/core`: **empty** (the 9 comment lines are reworded) |
+| 2 | 6 | | code lines: empty |
+| 3 | 30 | | `compat/`: empty |
+| 4 | 24 | | `time\|velocity\|spin\|projector\|bessel\|gsl`, code lines: empty |
+| 5 | 32 | 52 PASS, 0 FAIL (198 INFO, report only) | `fftw`: empty |
+
+Total: 103 IDENTICAL, 0 DIFFERS, 52 PASS, 0 FAIL.
+
+### 6.4 Stage 6: rotated fixtures against G1, G2, G5, both routes
+
+Fixtures unchanged since the first run, so the sha256 values of section 1 still hold.
+`rel` = max|mu - mu_gold| / max|mu_gold|. Each cell gives `rel`, then the stdout `residual`
+in brackets, then the ISCHO iteration count (`it`) or the Chebyshev effective order
+(`eff`).
+
+| fixture, word | lowdin/exact | lowdin/chebyshev | generalised/exact | generalised/ischo | generalised/chebyshev |
+|---|---|---|---|---|---|
+| chain1d/real dos | 7.96e-13 (2.6e-14) | 9.51e-12 (1.8e-12; eff 38) | 4.66e-16 (3.7e-16) | 3.27e-14 (3.5e-14; it 0) | 1.52e-12 (1.7e-12; eff 41) |
+| chain1d/real kubo | 1.51e-14 | 1.68e-13 | 2.44e-15 | 2.84e-15 (it 0) | 1.03e-13 |
+| chain1d/complex dos | 6.20e-13 (2.8e-14) | 9.34e-13 (1.8e-12; eff 33) | 1.02e-15 (4.0e-16) | 2.74e-14 (1.5e-14; it 0) | 2.92e-12 (1.1e-12; eff 36) |
+| chain1d/complex kubo | 1.24e-14 | 6.75e-14 | 2.55e-15 | 7.47e-15 (it 0) | 8.26e-14 |
+| haldane/real kuboxy | 6.04e-14 (2.0e-14) | 7.66e-13 (1.6e-12; eff 34) | 1.34e-14 (1.0e-15) | 3.12e-13 (9.8e-13; it 6) | 5.88e-13 (1.0e-12; eff 37) |
+| haldane/real kubo | 8.29e-14 | 7.67e-13 | 1.15e-14 | 3.85e-13 (it 6) | 7.57e-13 |
+| haldane/complex kuboxy | 4.04e-14 (1.5e-14) | 6.43e-13 (2.2e-12; eff 31) | 1.34e-14 (1.0e-15) | 5.10e-14 (8.6e-14; it 6) | 3.18e-13 (1.1e-12; eff 34) |
+| haldane/complex kubo | 5.20e-14 | 6.07e-13 | 1.15e-14 | 6.64e-14 (it 6) | 4.13e-13 |
+
+- **All 40 PASS** (tolerances: exact 1e-10, ischo 1e-9, chebyshev 1e-8). The values equal
+  the first run's to the last printed digit.
+- **lowdin/ischo is N/A** in all 8 rows.
+- **Route against route: 24 of 24 PASS.** The worst cases are exact 7.96e-13,
+  chebyshev 7.99e-12, and generalised/ischo against lowdin/exact 8.29e-13.
+
+### 6.5 The generalised-route asymmetric bra, against the naive (symmetric) bra
+
+The generalised plan carries the adjoint explicitly on the bra:
+`ApplyOperator(S^-1), ApplyOperator(S^-1 V'), Expand, ApplyOperator(S)`.
+The review-2 `naive` route is the brief's legacy estimator: the same recursion on
+`S^-1 H~` and the same `S^-1 V'` on the ket, but the symmetric bra (`S^-1 V'` and `Expand`,
+with no `S^-1` and no `S`). The two routes differ only in the bra, so this pair is the
+asymmetric-bra check:
+
+| fixture, word | generalised/exact (asymmetric bra) | naive/exact (symmetric bra), evidence |
+|---|---:|---:|
+| chain1d/real dos | 4.664e-16 | 4.664e-16 (same plan: DOS PASS) |
+| chain1d/complex dos | 1.022e-15 | 1.022e-15 (DOS PASS) |
+| chain1d/real kubo | 2.44e-15 | **1.989e-01** (FAIL, O(1)) |
+| chain1d/complex kubo | 2.55e-15 | **1.809e-01** |
+| haldane/real kuboxy | 1.34e-14 | **1.772e-01** |
+| haldane/real kubo | 1.15e-14 | **1.847e-01** |
+| haldane/complex kuboxy | 1.34e-14 | **1.745e-01** |
+| haldane/complex kubo | 1.15e-14 | **1.765e-01** |
+| Hall C (real, complex) | +1.017017, +1.017017 | **+1.197943, +1.193531** (would FAIL) |
+
+The evidence rows now read "DOS PASS, Kubo FAIL by O(1)", as the brief expects. The
+dropped `S^-1 ... S` on the bra costs about 18 to 20 % of the largest moment and 19 to 20 %
+of the Hall plateau. The first run's naive route had no metric at all and diverged
+(smell 5); it is fixed.
+
+### 6.6 Hall plateau (stage-3 Bastin, 10 meV)
+
+Golden G5: C = +1.017017. All 10 lowdin and generalised routes, real and complex:
+C = +1.017017, plateau 107.656458 over 450 points. **10 of 10 PASS.**
+
+### 6.7 Thread-count repeat (chain1d, T = 1 against T = 16): the finding of this closure
+
+**Fat node (TCN, g++ 11.4):** 20 of 24 IDENTICAL. The 4 DIFFERS rows are exactly the
+`lowdin/exact` runs:
+
+| run | first differing value (T=1 vs T=16) | max abs diff | golden_diff class |
+|---|---|---:|---|
+| chain1d_real_dos_lowdin_exact | line 4, m=1 re: 3.54669635674321e-17 vs 3.37457926186113e-17 | 2.97e-16 (m = 62) | rounding (DEFECT label is relative on tiny values) |
+| chain1d_complex_dos_lowdin_exact | line 4, m=1 re: -2.82529533622566e-16 vs -2.83410447887711e-16 | 8.88e-16 (m = 62) | rounding |
+| chain1d_real_kubo_lowdin_exact | line 4, (0,1) re: -3.87751354462285e-16 vs -3.86789125034204e-16 | 1.07e-14 at (11,11) | rounding |
+| chain1d_complex_kubo_lowdin_exact | line 4, (0,1) re: -6.50934655569563e-16 vs -6.2560498231487e-16 | 9.99e-15 at (54,56) | rounding |
+
+**Aron (tcn-aronnode, g++ 9.4, Eigen from `~/lsq-env`; `85046a7` built in
+`~/lsquant-codex-6`, target `stage6_nonorth` only).** The legacy `kpm_lib` does not
+compile with that Eigen; it is not needed here. Result: the same 4 rows DIFFER and the
+other 20 are IDENTICAL. Max abs diff: 3.1e-16 and 6.9e-16 (dos), 1.02e-14 (both kubo
+runs). Log: `figures/out/stage_6/aron_T1_vs_T16_chain1d.log`. The comparison is
+machine-local; Aron's files are not compared with the fat node's.
+
+**What these numbers rule out.** The differences are at the level of floating-point
+reordering: at most 1.1e-14 on moments of order 1 to 4. They are far inside the 1e-10
+tolerance against G1 and G2, and every lowdin/exact row passes against its golden at
+both thread counts.
+
+They are still a thread-count dependence, and only the exact Löwdin applier shows it:
+- lowdin/chebyshev uses the same `LowdinOperator`, the same `RescaledOperator` and the same
+  engine, and is byte-identical.
+- generalised/exact uses the same dense-factorisation idea (`ExactInverseOverlap`, `LLT`
+  plus `solve(Identity)`) and is byte-identical.
+
+So the dependence is introduced in the `ExactInverseSqrtOverlap` constructor:
+`overlap_appliers.cpp:206-217`, `SelfAdjointEigenSolver` followed by the dense product
+`V * diag(lambda^-1/2) * V^+`.
+
+**Likely cause (not proved):** Eigen parallelises dense matrix-matrix products with
+OpenMP, and the blocking depends on the thread count. The LLT path uses triangular solves
+and stays thread-invariant. A rebuild with `EIGEN_DONT_PARALLELIZE`, or computing that
+product single-threaded, would decide it. I did not change source.
+
+The engine itself is thread-invariant on every other row: generalised and Löwdin, dos and
+kubo, chebyshev and ischo.
+
+### 6.8 Figure
+
+`figures/out/stage_6/fig_stage_6.png`, produced by `figures/stage_6.py` from closure
+run 2 (exit 0). Panels and caption are as in section 3; the caption now carries
+naive C = 1.197943 (real) and 1.193531 (complex), and naive Kubo 0.17 to 0.20.
+
+### 6.9 Smells after review 2
+
+Gone:
+- **Smell 1**, the hidden 1e-18 drop threshold. It is now a named constant
+  `kExactInverseDropThreshold` in the header.
+- **Smell 2**, applier parameters never set by the program. `coeffTol` and `maxDimension`
+  are now command-line flags, printed on stdout, and set explicitly by the harness. The
+  header defaults remain.
+- **Smell 5**, the naive route. It is now the brief's naive.
+- **Smell 6**, the dead `--drop-tol` option. It is removed.
+- **Smell 9**, the stage-1 grep hitting comment lines. The grep is now empty.
+- **Smell 10**, the `pkill` loop. Nobody runs it any more. Closure run 1 was still killed
+  by another session's `pkill` (6.2).
+
+Remaining:
+- **Smell 2 (partly):** default arguments on tolerances and caps remain in the appliers'
+  constructors in the header (`maxDimension = 4096`, `tolerance = 1e-13`,
+  `maxIterations = 200`, `coeffTol = 1e-12`). They are visible, but the brief's interfaces
+  have none.
+- **Smell 3:** the fifth applier `ExactInverseSqrtOverlap`; `lowdin/ischo` is undefined.
+- **Smell 4:** the ISCHO diagnostics are last-call state, written from a `const Multiply`.
+  The developer documented thread safety in review 2.
+- **Smell 7:** the window padding constants are in the app.
+- **New, smell 11:** `tests/dev/stage_6_check.py` defaults to `build/` for both the
+  executable and `sys.path`. It needs `--exe` when the build directory is not `build/`.
+- **New, smell 12 (the finding of 6.7):** `ExactInverseSqrtOverlap` is not thread-count
+  invariant at the last bits. Byte identity across thread counts does not hold for
+  lowdin/exact, while it holds for every other route and applier.
+- **Still clean:**
+  - No applier prints.
+  - The engine, `Plan` and `io/` are not touched by the stage-6 commits.
+  - `core/chebyshev` has only `GeneralisedRescaledOperator` and the brief-mandated
+    `RescaledOperator` constructor.
+
+### 6.10 Files (closure)
+
+- Harness and figure scripts: `scripts/check_goldens.sh` (stages 4 and 5 plus 6, `6only`)
+  and `figures/stage_6.py` (unchanged).
+- Main logs in `figures/out/stage_6/`: `build.log`, `stage_6_check.log`,
+  `check_goldens_stage6_stages1to5.log`, `check_goldens_stage6only.log`,
+  `aron_T1_vs_T16_chain1d.log`.
+- Figure and tables in `figures/out/stage_6/`: `fig_stage_6.png`,
+  `fig_stage_6.caption.txt`, `stage_6_figure.log`, `data/gate_table.tsv`, `data/chern.tsv`.
+- First-run outputs are kept under `*_run1_a5108e3` names.
