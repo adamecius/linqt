@@ -58,6 +58,20 @@
 #            lsquant/core/chebyshev lsquant/io must be empty. Needs W2S_BIN and W2S_TOOLS
 #            (default ~/wannier2sparse). S5_KEEP=<dir> keeps the outputs for figures/stage_5.py.
 #            Stage "5only" runs the stage-5 part alone.
+#
+#   stage 6  non-orthogonal metric (handoff 0006): stages 1 to 5 in full, then
+#            build_dir/lsquant_core/stage6_nonorth on the rotated fixtures
+#            goldens/stage0/nonorth/{chain1d,haldane}/{real,complex}: routes lowdin and
+#            generalised (naive as evidence only), appliers exact, ischo, chebyshev,
+#            moments vs G1, G2 (chain1d dos, kubo) and G5 (Haldane kuboxy = VX-VY,
+#            kubo = VX-VX) at the brief's tolerances (not bytes; see the stage-6 block),
+#            the two routes against each other, and the Haldane Hall plateau C from the
+#            stage-3 Bastin reconstruction of every VX-VY file (|C - 1| <= 0.05).
+#            The chain1d runs are repeated at OMP_NUM_THREADS=1 and cmp'd with the main
+#            runs (S6_T1_CHAIN1D=0 skips this). S6_KEEP=<dir> keeps the runs;
+#            S6_THREADS (default 16) sets OMP_NUM_THREADS of the main runs.
+#            Stage "6only" runs the stage-6 part alone.
+#
 #   stage 7  words, run files, CLI and MCP (handoff 0007): for every run file under
 #            runs/goldens/, `python3 -m lsquant run <file> --out <tmp>` at OMP_NUM_THREADS =
 #            16 and 1 (S7_THREADS), then cmp of every produced file against its golden: G1, G2,
@@ -649,6 +663,213 @@ stage5_grep() {
   fi
 }
 
+# ---------------------------------------------------------------- stage 6 (non-orthogonal metric)
+# Rotated models (goldens/stage0/nonorth/<model>/<variant>, fixtures of handoff 0006) must
+# reproduce the orthogonal goldens G1, G2 (chain1d) and the G5 moments (Haldane VX-VY,
+# VX-VX). These runs cannot be byte-identical (the applier is a factorisation, an
+# iteration or a truncated series), so the criterion is the brief's tolerance (section 6):
+#   exact 1e-10; ischo (--tol 1e-12) 1e-9; chebyshev (ctor truncation coeffTol 1e-12) 1e-8.
+# Measure (tester's decision, see tests.md):
+#   rel = max_k |mu_new[k] - mu_gold[k]| / max_k |mu_gold[k]|  over all complex moments;
+# the per-element relative difference of scripts/golden_diff.py is printed as well, but it
+# is meaningless on moments that vanish by symmetry (e.g. the odd DOS moments).
+# The two header lines (N BandWidth BandCenter / M) must be numerically identical.
+# Rows: PASS / FAIL (counted); route naive = the legacy symmetric estimator, EVIDENCE (not
+# counted); lowdin + ischo = N/A (ISCHO provides S^-1 only; stage6_nonorth rejects it).
+# Then lowdin vs generalised with the same applier (generalised/ischo vs lowdin/exact) at
+# the same levels, and the Hall plateau C = (mean sigma_xy over |E| < 0.5) / A * 2 pi,
+# A = (dim/2) 3 sqrt(3)/2 (test/hall_haldane.sh, tutorial03.chern_from_plateau), from the
+# stage-3 Bastin reconstruction at 10 meV of every produced VX-VY file: PASS if |C-1| <= 0.05.
+# With S6_KEEP=<dir> the run directories, gate_table.tsv and chern.tsv are kept there
+# (figures/stage_6.py reads them). S6_THREADS sets OMP_NUM_THREADS (default 16).
+S6CMP=""
+S6_LAST=""
+s6_tools() {
+  S6CMP="$TMP/s6cmp.py"
+  cat > "$S6CMP" <<'PYEOF'
+import sys
+def load(p):
+    L = open(p).read().split("\n")
+    h = [L[0].split(), L[1].split()]
+    v = []
+    for l in L[2:]:
+        t = l.split()
+        if t:
+            v.append(complex(float(t[0]), float(t[1]) if len(t) > 1 else 0.0))
+    return h, v
+a, b = load(sys.argv[1]), load(sys.argv[2])
+hdr = [[float(x) for x in r] for r in a[0]] == [[float(x) for x in r] for r in b[0]]
+if len(a[1]) != len(b[1]):
+    print("nan header_ok=%s length %d vs %d" % (hdr, len(a[1]), len(b[1])))
+    sys.exit()
+g = max(abs(x) for x in b[1])
+d = [abs(x - y) for x, y in zip(a[1], b[1])]
+k = max(range(len(d)), key=lambda i: d[i])
+print("%.3e header_ok=%s max_abs=%.3e at_element=%d max|gold|=%.3e" % (d[k] / g, hdr, d[k], k, g))
+PYEOF
+  S6CHERN="$TMP/s6chern.py"
+  cat > "$S6CHERN" <<'PYEOF'
+import sys, math
+import numpy as np
+d = np.loadtxt(sys.argv[1])
+dim = int(sys.argv[2])
+if not np.all(np.isfinite(d)):
+    print("nan nonfinite")
+    sys.exit()
+E, s = d[:, 0], d[:, 1]
+m = np.abs(E) < 0.5
+A = (dim / 2.0) * 3.0 * math.sqrt(3.0) / 2.0
+p = float(np.mean(s[m]))
+print("%.6f plateau=%.6f points=%d" % (p / A * 2 * math.pi, p, int(m.sum())))
+PYEOF
+}
+
+# s6_judge <new> <gold> <tol> <tag> <gate|evidence>; sets S6_LAST="<rel> <verdict>"
+s6_judge() {
+  local new="$1" gold="$2" tol="$3" tag="$4" kind="$5" out rel hdr verdict
+  if [ ! -f "$new" ] || [ ! -f "$gold" ]; then
+    verdict=FAIL; out="nan (missing: $([ -f "$new" ] || basename "$new") $([ -f "$gold" ] || echo "${gold#$TMP/}"))"
+  else
+    out="$(python3 "$S6CMP" "$new" "$gold" 2>&1)"
+    rel="${out%% *}"; hdr="$(echo "$out" | grep -o 'header_ok=[A-Za-z]*')"
+    if python3 -c "import sys; r=float('$rel'); sys.exit(0 if (r == r and r <= $tol and '$hdr' == 'header_ok=True') else 1)" 2>/dev/null
+    then verdict=PASS; else verdict=FAIL; fi
+  fi
+  rel="${out%% *}"
+  if [ "$kind" = evidence ]; then
+    echo "EVIDENCE  $tag  rel=$out  (would be $verdict at tol $tol; not counted)"
+  else
+    NCMP=$((NCMP + 1))
+    [ "$verdict" = PASS ] || NFAIL=$((NFAIL + 1))
+    printf '%-9s %s  rel=%s  tol=%s\n' "$verdict" "$tag" "$out" "$tol"
+  fi
+  if [ -f "$new" ] && [ -f "$gold" ]; then
+    echo "          golden_diff.py: $(python3 "$REPO/scripts/golden_diff.py" "$new" "$gold" 2>&1)"
+  fi
+  S6_LAST="$rel $verdict"
+}
+
+s6_field() { echo "$1" | grep -o " $2=[^ ]*" | head -1 | cut -d= -f2; }
+
+stage6() {
+  local EXE="$BUILD/lsquant_core/stage6_nonorth" PYDIR6 model variant word route applier W tol
+  local args lo hi M gold tag line rc res it eo f b P C kind
+  local XY=NonEqOpVX-VYhaldaneKPM_M128x128_stateexact
+  [ -x "$EXE" ] || EXE="$BUILD/lsquant/stage6_nonorth"
+  [ -x "$EXE" ] || { echo "ERROR: stage6_nonorth not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
+  PYDIR6="$(dirname "$EXE")"
+  local RUNEXE="$EXE"
+  s6_tools
+  local KEEP="${S6_KEEP:-}" TSV="$TMP/s6_gate_table.tsv" CTSV="$TMP/s6_chern.tsv" T6="${S6_THREADS:-16}"
+  printf 'model\tvariant\tword\troute\tapplier\tmax_rel\ttol\tverdict\tresidual\titerations\teffective_order\n' > "$TSV"
+  echo "== stage 6: $EXE on goldens/stage0/nonorth vs G1, G2, G5 moments (OMP_NUM_THREADS=$T6)"
+  for model in chain1d haldane; do
+    if [ $model = chain1d ]; then lo=-2; hi=2; M=64; else lo=-4.5; hi=4.5; M=128; fi
+    for variant in real complex; do
+      for word in $([ $model = chain1d ] && echo "dos kubo" || echo "kuboxy kubo"); do
+        case "$model/$word" in
+          chain1d/dos)    gold="$GOLD/chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D" ;;
+          chain1d/kubo)   gold="$GOLD/chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D" ;;
+          haldane/kuboxy) gold="$GOLD/haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D" ;;
+          haldane/kubo)   gold="$GOLD/haldane/NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D" ;;
+        esac
+        b="$(basename "$gold")"; P="$TMP/s6/${model}_${variant}_${word}"
+        for route in lowdin generalised naive; do
+          for applier in exact ischo chebyshev; do
+            [ $route = naive ] && [ $applier != exact ] && continue
+            tag="$model/$variant $word $route/$applier"
+            if [ $route = lowdin ] && [ $applier = ischo ]; then
+              echo "N/A       $tag  (ISCHO provides S^-1 only; the Lowdin route needs S^-1/2)"
+              printf '%s\t%s\t%s\t%s\t%s\tN/A\t-\tN/A\t-\t-\t-\n' $model $variant $word $route $applier >> "$TSV"
+              continue
+            fi
+            case $applier in
+              exact) tol=1e-10; args="--max-dim 4096" ;;
+              ischo) tol=1e-9; args="--tol 1e-12 --max-iter 200" ;;
+              chebyshev) tol=1e-8; args="--order 60 --coeff-tol 1e-12" ;;
+            esac
+            W="${P}_${route}_${applier}"; mkdir -p "$W"
+            echo "$args" > "$W/args"
+            ( cd "$REPO" && OMP_NUM_THREADS=$T6 "$RUNEXE" --fixture "$GOLD/nonorth/$model/$variant" \
+                --label $model --window $lo $hi --route $route --applier $applier $args --trace exact \
+                --moments $M --word $word --out "$W" ) >"$W/run.log" 2>"$W/err.log"; rc=$?
+            [ $rc -eq 0 ] || echo "          [$tag] stage6_nonorth exited $rc: $(tail -1 "$W/err.log")"
+            line="$(grep '^stage6_nonorth:' "$W/run.log" | tail -1)"
+            echo "          stdout: ${line//$W\//}"
+            kind=gate; [ $route = naive ] && kind=evidence
+            s6_judge "$W/$b" "$gold" $tol "$tag" $kind
+            res="$(s6_field "$line" residual)"; it="$(s6_field "$line" iterations)"; eo="$(s6_field "$line" effective_order)"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' $model $variant $word $route $applier \
+              "${S6_LAST% *}" $tol "$([ $kind = evidence ] && echo "EVIDENCE(${S6_LAST#* })" || echo "${S6_LAST#* }")" \
+              "${res:--}" "${it:--}" "${eo:--}" >> "$TSV"
+          done
+        done
+        # the two routes against each other
+        s6_judge "${P}_generalised_exact/$b" "${P}_lowdin_exact/$b" 1e-10 \
+          "$model/$variant $word generalised/exact vs lowdin/exact" gate
+        printf '%s\t%s\t%s\tgeneralised_vs_lowdin\texact\t%s\t1e-10\t%s\t-\t-\t-\n' $model $variant $word ${S6_LAST} >> "$TSV"
+        s6_judge "${P}_generalised_chebyshev/$b" "${P}_lowdin_chebyshev/$b" 1e-8 \
+          "$model/$variant $word generalised/chebyshev vs lowdin/chebyshev" gate
+        printf '%s\t%s\t%s\tgeneralised_vs_lowdin\tchebyshev\t%s\t1e-8\t%s\t-\t-\t-\n' $model $variant $word ${S6_LAST} >> "$TSV"
+        s6_judge "${P}_generalised_ischo/$b" "${P}_lowdin_exact/$b" 1e-9 \
+          "$model/$variant $word generalised/ischo vs lowdin/exact" gate
+        printf '%s\t%s\t%s\tgeneralised_ischo_vs_lowdin_exact\tischo\t%s\t1e-9\t%s\t-\t-\t-\n' $model $variant $word ${S6_LAST} >> "$TSV"
+      done
+    done
+  done
+  # Thread-count repeat, chain1d rows only (Haldane skipped to save time): the same runs at
+  # OMP_NUM_THREADS=1 must be byte-identical to the runs above (cmp).
+  if [ "${S6_T1_CHAIN1D:-1}" = 1 ]; then
+    echo "== stage 6: chain1d rows repeated at OMP_NUM_THREADS=1, cmp vs OMP_NUM_THREADS=$T6"
+    for W in "$TMP"/s6/chain1d_*; do
+      [ -f "$W/args" ] || continue
+      tag="$(basename "$W")"; f="$(ls "$W"/*.chebmom1D "$W"/*.chebmom2D 2>/dev/null | head -1)"
+      set -- $(echo "$tag" | tr '_' ' ')   # chain1d variant word route applier
+      mkdir -p "$W/T1"
+      ( cd "$REPO" && OMP_NUM_THREADS=1 "$RUNEXE" --fixture "$GOLD/nonorth/chain1d/$2" \
+          --label chain1d --window -2 2 --route $4 --applier $5 $(cat "$W/args") --trace exact \
+          --moments 64 --word $3 --out "$W/T1" ) >"$W/T1/run.log" 2>"$W/T1/err.log" \
+        || echo "          [T=1 $tag] stage6_nonorth exited non-zero: $(tail -1 "$W/T1/err.log")"
+      if [ -z "$f" ]; then
+        NCMP=$((NCMP + 1)); NFAIL=$((NFAIL + 1)); echo "DIFFERS   [T=1 vs T=$T6] $tag (no T=$T6 output)"
+      else
+        compare "$W/T1/$(basename "$f")" "$f" "[T=1 vs T=$T6] $tag/$(basename "$f")"
+      fi
+    done
+  fi
+  # Hall plateau from every produced Haldane VX-VY file (stage-3 Bastin, 10 meV)
+  echo "== stage 6: Hall plateau, python3 -m lsquant.apps.stage3_kubo --formula bastin --broadening-meV 10"
+  printf 'source\tC\tverdict\n' > "$CTSV"
+  C="$(python3 "$S6CHERN" "$GOLD/haldane/KuboBastin_${XY}JACKSON.dat" 512 2>&1)"
+  echo "REFERENCE Hall golden G5 KuboBastin (legacy)  C=$C"
+  printf 'golden_G5\t%s\tREF\n' "${C%% *}" >> "$CTSV"
+  for W in "$TMP"/s6/haldane_*_kuboxy_*; do
+    tag="$(basename "$W")"
+    if [ -f "$W/$XY.chebmom2D" ]; then
+      ( cd "$REPO" && OMP_NUM_THREADS=$T6 PYTHONPATH="$PYDIR6:$REPO/python" python3 -m lsquant.apps.stage3_kubo \
+          --moments "$W/$XY.chebmom2D" --formula bastin --broadening-meV 10 --out "$W" ) >"$W/bastin.log" 2>&1 \
+        || echo "          [$tag] stage3_kubo exited non-zero: $(tail -1 "$W/bastin.log")"
+      C="$(python3 "$S6CHERN" "$W/KuboBastin_${XY}JACKSON.dat" 512 2>&1 | tail -1)"
+    else
+      C="nan (no VX-VY moments produced)"
+    fi
+    if python3 -c "import sys; c=float('${C%% *}'); sys.exit(0 if abs(c - 1) <= 0.05 else 1)" 2>/dev/null
+    then rc=PASS; else rc=FAIL; fi
+    case "$tag" in
+      *_naive_*) echo "EVIDENCE  Hall $tag  C=$C  (would be $rc; not counted)"; rc="EVIDENCE($rc)" ;;
+      *) NCMP=$((NCMP + 1)); [ $rc = PASS ] || NFAIL=$((NFAIL + 1))
+         printf '%-9s Hall %s  C=%s  (|C - 1| <= 0.05)\n' $rc "$tag" "$C" ;;
+    esac
+    printf '%s\t%s\t%s\n' "$tag" "${C%% *}" "$rc" >> "$CTSV"
+  done
+  if [ -n "$KEEP" ]; then
+    mkdir -p "$KEEP"; rm -rf "$KEEP/runs"; cp -r "$TMP/s6" "$KEEP/runs"
+    cp "$TSV" "$KEEP/gate_table.tsv"; cp "$CTSV" "$KEEP/chern.tsv"
+    echo "          kept: $KEEP/{runs,gate_table.tsv,chern.tsv}"
+  fi
+}
+
+
 # ---------------------------------------------------------------- stage 7 (words, run files, CLI, MCP)
 # Every golden from words: `python -m lsquant run runs/goldens/<name>.json --out <tmp>` and a
 # cmp of each produced file with its golden. The old per-stage sections (stage1..stage5) are
@@ -756,6 +977,25 @@ run_s7() {   # <threads> <run file name> <outdir>
   printf "          [T=%s] python -m lsquant run runs/goldens/%-36s wall %8.2f s, %4d files written\n" "$T" "$n.json" "$(echo "$e - $s" | bc)" "$(find "$W" -type f 2>/dev/null | wc -l)"
 }
 
+# The G9 real-basis run files name a csr_dir (wannier2sparse output) that lsquant refuses to
+# generate itself: the gate generates it, explicitly, for every selected g9 run file whose csr_dir
+# lacks <seed>.HAM.CSR, with the command the refusal names (wannier2sparse <seed> N1 N2 N3 VX
+# -p <model dir> -o <csr_dir>), and prints what it did.
+s7_prep_csr() {
+  local f n C m sc
+  for f in "$S7_RUNS"/g9_*.json; do
+    n="$(basename "$f" .json)"; s7want $n || continue
+    read -r C m sc <<<"$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["model"].get("csr_dir") or "-", d["model"]["seed"], " ".join(map(str, d["basis"].get("supercell", [1,1,1]))))' "$f")"
+    [ "$C" = - ] && continue
+    case "$C" in /*) ;; *) C="$REPO/$C" ;; esac
+    if [ -f "$C/$m.HAM.CSR" ]; then echo "          csr_dir ${C#$REPO/} for $n: present"; continue; fi
+    mkdir -p "$C"
+    "$S5_W2S" $m $sc VX -p "$GOLD/bases/$m/model" -o "$C" --quiet --no-log-file >"$TMP/s7prep_$m.log" 2>&1 \
+      && echo "          csr_dir ${C#$REPO/} for $n: generated by the gate: wannier2sparse $m $sc VX -p goldens/stage0/bases/$m/model -o ${C#$REPO/}" \
+      || { echo "DIFFERS   csr_dir ${C#$REPO/}: wannier2sparse failed: $(tail -1 "$TMP/s7prep_$m.log")"; NFAIL=$((NFAIL + 1)); }
+  done
+}
+
 s7_ref5() {   # <threads> <model> <cfg> <outdir> [csr dir]: stage5_bases with the run file's arguments
   local T="$1" m="$2" c="$3" O="$4" C="${5:-}" w a
   case "$c" in
@@ -791,6 +1031,7 @@ s7_ref6() {   # <threads> <model> <variant> <resolved run file> <outdir>
 
 s7_goldens() {   # <threads>: every run file, every golden
   local T="$1" B="$TMP/s7/T$1" n f g m c v r W R C tol a
+  [ "$T" = "${S7_THREADS%% *}" ] && s7_prep_csr
   for f in "$S7_RUNS"/*.json; do
     n="$(basename "$f" .json)"; s7want $n || continue
     if s7skip $T $n; then echo "          [T=$T] $n.json not run at this thread count (S7_T1_SKIP)"; continue; fi
@@ -1033,10 +1274,24 @@ PY
   mk dg_plus g5 'words=DEL; reconstruction=DEL; word="Tr[VX delta(E-H) VY dG+(E)/dE]"'
   mk window_eigen_csr g1 'expansion.window="eigen"'
   mk formula_unmatched g1 'reconstruction={"broadening_meV": 120, "formulas": ["bastin"]}'
+  # csr_dir refusals (review 3): an empty csr_dir and one holding a 6x4x1 wannier2sparse output
+  mkdir -p "$R/csr_empty"
+  ( cd "$GOLD/bases/graphene/model" && "$S5_W2S" graphene 6 4 1 VX -o "$R/csr_6x4" --quiet --no-log-file ) >/dev/null 2>&1
+  ( cd "$R/csr_6x4" && sha1sum * ) >"$R/csr_6x4.sha1" 2>/dev/null
+  mk csr_empty g9_graphene_real "model.csr_dir=\"$R/csr_empty\""
+  mk csr_mismatch g9_graphene_real "model.csr_dir=\"$R/csr_6x4\""
   for f in unknown_operator rank_3 mixed_basis ut_without_time unknown_key_top unknown_key_nested \
-           g_plus g_minus dg_plus window_eigen_csr formula_unmatched; do
+           g_plus g_minus dg_plus window_eigen_csr formula_unmatched csr_empty csr_mismatch; do
     s7_refuse $f run "$R/$f.json" --out "$R/out_$f"
   done
+  # the csr_dir refusals must name the directory, the problem and the wannier2sparse command, and write nothing
+  local e
+  e="$(cat "$R/csr_empty.err")"
+  case "$e" in *"$R/csr_empty"*wannier2sparse\ graphene\ 48\ 48\ 1*) [ -z "$(ls -A "$R/csr_empty")" ] ;; *) false ;; esac
+  s7chk $? "csr_empty: message names the directory and the command 'wannier2sparse graphene 48 48 1 ...'; csr_empty still empty ($(ls -A "$R/csr_empty" | wc -l) files)"
+  e="$(cat "$R/csr_mismatch.err")"
+  case "$e" in *"$R/csr_6x4"*) case "$e" in *upercell*wannier2sparse\ graphene\ 48\ 48\ 1*|*wannier2sparse\ graphene\ 48\ 48\ 1*upercell*) ( cd "$R/csr_6x4" && sha1sum -c --quiet "$R/csr_6x4.sha1" ) >/dev/null 2>&1 && [ "$(ls "$R/csr_6x4" | wc -l)" -eq "$(wc -l <"$R/csr_6x4.sha1")" ] ;; *) false ;; esac ;; *) false ;; esac
+  s7chk $? "csr_mismatch: message names the directory, the supercell mismatch and the command; csr_6x4 unchanged"
   # the same words through `words describe` (no run file): reported
   for f in "Tr[FOO delta(E-H)]" "Tr[VX delta(E-H) VY delta(E-H) VZ delta(E-H)]" "Tr[VX@bloch delta(E-H)]" \
            "Tr[VX delta(E-H) U(t)^+ VX U(t)]" "Tr[VX delta(E-H) VY G+(E)]" "Tr[VX delta(E-H) VY dG+(E)/dE]" \
@@ -1093,8 +1348,19 @@ stage7_deleted() {
   n="$(grep -cE 'inline_|kuboBastinFromChebmom|add_subdirectory\((src|test)' "$REPO/CMakeLists.txt")"; [ "$n" -eq 0 ]; s7chk $? "CMakeLists.txt: $n legacy target lines"
   [ ! -e "$REPO/scripts/regenerate_goldens.sh" ]; s7chk $? "scripts/regenerate_goldens.sh removed"
   n="$(git -C "$REPO" ls-files 'examples/*.sh' 'examples/**/*.sh' | wc -l)"; [ "$n" -eq 0 ]; s7chk $? "legacy shell scripts under examples/: $n"
-  echo "INFO      files still tracked under legacy/ (quarantine of commit 5b5db0c, not part of the brief's list): $(git -C "$REPO" ls-files legacy | wc -l)"
-  echo "INFO      tracked files mentioning inline_ drivers outside handoff/, goldens/, legacy/: $(git -C "$REPO" grep -l 'inline_compute\|inline_kubo' -- . ':!handoff' ':!goldens' ':!legacy' | tr '\n' ' ')"
+  n="$(git -C "$REPO" ls-files legacy | wc -l)"; [ "$n" -eq 0 ]; s7chk $? "git ls-files legacy: $n files"
+  # inline_* (legacy driver names): allowed only under goldens/stage0/**/legacy_defects and in
+  # goldens/stage0/PROVENANCE.md. Reported but not counted: handoff/ (the project's record),
+  # figures/out/**/*.log (recorded build and run logs) and the stage-0 harness, which must name the
+  # legacy drivers to rebuild the goldens from legacy-final (scripts/check_goldens.sh stage 0,
+  # figures/stage_0.py). Everything else (code, documentation) fails the check.
+  local all ex bad
+  all="$(git -C "$REPO" grep -l 'inline_[A-Za-z]' -- . ':!goldens/stage0/PROVENANCE.md' | grep -v '^goldens/stage0/\(.*/\)\?legacy_defects/')"
+  ex="$(printf '%s\n' "$all" | grep -E '^(handoff/|figures/out/.*\.log$|scripts/check_goldens\.sh$|figures/stage_0\.py$)')"
+  bad="$(printf '%s\n' "$all" | grep -vE '^(handoff/|figures/out/.*\.log$|scripts/check_goldens\.sh$|figures/stage_0\.py$)' | grep -v '^$')"
+  [ -z "$bad" ]; s7chk $? "no inline_* mention outside goldens/stage0/**/legacy_defects and PROVENANCE.md (code and documentation): $(printf '%s\n' "$bad" | grep -c .) files$( [ -n "$bad" ] && echo ": $(echo $bad)")"
+  [ -n "$bad" ] && for f in $bad; do git -C "$REPO" grep -n 'inline_[A-Za-z]' -- "$f" | head -3 | sed 's/^/          /'; done
+  echo "INFO      inline_* in the record and the stage-0 harness (not counted): $(printf '%s\n' "$ex" | grep -c .) files: $(echo $ex | cut -c1-600)"
   t="$(git -C "$REPO" rev-parse --verify -q legacy-final^{commit})"; [ -n "$t" ]; s7chk $? "tag legacy-final exists ($t)"
   [ -n "$t" ] || return
   n="$(git -C "$REPO" ls-tree -r --name-only legacy-final -- src include test | wc -l)"; [ "$n" -gt 0 ]; s7chk $? "legacy-final holds the legacy tree ($n files under src include test)"
@@ -1135,6 +1401,8 @@ case "$STAGE" in
   3) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep ;;
   4) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep ;;
   5) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep ;;
+  6) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep; stage6 ;;
+  6only) stage6 ;;
   5only) stage5; stage5_grep ;;
   7) stage7; core_grep; stage2_grep; stage3_grep; stage4_grep; stage5_grep; stage7_grep; stage7_deleted ;;
   7deleted) stage7_deleted ;;
