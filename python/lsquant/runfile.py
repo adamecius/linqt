@@ -241,6 +241,12 @@ def defaults_for_basis(basis_name: str = "real") -> dict[str, Any]:
     return out
 
 
+def _get_or(mapping: Mapping[str, Any], key: str, default: Any = None) -> Any:
+    """Return ``mapping[key]`` when present and not ``None``, otherwise ``default``."""
+    val = mapping.get(key)
+    return default if val is None else val
+
+
 def _check_keys(
     section_name: str, data: Mapping[str, Any], allowed: frozenset[str]
 ) -> None:
@@ -268,7 +274,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     if not isinstance(model, Mapping):
         raise ValueError("Run file 'model' must be a JSON object")
     _check_keys("model", model, ALLOWED_MODEL_KEYS)
-    kind = str(model.get("kind", "csr"))
+    kind = str(_get_or(model, "kind", "csr"))
     if kind not in ("csr", "wannier", "generator"):
         raise ValueError(
             f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', or 'generator'"
@@ -301,7 +307,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if not isinstance(basis, Mapping):
             raise ValueError("Run file 'basis' must be a JSON object")
         _check_keys("basis", basis, ALLOWED_BASIS_KEYS)
-        bname = str(basis.get("name", "real"))
+        bname = str(_get_or(basis, "name", "real"))
         if bname not in ("real", "bloch", "eigen"):
             raise ValueError(
                 f"Unknown basis.name '{bname}'; expected 'real', 'bloch', or 'eigen'"
@@ -321,7 +327,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             if not isinstance(dis, Mapping):
                 raise ValueError("basis.disorder must be a JSON object")
             _check_keys("basis.disorder", dis, ALLOWED_DISORDER_KEYS)
-            if float(dis.get("W", 0.0)) < 0.0:
+            if float(_get_or(dis, "W", 0.0)) < 0.0:
                 raise ValueError("basis.disorder.W must be non-negative")
 
     if "metric" in raw and raw["metric"] is not None:
@@ -329,17 +335,17 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if not isinstance(metric, Mapping):
             raise ValueError("Run file 'metric' must be a JSON object")
         _check_keys("metric", metric, ALLOWED_METRIC_KEYS)
-        pol = str(metric.get("policy", "orthogonal"))
+        pol = str(_get_or(metric, "policy", "orthogonal"))
         if pol not in ("orthogonal", "nonorthogonal"):
             raise ValueError(
                 f"Unknown metric.policy '{pol}'; expected 'orthogonal' or 'nonorthogonal'"
             )
-        rte = str(metric.get("route", "lowdin"))
+        rte = str(_get_or(metric, "route", "lowdin"))
         if rte not in ("lowdin", "generalised"):
             raise ValueError(
                 f"Unknown metric.route '{rte}'; expected 'lowdin' or 'generalised'"
             )
-        app = str(metric.get("applier", "exact"))
+        app = str(_get_or(metric, "applier", "exact"))
         if app not in ("exact", "chebyshev", "ischo"):
             raise ValueError(
                 f"Unknown metric.applier '{app}'; expected 'exact', 'chebyshev', or 'ischo'"
@@ -353,9 +359,9 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     if not isinstance(exp, Mapping):
         raise ValueError("Run file 'expansion' must be a JSON object")
     _check_keys("expansion", exp, ALLOWED_EXPANSION_KEYS)
-    if "moments" not in exp or int(exp["moments"]) <= 0:
+    if _get_or(exp, "moments") is None or int(exp["moments"]) <= 0:
         raise ValueError("expansion.moments must be a positive integer")
-    tr = str(exp.get("trace", "exact"))
+    tr = str(_get_or(exp, "trace", "exact"))
     if tr not in ("exact", "random"):
         raise ValueError(
             f"Unknown expansion.trace '{tr}'; expected 'exact' or 'random'"
@@ -386,9 +392,9 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if not isinstance(tm, Mapping):
             raise ValueError("Run file 'time' must be a JSON object")
         _check_keys("time", tm, ALLOWED_TIME_KEYS)
-        if "steps" not in tm or int(tm["steps"]) <= 1:
+        if _get_or(tm, "steps") is None or int(tm["steps"]) <= 1:
             raise ValueError("time.steps must be an integer > 1")
-        if "tmax" not in tm and "dt" not in tm:
+        if _get_or(tm, "tmax") is None and _get_or(tm, "dt") is None:
             raise ValueError("time requires 'tmax' or 'dt'")
 
     if "reconstruction" in raw and raw["reconstruction"] is not None:
@@ -419,7 +425,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             raise ValueError("Run file 'words' must be a non-empty list of strings")
         words_list = [str(w) for w in raw["words"]]
 
-    basis_name = str((raw.get("basis") or {}).get("name", "real"))
+    basis_name = str(_get_or(raw.get("basis") or {}, "name", "real"))
     model_ops = model.get("operators")
     basis_spec: dict[str, Any] = {"name": basis_name}
     if model_ops is not None:
@@ -496,7 +502,7 @@ class RunFile:
             return cand
 
         raw_model = dict(raw["model"])
-        kind = str(raw_model.get("kind", "csr"))
+        kind = str(_get_or(raw_model, "kind", "csr"))
         gen_name = raw_model.get("name")
         if gen_name is not None:
             _ = resolve_generator_path(str(gen_name), root)
@@ -519,26 +525,26 @@ class RunFile:
         raw_basis = dict(raw.get("basis") or {})
         raw_dis = dict(raw_basis.get("disorder") or {})
         basis_cfg: dict[str, Any] = {
-            "name": str(raw_basis.get("name", "real")),
+            "name": str(_get_or(raw_basis, "name", "real")),
             "supercell": [
-                int(x) for x in raw_basis.get("supercell", [1, 1, 1])
+                int(x) for x in _get_or(raw_basis, "supercell", [1, 1, 1])
             ],
             "disorder": {
-                "W": float(raw_dis.get("W", 0.0)),
-                "seed": int(raw_dis.get("seed", 7)),
+                "W": float(_get_or(raw_dis, "W", 0.0)),
+                "seed": int(_get_or(raw_dis, "seed", 7)),
             },
         }
 
         raw_metric = dict(raw.get("metric") or {})
         metric_cfg: dict[str, Any] = {
-            "policy": str(raw_metric.get("policy", "orthogonal")),
-            "route": str(raw_metric.get("route", "lowdin")),
-            "applier": str(raw_metric.get("applier", "exact")),
-            "order": int(raw_metric.get("order", 60)),
-            "coeff_tol": float(raw_metric.get("coeff_tol", 1e-12)),
-            "tol": float(raw_metric.get("tol", 1e-13)),
-            "max_iter": int(raw_metric.get("max_iter", 200)),
-            "max_dim": int(raw_metric.get("max_dim", 4096)),
+            "policy": str(_get_or(raw_metric, "policy", "orthogonal")),
+            "route": str(_get_or(raw_metric, "route", "lowdin")),
+            "applier": str(_get_or(raw_metric, "applier", "exact")),
+            "order": int(_get_or(raw_metric, "order", 60)),
+            "coeff_tol": float(_get_or(raw_metric, "coeff_tol", 1e-12)),
+            "tol": float(_get_or(raw_metric, "tol", 1e-13)),
+            "max_iter": int(_get_or(raw_metric, "max_iter", 200)),
+            "max_dim": int(_get_or(raw_metric, "max_dim", 4096)),
         }
 
         raw_exp = dict(raw["expansion"])
@@ -552,13 +558,13 @@ class RunFile:
         expansion_cfg: dict[str, Any] = {
             "moments": moments_val,
             "window": win_val,
-            "trace": str(raw_exp.get("trace", "exact")),
+            "trace": str(_get_or(raw_exp, "trace", "exact")),
             "states": (
                 int(raw_exp["states"])
                 if raw_exp.get("states") is not None
                 else None
             ),
-            "seed": int(raw_exp.get("seed", 12345)),
+            "seed": int(_get_or(raw_exp, "seed", 12345)),
             "batch": (
                 int(raw_exp["batch"])
                 if raw_exp.get("batch") is not None
@@ -574,12 +580,12 @@ class RunFile:
                 "steps": int(rt["steps"]),
                 "tmax": float(rt["tmax"]) if rt.get("tmax") is not None else None,
                 "dt": float(rt["dt"]) if rt.get("dt") is not None else None,
-                "bessel": str(rt.get("bessel", "scipy")),
+                "bessel": str(_get_or(rt, "bessel", "scipy")),
             }
 
         raw_rec = dict(raw.get("reconstruction") or {})
         recon_cfg: dict[str, Any] = {
-            "kernel": str(raw_rec.get("kernel", "jackson")).lower(),
+            "kernel": str(_get_or(raw_rec, "kernel", "jackson")).lower(),
             "broadening_meV": (
                 float(raw_rec["broadening_meV"])
                 if raw_rec.get("broadening_meV") is not None
@@ -598,11 +604,11 @@ class RunFile:
                 if raw_rec.get("num_points") is not None
                 else None
             ),
-            "fft_grid": bool(raw_rec.get("fft_grid", False)),
+            "fft_grid": bool(_get_or(raw_rec, "fft_grid", False)),
             "legacy_text_round_trip": bool(
-                raw_rec.get("legacy_text_round_trip", False)
+                _get_or(raw_rec, "legacy_text_round_trip", False)
             ),
-            "per_site_dos": bool(raw_rec.get("per_site_dos", False)),
+            "per_site_dos": bool(_get_or(raw_rec, "per_site_dos", False)),
             "targets": [dict(t) for t in (raw_rec.get("targets") or [])],
         }
 
@@ -610,19 +616,19 @@ class RunFile:
         default_write_cheb = (
             kind == "wannier"
             or metric_cfg["policy"] == "nonorthogonal"
-            or not bool(raw_out.get("legacy_layout", True))
+            or not bool(_get_or(raw_out, "legacy_layout", True))
         )
         output_cfg: dict[str, Any] = {
-            "dir": str(raw_out.get("dir", ".")),
-            "legacy_names": bool(raw_out.get("legacy_names", True)),
-            "legacy_layout": bool(raw_out.get("legacy_layout", True)),
+            "dir": str(_get_or(raw_out, "dir", ".")),
+            "legacy_names": bool(_get_or(raw_out, "legacy_names", True)),
+            "legacy_layout": bool(_get_or(raw_out, "legacy_layout", True)),
             "write_chebmom": bool(
-                raw_out.get("write_chebmom", default_write_cheb)
+                _get_or(raw_out, "write_chebmom", default_write_cheb)
             ),
             "write_basis_json": bool(
-                raw_out.get("write_basis_json", kind == "wannier")
+                _get_or(raw_out, "write_basis_json", kind == "wannier")
             ),
-            "capture_tutorial": bool(raw_out.get("capture_tutorial", False)),
+            "capture_tutorial": bool(_get_or(raw_out, "capture_tutorial", False)),
         }
 
         word_canonical = parse_word(str(raw["word"])).canonical()
@@ -1378,7 +1384,8 @@ def execute_runfile(
                     float(e) for e in (tgt.get("fermi_energies") or ())
                 ]
                 t_rt = bool(
-                    tgt.get(
+                    _get_or(
+                        tgt,
                         "legacy_text_round_trip",
                         compiled.reconstruction.legacy_text_round_trip,
                     )
@@ -1393,7 +1400,7 @@ def execute_runfile(
                     os.path.join(out_dir, str(sub)) if sub else out_dir
                 )
                 os.makedirs(dest_d, exist_ok=True)
-                also_top = bool(tgt.get("also_top_dir", False))
+                also_top = bool(_get_or(tgt, "also_top_dir", False))
                 for form in t_formulas:
                     for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
                         form,
@@ -1545,7 +1552,7 @@ def inspect_target(path: str) -> dict[str, Any]:
             inspect_target(mp) for mp in mom_files if os.path.isfile(mp)
         ]
         dir_basis = str(
-            ((resolved_data or {}).get("basis") or {}).get("name", "real")
+            _get_or((resolved_data or {}).get("basis") or {}, "name", "real")
         )
         return {
             "kind": "directory",
