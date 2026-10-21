@@ -2,16 +2,19 @@
  * @file composite_operators.hpp
  * @brief Algebraic composite operators implementing LinearOperator.
  *
- * Provides matrix-free operator combinators (`IdentityOperator`, `ScaledOperator`,
- * `OperatorSum`, `OperatorProduct`, `AdjointOperator`, `LowdinOperator`,
- * `MetricInverseProduct`) so that linear combinations, products, symmetric Löwdin
- * sandwiches, and one-sided metric-inverse products can be passed into the Chebyshev
- * engine without materialising intermediate matrices.
+ * Provides matrix-free operator combinators (`IdentityOperator`, `DiagonalOperator`,
+ * `ScaledOperator`, `OperatorSum`, `OperatorProduct`, `AdjointOperator`,
+ * `SandwichOperator`, `LowdinOperator`, `MetricInverseProduct`) so that diagonal
+ * operators, linear combinations, products, conjugate transposes, unitary similarity
+ * transforms, symmetric Löwdin sandwiches, and one-sided metric-inverse products can be
+ * passed into the Chebyshev engine without materialising intermediate dense matrices.
  */
 #ifndef LSQUANT_CORE_ALGEBRA_COMPOSITE_OPERATORS_HPP_
 #define LSQUANT_CORE_ALGEBRA_COMPOSITE_OPERATORS_HPP_
 
+#include <memory>
 #include <optional>
+#include <vector>
 
 #include "core/algebra/linear_operator.hpp"
 #include "core/algebra/sparse_matrix.hpp"
@@ -79,6 +82,73 @@ public:
 
 private:
   Index dimension_;
+};
+
+/**
+ * @brief Matrix-free diagonal operator `diag(d_0, ..., d_{N-1})`.
+ *
+ * Solves the problem of applying diagonal potentials (such as real-space Anderson
+ * disorder `V`) or diagonal eigenvalue tables `eps_n(k)` in `O(N)` time and memory
+ * via OpenMP-parallel elementwise multiplication `y[i] = a * d[i] * x[i] + b * y[i]`.
+ *
+ * @warning Throws `std::invalid_argument` if applied to vectors whose length does
+ *          not equal `Dimension()`.
+ * @par Pitfall
+ *      Hermiticity holds if and only if every diagonal entry has imaginary part
+ *      within `1e-12` of zero.
+ */
+class DiagonalOperator : public LinearOperator {
+public:
+  /**
+   * @brief Construct a diagonal operator from its diagonal entries.
+   *
+   * @param values Vector of `N` complex diagonal elements.
+   */
+  explicit DiagonalOperator(std::vector<Scalar> values);
+
+  /**
+   * @brief Return the operator dimension `N`.
+   *
+   * @return Dimension `N >= 0`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Return a const reference to the diagonal entries.
+   *
+   * @return Vector of `N` complex diagonal values.
+   */
+  const std::vector<Scalar>& Values() const { return values_; }
+
+  /**
+   * @brief Evaluate `y[i] = a * d[i] * x[i] + b * y[i]` across all `i in 0..N-1`.
+   *
+   * @param a Scalar multiplier for `D * x`.
+   * @param x Input vector of length `Dimension()`.
+   * @param b Scalar multiplier for `y`.
+   * @param y Input/output vector of length `Dimension()`.
+   */
+  void Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const override;
+
+  using LinearOperator::Multiply;
+
+  /**
+   * @brief Return `true` iff all diagonal entries are real within `1e-12`.
+   *
+   * @return Cached Hermiticity flag.
+   */
+  bool IsHermitian() const override { return isHermitian_; }
+
+  /**
+   * @brief Return the conjugate diagonal operator `diag(conj(d))`.
+   *
+   * @return Adjoint `DiagonalOperator`.
+   */
+  DiagonalOperator Adjoint() const;
+
+private:
+  std::vector<Scalar> values_;
+  bool isHermitian_ = true;
 };
 
 /**
@@ -248,31 +318,29 @@ private:
 /**
  * @brief Conjugate transpose operator `O^+`.
  *
- * When constructed from a `SparseMatrix` or a `SparseMatrixOperator`, stores the explicit
- * adjoint CSR matrix (`SparseMatrix::Adjoint()`) so `Multiply` uses the row-parallel CSR
- * kernel even when `O` is non-Hermitian. When constructed from a general Hermitian
- * `LinearOperator`, forwards directly to `op.Multiply`.
+ * Supports `SparseMatrixOperator` (via `SparseMatrix::Adjoint()`), `BlochTransform`
+ * (via `BlochTransform::Adjoint()`), `BlockDiagonalOperator` (via
+ * `BlockDiagonalOperator::Adjoint()`), `DiagonalOperator` (via
+ * `DiagonalOperator::Adjoint()`), and any Hermitian `LinearOperator` (forwarded
+ * directly to `op.Multiply`).
  *
- * @warning Throws `std::invalid_argument` if constructed from a non-Hermitian matrix-free
- *          `LinearOperator` that is not backed by a `SparseMatrixOperator`.
+ * @warning Throws `std::invalid_argument` if constructed from a non-Hermitian
+ *          `LinearOperator` whose concrete type does not provide an adjoint.
  * @par Pitfall
- *      Materialising the adjoint CSR of a `SparseMatrixOperator` takes `O(dim + nnz)`
- *      memory and construction time; construct `AdjointOperator` outside inner loops.
+ *      Construct `AdjointOperator` outside tight inner loops so any explicit
+ *      adjoint buffers are allocated only once.
  */
 class AdjointOperator : public LinearOperator {
 public:
   /**
    * @brief Construct the adjoint `op^+` of a `LinearOperator`.
    *
-   * If `op` is a `SparseMatrixOperator`, builds and stores its adjoint CSR matrix.
-   * Otherwise requires `op.IsHermitian() == true` and forwards to `op`.
-   *
    * @param op Referenced operator.
    *
-   * @warning Throws `std::invalid_argument` if `op` is neither a `SparseMatrixOperator`
-   *          nor Hermitian.
+   * @warning Throws `std::invalid_argument` if `op` is non-Hermitian and not one
+   *          of the supported transform/matrix operator types.
    * @par Pitfall
-   *      If `op` is forwarded without an owned CSR copy, `op` must outlive `*this`.
+   *      If `op` is forwarded without an owned copy, `op` must outlive `*this`.
    */
   explicit AdjointOperator(const LinearOperator& op);
 
@@ -311,8 +379,80 @@ public:
 
 private:
   std::optional<SparseMatrix> adjointMatrix_;
+  std::shared_ptr<const LinearOperator> ownedAdjoint_;
   const LinearOperator* forwardedOp_ = nullptr;
   bool isHermitian_ = false;
+};
+
+/**
+ * @brief Matrix-free unitary similarity / congruence operator `B * V * B^+`.
+ *
+ * Solves the problem of applying an operator `V` defined in one representation
+ * (such as diagonal Anderson disorder in real space) to vectors in another
+ * representation (such as Bloch k-space) without assembling the dense matrix
+ * `B * V * B^+`. Evaluates `y = a * (B * V * B^+) * x + b * y` in three steps
+ * using two internal scratch vectors:
+ * `t1 = B^+ * x`, `t2 = V * t1`, `y = a * B * t2 + b * y`.
+ *
+ * `Multiply` uses per-object mutable scratch buffers (`t1_`, `t2_`) and is not
+ * safe to call concurrently on the same `SandwichOperator` object (the engine
+ * never does).
+ *
+ * @warning `B` and `V` must have the same `Dimension()` and must outlive this
+ *          `SandwichOperator` instance. `Multiply` is not reentrant across
+ *          threads sharing one `SandwichOperator` instance.
+ * @par Pitfall
+ *      In `SandwichOperator(B, V)`, `B^+` acts on the input ket `x` first, then
+ *      `V`, and finally `B` maps back to the output representation.
+ */
+class SandwichOperator : public LinearOperator {
+public:
+  /**
+   * @brief Construct `B * V * B^+` from transform `B` and inner operator `V`.
+   *
+   * @param B Outer transform operator (applied last; `B^+` is applied first).
+   * @param V Inner operator applied between `B` and `B^+`.
+   *
+   * @warning Throws `std::invalid_argument` if `B.Dimension() != V.Dimension()`
+   *          or if `AdjointOperator(B)` cannot be constructed.
+   * @par Pitfall
+   *      Both `B` and `V` are held by pointer; keep them alive for the lifetime
+   *      of this `SandwichOperator`.
+   */
+  SandwichOperator(const LinearOperator& B, const LinearOperator& V);
+
+  /**
+   * @brief Return the operator dimension `N`.
+   *
+   * @return Dimension `N >= 0`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Evaluate `y = a * (B * V * B^+) * x + b * y`.
+   *
+   * @param a Scalar multiplier for `(B * V * B^+) * x`.
+   * @param x Input vector of length `Dimension()`.
+   * @param b Scalar multiplier for `y`.
+   * @param y Input/output vector of length `Dimension()`.
+   */
+  void Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const override;
+
+  using LinearOperator::Multiply;
+
+  /**
+   * @brief Return `true` iff the inner operator `V` is Hermitian.
+   *
+   * @return `V.IsHermitian()`.
+   */
+  bool IsHermitian() const override;
+
+private:
+  const LinearOperator* b_;
+  const LinearOperator* v_;
+  AdjointOperator bAdjoint_;
+  mutable Vector t1_;
+  mutable Vector t2_;
 };
 
 /**

@@ -197,3 +197,118 @@ haldane/complex kubo     max_rel=1.764640e-01  max_abs=7.711343e-01
 ## 7. Open Questions for Fable
 
 None. `MomentEngine` and `Plan` required no modifications to execute either the Löwdin route or the corrected generalised route (`bra: ApplyOperator(S^-1), ApplyOperator(S^-1 V_bra'), Expand(M), ApplyOperator(S')`).
+
+---
+
+## Merge with stages 4 and 5
+
+Merged `origin/cpp-unified` (`f3395ab`, stages 4 and 5) into `handoff/0006-agi` at merge commit `092da48`, resolving the seven conflicts while retaining all Stage-4, Stage-5, and Stage-6 additions:
+- `lsquant/core/algebra/composite_operators.hpp` and `.cpp` — Retained Stage-5 `DiagonalOperator`, `SandwichOperator`, and `AdjointOperator` support (`SparseMatrix`, `BlockDiagonalOperator`, `DiagonalOperator`, `BlochTransform`, `IdentityOperator`) alongside Stage-6 `LowdinOperator` (`S^-1/2 O S^-1/2`) and `MetricInverseProduct` (`S^-1 O`).
+- `lsquant/core/chebyshev/rescaled_operator.hpp` and `.cpp` — Retained the single `origin/cpp-unified` implementation of `RescaledOperator(const LinearOperator&, const SpectralWindow&)` and untouched `RescaledOperator(const SparseMatrix&, const SpectralWindow&)` arithmetic alongside Stage-6 `GeneralisedRescaledOperator`.
+- `lsquant/api/bindings.cpp` and `python/lsquant/_core.pyi` — Retained all Stage-4 (`Register`, `ApplyOperator`, `Expand`, `ApplySeries`, `MirrorToBra`, `CopyVector`, `ProjectEnergy`, `DisplaceAndProject`, `SaveVector`, `Trace`), Stage-5 (`DiagonalOperator`, `BlockDiagonalOperator`, `BlochDirection`, `BlochTransform`, `SandwichOperator`, `BlockLocalStates`, `TransformedStates`), and Stage-6 (`MetricPolicy`, `OrthogonalMetric`, `NonOrthogonalMetric`, `ExactInverseOverlap`, `ExactInverseSqrtOverlap`, `IschoInverseOverlap`, `ChebyshevInverseOverlap`, `ChebyshevInverseSqrtOverlap`, `LowdinOperator`, `MetricInverseProduct`, `GeneralisedRescaledOperator`) bindings and type stubs once.
+- `python/lsquant/models/__init__.py` — Exported both `wannier` and `nonorthogonal` submodules and their public API symbols.
+
+### Fresh Build on TCN (`jh-x:~/lsquant-agi-0006-build`)
+
+```text
+$ rm -rf build
+$ cmake -S . -B build \
+    -DLSQUANT_BUILD_NEW_CORE=ON \
+    -DLSQUANT_BUILD_PYTHON=ON \
+    -DLSQUANT_BUILD_INPUT_TOOLS=OFF \
+    -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+$ cmake --build build --target lsquant_core stage1_moments stage6_nonorth stage_1_check _core -j 32
+(exit 0, zero warnings)
+```
+
+### Verification Checks on TCN (`jh-x`)
+
+```text
+=== [1/7] stage_1_check ===
+dos max_abs_error: 2.47025e-15
+kubo max_abs_error: 1.13687e-13
+OMP_NUM_THREADS=1 vs 8 bit-identical: YES
+EXIT=0
+=== [2/7] stage_2_check.py ===
+(a) dos_plan array_equal vs G1:  True
+(a) kubo_plan array_equal vs G2: True
+(b) DeltaFunction.table vs legacy_delta_table max_abs_diff = 2.220446e-16
+(c) dos_curve vs G3 differing lines: 0 (total lines: 1590)
+EXIT=0
+=== [3/7] stage_3_check.py ===
+(0) SparseMatrix.from_csr (scipy) dos array_equal vs ReadCsrText: True
+(a) Haldane VX-VY array_equal vs G5: True
+(a) Haldane VX-VX array_equal vs G5: True
+(b) Graphene Gershgorin BandWidth = 15.0366847652085, array_equal vs G4: True
+(c) GreenRetarded.table vs compat max_abs_diff           = 1.148853e-14
+(c) GreenRetardedDerivative.table vs compat max_abs_diff = 2.702165e-13 (max_rel_diff = 7.173405e-15)
+(d) G5 Bastin (10 meV)           differing lines: 0 (total lines: 3839)
+(d) G5 Sea (10 meV)              differing lines: 0 (total lines: 3839)
+(d) G5 Surf (10 meV)             differing lines: 0 (total lines: 3839)
+(d) G5 Greenwood (10 meV)        differing lines: 0 (total lines: 127)
+(d) G4 Bastin (64 meV)           differing lines: 0 (total lines: 1919)
+(d) G4 Sea (10 meV)              differing lines: 0 (total lines: 1919)
+(d) G4 Surf (10 meV)             differing lines: 0 (total lines: 1919)
+(d) G4 Bastin FFTgrid (10 meV)   differing lines: 0 (total lines: 63)
+(d) G4 Greenwood FFTgrid (10 meV) differing lines: 0 (total lines: 63)
+EXIT=0
+=== [4/7] stage_4_check.py ===
+(a) G7 chain1d_mag Gershgorin window = [-2.31, 2.31], BandWidth = 4.62
+(a) G7 TimeProjSX-PX array_equal vs golden: True
+(a) G7 TimeProjSY-PX array_equal vs golden: True
+(a) G7 TimeProjSZ-PX array_equal vs golden: True
+(b) G6 CorrelationVXchain1d array_equal vs golden: True
+(b) G6 EF=+0.0 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+0.5 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+1.0 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+1.5 curve differing lines: 0 (total lines: 64)
+(c) compat GSL Bessel vs SciPy jv max_abs_diff = 5.551115e-16
+(d) time_correlation_plan chain1d VX-VX (M=64, steps=16, tmax=5, exact) array_equal vs inline_compute-kpm-CorrOp: True
+EXIT=0
+=== [5/7] stage_5_check.py ===
+[check a] BlochTransform vs dense B (6,4,1) graphene: rel(B x) = 3.563e-15, rel(B^+ x) = 3.221e-15
+[check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 5.648e-17, max|B^+ B x - x| = 5.722e-17
+[check b] (graphene 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (graphene 6x4x1) right-size CSR with wrong receipt raises ValueError: PASS
+[check b] (graphene 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.780e-16
+[check c] (graphene 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.483e-16
+[check b] (haldane 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (haldane 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.100e-16
+[check c] (haldane 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.582e-16
+[check c] (haldane 48x48x1) rel ||v_x x - B VX_w2s B^+ x||_inf = 6.990e-16
+[check d] Anderson disorder W=1.0 (seed=12345): max|mu_real - mu_bloch| DOS(64) = 4.719e-16, VX-VX(64x64) = 1.556e-15
+[check e] (16,16,1) real vs bloch: DOS max|d_mu|=7.439e-15, max_rel|d_curve|=2.943e-15; KuboXX max|d_mu|=4.352e-14, max|d_curve/N|=1.399e-14, max_rel|d_curve|=9.851e-15
+[check e] (16,16,1) real vs eigen: DOS max|d_mu|=7.438e-15, max_rel|d_curve|=2.968e-15; KuboXX max|d_mu|=4.308e-14, max|d_curve/N|=1.343e-14, max_rel|d_curve|=9.457e-15
+[check e] (16,16,1) bloch vs eigen: DOS max|d_mu|=2.109e-15, max_rel|d_curve|=9.730e-16; KuboXX max|d_mu|=7.994e-15, max|d_curve/N|=1.278e-15, max_rel|d_curve|=9.001e-16
+[check e] Jackson KPM (M=128) vs Gaussian exact-diag: rel_L2(DOS)=1.150e-02, rel_L2(KuboXX)=4.129e-02
+[check e] (graphene 12x12x1) EigenBasis.exact_dos/exact_sigma_xx vs hr_exactdiag (Gamma mesh): rel_dos=1.822e-15, rel_sigma_xx=2.758e-15
+[check f] G1 chain1d DOS byte-identical to golden: PASS
+[check f] G4 graphene Kubo byte-identical to golden: PASS
+[check f] G7 chain1d_mag spin precession byte-identical to golden: PASS
+stage_5_check: ALL CHECKS PASSED
+EXIT=0
+=== [6/7] stage_6_check.py ===
+=== Stage 6 Self-Check: Rotated chain1d (N = 2048) ===
+[1] real: max |eigvalsh(H', S') - eigvalsh(H)| = 1.154632e-14
+[4] real: max ||S^-1_cheb v - S^-1_exact v|| / ||S^-1_exact v|| (M_S=60) = 1.452447e-12
+[2] real route=lowdin      applier=exact     applier_res=2.687185e-14 max|mu - G1|=7.959603e-13 max|mu - delta_m0|=7.959603e-13
+[2] real route=generalised applier=exact     applier_res=3.918055e-16 max|mu - G1|=4.664319e-16 max|mu - delta_m0|=4.664319e-16
+[3] real route=lowdin      applier=chebyshev (M_S=12, eff_order=12) applier_res=7.094662e-05 max|mu - delta_m0|=5.308428e-04
+[3] real route=generalised applier=chebyshev (M_S=12, eff_order=12) applier_res=2.580411e-04 max|mu - delta_m0|=1.859680e-03
+[3] real route=lowdin      applier=chebyshev (M_S=60, eff_order=38) applier_res=1.781045e-12 max|mu - delta_m0|=9.506879e-12
+[3] real route=generalised applier=chebyshev (M_S=60, eff_order=41) applier_res=1.687868e-12 max|mu - delta_m0|=1.517385e-12
+[3] real route=generalised applier=ischo     (tol=1e-06) applier_res=5.071275e-07 max|mu - delta_m0|=1.675476e-08
+[3] real route=generalised applier=ischo     (tol=1e-13) applier_res=1.345871e-16 max|mu - delta_m0|=2.737152e-15
+[1] complex: max |eigvalsh(H', S') - eigvalsh(H)| = 7.993606e-15
+[4] complex: max ||S^-1_cheb v - S^-1_exact v|| / ||S^-1_exact v|| (M_S=60) = 9.664000e-13
+[2] complex route=lowdin      applier=exact     applier_res=3.004363e-14 max|mu - G1|=6.202940e-13 max|mu - delta_m0|=6.202940e-13
+[2] complex route=generalised applier=exact     applier_res=4.162287e-16 max|mu - G1|=1.022115e-15 max|mu - delta_m0|=1.022115e-15
+[3] complex route=lowdin      applier=chebyshev (M_S=60, eff_order=33) applier_res=1.782907e-12 max|mu - delta_m0|=9.336730e-13
+[3] complex route=generalised applier=chebyshev (M_S=60, eff_order=36) applier_res=1.138146e-12 max|mu - delta_m0|=2.915651e-12
+[3] complex route=generalised applier=ischo     (tol=1e-13) applier_res=1.491737e-16 max|mu - delta_m0|=2.860823e-15
+=== Stage 6 Self-Check PASSED ===
+EXIT=0
+=== [7/7] orthogonal G5 byte check of stage6_nonorth ===
+stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_merge_g5_orth/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=0.000000e+00
+cmp exit=0 (byte-for-byte identical)
+```

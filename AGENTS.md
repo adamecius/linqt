@@ -422,6 +422,24 @@ buildable until stage 7: it is the reference the goldens come from.
 - `test/golden/operators/graphene_golden.HAM.desc` carries bounds `[-3, 3]` inside the
   graphene spectrum (Gershgorin radius about 7.5); with the sidecar present the
   moments diverge. The regeneration script deletes it before running.
+- **The legacy uniform-grid reconstruction maps the energy axis wrongly for off-centre
+  windows** (found at the stage-4 closure, `handoff/0004-time-evolution/tests.md`):
+  `src/reconstruction.cpp` writes `E = e/sf - shf` with `shf = -BandCenter/HalfWidth`,
+  i.e. `x HalfWidth + BandCenter/HalfWidth` instead of `x HalfWidth + BandCenter`
+  (Bastin, Sea, Surf, Greenwood uniform-grid paths; the FFT-grid path is right). Every
+  stage-0 golden has a centred window (`BandCenter = 0`), so none is affected. The new
+  library had the same class of defect in `python/lsquant/reconstruct.py` (`x/scale +
+  shift`), fixed in handoff 0004 review 3 to `(x - shift)/scale`. Golden G4c (graphene,
+  `BOUNDS -8.5 7.5`, `goldens/stage0/graphene/offcentre_enclosing/`) keeps the legacy
+  moments and the curves blessed from the new code; the legacy curves are kept as
+  evidence in `goldens/stage0/legacy_defects/offcentre_axis/`.
+- The MSD velocity is rescaled like the Hamiltonian (`MomentsTD::RescaleCon2ChebyshevDomain`:
+  `V <- a V + b I`), which is only right for `b = 0`; reproduced by the stage-4 apps for
+  byte identity with the (centred) goldens; the correct form for an off-centre window is
+  `V <- a V`.
+- `~/lsquant/build` on TCN is an older legacy build (`c1d9318`, reconstruction grid at
+  0.99) that does not reproduce G5; goldens are generated only from this tree's legacy
+  sources built as `goldens/stage0/PROVENANCE.md` describes (`build_legacy`).
 
 ---
 

@@ -9,6 +9,7 @@
  * (`ContractRank1`, `ContractRank2Imag`, `ContractRank2Real`, `ContractRank2RealReal`,
  * `WriteCurveText`), and the gate-only `_core.compat` submodule.
  */
+#include <pybind11/complex.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -19,6 +20,8 @@
 #include <vector>
 
 #include "compat/legacy_kernels.hpp"
+#include "core/algebra/bloch_transform.hpp"
+#include "core/algebra/block_diagonal_operator.hpp"
 #include "core/algebra/composite_operators.hpp"
 #include "core/algebra/linear_operator.hpp"
 #include "core/algebra/metric_policy.hpp"
@@ -165,13 +168,87 @@ PYBIND11_MODULE(_core, m) {
   py::class_<LinearOperator>(m, "LinearOperator")
       .def_property_readonly("dimension", &LinearOperator::Dimension)
       .def_property_readonly("is_identity", &LinearOperator::IsIdentity)
-      .def_property_readonly("is_hermitian", &LinearOperator::IsHermitian);
+      .def_property_readonly("is_hermitian", &LinearOperator::IsHermitian)
+      .def(
+          "multiply",
+          [](const LinearOperator& op,
+             const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& x) {
+            if (x.ndim() != 1) {
+              throw std::invalid_argument("LinearOperator.multiply: x must be a 1D complex128 array");
+            }
+            const Index dim = op.Dimension();
+            if (static_cast<Index>(x.size()) != dim) {
+              throw std::invalid_argument("LinearOperator.multiply: x dimension mismatch");
+            }
+            Vector xVec(x.data(), x.data() + x.size());
+            Vector yVec(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+            op.Multiply(Scalar(1.0, 0.0), xVec, Scalar(0.0, 0.0), yVec);
+            py::array_t<Scalar> out(static_cast<py::ssize_t>(dim));
+            if (dim > 0) {
+              std::copy(yVec.begin(), yVec.end(), out.mutable_data());
+            }
+            return out;
+          },
+          py::arg("x"))
+      .def(
+          "multiply",
+          [](const LinearOperator& op, Scalar a,
+             const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& x, Scalar b,
+             py::array_t<Scalar, py::array::c_style>& y) {
+            if (x.ndim() != 1 || y.ndim() != 1) {
+              throw std::invalid_argument(
+                  "LinearOperator.multiply: x and y must be 1D complex128 arrays");
+            }
+            const Index dim = op.Dimension();
+            if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
+              throw std::invalid_argument("LinearOperator.multiply: vector dimension mismatch");
+            }
+            Vector xVec(x.data(), x.data() + x.size());
+            Vector yVec(y.data(), y.data() + y.size());
+            op.Multiply(a, xVec, b, yVec);
+            if (dim > 0) {
+              std::copy(yVec.begin(), yVec.end(), y.mutable_data());
+            }
+          },
+          py::arg("a"), py::arg("x"), py::arg("b"), py::arg("y"));
 
   py::class_<SparseMatrixOperator, LinearOperator>(m, "SparseMatrixOperator")
       .def(py::init<const SparseMatrix&>(), py::arg("matrix"), py::keep_alive<1, 2>());
 
   py::class_<IdentityOperator, LinearOperator>(m, "IdentityOperator")
       .def(py::init<Index>(), py::arg("dim"));
+
+  py::class_<DiagonalOperator, LinearOperator>(m, "DiagonalOperator")
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& vals) {
+             if (vals.ndim() != 1) {
+               throw std::invalid_argument(
+                   "DiagonalOperator: values must be a 1D complex128/float64 array");
+             }
+             return DiagonalOperator(std::vector<Scalar>(vals.data(), vals.data() + vals.size()));
+           }),
+           py::arg("values"))
+      .def(py::init<std::vector<Scalar>>(), py::arg("values"))
+      .def("adjoint", &DiagonalOperator::Adjoint);
+
+  py::class_<ScaledOperator, LinearOperator>(m, "ScaledOperator")
+      .def(py::init<Scalar, const LinearOperator&>(), py::arg("alpha"), py::arg("op"),
+           py::keep_alive<1, 3>());
+
+  py::class_<OperatorSum, LinearOperator>(m, "OperatorSum")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("first"),
+           py::arg("second"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<OperatorProduct, LinearOperator>(m, "OperatorProduct")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("first"),
+           py::arg("second"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<AdjointOperator, LinearOperator>(m, "AdjointOperator")
+      .def(py::init<const LinearOperator&>(), py::arg("op"), py::keep_alive<1, 2>())
+      .def(py::init<const SparseMatrix&>(), py::arg("matrix"));
+
+  py::class_<SandwichOperator, LinearOperator>(m, "SandwichOperator")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("B"), py::arg("V"),
+           py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
 
   py::class_<LowdinOperator, LinearOperator>(m, "LowdinOperator")
       .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("inverse_sqrt"),
@@ -222,6 +299,60 @@ PYBIND11_MODULE(_core, m) {
            py::keep_alive<1, 2>())
       .def_property_readonly("effective_order", &ChebyshevInverseSqrtOverlap::EffectiveOrder);
 
+  py::class_<BlockDiagonalOperator, LinearOperator>(m, "BlockDiagonalOperator")
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& arr) {
+             if (arr.ndim() != 3 || arr.shape(1) != arr.shape(2)) {
+               throw std::invalid_argument(
+                   "BlockDiagonalOperator: blocks array must have shape (N_k, W, W)");
+             }
+             const Index nk = static_cast<Index>(arr.shape(0));
+             const Index w = static_cast<Index>(arr.shape(1));
+             std::vector<Scalar> vec(arr.data(), arr.data() + arr.size());
+             return BlockDiagonalOperator(nk, w, std::move(vec));
+           }),
+           py::arg("blocks"))
+      .def(py::init([](Index numBlocks, Index blockSize,
+                       const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& arr) {
+             std::vector<Scalar> vec(arr.data(), arr.data() + arr.size());
+             return BlockDiagonalOperator(numBlocks, blockSize, std::move(vec));
+           }),
+           py::arg("num_blocks"), py::arg("block_size"), py::arg("blocks"))
+      .def(py::init<Index, Index, std::vector<Scalar>>(), py::arg("num_blocks"),
+           py::arg("block_size"), py::arg("blocks"))
+      .def_property_readonly("num_blocks", &BlockDiagonalOperator::NumBlocks)
+      .def_property_readonly("block_size", &BlockDiagonalOperator::BlockSize)
+      .def("adjoint", &BlockDiagonalOperator::Adjoint);
+
+  py::enum_<BlochDirection>(m, "BlochDirection")
+      .value("RealToBloch", BlochDirection::RealToBloch)
+      .value("BlochToReal", BlochDirection::BlochToReal);
+
+  py::class_<BlochTransform, LinearOperator>(m, "BlochTransform")
+      .def(py::init([](Index n1, Index n2, Index n3, Index numOrbitals,
+                       py::object atomPhasesObj, BlochDirection direction) {
+             std::vector<Scalar> phases;
+             if (!atomPhasesObj.is_none()) {
+               auto arr = py::array_t<Scalar, py::array::c_style | py::array::forcecast>::ensure(
+                   atomPhasesObj);
+               if (!arr) {
+                 throw std::invalid_argument(
+                     "BlochTransform: atom_phases must be a complex128 array");
+               }
+               phases.assign(arr.data(), arr.data() + arr.size());
+             }
+             return BlochTransform(n1, n2, n3, numOrbitals, std::move(phases), direction);
+           }),
+           py::arg("n1"), py::arg("n2"), py::arg("n3"), py::arg("num_orbitals"),
+           py::arg("atom_phases") = py::none(),
+           py::arg("direction") = BlochDirection::RealToBloch)
+      .def_property_readonly("n1", &BlochTransform::N1)
+      .def_property_readonly("n2", &BlochTransform::N2)
+      .def_property_readonly("n3", &BlochTransform::N3)
+      .def_property_readonly("num_cells", &BlochTransform::NumCells)
+      .def_property_readonly("num_orbitals", &BlochTransform::NumOrbitals)
+      .def_property_readonly("direction", &BlochTransform::GetDirection)
+      .def("adjoint", &BlochTransform::Adjoint);
+
   py::class_<StateGenerator>(m, "StateGenerator")
       .def_property_readonly("dimension", &StateGenerator::Dimension)
       .def_property_readonly("number_of_states", &StateGenerator::NumberOfStates)
@@ -242,6 +373,17 @@ PYBIND11_MODULE(_core, m) {
            }),
            py::arg("dim"), py::arg("sites"))
       .def(py::init<Index, std::vector<Index>>(), py::arg("dim"), py::arg("sites"));
+
+  py::class_<BlockLocalStates, StateGenerator>(m, "BlockLocalStates")
+      .def(py::init<Index, Index>(), py::arg("num_blocks"), py::arg("block_size"))
+      .def(py::init<Index, Index, Index, Index>(), py::arg("n1"), py::arg("n2"), py::arg("n3"),
+           py::arg("block_size"))
+      .def_static("block_index", &BlockLocalStates::BlockIndex, py::arg("m1"), py::arg("m2"),
+                  py::arg("m3"), py::arg("n1"), py::arg("n2"));
+
+  py::class_<TransformedStates, StateGenerator>(m, "TransformedStates")
+      .def(py::init<const LinearOperator&, StateGenerator&>(), py::arg("transform"),
+           py::arg("inner"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
 
   py::class_<UserStates, StateGenerator>(m, "UserStates")
       .def(py::init([](const std::vector<py::array_t<Scalar, py::array::c_style>>& arrays) {
@@ -291,6 +433,11 @@ PYBIND11_MODULE(_core, m) {
            py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>())
       .def_property_readonly("window", &GeneralisedRescaledOperator::Window);
 
+  py::enum_<Register>(m, "Register")
+      .value("Ket", Register::Ket)
+      .value("Bra", Register::Bra)
+      .value("Aux", Register::Aux);
+
   py::class_<ApplyOperator>(m, "ApplyOperator")
       .def(py::init<int>(), py::arg("operator_index"))
       .def_readwrite("operator_index", &ApplyOperator::operatorIndex);
@@ -300,17 +447,88 @@ PYBIND11_MODULE(_core, m) {
       .def_readwrite("num_moments", &Expand::numMoments);
 
   py::class_<ApplySeries>(m, "ApplySeries")
-      .def(py::init([](const py::array_t<Scalar, py::array::c_style>& coeffs) {
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style>& coeffs, Scalar scale) {
              if (coeffs.ndim() != 1) {
                throw std::invalid_argument("ApplySeries: coeffs must be a 1D complex128 array");
              }
-             return ApplySeries{std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size())};
+             return ApplySeries{
+                 std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), scale};
            }),
-           py::arg("coeffs"))
-      .def(py::init<std::vector<Scalar>>(), py::arg("coeffs"))
-      .def_readwrite("coeffs", &ApplySeries::coeffs);
+           py::arg("coeffs"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<std::vector<Scalar>, Scalar>(), py::arg("coeffs"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("coeffs", &ApplySeries::coeffs)
+      .def_readwrite("scale", &ApplySeries::scale);
+
+  py::class_<ApplyDerivedSeries>(m, "ApplyDerivedSeries")
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style>& coeffs, int operatorIndex,
+                       Scalar scale) {
+             if (coeffs.ndim() != 1) {
+               throw std::invalid_argument(
+                   "ApplyDerivedSeries: coeffs must be a 1D complex128 array");
+             }
+             return ApplyDerivedSeries{
+                 std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), operatorIndex,
+                 scale};
+           }),
+           py::arg("coeffs"), py::arg("operator_index"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<std::vector<Scalar>, int, Scalar>(), py::arg("coeffs"),
+           py::arg("operator_index"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("coeffs", &ApplyDerivedSeries::coeffs)
+      .def_readwrite("operator_index", &ApplyDerivedSeries::operatorIndex)
+      .def_readwrite("scale", &ApplyDerivedSeries::scale);
 
   py::class_<MirrorToBra>(m, "MirrorToBra").def(py::init<>());
+
+  py::class_<EvolveRegister>(m, "EvolveRegister")
+      .def(py::init([](Register target, const py::array_t<Scalar, py::array::c_style>& coeffs,
+                       Scalar scale) {
+             if (coeffs.ndim() != 1) {
+               throw std::invalid_argument("EvolveRegister: coeffs must be a 1D complex128 array");
+             }
+             return EvolveRegister{
+                 target, std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), scale};
+           }),
+           py::arg("target"), py::arg("coeffs"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<Register, std::vector<Scalar>, Scalar>(), py::arg("target"), py::arg("coeffs"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("target", &EvolveRegister::target)
+      .def_readwrite("coeffs", &EvolveRegister::coeffs)
+      .def_readwrite("scale", &EvolveRegister::scale);
+
+  py::class_<EvolveDerived>(m, "EvolveDerived")
+      .def(py::init([](Register target, Register source,
+                       const py::array_t<Scalar, py::array::c_style>& coeffs, int operatorIndex,
+                       Scalar scale) {
+             if (coeffs.ndim() != 1) {
+               throw std::invalid_argument("EvolveDerived: coeffs must be a 1D complex128 array");
+             }
+             return EvolveDerived{
+                 target, source,
+                 std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), operatorIndex,
+                 scale};
+           }),
+           py::arg("target"), py::arg("source"), py::arg("coeffs"), py::arg("operator_index"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<Register, Register, std::vector<Scalar>, int, Scalar>(), py::arg("target"),
+           py::arg("source"), py::arg("coeffs"), py::arg("operator_index"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("target", &EvolveDerived::target)
+      .def_readwrite("source", &EvolveDerived::source)
+      .def_readwrite("coeffs", &EvolveDerived::coeffs)
+      .def_readwrite("operator_index", &EvolveDerived::operatorIndex)
+      .def_readwrite("scale", &EvolveDerived::scale);
+
+  py::class_<CopyRegister>(m, "CopyRegister")
+      .def(py::init<Register, Register>(), py::arg("from_reg"), py::arg("to_reg"))
+      .def_readwrite("from_reg", &CopyRegister::from)
+      .def_readwrite("to_reg", &CopyRegister::to);
+
+  py::class_<TimeAxis>(m, "TimeAxis")
+      .def(py::init<int, std::vector<AxisStep>>(), py::arg("num_steps"),
+           py::arg("evolve") = std::vector<AxisStep>{})
+      .def_readwrite("num_steps", &TimeAxis::numSteps)
+      .def_readwrite("evolve", &TimeAxis::evolve);
 
   py::class_<Trace>(m, "Trace")
       .def(py::init([](const py::array_t<Scalar, py::array::c_style>& weights) {
@@ -364,7 +582,9 @@ PYBIND11_MODULE(_core, m) {
       .def_readwrite("state_label", &ChebyshevMoments::stateLabel)
       .def_readwrite("word", &ChebyshevMoments::word)
       .def_readwrite("kpm_weighted", &ChebyshevMoments::kpmWeighted)
-      .def_readwrite("symmetrised", &ChebyshevMoments::symmetrised);
+      .def_readwrite("symmetrised", &ChebyshevMoments::symmetrised)
+      .def_readwrite("time_step", &ChebyshevMoments::timeStep)
+      .def_readwrite("number_of_time_steps", &ChebyshevMoments::numberOfTimeSteps);
 
   m.def("ApplyKpmWeights", &ApplyKpmWeights, py::arg("moments"), py::arg("num_states"),
         py::arg("symmetrise"));
@@ -374,6 +594,7 @@ PYBIND11_MODULE(_core, m) {
   m.def("WriteChebmom", &WriteChebmom, py::arg("path"), py::arg("moments"));
   m.def("WriteLegacyChebmom1D", &WriteLegacyChebmom1D, py::arg("path"), py::arg("moments"));
   m.def("WriteLegacyChebmom2D", &WriteLegacyChebmom2D, py::arg("path"), py::arg("moments"));
+  m.def("WriteLegacyChebmomTD", &WriteLegacyChebmomTD, py::arg("path"), py::arg("moments"));
 
   m.def(
       "ContractRank1",
@@ -558,4 +779,15 @@ PYBIND11_MODULE(_core, m) {
         return std::make_pair(std::move(greenR), std::move(dgreenR));
       },
       py::arg("x_grid"), py::arg("num_moments_0"), py::arg("num_moments_1") = py::none());
+  compatMod.def(
+      "bessel_series_coefficients",
+      [](double x, double tol) {
+        std::vector<Scalar> coeffs = compat::ComputeLegacyBesselCoefficients(x, tol);
+        py::array_t<Scalar> out(static_cast<py::ssize_t>(coeffs.size()));
+        if (!coeffs.empty()) {
+          std::copy(coeffs.begin(), coeffs.end(), out.mutable_data());
+        }
+        return out;
+      },
+      py::arg("x"), py::arg("tol") = 1e-15);
 }

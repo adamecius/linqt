@@ -6,6 +6,8 @@ option(LSQUANT_BUILD_PYTHON "Build the pybind11 module lsquant._core" ON)
 
 add_library(lsquant_core STATIC
     core/algebra/sparse_matrix.cpp
+    core/algebra/block_diagonal_operator.cpp
+    core/algebra/bloch_transform.cpp
     core/algebra/composite_operators.cpp
     core/algebra/linalg.cpp
     core/algebra/state_generator.cpp
@@ -27,7 +29,7 @@ set_target_properties(lsquant_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(lsquant_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_features(lsquant_core PUBLIC cxx_std_17)
 target_compile_options(lsquant_core PUBLIC -Wall -Wextra)
-target_link_libraries(lsquant_core PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX)
+target_link_libraries(lsquant_core PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX PkgConfig::FFTW3)
 
 add_executable(stage1_moments apps/stage1_moments.cpp)
 set_target_properties(stage1_moments PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
@@ -55,5 +57,5 @@ if(LSQUANT_BUILD_PYTHON)
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     )
     target_compile_options(_core PRIVATE -Wall -Wextra)
-    target_link_libraries(_core PRIVATE lsquant_core)
+    target_link_libraries(_core PRIVATE lsquant_core GSL::gsl)
 endif()

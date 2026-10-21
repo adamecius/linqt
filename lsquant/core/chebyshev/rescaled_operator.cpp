@@ -13,7 +13,7 @@ namespace lsquant {
 
 namespace {
 
-void ValidateWindow(const SpectralWindow& window, const char* caller) {
+void ValidateWindow(const SpectralWindow& window, const char* caller = "RescaledOperator") {
   if (!(window.upper > window.lower) || !std::isfinite(window.lower) ||
       !std::isfinite(window.upper)) {
     throw std::invalid_argument(std::string(caller) +
@@ -25,42 +25,57 @@ void ValidateWindow(const SpectralWindow& window, const char* caller) {
 
 RescaledOperator::RescaledOperator(const SparseMatrix& H, const SpectralWindow& window)
     : window_(window) {
-  ValidateWindow(window, "RescaledOperator");
+  ValidateWindow(window);
   rescaled_ = H.Rescaled(Scalar(window.Scale(), 0.0), Scalar(window.Shift(), 0.0));
-  isHermitian_ = rescaled_->IsHermitian();
+  dimension_ = rescaled_.Dimension();
+  isHermitian_ = rescaled_.IsHermitian();
 }
 
 RescaledOperator::RescaledOperator(const LinearOperator& H, const SpectralWindow& window)
-    : window_(window), op_(&H), isHermitian_(H.IsHermitian()) {
-  ValidateWindow(window, "RescaledOperator");
-  if (H.Dimension() < 0) {
-    throw std::invalid_argument("RescaledOperator: negative operator dimension");
-  }
+    : window_(window),
+      op_(&H),
+      dimension_(H.Dimension()),
+      isHermitian_(H.IsHermitian()) {
+  ValidateWindow(window);
 }
 
-Index RescaledOperator::Dimension() const {
-  if (rescaled_.has_value()) {
-    return rescaled_->Dimension();
-  }
-  return op_->Dimension();
-}
+Index RescaledOperator::Dimension() const { return dimension_; }
 
 void RescaledOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const {
-  if (rescaled_.has_value()) {
-    rescaled_->Multiply(a, x, b, y);
+  if (op_ == nullptr) {
+    rescaled_.Multiply(a, x, b, y);
     return;
   }
-  const Index dim = op_->Dimension();
+
+  const Index dim = dimension_;
   if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
     throw std::invalid_argument("RescaledOperator::Multiply: vector dimension mismatch");
   }
-  Vector hx(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
-  op_->Multiply(Scalar(1.0, 0.0), x, Scalar(0.0, 0.0), hx);
-  const Scalar scale(window_.Scale(), 0.0);
-  const Scalar shift(window_.Shift(), 0.0);
-  for (Index i = 0; i < dim; ++i) {
-    const std::size_t idx = static_cast<std::size_t>(i);
-    y[idx] = a * (scale * hx[idx] + shift * x[idx]) + b * y[idx];
+
+  const Scalar aScale = a * Scalar(window_.Scale(), 0.0);
+  const Scalar aShift = a * Scalar(window_.Shift(), 0.0);
+  if (&x == &y) {
+    Vector xCopy = x;
+    op_->Multiply(aScale, xCopy, b, y);
+    if (aShift != Scalar(0.0, 0.0)) {
+      const Scalar* xPtr = xCopy.data();
+      Scalar* yPtr = y.data();
+      #pragma omp parallel for schedule(static)
+      for (Index i = 0; i < dim; ++i) {
+        yPtr[i] += aShift * xPtr[i];
+      }
+    }
+    return;
+  }
+
+  op_->Multiply(aScale, x, b, y);
+  if (aShift != Scalar(0.0, 0.0)) {
+    const Scalar* xPtr = x.data();
+    Scalar* yPtr = y.data();
+    #pragma omp parallel for schedule(static)
+    for (Index i = 0; i < dim; ++i) {
+      yPtr[i] += aShift * xPtr[i];
+    }
   }
 }
 

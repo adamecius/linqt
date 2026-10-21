@@ -140,6 +140,10 @@ ChebyshevMoments ReadChebmom(const std::string& filename) {
 
   std::string restOfLine1;
   std::getline(in, restOfLine1);
+  std::istringstream line1Tail(restOfLine1);
+  int tdMaxTimeStep = 0;
+  double tdTimeDiff = 0.0;
+  const bool isLegacyTD = static_cast<bool>(line1Tail >> tdMaxTimeStep >> tdTimeDiff);
 
   std::string dimsLine;
   while (std::getline(in, dimsLine)) {
@@ -162,7 +166,13 @@ ChebyshevMoments ReadChebmom(const std::string& filename) {
   moments.window.lower = bandCenter - 0.5 * bandWidth;
   moments.window.upper = bandCenter + 0.5 * bandWidth;
   moments.kpmWeighted = true;
-  moments.symmetrised = (moments.Rank() == 2);
+  if (isLegacyTD) {
+    moments.symmetrised = false;
+    moments.numberOfTimeSteps = tdMaxTimeStep;
+    moments.timeStep = tdTimeDiff;
+  } else {
+    moments.symmetrised = (moments.Rank() == 2);
+  }
 
   const std::size_t slashPos = filename.find_last_of("/\\");
   const std::string base =
@@ -232,6 +242,33 @@ void WriteLegacyChebmom2D(const std::string& filename, const ChebyshevMoments& m
   }
   if (!outputfile) {
     throw std::runtime_error("WriteLegacyChebmom2D: error writing file: " + filename);
+  }
+}
+
+void WriteLegacyChebmomTD(const std::string& filename, const ChebyshevMoments& moments) {
+  if (moments.Rank() != 2) {
+    throw std::invalid_argument("WriteLegacyChebmomTD: requires a rank-2 tensor");
+  }
+  std::ofstream outputfile(filename);
+  if (!outputfile.is_open()) {
+    throw std::runtime_error("WriteLegacyChebmomTD: cannot open file: " + filename);
+  }
+
+  const double bandWidth = (moments.window.upper - moments.window.lower) * 1.0;
+  const double bandCenter = (moments.window.upper + moments.window.lower) * 0.5;
+  const int numMoms = moments.Dims()[0];
+  const int maxTimeStep =
+      (moments.numberOfTimeSteps > 0) ? moments.numberOfTimeSteps : moments.Dims()[1];
+
+  outputfile.precision(std::numeric_limits<double>::digits10);
+  outputfile << moments.systemSize << " " << bandWidth << " " << bandCenter << " " << maxTimeStep
+             << " " << moments.timeStep << " " << std::endl;
+  outputfile << numMoms << " " << maxTimeStep << " " << std::endl;
+  for (const auto& mom : moments.Data()) {
+    outputfile << mom.real() << " " << mom.imag() << std::endl;
+  }
+  if (!outputfile) {
+    throw std::runtime_error("WriteLegacyChebmomTD: error writing file: " + filename);
   }
 }
 

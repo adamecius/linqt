@@ -2,15 +2,15 @@
  * @file rescaled_operator.hpp
  * @brief Dimensionless rescaled operators mapping physical spectra into `[-1, 1]`.
  *
- * Provides `RescaledOperator` (either owning a precomputed `a * H + b * I` CSR copy or
- * evaluating `a * H * x + b * x` matrix-free on any `LinearOperator`) and
- * `GeneralisedRescaledOperator` (owning `a * H' + b * S'` in CSR form and applying an
- * inverse overlap operator on every multiplication).
+ * Precomputes `H~ = window.Scale() * H + window.Shift() * I` via `SparseMatrix::Rescaled`
+ * when constructed from a `SparseMatrix` (reproducing the exact IEEE-754 rounding of the
+ * legacy in-place `Rescale` path), or evaluates `a * (scale * H + shift * I) * x + b * y`
+ * on the fly when constructed from a general matrix-free `LinearOperator`. Also provides
+ * `GeneralisedRescaledOperator` owning `scale * H' + shift * S'` in CSR form and applying
+ * an inverse overlap operator on every multiplication.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_RESCALED_OPERATOR_HPP_
 #define LSQUANT_CORE_CHEBYSHEV_RESCALED_OPERATOR_HPP_
-
-#include <optional>
 
 #include "core/algebra/linear_operator.hpp"
 #include "core/algebra/sparse_matrix.hpp"
@@ -23,22 +23,19 @@ namespace lsquant {
  *
  * Solves the problem of mapping a physical Hamiltonian `H` into the Chebyshev domain
  * `[-1, 1]` without mutating `H`. When constructed from a `SparseMatrix`, holds its own
- * compressed `SparseMatrix` built via `H.Rescaled(window.Scale(), window.Shift())` to
- * maintain bit-for-bit agreement with legacy in-place CSR rescaling (`O(dim + nnz)` setup
- * and `O(nnz)` per `Multiply`). When constructed from a general `LinearOperator` (such as
- * a two-sided Löwdin sandwich `S^{-1/2} H' S^{-1/2}`), evaluates
- * `y = a * (Scale * H * x + Shift * x) + b * y` matrix-free without materialising a CSR
- * copy.
+ * compressed `SparseMatrix` built via `H.Rescaled(window.Scale(), window.Shift())` for
+ * bit-for-bit agreement with legacy CSR rescaling. When constructed from a general
+ * `LinearOperator`, wraps `H` without copying and applies `Scale * H + Shift * I` on the fly.
  *
  * @warning Throws `std::invalid_argument` if `window.upper <= window.lower`.
  * @par Pitfall
- *      When wrapping a `LinearOperator` reference, the referenced operator must outlive this
- *      `RescaledOperator` instance.
+ *      When constructed from a `LinearOperator`, the referenced operator `H` must outlive
+ *      this `RescaledOperator` instance.
  */
 class RescaledOperator : public LinearOperator {
 public:
   /**
-   * @brief Construct the rescaled operator `H~` from a sparse matrix `H` and `window`.
+   * @brief Construct the rescaled operator `H~` from a `SparseMatrix` and `window`.
    *
    * @param H      Physical sparse Hamiltonian (not modified).
    * @param window Spectral window `[lower, upper]` with `upper > lower`.
@@ -51,19 +48,14 @@ public:
   RescaledOperator(const SparseMatrix& H, const SpectralWindow& window);
 
   /**
-   * @brief Construct a matrix-free rescaled operator `H~` over an arbitrary `LinearOperator`.
+   * @brief Construct the rescaled operator `H~` from a general `LinearOperator` and `window`.
    *
-   * Evaluates `y = a * (window.Scale() * H * x + window.Shift() * x) + b * y` without
-   * building a CSR copy.
-   *
-   * @param H      Physical linear operator (must outlive `*this`).
+   * @param H      Physical matrix-free Hamiltonian (must outlive `*this`).
    * @param window Spectral window `[lower, upper]` with `upper > lower`.
    *
-   * @warning Throws `std::invalid_argument` if `!(window.upper > window.lower)` or if
-   *          `H.Dimension() < 0`.
+   * @warning Throws `std::invalid_argument` if `!(window.upper > window.lower)`.
    * @par Pitfall
-   *      Use the `SparseMatrix` overload when `H` is already a standalone `SparseMatrix` so
-   *      that diagonal shifts use the legacy CSR rounding order.
+   *      Does not copy `H`; keep `H` alive for the lifetime of this `RescaledOperator`.
    */
   RescaledOperator(const LinearOperator& H, const SpectralWindow& window);
 
@@ -102,8 +94,9 @@ public:
 
 private:
   SpectralWindow window_;
-  std::optional<SparseMatrix> rescaled_;
+  SparseMatrix rescaled_;
   const LinearOperator* op_ = nullptr;
+  Index dimension_ = 0;
   bool isHermitian_ = false;
 };
 

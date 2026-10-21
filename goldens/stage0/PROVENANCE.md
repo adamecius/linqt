@@ -51,6 +51,40 @@ does not write the two committed sidecars `graphene_golden.HAM.desc` and `.VX.de
 moments are computed without them (bounds from the Gershgorin + pad safeguard, header
 `BandWidth = 15.0366847652085`).
 
+## G4c — `graphene/offcentre_enclosing/` (off-centre window, exact trace, `M = 128`, 10 meV)
+
+Added at the stage-4 closure (handoff 0004, review 3) so that the gate covers a window with
+`BandCenter != 0` (`Shift != 0`); every other golden window is centred.
+
+Inputs: `operators/graphene_golden.{HAM,VX,VY}.CSR` copied from `graphene/operators/`
+(dim 256, spectrum `[-6.834, 6.834]` eV by dense diagonalisation); `BOUNDS` = `-8.5 7.5` in the
+run directory (window source = `BOUNDS` file, branch 1 of the legacy `SpectralBounds`; centre
+`-0.5`, encloses the spectrum; header `256 16  -0.5`); an exact local-state file over the 256
+sites.
+
+- `BOUNDS`, `NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D`: **legacy**. Produced on
+  TCN, 2026-10-20, by this repository's legacy tree (unchanged since `8ecbf83` apart from CMake
+  options), built as in the table above in a separate directory: `cmake -S . -B build_legacy
+  -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON`, `cmake --build build_legacy -j 32`
+  (it reproduces G5 Bastin byte for byte), with `KPM_SEED=12345 OMP_NUM_THREADS=16`:
+  `inline_compute-kpm-nonEqOp graphene_golden VX VY 128 exact`. (`~/lsquant/build` on TCN,
+  `c1d9318`, June 2025, is an older unrelated legacy build that does not reproduce G5; not used.)
+- `KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat`: **blessed from the
+  new code because of legacy defect D2** (Fable's decision, handoff 0004 closure):
+  `OMP_NUM_THREADS=16 python3 -m lsquant.apps.stage3_kubo --moments
+  NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D --formula bastin --broadening-meV 10`
+  at `aba179a` (moments from `stage3_kubo --operators ... --left VX --right VY --window -8.5 7.5
+  --trace exact --states 256 --moments 128`, byte-identical to the legacy moments; the curve from
+  the legacy moments file is byte-identical too). Its value column is byte-identical to the
+  legacy `inline_kuboBastinFromChebmom <mom> 10` output; its energy column is the correct
+  `x*HalfWidth + BandCenter`. The legacy curve, whose energy column is shifted by
+  `BandCenter/HalfWidth - BandCenter = +0.4375` eV, is kept as evidence in
+  `legacy_defects/offcentre_axis/` (see its README).
+
+A first G4c window `-3.5 2.5` was dropped: it excludes the spectrum (rescaled eigenvalues up
+to 2.44, moments ~1e138), so it is not a golden. Generation log:
+`figures/out/stage_4/g4c_generation.log`.
+
 ## G5 — `haldane/` (exact trace, `M = 128`, bounds `[-4.5, 4.5]`, 10 meV)
 
 Inputs: `operators/haldane.{HAM,VX,VY}.CSR` copied from `test/golden/haldane/operators`
@@ -116,6 +150,67 @@ Parameters a README does not fix, and deviations:
 - 06: `rp_validate.py` with `OMP_NUM_THREADS=64` (README); `rp_spin.py` sets `KPM_SEED=1..20`
   and `OMP_NUM_THREADS=16` per random vector itself.
 
+## G9 — `bases/graphene/`, `bases/haldane/` (stage 5; independent oracle, not the legacy build)
+
+G9 is the only golden not produced by the legacy LSQUANT build: AGENTS.md section 8 names
+`wannier2sparse/tools/hr_exactdiag.py` (exact diagonalisation on a k mesh, independent code)
+as its oracle. Regenerated on TCN on 2026-10-21 by the stage-5 tester for the closure run
+(handoff `0005-bloch-and-eigen-bases`, codex.md section 2.2 as revised in review 2:
+Gamma-centred mesh, Gaussian 40 meV), Python 3.10.12, numpy 2.2.6. The run-1 G9 (shifted
+48 x 48 mesh, Gaussian pi a / M) is superseded.
+
+| Item | Value |
+|---|---|
+| wannier2sparse | `~/wannier2sparse` at `3f553db8dc2f226f44592b6ee2a717d3cd71d8c7` (local edits only in `tools/block_pilot.cpp`, `docs/FINDINGS.md`, `roadmap_plans.md`; `tools/hr_exactdiag.py`, `examples/gen_models.py` and `src/` clean). The pinned `26cab4a` of `scripts/fetch_wannier2sparse.sh` has no `tools/hr_exactdiag.py`. |
+| Models | `python3 examples/gen_models.py` (graphene: t = -1 eV, a1 = (1.5, 0.8660254, 0), a2 = (1.5, -0.8660254, 0), tau_B = (1, 0, 0); Haldane: t1 = -1, t2 = 0.15, phi = pi/2). Committed unchanged as `<model>/model/<model>_hr.dat`, `.uc`, `.xyz`. |
+| Velocities | `wannier2sparse <model> 1 1 1 VX VY --mode bundle -o bund` (velocity mode `berry_connection`, `-i (R.lat + tau_b - tau_a) H`, eV Angstrom); `bund/<model>.w2sp/operators/VX.hr.dat`, `VY.hr.dat` copied to `<model>/model/<model>_vx_hr.dat`, `_vy_hr.dat` (the names `hr_exactdiag.py sigma` reads). |
+| Mesh (G9) | **Gamma-centred 48 x 48, k = n/48** (the k mesh of the 48 x 48 x 1 supercell). `hr_exactdiag.py` hard-codes the shifted mesh (n + 1/2)/N, so it is run through the thin wrapper **`scripts/hr_exactdiag_gamma.py`**, which reads the tool's source, replaces exactly the four expressions `(np.arange(nk) + .5) / nk` / `(np.arange(a.nk) + .5) / a.nk` by `np.arange(nk) / nk` / `np.arange(a.nk) / a.nk` (it aborts if the expected occurrences are not found) and runs the tool's own `main`; nothing else of the tool changes. |
+| Broadening | Gaussian **eta = 0.040 eV** (40 meV). |
+| Grid | `--emin -3.6 --emax 3.6 --ngrid 2881` (2.5 meV spacing; [-3.6, 3.6] eV is the `--window eigen` of the lsquant runs). |
+| sigma_xx units | `hr_exactdiag sigma` divides by A_hr = `abs(a1_x a2_y)` = 1.299038 A^2, half the honeycomb cell `abs(a1 x a2)` = 2.598076 A^2, so `sigma_xx_e2h` of these two models is **twice** the e^2/h value. The gate compares `EigenBasis.exact_sigma_xx` (the stage-3 `kubo_greenwood` normalisation, pi Tr[v delta v delta]) multiplied by **2 pi / (A_hr N_k)** = 2.0993e-3 (N_k = 2304) with the G9 values as stored; the figure shows both in e^2/h with the true cell (G9 x A_hr / A). |
+| Finite size (report only) | the same `dos` and `sigma --comp xx` with the tool unwrapped on its own shifted 240 x 240 mesh, same eta and grid: `finite_size_shifted240_dos.json`, `finite_size_shifted240_sigma_xx.json`. No gate row uses them as a reference. |
+
+Commands (in a scratch copy of the generated models, `<m>` = graphene, haldane; `T` =
+`~/wannier2sparse/tools/hr_exactdiag.py`; `A` = `--eta 0.040 --ngrid 2881 --emin -3.6 --emax 3.6`):
+
+```
+python3 scripts/hr_exactdiag_gamma.py T dos   <m> --nk 48 A            --out goldens/stage0/bases/<m>/G9_dos
+python3 scripts/hr_exactdiag_gamma.py T sigma <m> --nk 48 A --comp xx  --out goldens/stage0/bases/<m>/G9_sigma_xx
+python3 T dos   <m> --nk 240 A           --out goldens/stage0/bases/<m>/finite_size_shifted240_dos
+python3 T sigma <m> --nk 240 A --comp xx --out goldens/stage0/bases/<m>/finite_size_shifted240_sigma_xx
+```
+
+The whole generation is `goldens/stage0/bases/gen_g9.sh <repo>` (committed). Files per model:
+`G9_dos.json` (`energy_eV`, `dos` per cell, integral 2.000), `G9_sigma_xx.json` (`energy_eV`,
+`sigma_xx_e2h`), `G9_params.txt` (mesh, nk, eta, grid; read by `figures/stage_5_table.py`),
+the two finite-size files, `model/`. A second generation into a scratch tree reproduced all
+20 files byte for byte.
+
+sha256:
+
+```
+8c8a857d35291856832f54c6b14ab2614d65247260ff910b3d50c285acb12625  bases/graphene/G9_dos.json
+a3ca1a5a32c55717024ce5d8e97ebf21688f1d8babfeb81d1e5eded896afa090  bases/graphene/G9_sigma_xx.json
+53711db6669b96996381d19f2ab09e3e07cee9837c49b1d49b787e0a13e0d2af  bases/graphene/G9_params.txt
+9ef13d31a06ce8387485107592807fd612dcd65a3e56f73d31261836c8fa289e  bases/graphene/finite_size_shifted240_dos.json
+2d25877f358c2cf3493c4d5bcc5dad99ac8301368137b34d1f7380f159dda2a9  bases/graphene/finite_size_shifted240_sigma_xx.json
+1dc70fea90f60fc8340ee0ced64639a6d9390f7f636a5eea10c06dc333ab2fde  bases/graphene/model/graphene_hr.dat
+0bc2d2218e7805356c364afce524055907c1fccc287ef88cff54e6e4ba022560  bases/graphene/model/graphene.uc
+2779e3f2fecf3dcff54fad0817088b4b9ab536293cb7e30f44b525a13563cdf9  bases/graphene/model/graphene.xyz
+b3014714d39c0354052b6d0308b6b3a92bbb0da6d0cda0ee6d032a7b443cc2b6  bases/graphene/model/graphene_vx_hr.dat
+204b566f8a05dc3405219a49630b204beaed79a2d4cbba06324783951e53d8f5  bases/graphene/model/graphene_vy_hr.dat
+18f61df5b4bfa8ccad06831488558d627e9e24a86c720a36e1d4bc5221516c58  bases/haldane/G9_dos.json
+f7a8f11c7717eedb60259141495f7fc7e207a431c8488ad49e63fc9295a7764a  bases/haldane/G9_sigma_xx.json
+53711db6669b96996381d19f2ab09e3e07cee9837c49b1d49b787e0a13e0d2af  bases/haldane/G9_params.txt
+e213a220eebd2abe951b4f7dcac3ed4c644630772d17048d5582bc7dca095be6  bases/haldane/finite_size_shifted240_dos.json
+34d3455330a7b5173b4ff9e2374f12ec1f132a0f07d81958aede2236e7fbcdfb  bases/haldane/finite_size_shifted240_sigma_xx.json
+d4b53b22c4e33e067ad0ca77a6ac66c0aa76d1379d2d265e0278700dcd83d706  bases/haldane/model/haldane_hr.dat
+0bc2d2218e7805356c364afce524055907c1fccc287ef88cff54e6e4ba022560  bases/haldane/model/haldane.uc
+2779e3f2fecf3dcff54fad0817088b4b9ab536293cb7e30f44b525a13563cdf9  bases/haldane/model/haldane.xyz
+b7bdaaad6a393fc5da52d9d0109f0872dc5c86f5771c2e8a688f3523627d05b8  bases/haldane/model/haldane_vx_hr.dat
+ea86f1903319c27467003d92f6e332248ae9a7dfcb991a38571c552054f18c10  bases/haldane/model/haldane_vy_hr.dat
+```
+
 ## Stability
 
 `scripts/check_goldens.sh 0 build` reran G1, G2, G5 (16 threads) and G1, G2 (1 and 64
@@ -134,6 +229,10 @@ evidence and **are not references**: no harness reads them.
   `Vectors::IterateAll` does not carry the recursion across batches, so block k is shifted
   by k orders. The command, the evidence and the cause are in its `README.md`. The batched
   run of the new core is gated against G2 itself (`scripts/check_goldens.sh 1`).
+- `legacy_defects/offcentre_axis/KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat`:
+  the legacy Bastin curve of G4c (`BOUNDS` `-8.5 7.5`), whose energy column carries legacy defect
+  D2 (uniform-grid axis `x*HalfWidth + BandCenter/HalfWidth`, shifted by +0.4375 eV here); see
+  its `README.md`. The G4c curve golden was blessed from the new code instead.
 
 ## G10 (part) — `nonorth/` (rotated chain1d and Haldane, handoff 0006)
 
