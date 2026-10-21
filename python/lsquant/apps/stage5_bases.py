@@ -13,9 +13,16 @@ Invocation contract:
      --word dos|kuboxx \\
      --moments 256 \\
      --trace exact|random --states 10 --seed 12345 \\
-     --window -10 10 \\
+     --window eigen|gershgorin|<lo> <hi> \\
      --broadening-meV 100 \\
      --out <dir>
+
+The default spectral window is ``--window eigen`` for every basis: the app
+computes the eigenvalue bounds once from the ``H(k)`` blocks (padded by ``0.10``
+of the spectral width) so that ``real``, ``bloch``, and ``eigen`` runs of the
+same comparison share the identical window. Gershgorin is not used by default on
+Wannier models because spread-out hoppings make the Gershgorin enclosure several
+times wider than the true spectrum and waste Chebyshev moments.
 
 In all three bases, ``stage5_bases`` runs the identical :class:`~lsquant._core.Plan`
 (:func:`~lsquant.moments.dos_plan` or :func:`~lsquant.moments.kubo_plan`) through
@@ -30,10 +37,11 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from typing import Sequence
 
 from .. import _core
-from ..bases import make_basis
-from ..models.wannier import load_wannier_model
+from ..bases import BlochBasis, EigenBasis, RealBasis, make_basis
+from ..models.wannier import WannierModel, load_wannier_model
 from ..moments import dos_plan, kubo_plan, run_plan
 from ..reconstruct import dos_curve, kubo_greenwood
 
@@ -139,8 +147,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--window",
         nargs="+",
-        required=True,
-        help="Spectral window '<lower> <upper>' in eV or 'gershgorin'",
+        default=["eigen"],
+        help="Spectral window: 'eigen' (default), 'gershgorin', or '<lower> <upper>' in eV",
     )
     parser.add_argument(
         "--broadening-meV",
@@ -172,11 +180,34 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _resolve_window(
-    window_tokens: list[str], basis_obj: object
+    window_tokens: list[str],
+    model: WannierModel,
+    supercell: Sequence[int],
+    basis_obj: RealBasis | BlochBasis | EigenBasis,
 ) -> _core.SpectralWindow:
-    """Resolve ``--window <lo> <hi>`` or ``--window gershgorin``."""
-    if len(window_tokens) == 1 and window_tokens[0].strip().lower() == "gershgorin":
-        return basis_obj.window()  # type: ignore[attr-defined]
+    """Resolve ``--window eigen``, ``--window gershgorin``, or ``--window <lo> <hi>``.
+
+    Defaults to ``eigen`` across all three bases so that ``real``, ``bloch``,
+    and ``eigen`` runs of one comparison share the exact same window computed
+    from the ``H(k)`` block eigenvalues. Gershgorin is not used by default on
+    Wannier models because spread-out hoppings make the Gershgorin enclosure
+    several times wider than the spectrum.
+    """
+    if len(window_tokens) == 1:
+        key = window_tokens[0].strip().lower()
+        if key == "eigen":
+            if isinstance(basis_obj, (BlochBasis, EigenBasis)):
+                return basis_obj.window()
+            return EigenBasis(model, supercell).window()
+        if key == "gershgorin":
+            if isinstance(basis_obj, RealBasis):
+                return basis_obj.window()
+            return RealBasis(
+                model,
+                supercell,
+                disorder_w=basis_obj.disorder_w,
+                seed=basis_obj.seed,
+            ).window()
     if len(window_tokens) == 2:
         lo = float(window_tokens[0])
         hi = float(window_tokens[1])
@@ -184,7 +215,7 @@ def _resolve_window(
             raise ValueError("stage5_bases: --window upper bound must exceed lower bound")
         return _core.SpectralWindow(lo, hi)
     raise ValueError(
-        "stage5_bases: --window must be either '<lo> <hi>' or 'gershgorin'"
+        "stage5_bases: --window must be 'eigen', 'gershgorin', or '<lo> <hi>'"
     )
 
 
@@ -206,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
             seed=rng_seed,
         )
 
-        window = _resolve_window(args.window, basis)
+        window = _resolve_window(args.window, model, args.supercell, basis)
         state_gen = basis.states(
             trace_mode=args.trace,
             num_states=args.states,

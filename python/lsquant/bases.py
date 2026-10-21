@@ -171,7 +171,14 @@ class RealBasis:
         )
 
     def window(self, pad: float = 0.10) -> _core.SpectralWindow:
-        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` for this Hamiltonian."""
+        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` for this Hamiltonian.
+
+        Kept on Gershgorin only as the stage-1-compatible real-space default;
+        on Wannier models with long-range hoppings, Gershgorin bounds are
+        several times wider than the true spectrum and waste Chebyshev moments,
+        so :class:`BlochBasis` and :class:`EigenBasis` use the block eigenvalue
+        range instead.
+        """
         win = window_from_gershgorin(self._h_csr, pad=float(pad))
         if self.disorder_w > 0.0:
             extra = 0.5 * self.disorder_w * (1.0 + float(pad))
@@ -247,6 +254,7 @@ class BlochBasis:
             self._h_op = self._hk_op
 
         self._op_cache: dict[str, _core.LinearOperator] = {}
+        self._eig_bounds: tuple[float, float] | None = None
 
     @property
     def disorder_values(self) -> npt.NDArray[np.complex128] | None:
@@ -313,13 +321,28 @@ class BlochBasis:
         )
 
     def window(self, pad: float = 0.10) -> _core.SpectralWindow:
-        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` matching :class:`RealBasis`."""
-        h_csr = self.model.hamiltonian_csr(self.supercell)
-        win = window_from_gershgorin(h_csr, pad=float(pad))
-        if self.disorder_w > 0.0:
-            extra = 0.5 * self.disorder_w * (1.0 + float(pad))
-            return _core.SpectralWindow(win.lower - extra, win.upper + extra)
-        return win
+        """Return the :class:`~lsquant._core.SpectralWindow` enclosing the block eigenvalues.
+
+        Diagonalises the ``N_k`` blocks ``H(k)`` once and caches ``(emin, emax)``,
+        returning ``[emin - pad * width, emax + pad * width]`` with
+        ``width = emax - emin`` identical to :meth:`EigenBasis.window`.
+        On Wannier models with long-range hoppings, Gershgorin bounds are
+        several times wider than the true spectrum and waste Chebyshev moments,
+        so ``BlochBasis`` uses the block eigenvalues rather than Gershgorin.
+        """
+        if pad < 0.0:
+            raise ValueError("BlochBasis.window: pad must be non-negative")
+        if self._eig_bounds is None:
+            eigvals, _ = np.linalg.eigh(self.hk_array)
+            self._eig_bounds = (float(np.min(eigvals)), float(np.max(eigvals)))
+        emin, emax = self._eig_bounds
+        width = emax - emin
+        if width <= 0.0:
+            emin -= 1.0
+            emax += 1.0
+            width = 2.0
+        margin = float(pad) * width
+        return _core.SpectralWindow(emin - margin, emax + margin)
 
 
 class EigenBasis:
@@ -449,9 +472,26 @@ class EigenBasis:
         )
 
     def window(self, pad: float = 0.10) -> _core.SpectralWindow:
-        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` matching :class:`RealBasis`."""
-        h_csr = self.model.hamiltonian_csr(self.supercell)
-        return window_from_gershgorin(h_csr, pad=float(pad))
+        """Return the :class:`~lsquant._core.SpectralWindow` enclosing the block eigenvalues.
+
+        Computes ``[emin - pad * width, emax + pad * width]`` from the minimum and
+        maximum eigenvalues ``(emin, emax)`` of all ``N_k`` blocks ``H(k)`` with
+        ``width = emax - emin``. On Wannier models with long-range hoppings,
+        Gershgorin bounds are several times wider than the true spectrum and
+        waste Chebyshev moments, so ``EigenBasis`` and :class:`BlochBasis`
+        take their window from the block eigenvalues rather than from Gershgorin.
+        """
+        if pad < 0.0:
+            raise ValueError("EigenBasis.window: pad must be non-negative")
+        emin = float(np.min(self.eigenvalues))
+        emax = float(np.max(self.eigenvalues))
+        width = emax - emin
+        if width <= 0.0:
+            emin -= 1.0
+            emax += 1.0
+            width = 2.0
+        margin = float(pad) * width
+        return _core.SpectralWindow(emin - margin, emax + margin)
 
 
 def make_basis(

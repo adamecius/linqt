@@ -18,7 +18,7 @@ Verifies checks (a) through (f) of ``handoff/0005-bloch-and-eigen-bases/brief.md
     64 DOS moments and ``64 x 64`` ``VX-VX`` moments agreeing to ``< 1e-10``
     with random-phase trace (``seed = 12345``).
 (e) Three-basis exact trace equivalence at ``W = 0`` on ``(16, 16, 1)`` graphene
-    (``N_k = 256, dim = 512, M = 128, broadening = 200 meV, window = [-10, 10]``):
+    (``N_k = 256, dim = 512, M = 128, broadening = 200 meV, window = EigenBasis.window()``):
     ``RealBasis``, ``BlochBasis``, and ``EigenBasis`` moment tensors and
     reconstructed DOS and ``VX-VX`` Kubo-Greenwood curves agree to ``< 1e-11``,
     and agree with the direct eigenbasis Gaussian formula of ``hr_exactdiag.py``
@@ -300,13 +300,17 @@ def main() -> int:
         # Check (e): Clean (16, 16, 1) graphene exact trace in all 3 bases
         # ------------------------------------------------------------------
         sc16 = (16, 16, 1)
-        win16 = _core.SpectralWindow(-10.0, 10.0)
         m16 = 128
         broad16 = 200.0
 
         b_real = RealBasis(graphene, sc16)
         b_bloch = BlochBasis(graphene, sc16)
         b_eigen = EigenBasis(graphene, sc16)
+        win16 = b_eigen.window()
+        win16_bloch = b_bloch.window()
+        assert (
+            win16.lower == win16_bloch.lower and win16.upper == win16_bloch.upper
+        ), "BlochBasis.window() and EigenBasis.window() must match"
 
         dos_moments: dict[str, np.ndarray] = {}
         dos_curves: dict[str, tuple[np.ndarray, np.ndarray]] = {}
