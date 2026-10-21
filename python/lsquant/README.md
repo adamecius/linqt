@@ -21,6 +21,19 @@ python -m lsquant reconstruct /tmp/haldane_out --formula bastin --broadening-meV
 python -m lsquant inspect /tmp/haldane_out
 ```
 
+### Generator Catalogue (`model.kind = "generator"`)
+
+`model.name` is validated against a fixed catalogue in `python/lsquant/runfile.py` and resolved relative to the repository root:
+
+| `model.name` | Module Path |
+|---|---|
+| `make_chain` | `examples/01_dos_1d_chain/make_chain.py` |
+| `make_disordered_chain` | `examples/02_localization_1d_chain/make_disordered_chain.py` |
+| `make_haldane` | `examples/03_haldane_hall/make_haldane.py` |
+| `make_chain_mag` | `examples/04_spin_precession_magnetic_chain/lsqspin.py` |
+| `make_square` | `examples/05_charge_transport_square/make_square.py` |
+| `gen_models` | `python/lsquant/models/wannier.py` |
+
 ## MCP Server (`python -m lsquant.mcp_server`)
 
 `lsquant.mcp_server` exposes five tools over `stdio` using `FastMCP` (`pip install mcp`):

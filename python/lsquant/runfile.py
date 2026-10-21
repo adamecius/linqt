@@ -49,11 +49,46 @@ ALLOWED_MODEL_KEYS: frozenset[str] = frozenset(
         "seed",
         "operators",
         "csr_dir",
+        "name",
         "tutorial",
-        "script",
         "params",
     }
 )
+
+GENERATOR_CATALOGUE: dict[str, str] = {
+    "make_chain": "examples/01_dos_1d_chain/make_chain.py",
+    "make_disordered_chain": "examples/02_localization_1d_chain/make_disordered_chain.py",
+    "make_haldane": "examples/03_haldane_hall/make_haldane.py",
+    "make_chain_mag": "examples/04_spin_precession_magnetic_chain/lsqspin.py",
+    "make_square": "examples/05_charge_transport_square/make_square.py",
+    "gen_models": "python/lsquant/models/wannier.py",
+}
+
+_GENERATOR_TO_TUTORIAL: dict[str, int] = {
+    "make_chain": 1,
+    "make_disordered_chain": 2,
+    "make_haldane": 3,
+    "make_chain_mag": 4,
+    "make_square": 5,
+}
+
+
+def resolve_generator_path(
+    name: str, repo_root: str | None = None
+) -> str:
+    """Resolve a generator catalogue name to its module path under the repository root."""
+    if name not in GENERATOR_CATALOGUE:
+        raise ValueError(
+            f"Unknown generator name '{name}'; allowed generators are {sorted(GENERATOR_CATALOGUE)}"
+        )
+    root = (
+        os.path.abspath(repo_root)
+        if repo_root is not None
+        else os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+    )
+    return os.path.abspath(os.path.join(root, GENERATOR_CATALOGUE[name]))
 
 ALLOWED_BASIS_KEYS: frozenset[str] = frozenset(
     {"name", "supercell", "disorder"}
@@ -131,6 +166,9 @@ DEFAULT_RUNFILE_DEFAULTS: dict[str, Any] = {
         "kind": "csr",
         "operators": [],
         "csr_dir": None,
+        "name": None,
+        "tutorial": None,
+        "params": {},
     },
     "basis": {
         "name": "real",
@@ -222,9 +260,16 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
                 "Run file with model.kind='wannier' requires 'dir' and 'seed'"
             )
     elif kind == "generator":
-        if not model.get("tutorial") and not model.get("script"):
+        gen_name = model.get("name")
+        if not gen_name or not isinstance(gen_name, str):
             raise ValueError(
-                "Run file with model.kind='generator' requires 'tutorial' or 'script'"
+                "Run file with model.kind='generator' requires 'name' from "
+                f"{sorted(GENERATOR_CATALOGUE)}"
+            )
+        if gen_name not in GENERATOR_CATALOGUE:
+            raise ValueError(
+                f"Unknown generator name '{gen_name}' in run file (model.name); "
+                f"allowed generators are {sorted(GENERATOR_CATALOGUE)}"
             )
 
     if "basis" in raw and raw["basis"] is not None:
@@ -428,6 +473,9 @@ class RunFile:
 
         raw_model = dict(raw["model"])
         kind = str(raw_model.get("kind", "csr"))
+        gen_name = raw_model.get("name")
+        if gen_name is not None:
+            _ = resolve_generator_path(str(gen_name), root)
         model_cfg: dict[str, Any] = {
             "kind": kind,
             "dir": _resolve_path(raw_model.get("dir")),
@@ -439,8 +487,8 @@ class RunFile:
                 else None
             ),
             "csr_dir": _resolve_path(raw_model.get("csr_dir")),
+            "name": str(gen_name) if gen_name is not None else None,
             "tutorial": raw_model.get("tutorial"),
-            "script": _resolve_path(raw_model.get("script")),
             "params": dict(raw_model.get("params") or {}),
         }
 
@@ -674,10 +722,19 @@ def _reconstruct_single_formula(
 
 
 def _execute_generator_runfile(
-    rf: RunFile, out_dir: str
+    rf: RunFile, out_dir: str, repo_root: str | None = None
 ) -> list[str]:
     """Execute a tutorial generator run file while writing ``run.resolved.json``."""
-    tut = int(rf.model.get("tutorial") or 0)
+    gen_name = str(rf.model.get("name") or "")
+    gen_path = resolve_generator_path(gen_name, repo_root)
+    if not os.path.isfile(gen_path):
+        raise FileNotFoundError(
+            f"Generator module '{gen_name}' not found at '{gen_path}'"
+        )
+    tut = int(
+        rf.model.get("tutorial")
+        or _GENERATOR_TO_TUTORIAL.get(gen_name, 0)
+    )
     if tut == 1:
         from .apps.tutorial01 import run_tutorial01
 
@@ -707,7 +764,7 @@ def _execute_generator_runfile(
         from .apps.tutorial05 import run_tutorial05
 
         return run_tutorial05(out_dir)
-    raise ValueError(f"Unsupported generator tutorial number '{tut}'")
+    raise ValueError(f"Unsupported generator '{gen_name}' (tutorial={tut})")
 
 
 def execute_runfile(
@@ -738,7 +795,9 @@ def execute_runfile(
 
     kind = str(rf.model["kind"])
     if kind == "generator":
-        written_files = _execute_generator_runfile(rf, out_dir)
+        written_files = _execute_generator_runfile(
+            rf, out_dir, repo_root=repo_root
+        )
         return {
             "output_dir": out_dir,
             "resolved_runfile": resolved_path,

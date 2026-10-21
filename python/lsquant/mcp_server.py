@@ -11,7 +11,12 @@ import sys
 from typing import Any
 import uuid
 
-from .runfile import RunFile, inspect_target, reconstruct_target
+from .runfile import (
+    RunFile,
+    inspect_target,
+    reconstruct_target,
+    resolve_generator_path,
+)
 from .words import describe
 
 
@@ -101,10 +106,14 @@ def tool_run(runfile_json: str | dict[str, Any]) -> str:
     rf = RunFile.from_dict(raw, source_path=source_path, repo_root=root)
 
     # Verify all model and output paths lie inside the configured root
-    for key in ("dir", "csr_dir", "script"):
+    for key in ("dir", "csr_dir"):
         val = rf.model.get(key)
         if val is not None:
             _resolve_within_root(str(val), root)
+    if rf.model.get("name") is not None:
+        _resolve_within_root(
+            resolve_generator_path(str(rf.model["name"]), root), root
+        )
 
     out_dir = _resolve_within_root(str(rf.output["dir"]), root)
     os.makedirs(out_dir, exist_ok=True)

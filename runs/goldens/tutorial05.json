@@ -1,8 +1,8 @@
 {
   "model": {
     "kind": "generator",
+    "name": "make_square",
     "tutorial": 5,
-    "script": "examples/05_charge_transport_square/make_square.py",
     "params": {
       "L": 200,
       "W": [

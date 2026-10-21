@@ -1,8 +1,8 @@
 {
   "model": {
     "kind": "generator",
+    "name": "make_disordered_chain",
     "tutorial": 2,
-    "script": "examples/02_localization_1d_chain/make_disordered_chain.py",
     "params": {
       "sizes": [
         256,

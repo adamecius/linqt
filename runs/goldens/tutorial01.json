@@ -1,8 +1,8 @@
 {
   "model": {
     "kind": "generator",
+    "name": "make_chain",
     "tutorial": 1,
-    "script": "examples/01_dos_1d_chain/make_chain.py",
     "params": {
       "sizes": [
         256,
