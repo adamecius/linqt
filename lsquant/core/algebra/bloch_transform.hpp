@@ -42,6 +42,11 @@ enum class BlochDirection {
  * factor `exp(+i k . tau_alpha) / sqrt(N_k)` and executes `FFTW_BACKWARD`
  * (`sum_k exp(+i k . R)`).
  *
+ * `Multiply` uses a per-object FFTW workspace (`inBuffer`, `outBuffer`, `plan`)
+ * and is not safe to call concurrently on the same `BlochTransform` object
+ * (the engine never does; copies constructed via the copy constructor or
+ * `Adjoint()` get their own workspace).
+ *
  * @warning Throws `std::invalid_argument` if grid dimensions or orbital count
  *          are not positive, or if `atomPhases` does not have length `0` or
  *          `N_1 * N_2 * N_3 * W`.
@@ -55,26 +60,48 @@ public:
   using Direction = BlochDirection;
 
   /**
+   * @brief Tag type indicating that a shared phase table already carries `1 / sqrt(N_k)`.
+   */
+  struct ScaledPhasesTag {};
+
+  /**
    * @brief Construct a `BlochTransform` for an `(n1, n2, n3)` supercell with `numOrbitals` orbitals.
    *
    * @param n1          Supercell grid count along lattice vector 1 (`n1 > 0`).
    * @param n2          Supercell grid count along lattice vector 2 (`n2 > 0`).
    * @param n3          Supercell grid count along lattice vector 3 (`n3 > 0`).
    * @param numOrbitals Number of orbitals `W > 0` per unit cell.
-   * @param atomPhases  Phase table of length `N_k * W` with entries
-   *                    `exp(-i k . tau_alpha)` (unit modulus) or pre-normalised
-   *                    `exp(-i k . tau_alpha) / sqrt(N_k)`. If empty, defaults
-   *                    to zero intra-cell offsets (`tau_alpha = 0`).
+   * @param atomPhases  Unscaled phase table of length `N_k * W` with entries
+   *                    `exp(-i k . tau_alpha)` (as returned by `wannier.bloch_phases`),
+   *                    which the constructor always multiplies by `1 / sqrt(N_k)`.
+   *                    If empty, defaults to zero intra-cell offsets (`tau_alpha = 0`).
    * @param direction   Transform direction (`RealToBloch` for `B`, `BlochToReal` for `B^+`).
    *
    * @warning Throws `std::invalid_argument` on invalid dimensions or phase table length.
    * @par Pitfall
-   *      Always pass `exp(-i k . tau_alpha)` (with the minus sign) for both
-   *      directions; `BlochToReal` conjugates the shared phase table internally.
+   *      Always pass unscaled `exp(-i k . tau_alpha)` (with the minus sign) for both
+   *      directions; the constructor always scales by `1 / sqrt(N_k)`, and `BlochToReal`
+   *      conjugates the shared phase table internally.
    */
   BlochTransform(Index n1, Index n2, Index n3, Index numOrbitals,
                  std::vector<Scalar> atomPhases = {},
                  Direction direction = Direction::RealToBloch);
+
+  /**
+   * @brief Construct a `BlochTransform` from a pre-scaled phase table `exp(-i k . tau_alpha) / sqrt(N_k)`.
+   *
+   * @param n1           Supercell grid count along lattice vector 1 (`n1 > 0`).
+   * @param n2           Supercell grid count along lattice vector 2 (`n2 > 0`).
+   * @param n3           Supercell grid count along lattice vector 3 (`n3 > 0`).
+   * @param numOrbitals  Number of orbitals `W > 0` per unit cell.
+   * @param scaledPhases Shared phase table of length `N_k * W` already multiplied by `1 / sqrt(N_k)`.
+   * @param direction    Transform direction (`RealToBloch` for `B`, `BlochToReal` for `B^+`).
+   * @return             `BlochTransform` instance sharing `scaledPhases` with its own FFTW workspace.
+   */
+  static BlochTransform FromScaledPhases(
+      Index n1, Index n2, Index n3, Index numOrbitals,
+      std::shared_ptr<const std::vector<Scalar>> scaledPhases,
+      Direction direction = Direction::RealToBloch);
 
   /**
    * @brief Copy constructor creating dedicated FFTW scratch buffers and sharing the phase table.
@@ -178,7 +205,7 @@ public:
 private:
   struct FftwWorkspace;
 
-  BlochTransform(Index n1, Index n2, Index n3, Index numOrbitals,
+  BlochTransform(ScaledPhasesTag, Index n1, Index n2, Index n3, Index numOrbitals,
                  std::shared_ptr<const std::vector<Scalar>> scaledPhases,
                  Direction direction);
 
