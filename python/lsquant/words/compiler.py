@@ -481,13 +481,13 @@ def compile(
                     if route == "lowdin":
                         op_objs.append(
                             _core.LowdinOperator(
-                                metric_policy_obj.inverse_sqrt_overlap(), raw_a
+                                metric_policy_obj.inverse_sqrt_overlap, raw_a
                             )
                         )
                     else:
                         op_objs.append(
                             _core.MetricInverseProduct(
-                                metric_policy_obj.inverse_overlap(), raw_a
+                                metric_policy_obj.inverse_overlap, raw_a
                             )
                         )
                 else:
@@ -516,12 +516,12 @@ def compile(
                     and not metric_policy_obj.is_orthogonal
                 ):
                     sinv_a = _core.MetricInverseProduct(
-                        metric_policy_obj.inverse_overlap(), concrete_ops[key_a]
+                        metric_policy_obj.inverse_overlap, concrete_ops[key_a]
                     )
                     op_objs = [
                         sinv_a,
-                        metric_policy_obj.inverse_overlap(),
-                        metric_policy_obj.overlap(),
+                        metric_policy_obj.inverse_overlap,
+                        metric_policy_obj.overlap,
                     ]
             else:
                 op_names = [f"S^-1*{key_a}", f"S^-1*{key_b}", "S^-1", "S"]
@@ -536,16 +536,16 @@ def compile(
                     and not metric_policy_obj.is_orthogonal
                 ):
                     sinv_a = _core.MetricInverseProduct(
-                        metric_policy_obj.inverse_overlap(), concrete_ops[key_a]
+                        metric_policy_obj.inverse_overlap, concrete_ops[key_a]
                     )
                     sinv_b = _core.MetricInverseProduct(
-                        metric_policy_obj.inverse_overlap(), concrete_ops[key_b]
+                        metric_policy_obj.inverse_overlap, concrete_ops[key_b]
                     )
                     op_objs = [
                         sinv_a,
                         sinv_b,
-                        metric_policy_obj.inverse_overlap(),
-                        metric_policy_obj.overlap(),
+                        metric_policy_obj.inverse_overlap,
+                        metric_policy_obj.overlap,
                     ]
             plan = _build_generalised_kubo_plan(
                 num_moments,
@@ -576,14 +576,14 @@ def compile(
                         if route == "lowdin":
                             op_objs.append(
                                 _core.LowdinOperator(
-                                    metric_policy_obj.inverse_sqrt_overlap(),
+                                    metric_policy_obj.inverse_sqrt_overlap,
                                     raw_op,
                                 )
                             )
                         else:
                             op_objs.append(
                                 _core.MetricInverseProduct(
-                                    metric_policy_obj.inverse_overlap(), raw_op
+                                    metric_policy_obj.inverse_overlap, raw_op
                                 )
                             )
                     else:

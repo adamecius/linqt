@@ -1155,7 +1155,7 @@ def execute_runfile(
                 )
                 ham_op = _core.SparseMatrixOperator(ham)
                 lowdin_h = _core.LowdinOperator(
-                    metric_obj.inverse_sqrt_overlap(), ham_op
+                    metric_obj.inverse_sqrt_overlap, ham_op
                 )
                 rescaled_h = _core.RescaledOperator(lowdin_h, window)
             else:
@@ -1173,7 +1173,7 @@ def execute_runfile(
                     s_mat, inv_app, inv_sqrt_app
                 )
                 rescaled_h = _core.GeneralisedRescaledOperator(
-                    ham, s_mat, metric_obj.inverse_overlap(), window
+                    ham, s_mat, metric_obj.inverse_overlap, window
                 )
 
         discovered_ops = (
