@@ -293,6 +293,8 @@ def main() -> int:
                     stdout=subprocess.DEVNULL,
                 )
                 real_w2s = RealBasis(mdl, sc64, csr_dir=w2s_out64)
+                assert real_w2s.operator_source("HAM").startswith("wannier2sparse ")
+                assert real_b.operator_source("HAM") == "built by lsquant"
                 h_built_dense = _dense_from_operator(h_csr_op)
                 h_w2s_dense = _dense_from_operator(real_w2s.hamiltonian())
                 max_h_csr_diff = float(np.max(np.abs(h_built_dense - h_w2s_dense)))
@@ -302,6 +304,26 @@ def main() -> int:
                 assert max_h_csr_diff == 0.0, (
                     f"Non-zero |H_real_basis - H_w2s_csr| on {name} 6x4x1: {max_h_csr_diff}"
                 )
+                if name == "graphene":
+                    bad_csr_dir = os.path.join(tmp_dir, "w2s_graphene_6x4_bad_receipt")
+                    shutil.copytree(w2s_out64, bad_csr_dir)
+                    bad_out_path = os.path.join(bad_csr_dir, "graphene.out")
+                    with open(bad_out_path, encoding="utf-8") as fh:
+                        orig_rec = fh.read()
+                    # Right-size CSR (dim=48 for 6x4x1), but receipt claims supercell 4x6x1 (also dim=48)
+                    with open(bad_out_path, "w", encoding="utf-8") as fh:
+                        fh.write(orig_rec.replace("graphene 6 4 1 VX", "graphene 4 6 1 VX"))
+                    raised_wrong_sc = False
+                    try:
+                        RealBasis(mdl, sc64, csr_dir=bad_csr_dir)
+                    except ValueError:
+                        raised_wrong_sc = True
+                    assert raised_wrong_sc, (
+                        "Expected RealBasis to raise ValueError on right-size CSR with wrong receipt supercell"
+                    )
+                    print(
+                        "[check b] (graphene 6x4x1) right-size CSR with wrong receipt raises ValueError: PASS"
+                    )
 
             max_h_diff = 0.0
             max_vx_diff = 0.0

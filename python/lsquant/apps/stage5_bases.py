@@ -285,6 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         word_key = args.word.strip().lower()
 
         if word_key == "dos":
+            used_ops = ["HAM"]
             plan = dos_plan(
                 num_moments,
                 int(state_gen.number_of_states),
@@ -313,11 +314,13 @@ def main(argv: list[str] | None = None) -> int:
         elif word_key in ("kuboxx", "kuboxy"):
             op_vx = basis.operator("VX")
             if word_key == "kuboxx":
+                used_ops = ["HAM", "VX"]
                 operators = [op_vx]
                 left_idx, right_idx = 0, 0
                 word_str = "VX delta VX delta"
                 op_tag = "VX-VX"
             else:
+                used_ops = ["HAM", "VX", "VY"]
                 op_vy = basis.operator("VY")
                 operators = [op_vx, op_vy]
                 left_idx, right_idx = 0, 1
@@ -371,6 +374,10 @@ def main(argv: list[str] | None = None) -> int:
             "moments": int(num_moments),
             "broadening_meV": float(args.broadening_meV),
             "word": word_key,
+            "operators": {
+                op_name: {"source": basis.operator_source(op_name)}
+                for op_name in used_ops
+            },
         }
         _core.WriteChebmom(cheb_path, mu)
         _core.WriteCurveText(dat_path, energies, values)
