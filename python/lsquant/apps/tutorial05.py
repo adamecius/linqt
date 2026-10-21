@@ -16,17 +16,13 @@ import os
 import shutil
 import sys
 import tempfile
+from collections.abc import Sequence
 from types import ModuleType
 
 from .. import _core
-from ..moments import (
-    dos_plan,
-    msd_plan,
-    run_plan,
-    time_evolution_series,
-    time_step_from_tmax,
-)
+from ..moments import run_plan
 from ..reconstruct import dos_curve, time_correlation_curve
+from ..words import compile as compile_word
 
 L_SIDE: int = 200
 W_LIST: tuple[float, ...] = (0.5, 1.0, 2.0, 4.0)
@@ -69,97 +65,172 @@ def _read_bounds(bounds_path: str) -> _core.SpectralWindow:
     return _core.SpectralWindow(float(tokens[0]), float(tokens[1]))
 
 
-def run_tutorial05(out_dir: str) -> list[str]:
+def run_tutorial05(
+    out_dir: str,
+    *,
+    l_side: int = L_SIDE,
+    w_list: Sequence[float] = W_LIST,
+    disorder_seed: int = DISORDER_SEED,
+    dos_moments: int = M_DOS,
+    kpm_seed: int = KPM_SEED,
+    num_moments: int = M_MSD,
+    num_states: int = 1,
+    window: tuple[float, float] | list[float] | _core.SpectralWindow | str | None = None,
+    ntime: int = NTIME,
+    tmax: float = TMAX,
+    bessel: str = "legacy",
+    words: Sequence[str] = (
+        "Tr[[X,U(t)]^+ delta(E-H) [X,U(t)]]",
+        "Tr[delta(E-H)]",
+    ),
+    broadening_meV: float = BROAD_MEV,
+    fermi_energies: Sequence[float] = (EF_TARGET,),
+    legacy_text_round_trip: bool = True,
+) -> list[str]:
     """Run Tutorial 05 and write the eight MSD and DOS ``.dat`` curves into ``out_dir``."""
     make_square = _load_make_square()
     os.makedirs(out_dir, exist_ok=True)
     captured_dir = os.path.join(out_dir, "captured")
     os.makedirs(captured_dir, exist_ok=True)
 
+    win_override: _core.SpectralWindow | None = None
+    if isinstance(window, _core.SpectralWindow):
+        win_override = window
+    elif isinstance(window, (list, tuple)) and len(window) == 2:
+        win_override = _core.SpectralWindow(float(window[0]), float(window[1]))
+
     written: list[str] = []
     cap_idx = 0
-    dt = time_step_from_tmax(NTIME, TMAX)
-    tmax_str = f"{TMAX:g}"
+    tmax_str = f"{float(tmax):g}"
+    ef_list = tuple(float(e) for e in fermi_energies) or (EF_TARGET,)
 
-    for w_val in W_LIST:
+    for w_val in w_list:
         with tempfile.TemporaryDirectory() as stage_dir:
             label = str(
-                make_square.build_square(L_SIDE, w_val, DISORDER_SEED, outdir=stage_dir)
+                make_square.build_square(
+                    int(l_side),
+                    float(w_val),
+                    int(disorder_seed),
+                    outdir=stage_dir,
+                )
             )
             op_dir = os.path.join(stage_dir, "operators")
-            window = _read_bounds(os.path.join(stage_dir, "BOUNDS"))
+            win = (
+                win_override
+                if win_override is not None
+                else _read_bounds(os.path.join(stage_dir, "BOUNDS"))
+            )
 
             ham = _core.ReadCsrText(os.path.join(op_dir, f"{label}.HAM.CSR"))
             vx_mat = _core.ReadCsrText(os.path.join(op_dir, f"{label}.VX.CSR"))
-            vx_op = _core.RescaledOperator(vx_mat, window)
+            vx_op = _core.RescaledOperator(vx_mat, win)
             dim = ham.dimension
 
-            # 1. MSD at E_F = 2.0 eV
-            states_msd = _core.RandomPhaseStates(dim, 1, KPM_SEED)
-            # Byte identity with the legacy captures requires the GSL Bessel values.
-            coeffs, phase = time_evolution_series(window, dt, use_legacy_bessel=True)
-            plan_msd = msd_plan(
-                M_MSD,
-                NTIME,
-                1,
-                coeffs,
-                velocity_index=0,
-                phase=phase,
-                word="[VX, U(t)]^+ delta [VX, U(t)]",
-            )
-            mu_msd = run_plan(
-                plan_msd,
-                ham,
-                window,
-                states_msd,
-                operators=[vx_op],
-                batch_size=M_MSD,
-                symmetrise=False,
-                dt=dt,
-            )
-            msd_stem = (
-                f"CorrelationVX{label}KPM_M{M_MSD}_state{tmax_str}{states_msd.label}"
-            )
-            msd_mom_path = os.path.join(stage_dir, f"{msd_stem}.chebmomTD")
-            _core.WriteLegacyChebmomTD(msd_mom_path, mu_msd)
-            mu_msd_disk = _core.ReadChebmom(msd_mom_path)
+            for w_str in words:
+                compiled_probe = compile_word(
+                    w_str,
+                    basis={"name": "real", "operators": {"VX": vx_op}},
+                    params={
+                        "expansion": {
+                            "moments": int(num_moments),
+                            "states": int(num_states),
+                            "window": win,
+                        },
+                        "time": {
+                            "steps": int(ntime),
+                            "tmax": float(tmax),
+                            "bessel": str(bessel),
+                        },
+                    },
+                )
+                if compiled_probe.word.is_time_dependent:
+                    m_cur = int(num_moments)
+                    states_msd = _core.RandomPhaseStates(
+                        dim, int(num_states), int(kpm_seed)
+                    )
+                    mu_msd = run_plan(
+                        compiled_probe.plan,
+                        ham,
+                        win,
+                        states_msd,
+                        operators=compiled_probe.operators,
+                        batch_size=m_cur,
+                        symmetrise=False,
+                        dt=compiled_probe.dt,
+                    )
+                    prefix = compiled_probe.reconstruction.legacy_moment_prefix
+                    msd_stem = (
+                        f"{prefix}{label}KPM_M{m_cur}_state{tmax_str}{states_msd.label}"
+                    )
+                    msd_mom_path = os.path.join(stage_dir, f"{msd_stem}.chebmomTD")
+                    _core.WriteLegacyChebmomTD(msd_mom_path, mu_msd)
+                    mu_msd_disk = (
+                        _core.ReadChebmom(msd_mom_path)
+                        if legacy_text_round_trip
+                        else mu_msd
+                    )
 
-            times, msd_vals = time_correlation_curve(
-                mu_msd_disk, BROAD_MEV, EF_TARGET
-            )
-            msd_dat_name = f"mean{msd_stem}EF{EF_TARGET:.6f}JACKSON.dat"
-            msd_dat_path = os.path.join(out_dir, msd_dat_name)
-            _core.WriteCurveText(msd_dat_path, times, msd_vals)
-            written.append(msd_dat_path)
+                    for ef in ef_list:
+                        times, msd_vals = time_correlation_curve(
+                            mu_msd_disk, float(broadening_meV), ef
+                        )
+                        msd_dat_name = f"mean{msd_stem}EF{ef:.6f}JACKSON.dat"
+                        msd_dat_path = os.path.join(out_dir, msd_dat_name)
+                        _core.WriteCurveText(msd_dat_path, times, msd_vals)
+                        written.append(msd_dat_path)
 
-            msd_cap_path = os.path.join(
-                captured_dir, f"{cap_idx:04d}_{msd_dat_name}"
-            )
-            shutil.copyfile(msd_dat_path, msd_cap_path)
-            cap_idx += 1
+                        msd_cap_path = os.path.join(
+                            captured_dir, f"{cap_idx:04d}_{msd_dat_name}"
+                        )
+                        shutil.copyfile(msd_dat_path, msd_cap_path)
+                        cap_idx += 1
+                else:
+                    m_dos = int(dos_moments)
+                    compiled_dos = compile_word(
+                        w_str,
+                        basis={"name": "real", "operators": {"VX": vx_op}},
+                        params={
+                            "expansion": {
+                                "moments": m_dos,
+                                "states": int(num_states),
+                                "window": win,
+                            },
+                        },
+                    )
+                    states_dos = _core.RandomPhaseStates(
+                        dim, int(num_states), int(kpm_seed)
+                    )
+                    mu_dos = run_plan(
+                        compiled_dos.plan,
+                        ham,
+                        win,
+                        states_dos,
+                        operators=compiled_dos.operators,
+                        batch_size=m_dos,
+                    )
+                    prefix = compiled_dos.reconstruction.legacy_moment_prefix
+                    dos_stem = f"{prefix}{label}KPM_M{m_dos}_state{states_dos.label}"
+                    dos_mom_path = os.path.join(stage_dir, f"{dos_stem}.chebmom1D")
+                    _core.WriteLegacyChebmom1D(dos_mom_path, mu_dos)
+                    mu_dos_disk = (
+                        _core.ReadChebmom(dos_mom_path)
+                        if legacy_text_round_trip
+                        else mu_dos
+                    )
 
-            # 2. DOS at M = 1024
-            states_dos = _core.RandomPhaseStates(dim, 1, KPM_SEED)
-            plan_dos = dos_plan(M_DOS, 1, word="1 delta")
-            mu_dos = run_plan(
-                plan_dos, ham, window, states_dos, batch_size=M_DOS
-            )
-            dos_stem = f"SpectralOp1{label}KPM_M{M_DOS}_state{states_dos.label}"
-            dos_mom_path = os.path.join(stage_dir, f"{dos_stem}.chebmom1D")
-            _core.WriteLegacyChebmom1D(dos_mom_path, mu_dos)
-            mu_dos_disk = _core.ReadChebmom(dos_mom_path)
+                    energies, dos_vals = dos_curve(
+                        mu_dos_disk, float(broadening_meV)
+                    )
+                    dos_dat_name = f"mean{dos_stem}JACKSON.dat"
+                    dos_dat_path = os.path.join(out_dir, dos_dat_name)
+                    _core.WriteCurveText(dos_dat_path, energies, dos_vals)
+                    written.append(dos_dat_path)
 
-            energies, dos_vals = dos_curve(mu_dos_disk, BROAD_MEV)
-            dos_dat_name = f"mean{dos_stem}JACKSON.dat"
-            dos_dat_path = os.path.join(out_dir, dos_dat_name)
-            _core.WriteCurveText(dos_dat_path, energies, dos_vals)
-            written.append(dos_dat_path)
-
-            dos_cap_path = os.path.join(
-                captured_dir, f"{cap_idx:04d}_{dos_dat_name}"
-            )
-            shutil.copyfile(dos_dat_path, dos_cap_path)
-            cap_idx += 1
+                    dos_cap_path = os.path.join(
+                        captured_dir, f"{cap_idx:04d}_{dos_dat_name}"
+                    )
+                    shutil.copyfile(dos_dat_path, dos_cap_path)
+                    cap_idx += 1
 
     return written
 

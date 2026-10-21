@@ -72,6 +72,23 @@ _GENERATOR_TO_TUTORIAL: dict[str, int] = {
     "make_square": 5,
 }
 
+ALLOWED_GENERATOR_PARAMS: dict[str, frozenset[str]] = {
+    "make_chain": frozenset({"sizes", "hopping_t"}),
+    "make_disordered_chain": frozenset(
+        {
+            "sizes",
+            "W",
+            "realisations",
+            "readme_size",
+            "readme_disorder_seed",
+        }
+    ),
+    "make_haldane": frozenset(),
+    "make_chain_mag": frozenset(),
+    "make_square": frozenset({"L", "W", "disorder_seed", "dos_moments"}),
+    "gen_models": frozenset(),
+}
+
 
 def resolve_generator_path(
     name: str, repo_root: str | None = None
@@ -301,6 +318,32 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
                 f"Unknown generator name '{gen_name}' in run file (model.name); "
                 f"allowed generators are {sorted(GENERATOR_CATALOGUE)}"
             )
+        raw_params = model.get("params")
+        if raw_params is not None:
+            if not isinstance(raw_params, Mapping):
+                raise ValueError("model.params must be a JSON object")
+            _check_keys(
+                f"model.params ({gen_name})",
+                raw_params,
+                ALLOWED_GENERATOR_PARAMS.get(gen_name, frozenset()),
+            )
+        if "basis" in raw and isinstance(raw["basis"], Mapping):
+            gen_bname = str(_get_or(raw["basis"], "name", "real"))
+            if gen_bname != "real":
+                raise ValueError(
+                    f"model.kind='generator' only supports basis.name='real' (got '{gen_bname}')"
+                )
+            if "disorder" in raw["basis"] and raw["basis"]["disorder"] is not None:
+                raise ValueError(
+                    "basis.disorder is not supported for model.kind='generator' "
+                    "(pass disorder parameters in model.params)"
+                )
+        if "metric" in raw and isinstance(raw["metric"], Mapping):
+            gen_pol = str(_get_or(raw["metric"], "policy", "orthogonal"))
+            if gen_pol != "orthogonal":
+                raise ValueError(
+                    f"model.kind='generator' only supports metric.policy='orthogonal' (got '{gen_pol}')"
+                )
 
     if "basis" in raw and raw["basis"] is not None:
         basis = raw["basis"]
@@ -772,14 +815,54 @@ def _execute_generator_runfile(
         rf.model.get("tutorial")
         or _GENERATOR_TO_TUTORIAL.get(gen_name, 0)
     )
+    params = dict(rf.model.get("params") or {})
     if tut == 1:
         from .apps.tutorial01 import run_tutorial01
 
-        return run_tutorial01(out_dir)
+        return run_tutorial01(
+            out_dir,
+            sizes=params.get("sizes", (256, 1024, 4096)),
+            hopping_t=float(_get_or(params, "hopping_t", -1.0)),
+            num_moments=int(rf.expansion["moments"]),
+            window=rf.expansion.get("window"),
+            word=rf.word,
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 20.0)
+            ),
+        )
     if tut == 2:
         from .apps.tutorial02 import run_tutorial02
 
-        return run_tutorial02(out_dir)
+        assert rf.time is not None
+        return run_tutorial02(
+            out_dir,
+            sizes=params.get("sizes", (256, 1024, 4096)),
+            w_disorder=float(_get_or(params, "W", 1.0)),
+            realisations=int(_get_or(params, "realisations", 16)),
+            readme_size=int(_get_or(params, "readme_size", 512)),
+            readme_disorder_seed=int(
+                _get_or(params, "readme_disorder_seed", 1)
+            ),
+            kpm_seed=int(_get_or(rf.expansion, "seed", 12345)),
+            num_moments=int(rf.expansion["moments"]),
+            num_states=int(_get_or(rf.expansion, "states", 1)),
+            window=rf.expansion.get("window"),
+            ntime=int(rf.time["steps"]),
+            tmax=float(_get_or(rf.time, "tmax", 600.0)),
+            bessel=str(_get_or(rf.time, "bessel", "legacy")),
+            word=rf.word,
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 10.0)
+            ),
+            energies=(
+                rf.reconstruction["fermi_energies"]
+                if rf.reconstruction.get("fermi_energies")
+                else (0.0, 1.0, -1.0, 1.9)
+            ),
+            legacy_text_round_trip=bool(
+                _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+        )
     if tut == 3:
         from .apps.tutorial03 import run_tutorial03
 
@@ -787,7 +870,9 @@ def _execute_generator_runfile(
             out_dir,
             operators_dir=rf.model.get("dir"),
             num_moments=int(rf.expansion["moments"]),
-            broadening_meV=float(rf.reconstruction.get("broadening_meV") or 10.0),
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 10.0)
+            ),
         )
         return paths
     if tut == 4:
@@ -800,7 +885,39 @@ def _execute_generator_runfile(
     if tut == 5:
         from .apps.tutorial05 import run_tutorial05
 
-        return run_tutorial05(out_dir)
+        assert rf.time is not None
+        raw_w = _get_or(params, "W", (0.5, 1.0, 2.0, 4.0))
+        w_list = (
+            [float(x) for x in raw_w]
+            if isinstance(raw_w, (list, tuple))
+            else [float(raw_w)]
+        )
+        return run_tutorial05(
+            out_dir,
+            l_side=int(_get_or(params, "L", 200)),
+            w_list=w_list,
+            disorder_seed=int(_get_or(params, "disorder_seed", 1)),
+            dos_moments=int(_get_or(params, "dos_moments", 1024)),
+            kpm_seed=int(_get_or(rf.expansion, "seed", 1)),
+            num_moments=int(rf.expansion["moments"]),
+            num_states=int(_get_or(rf.expansion, "states", 1)),
+            window=rf.expansion.get("window"),
+            ntime=int(rf.time["steps"]),
+            tmax=float(_get_or(rf.time, "tmax", 150.0)),
+            bessel=str(_get_or(rf.time, "bessel", "legacy")),
+            words=rf.words,
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 80.0)
+            ),
+            fermi_energies=(
+                rf.reconstruction["fermi_energies"]
+                if rf.reconstruction.get("fermi_energies")
+                else (2.0,)
+            ),
+            legacy_text_round_trip=bool(
+                _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+        )
     raise ValueError(f"Unsupported generator '{gen_name}' (tutorial={tut})")
 
 
