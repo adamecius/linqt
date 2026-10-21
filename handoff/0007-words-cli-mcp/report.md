@@ -80,8 +80,8 @@ Unknown keys at the top level or inside any sub-object raise `ValueError` during
     "seed": "<wannier_seed>",
     "operators": ["VX", "VY"],
     "csr_dir": null,
+    "name": "make_chain | make_disordered_chain | make_haldane | make_square | make_chain_mag | gen_models",
     "tutorial": null,
-    "script": null,
     "params": {}
   },
   "basis": {
@@ -103,7 +103,7 @@ Unknown keys at the top level or inside any sub-object raise `ValueError` during
   "words": ["Tr[...]"],
   "expansion": {
     "moments": 64,
-    "window": "gershgorin | eigen | [lo, hi]",
+    "window": "gershgorin (on real) | eigen (on bloch, eigen) | [lo, hi]",
     "trace": "exact | random",
     "states": null,
     "seed": 12345,
@@ -138,7 +138,7 @@ Unknown keys at the top level or inside any sub-object raise `ValueError` during
 }
 ```
 
-Every run writes `run.resolved.json` in its output directory.
+Every run writes `run.resolved.json` in its output directory (including the resolved `expansion.window` value from `default_window_for_basis(basis.name)` when not explicitly supplied).
 
 ---
 
@@ -190,6 +190,8 @@ $ OMP_NUM_THREADS=16 KPM_SEED=12345 PYTHONPATH=build/lsquant_core:python python3
   PASS  [mixed_basis_without_transform] refused with: Mixed basis without explicit transform: operator 'VX@bloch' is in 'bloch' basis while calculation/active basis is 'real' (insert explicit B^+ ... B or U^+ ... U transform)
   PASS  [ut_without_time] refused with: Word 'Tr[A delta(E-H) U(t)^+ B U(t)]' contains time evolution U(t) without 'time' parameters (steps and tmax required)
   PASS  [unknown_key_in_runfile] refused with: Unknown key 'unknown_extra_key' in run file (top-level); allowed keys are ['basis', 'expansion', 'metric', 'model', 'output', 'reconstruction', 'time', 'word', 'words']
+  PASS  [unknown_generator] refused with: Unknown generator name 'evil_script' in run file (model.name); allowed generators are ['gen_models', 'make_chain', 'make_chain_mag', 'make_disordered_chain', 'make_haldane', 'make_square']
+  PASS  [window_default_by_basis] real->gershgorin, bloch->eigen, eigen->eigen
   PASS  [runfile_schema] all 36 files in runs/goldens/*.json validated
 
 == (c) CLI reproduction of G1 (runs/goldens/g1.json) and G5 (runs/goldens/g5.json) ==
@@ -346,7 +348,21 @@ STAGE 7 SELF-CHECK PASS
 
 ## 7. Deviations and Open Questions
 
-- **Deviations**:
-  - `pip install --user mcp` on TCN installed `mcp 2.3.0`, where `FastMCP` was renamed to `MCPServer` (`from mcp.server.mcpserver import MCPServer`). `python/lsquant/mcp_server.py` imports `MCPServer` with a fallback to `FastMCP` so both `mcp 2.x` and `mcp 1.x` work transparently.
-  - Per instructions, Section 8 of the brief (deleting the legacy tree `src/`, `include/`, `test/`) was not executed in this session and awaits tester confirmation of the goldens from words.
+- **Deviations (schema extensions beyond `brief.md` section 4 and tutorial app additions)**:
+  - **`words` (top-level list of observable words)**: Added so a single run file can evaluate multiple observable words on the same loaded model/basis in one output directory. Required by **G7** (`runs/goldens/g7.json`, evaluating `SX`, `SY`, `SZ`), **G9** (`runs/goldens/g9_*.json`, evaluating DOS and `sigma_xx`), **G10 chain1d** (`runs/goldens/g10_chain1d_*.json`, evaluating DOS and Kubo `VX-VX`), **Tutorial 04** (`runs/goldens/tutorial04.json`), and **Tutorial 05** (`runs/goldens/tutorial05.json`, evaluating MSD and DOS).
+  - **`model.kind = "generator"` with `name`, `tutorial`, and `params`**: Added to invoke the repository's model generators from a fixed catalogue (`GENERATOR_CATALOGUE` in `runfile.py`: `make_chain`, `make_disordered_chain`, `make_haldane`, `make_square`, `make_chain_mag`, `gen_models`, resolved from the repository root) for multi-size / multi-disorder tutorial sweeps. Required by **Tutorial 01** (`runs/goldens/tutorial01.json`, `N = 256, 1024, 4096`), **Tutorial 02** (`runs/goldens/tutorial02.json`, `N = 256, 1024, 4096` and `16` disorder realisations), and **Tutorial 05** (`runs/goldens/tutorial05.json`, `L = 200` and `W = 0.5, 1.0, 2.0, 4.0`).
+  - **`model.csr_dir`**: Added to pass the pre-built `wannier2sparse` supercell CSR directory when `model.kind == "wannier"` and `basis.name == "real"`. Required by **G9** (`runs/goldens/g9_*_real*.json`) to match the Stage-5 `wannier2sparse` real-space CSR operators byte-for-byte.
+  - **`metric.coeff_tol`, `metric.max_iter`, and `metric.max_dim`**: Added to expose the Chebyshev truncation threshold, PCG iteration cap, and dense solver dimension cap established in Stage 6 review 2. Used by **G10** (`runs/goldens/g10_*.json`).
+  - **`expansion.state_label`**: Added to allow overriding the `_state<label>` filename token when a golden's filename label differs from the generator's default.
+  - **`time.dt`**: Added to allow specifying the time step `dt` directly as an alternative to `tmax = dt * (steps - 1)`.
+  - **`reconstruction.kernel = "lorentz" | "none"`**: Added alongside `"jackson"` to expose the Lorentz and bare (undamped) kernels implemented in `python/lsquant/kernels.py`.
+  - **`reconstruction.num_points` and `reconstruction.fft_grid`**: Added to expose explicit energy grid point counts and the Chebyshev-node FFT grid reconstruction path (`Kubo*_JACKSON_FFTgrid.dat`).
+  - **`reconstruction.per_site_dos`**: Added to emit the standalone per-site `DOS_reconstructed.dat` curve alongside the legacy `meanSpectralOp1...JACKSON.dat` file. Required by **G3** (`runs/goldens/g3.json`).
+  - **`reconstruction.targets`**: Added to run multiple reconstruction passes (with distinct `formulas`, `broadening_meV`, `subdir`, and `also_top_dir`) from a single computed moment tensor. Required by **G4** (`runs/goldens/g4.json`), which reconstructs the same `VX-VX` moment tensor at `64` meV in the top directory and at `10` meV in `sea_surf/` (`sea`, `surf`) and `fft_grid/` (`greenwood_fft`, `bastin_fft`).
+  - **`output.write_chebmom`**: Added so a run with `legacy_layout: true` can also write the unified `.chebmom` file in the same directory. Required by **G9** (`runs/goldens/g9_*.json`) and **G10** (`runs/goldens/g10_*.json`).
+  - **`output.write_basis_json`**: Added to write `<stem>.basis.json` provenance metadata (`window_source`, `window`, `supercell`, `operators`, `disorder_w`). Required by **G9** (`runs/goldens/g9_*.json`).
+  - **`output.capture_tutorial`**: Added to copy generated tutorial outputs into `captured/NNNN_*` matching the Stage-0 tutorial capture layout. Required by **Tutorials 01–05** (`runs/goldens/tutorial01.json`..`tutorial05.json`).
+  - **Tutorial apps `python/lsquant/apps/tutorial01.py` and `python/lsquant/apps/tutorial03.py` output additions**: Updated `tutorial01.py` to also write the README step-3 top-level `120` meV curve (`meanSpectralOp1chain1d_N256KPM_M512_stateexact_chain1d_N256JACKSON.dat`), the `moments_chain1d_N<N>_M512.chebmom1D` copies, and `captured/0000_*`..`0021_*`, and updated `tutorial03.py` to also populate `captured/0000_*`..`0003_*`, so that running `tutorial01.json` and `tutorial03.json` reproduces the full `goldens/stage0/tutorials/01/` and `goldens/stage0/tutorials/03/` golden trees.
+  - **`mcp` package class name**: `pip install --user mcp` on TCN installed `mcp 2.3.0`, where `FastMCP` was renamed to `MCPServer` (`from mcp.server.mcpserver import MCPServer`). `python/lsquant/mcp_server.py` imports `MCPServer` with a fallback to `FastMCP` so both `mcp 2.x` and `mcp 1.x` work transparently.
+  - **Legacy tree preservation**: Per instructions, Section 8 of the brief (deleting the legacy tree `src/`, `include/`, `test/`) was not executed in this session and awaits tester confirmation of the goldens from words.
 - **Open Questions**: None.

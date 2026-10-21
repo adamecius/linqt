@@ -128,6 +128,40 @@ def check_b_refusals() -> None:
                 f"Case '{label}' did NOT raise ValueError (expected '{expected_substr}')"
             )
 
+    # Verify unknown generator name is refused
+    try:
+        RunFile.from_dict(
+            {
+                "model": {"kind": "generator", "name": "evil_script"},
+                "word": "Tr[delta(E-H)]",
+                "expansion": {"moments": 64},
+            },
+            repo_root=REPO,
+        )
+    except ValueError as exc:
+        assert "Unknown generator name 'evil_script'" in str(exc)
+        print(f"  PASS  [unknown_generator] refused with: {exc}")
+    else:
+        raise AssertionError("Unknown generator 'evil_script' was NOT refused")
+
+    # Verify basis-dependent default window ("gershgorin" on real, "eigen" on bloch/eigen)
+    for b_name, exp_win in (("real", "gershgorin"), ("bloch", "eigen"), ("eigen", "eigen")):
+        rf_win = RunFile.from_dict(
+            {
+                "model": {
+                    "kind": "wannier",
+                    "dir": "goldens/stage0/bases/graphene/model",
+                    "seed": "graphene",
+                },
+                "basis": {"name": b_name, "supercell": [48, 48, 1]},
+                "word": "Tr[delta(E-H)]",
+                "expansion": {"moments": 64},
+            },
+            repo_root=REPO,
+        )
+        assert rf_win.to_resolved_dict()["expansion"]["window"] == exp_win
+    print("  PASS  [window_default_by_basis] real->gershgorin, bloch->eigen, eigen->eigen")
+
     # Also verify all committed run files under runs/goldens/*.json validate cleanly
     rf_paths = sorted(glob.glob(os.path.join(REPO, "runs", "goldens", "*.json")))
     assert rf_paths, "No run files found in runs/goldens/"
