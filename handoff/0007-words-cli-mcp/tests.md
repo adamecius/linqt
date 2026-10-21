@@ -1,342 +1,372 @@
-# Handoff 0007 — tester report (stage 7: words, run files, CLI, MCP)
+# Handoff 0007 — tester report, closure run (stage 7: words, run files, CLI, MCP, deleted legacy tree)
 
-Tester: Opus subagent driven by Fable, on TCN (`fatnode-tacn`), worktree `~/lsquant-unified-0007`,
-build `~/lsquant-unified-build7`, branch `handoff/0007-codex`.
+**Tester:** Opus subagent driven by Fable. **Machine:** TCN fat node (`fatnode-tacn`).
+**Worktree and branch:** `~/lsquant-unified-0007`, branch `handoff/0007-codex`.
+**Build:** `~/lsquant-unified-build7c` (fresh).
 
-**Head tested: `9f8ccc8`** (`origin/handoff/0007-agi`, review-1 items 1 to 3), fast-forwarded from
-`origin/cpp-unified` 7510ef0. A first gate on `6ec46f1` was stopped part-way (section 9) and is not
-reported except where it localised a defect. No C++ changed between 6ec46f1 and 9f8ccc8
-(`git diff --stat 6ec46f1 9f8ccc8 -- lsquant CMakeLists.txt` is empty), so the build from 6ec46f1 is
-the build of 9f8ccc8.
+**Head tested:** developer head **`5e8186d`** (`origin/handoff/0007-agi`):
+- `7687487` deleted the legacy tree;
+- review-2 items 1 to 8 are in `2055207..12255e9`;
+- the report is at `5e8186d`.
+
+It was merged into `handoff/0007-codex` as `9cdbe0f`. The merge touched no harness or figure file.
+
+The first tester run (heads 6ec46f1 and 9f8ccc8, defects D1 and D2, smells S1 to S8) is in the
+git history of this file (commit 65f8510).
 
 ## 0. Summary
 
-- **Quick closure gate (`S7_SET=quick`, 16 threads, the subset Fable asked for): 92 rows, 13 failures.**
-  Every golden that a run file produced is byte-identical: G1 1/1, G2 1/1, G3 3/3, G4 6/6, G4c 2/2,
-  G5 6/6, G7 3/3 (g7_sx, g7_sy, g7_sz), tutorial 01 24/24, tutorial 03 9/9, tutorial 04 4/4,
-  G9 graphene real 8/8 (against `stage5_bases` with the same arguments), MCP 7/7.
-  The 13 failures come from two run-time defects:
-  - **D1**: every G10 run file fails (`'_core.ExactInverseOverlap' object is not callable`).
-  - **D2**: every G9 exact-trace run file fails (`g9_*_eigen`, `g9_*_bloch_exact`: `int() argument ... 'NoneType'`).
-  Neither run file writes a moment file. Both defects are localised to a call site, and the probes in
-  section 5 show that with those call sites changed (in a scratch copy) the outputs are byte-identical.
-- **Full gate (`S7_SET=all`, 36 run files, 16 and 1 threads) on 9f8ccc8, run before the change of plan:**
-  - G1 to G7 and tutorials 01 to 05 are identical at both thread counts, every file.
-  - G9 is identical for the 8 random-phase run files; D2 stops the 4 exact ones.
-  - D1 stops all 8 G10 files.
-  - Table in section 3.
-- **MCP**: g1 and g5 through `run` and `status`. 7/7 byte-identical. `run` returned in 0.14 s and 0.007 s.
-  A model dir outside `--root` is refused (`isError=True`), and no output dir is created.
-- **Refusals through the CLI**: 6/6 refused, each with exit 1, a message on stderr and no output dir.
-  The six are the five of the self-check plus a nested unknown key; both unknown-key files point
-  `model.dir` at a missing path, which shows the refusal comes before any load.
-- **Smells**: section 8. The serious ones:
-  - (S1) `words describe` accepts `Tr[VX delta(E-H) VY G+(E)]`, `... G-(E)` and `... dG+(E)/dE`. It
-    approximates all three as Kubo-Bastin instead of refusing them.
-  - (S2) tutorials 01, 02 and 05 are generator run files. Their word, expansion and params are
-    validated, then ignored: the dispatch calls `run_tutorial0N(out_dir)`.
-- **Codex section 2.5** (deleted legacy tree) was **skipped** as instructed. The developer has not
-  deleted the tree yet.
-- **Incident:** while stopping my own gate at about 11:25 UTC I killed the parent shell of the
-  stage-6 tester's gate, pid 3921966 (`check_goldens.sh 6 build6`). It is my error, not the other
-  session's; details in section 9.
+### Byte verdict on the fat node, T = 16, every run file under `runs/goldens/` (40)
+
+All outputs are kept in `~/s7keepc/T16`. Every golden is byte-identical except tutorial 06:
+
+| golden | identical | differ |
+|---|---:|---:|
+| G1 | 1 | 0 |
+| G2 | 1 | 0 |
+| G3 | 3 | 0 |
+| G4 | 6 | 0 |
+| G4c | 2 | 0 |
+| G5 | 6 | 0 |
+| G6 | 5 | 0 |
+| G7 | 6 | 0 |
+| tutorial 01 | 24 | 0 |
+| tutorial 02 | 194 | 0 |
+| tutorial 03 | 9 | 0 |
+| tutorial 04 | 4 | 0 |
+| tutorial 05 | 17 | 0 |
+| **tutorial 06** | **139** | **142** |
+| MCP g1 and g5 | 7 | 0 |
+
+- **G9.** All 12 run files run (D2 is fixed).
+  - 96/96 files byte-identical to `stage5_bases` run with the same arguments (including `--csr-dir`).
+  - The run-file `csr_dir` CSR files are 4/4 identical to a fresh wannier2sparse run.
+  - `figures/stage_5_table.py` on the run-file outputs: 16 PASS, 0 FAIL.
+- **G10.** All 11 run files run (D1 is fixed), including the new chebyshev and ischo files.
+  - 44/44 files byte-identical to `stage6_nonorth` run with the run file's resolved metric.
+  - The 11 argument checks pass.
+  - 22/22 moment files are within the stage-6 tolerance of G1, G2 and G5 (max 9.5e-12, Löwdin/Chebyshev).
+- **Tutorial 06: 142 files differ, all localised.**
+  - Every numerator curve (`TimeProjSZ-*`, `TimeProjSX-*`) is identical.
+  - All 139 differing curves are the denominator `TimeProj1-P*` (operator `1`). The other 3 are
+    `ey_ratelaw.dat` twice, which agrees to 1.8e-16 relative, and `captured/index.tsv`.
+  - **Cause:** the legacy pipeline that made the golden loaded `operators/<label>.1.CSR`, which the
+    tutorial generators never write. The legacy `BuildOPFromCSRFile` returns silently on a missing
+    file, so the golden denominators come from an unbuilt operator.
+  - The run file uses the identity, which is correct. This needs Fable's decision (section 6).
+- **MCP:** run/status of g1 and g5 gives 7/7 identical. The confinement refusal now carries its reason.
+- **Refusals through the CLI:** 11/11. That includes `G+`, `G-` and `dG+/dE`, `window: "eigen"` on a
+  csr model, and an unmatched reconstruction formula.
+- **Greps:** all empty on code lines.
+- **Section 2.5 (deleted tree):** 18/18 PASS, and the `legacy-final` build reproduces G1, G2 and G5
+  byte for byte at 16, 1 and 64 threads.
+- **Self-check** (`tests/dev/stage_7_check.py`): PASS once a `build/lsquant_core` link exists. It
+  hard-codes `REPO/build`; see S4.
+
+### T = 1 versus T = 16
+Moved to the Aron node at Fable's direction (section 7). It is still running at hand-off.
 
 ## 1. Build and self-check
 
-Fresh build (`rm -rf ~/lsquant-unified-build7`), stage-2 cmake line; FFTW found through pkg-config:
-
 ```
-$ cmake -S . -B ~/lsquant-unified-build7 -DLSQUANT_BUILD_NEW_CORE=ON -DLSQUANT_BUILD_PYTHON=ON -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
-cmake exit 0      (CMakeCache: pkgcfg_lib_FFTW3_fftw3=/usr/lib/x86_64-linux-gnu/libfftw3.so)
-$ cmake --build ~/lsquant-unified-build7 -j 32
-build exit 0      [100%] Built target _core
+$ cmake -S . -B ~/lsquant-unified-build7c -DLSQUANT_BUILD_NEW_CORE=ON -DLSQUANT_BUILD_PYTHON=ON -Dpybind11_DIR=$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')
+cmake exit 0
+$ cmake --build ~/lsquant-unified-build7c -j 32      (43 s: the legacy targets are gone)
+build exit 0     [100%] Built target _core
 ```
-Warnings: 101, 0 under `lsquant/`. `mcp` was already installed (2.3.0).
 
-`OMP_NUM_THREADS=16 KPM_SEED=12345 PYTHONPATH=build/lsquant_core:python python3 tests/dev/stage_7_check.py`
-on 9f8ccc8: `STAGE 7 SELF-CHECK PASS`, exit 0. Every line of (a) to (d) gives the same verdicts as
-report.md section 6, and it also passed on 6ec46f1. The self-check covers only g1 and g5, so it
-cannot see D1 or D2.
+The self-check was run first as
+`OMP_NUM_THREADS=16 KPM_SEED=12345 PYTHONPATH=<build>/lsquant_core:python python3 tests/dev/stage_7_check.py`.
+It exited 1 with `FileNotFoundError: .../lsquant-unified-0007/build/lsquant_core/stage6_nonorth`,
+because it looks for `stage6_nonorth` under `REPO/build` (lines 370 to 372).
 
-## 2. Harness (`scripts/check_goldens.sh 7`)
+With the link `build/lsquant_core -> ~/lsquant-unified-build7c/lsquant_core` (inside the ignored
+`build/`), it prints `STAGE 7 SELF-CHECK PASS`, exit 0. Its parts:
+- (a) the catalogue round trip;
+- (b) 12 refusals and checks, among them the new G+ word, eigen window on csr, unmatched formula,
+  unknown generator and unknown generator parameter;
+- (c) G1, G5, `g9_graphene_eigen` and `g10_chain1d_real_generalised` byte-identical;
+- (d) MCP.
 
-New stage-7 section. `S7_SET=all` (default) runs every run file at `S7_THREADS` (default `16 1`).
-`S7_SET=quick` runs the closure subset at 16 threads. Stage `7aux` runs only the MCP and refusal
-parts. `S7_KEEP=<dir>` keeps the outputs for the figure. Comparisons:
+## 2. Harness changes (`scripts/check_goldens.sh 7`)
 
-| old harness rows | now driven by | criterion |
-|---|---|---|
-| stage 1 G1, G2 (`stage1_moments`) | g1.json, g2.json | cmp vs goldens/stage0/chain1d |
-| stage 2 G3 (+G1) | g3.json: G3 curve, `DOS_reconstructed.dat`, G1 | cmp |
-| stage 3 G5 (2 moments + 4 curves), G4 (moments + 5 curves), G4c (moments + Bastin) | g5.json, g4.json, g4c.json | cmp |
-| stage 4 G6 (moments + 4 curves), G7 (3 moments) | g6.json; g7.json and g7_s{x,y,z}.json | cmp |
-| stage 5 G9 (no byte golden) | 12 `g9_*.json` | cmp vs `stage5_bases` run with the run file's arguments, plus `figures/stage_5_table.py` on the run-file outputs (full set only) |
-| stage 6 G10 (`stage6_nonorth`) | 8 `g10_*.json` | cmp vs `stage6_nonorth` with the run file's arguments (exact applier, run once, at 16 threads, and only if the run file produced moments; it takes about 45 min per word on loaded TCN), plus max rel diff vs G1/G2/G5 <= 1e-10 (stage-6 brief section 6) |
-| stage-0 tutorial captures | tutorial01..05.json | every non-PNG file of `goldens/stage0/tutorials/0N` at the same relative path, cmp; `captured/index.tsv` (the stage-0 capture shim's index: name, sha1, legacy temp path) is checked by sha1 of each produced capture |
+These are on top of the first run's harness:
 
-The following old rows are no longer compared, because no run file produces them:
-- the stage-1 batch-16 and random-phase repeat;
-- stage-2 form (a);
-- the stage-3/4 rows that reconstruct "curves from the golden moment file";
-- the stage-5 convention rows (s5_conv.py).
+- **Tutorials 01 to 06.** Every non-PNG file of `goldens/stage0/tutorials/0N` is compared at the same
+  relative path; `captured/index.tsv` is checked by sha1.
+- **G9.** Each run file's `model.csr_dir` (resolved against the repository) is passed to
+  `stage5_bases` as `--csr-dir`. Its CSR files are cmp'd once against a fresh
+  `wannier2sparse <model> 48 48 1 VX`.
+- **G10.** The loop runs over every `runs/goldens/g10_*.json`:
+  - `stage6_nonorth` gets the run's resolved metric (route, applier, order, coeff_tol, tol, max_iter,
+    max_dim from `run.resolved.json`), and a check confirms the arguments match.
+  - The reference runs once, at the first thread count, into `S7_REF6`.
+  - Each file is compared with G1/G2/G5 at the stage-6 tolerance: exact 1e-10, ischo 1e-9,
+    chebyshev 1e-8.
+  - **Bug fixed after this run:** the relative difference is now `max_k |new - gold| / max_k |gold|`,
+    the stage-6 tester's definition. The pointwise relative difference from `golden_diff.py`, which
+    this run used, is about 1 on moments that vanish by symmetry and so reported 22 false FAILs. I
+    re-evaluated those 22 rows from the kept outputs with the corrected definition (section 3).
+- **Refusals** now also cover `g_plus`, `g_minus`, `dg_plus`, `window_eigen_csr` and
+  `formula_unmatched`.
+- **`stage7_deleted` (section 2.5)**, below.
+- **Options:**
+  - `S7_T1_SKIP`: run files that run at the first thread count only;
+  - `S7_SET=list` with `S7_LIST`;
+  - stages `7deleted` and `7tail` (MCP, refusals, greps, section 2.5).
 
-The greps of stages 1 to 5 still run. Two stage-7 greps are new:
-- `catalogue|runfile|grammar|Tr\[|mcp` on code lines of `lsquant/core` and `lsquant/io`;
-- `eval(|exec(|literal_eval|exec_module` in `python/lsquant/{words,runfile.py,cli.py,mcp_server.py}`.
+How this run was executed:
+- The 11 `stage6_nonorth` references were pre-computed in parallel into `~/s7ref6c` with
+  `S7_REF6_WAIT_LOG`. That took 16:05 to 17:27 UTC; the two dense exact Löwdin chain1d files took
+  about 80 min each under the node's load.
+- The gate ran at T = 16 over all 40 run files (16:11 to 20:22 UTC). I then stopped it, killing only my
+  own process tree from its recorded PID, as Fable asked. The T = 16 outputs were saved to
+  `~/s7keepc/T16` first.
+- MCP, refusals, greps and section 2.5 then ran as `scripts/check_goldens.sh 7tail`.
 
-Decision: G9 real-basis run files carry no `csr_dir`, so they build the real basis in lsquant. They
-are therefore compared with `stage5_bases` without `--csr-dir`, which matches the run file. The
-stage-5 gate used the wannier2sparse CSR; see S6.
+## 3. Per-golden table (fat node, T = 16, head 5e8186d)
 
-## 3. Per-golden table
-
-### 3a. Quick closure gate (S7_SET=quick, T = 16, head 9f8ccc8, `GATE FAIL`, 92 rows, 13 failures)
-
-| golden | run file(s) | identical | differ | wall (s) |
+| golden | run file(s) | identical | differ | notes |
 |---|---|---:|---:|---|
-| G1 | g1 | 1 | 0 | 4.5 |
-| G2 | g2 | 1 | 0 | 98.6 |
-| G3 | g3 | 3 | 0 | 4.4 |
-| G4 | g4 | 6 | 0 | 1.3 |
-| G4c | g4c | 2 | 0 | 9.8 |
-| G5 | g5 | 6 | 0 | 85.8 |
-| G7 | g7_sx, g7_sy, g7_sz | 3 | 0 | 51.6, 29.8, 50.2 |
-| Tut 01 | tutorial01 | 24 (23 cmp + index.tsv 22 sha1) | 0 | 86.5 |
-| Tut 03 | tutorial03 | 9 (8 cmp + index.tsv 4 sha1) | 0 | 42.0 |
-| Tut 04 | tutorial04 | 4 (3 cmp + index.tsv 3 sha1) | 0 | 49.0 |
-| G9 | g9_graphene_real vs stage5_bases | 8 | 0 | 45.4 |
-| G9 | g9_graphene_eigen vs stage5_bases | 0 | 8 (not produced, D2) | 0.8 (exit 1) |
-| G10 | g10_haldane_real_generalised vs stage6_nonorth | 0 | 1 (no moment file, D1) | 1.1 (exit 1) |
-| G10 vs G5 (1e-10) | g10_haldane_real_generalised | 0 | 2 (not produced) | |
-| MCP | g1, g5 through the MCP server | 7 | 0 | |
-| greps | stages 1 to 5 and 7 | all empty on code lines | | |
+| G1 | g1 | 1 | 0 | |
+| G2 | g2 | 1 | 0 | |
+| G3 | g3 | 3 | 0 | |
+| G4 | g4 | 6 | 0 | |
+| G4c | g4c | 2 | 0 | |
+| G5 | g5 | 6 | 0 | |
+| G6 | g6 | 5 | 0 | |
+| G7 | g7, g7_sx, g7_sy, g7_sz | 6 | 0 | |
+| Tut 01 | tutorial01 | 24 | 0 | index.tsv: 22/22 sha1 |
+| Tut 02 | tutorial02 | 194 | 0 | index.tsv: 192/192 sha1 |
+| Tut 03 | tutorial03 | 9 | 0 | |
+| Tut 04 | tutorial04 | 4 | 0 | |
+| Tut 05 | tutorial05 | 17 | 0 | |
+| **Tut 06** | tutorial06 | **139** | **142** | 139 `TimeProj1-P*` denominator curves; `ey_ratelaw.dat` ×2 (rel 1.8e-16); index.tsv (128 of 255 entries, the denominators); section 6 |
+| G9 vs stage5_bases | 12 g9 files | 96 | 0 | `--csr-dir` = the run file's csr_dir |
+| G9 csr_dir vs fresh wannier2sparse | | 4 | 0 | graphene and haldane HAM, VX |
+| G9 stage-5 table | | 16 PASS | 0 | real vs bloch moments up to 2.4e-14; bloch(exact) vs eigen up to 3.3e-15; eigen vs G9 up to 4.7e-15 |
+| G10 vs stage6_nonorth | 11 g10 files | 44 | 0 | plus 11/11 argument checks |
+| G10 vs G1/G2/G5 (stage-6 rel) | 11 g10 files | 22 PASS | 0 | see below |
+| MCP | g1, g5 | 7 | 0 | |
 
-**Deferred to the final validation run** (S7_SET=all): g6, g7 (combined), g9_graphene_{bloch,
-bloch_exact, bloch_w1, real_w1}, all g9_haldane_*, g10 other than haldane_real_generalised,
-tutorial02 and tutorial05. They were in fact already run once on 9f8ccc8 (3b) before the change of
-plan.
+Wall times at T = 16, from `~/s7logs/gate7c.log`; the node load was 20 to 95 throughout:
 
-### 3b. Full gate (S7_SET=all, T = 16 and T = 1, head 9f8ccc8, 818 rows)
+| run file | wall (s) |
+|---|---:|
+| `g10_chain1d_complex_lowdin` | 2506 |
+| `g10_chain1d_real_lowdin` | 1049 |
+| `g10_chain1d_real_lowdin_chebyshev` | 1387 |
+| `g10_chain1d_real_generalised_chebyshev` | 788 |
+| `tutorial06` | about 1 h 55 min |
+| every other run file | under 100 |
 
-This run used the harness before two corrections:
-- `index.tsv` was then cmp'd as a data file, so each tutorial reported one "DIFFERS (not produced)".
-  A sha1 check on the kept outputs (`~/s7keep/T16`, `T1`) matches every entry: tutorial 01 22/22,
-  02 192/192, 03 4/4, 04 3/3, 05 8/8, at both thread counts. The table counts those rows as identical.
-- The stage-7 grep matched a comment line (`state_generator.hpp:232 ... Tr[...]`). The corrected grep
-  excludes comment lines and is empty.
+G10 against the orthogonal goldens, with `rel = max_k |mu - mu_gold| / max_k |mu_gold|`:
 
-| golden | T=16 identical / differ | T=1 identical / differ |
-|---|---|---|
-| G1 | 1 / 0 | 1 / 0 |
-| G2 | 1 / 0 | 1 / 0 |
-| G3 | 3 / 0 | 3 / 0 |
-| G4 | 6 / 0 | 6 / 0 |
-| G4c | 2 / 0 | 2 / 0 |
-| G5 | 6 / 0 | 6 / 0 |
-| G6 | 5 / 0 | 5 / 0 |
-| G7 (g7 + g7_s{x,y,z}) | 6 / 0 | 6 / 0 |
-| Tut 01 | 24 / 0 | 24 / 0 |
-| Tut 02 | 194 / 0 | 194 / 0 |
-| Tut 03 | 9 / 0 | 9 / 0 |
-| Tut 04 | 4 / 0 | 4 / 0 |
-| Tut 05 | 17 / 0 | 17 / 0 |
-| G9 vs stage5_bases | 64 / 32 | 64 / 32 |
-| G9 stage-5 table | 0 / 4 | 0 / 4 |
-| G10 vs stage6_nonorth | 0 / 8 | 0 / 8 |
-| G10 vs G1/G2/G5 (1e-10) | 0 / 16 | 0 / 16 |
-| MCP | 7 / 0 | |
+| run file | rel vs G1 | rel vs G2 | tolerance |
+|---|---:|---:|---|
+| `g10_chain1d_real_generalised` | 4.7e-16 | 2.4e-15 | 1e-10 |
+| `g10_chain1d_complex_generalised` | 1.0e-15 | 2.6e-15 | 1e-10 |
+| `g10_chain1d_real_lowdin` | 8.0e-13 | 1.5e-14 | 1e-10 |
+| `g10_chain1d_complex_lowdin` | 6.2e-13 | 1.2e-14 | 1e-10 |
+| `g10_chain1d_real_generalised_ischo` | 2.7e-15 | 2.4e-15 | 1e-9 |
+| `g10_chain1d_real_generalised_chebyshev` | 1.5e-12 | 1.0e-13 | 1e-8 |
+| `g10_chain1d_real_lowdin_chebyshev` | 9.5e-12 | 1.7e-13 | 1e-8 |
 
-- The 64 identical G9 rows are the 8 random-phase run files (real, bloch, real_w1 and bloch_w1 for
-  both models), 8 files each. They match `stage5_bases` byte for byte, at both thread counts.
-- The 32 differing rows are the 4 exact-trace run files (D2), whose files are not produced.
-- The stage-5 table refuses to evaluate when the blochx/eigen outputs are missing, so its 4 FAIL rows
-  are D2 as well.
-- Wall times at T = 16 / T = 1 for the long ones: g6 84.5 / 23.4 s, tutorial02 85.3 / 94.9 s,
-  tutorial05 51.4 / 209.9 s. TCN load was 40 or more throughout.
+| run file | rel vs G5 VX-VY | rel vs G5 VX-VX | tolerance |
+|---|---:|---:|---|
+| `g10_haldane_real_generalised` | 1.3e-14 | 1.1e-14 | 1e-10 |
+| `g10_haldane_complex_generalised` | 1.3e-14 | 1.1e-14 | 1e-10 |
+| `g10_haldane_real_lowdin` | 6.0e-14 | 8.3e-14 | 1e-10 |
+| `g10_haldane_complex_lowdin` | 4.0e-14 | 5.2e-14 | 1e-10 |
 
-## 4. MCP transcript (9f8ccc8, `python -m lsquant.mcp_server --root $TMP/s7mcp`, a scratch root holding copies of the chain1d and haldane golden operators; client `mcp` 2.3.0 over stdio)
+All 22 rows PASS.
+
+## 4. MCP (`python -m lsquant.mcp_server --root $TMP/s7mcp`, mcp 2.3.0)
 
 ```
 MCP <- list_tools: ["words_describe", "run", "status", "reconstruct", "inspect"]
-MCP -> call_tool: {"tool": "run", "arguments": {"runfile_json": "{\"model\": {\"kind\": \"csr\", \"dir\": \"goldens/stage0/chain1d/operators\", \"label\": \"chain1d\"}, \"basis\": {\"name\": \"real\"}, \"metric\": {\"policy\": \"orthogonal\"}, \"word\": \"Tr[delta(E-H)]\", \"expansion\": {\"moments\": 64, \"window\": [-2.0, 2.0], \"trace\": \"exact\", \"states\": 2048}, \"output\": {\"dir\": \"out/g1\", \"legacy_names\": true, \"legacy_layout\": true}}"}}
-MCP <- run (isError=False, returned in 0.140 s): {"run_id": "f9f95d45d006", "log": "$TMP/s7mcp/out/g1/run_f9f95d45d006.log", "output_dir": "$TMP/s7mcp/out/g1"}
-MCP -> call_tool: {"tool": "status", "arguments": {"run_id": "f9f95d45d006"}}
-MCP <- status (isError=False, returned in 0.009 s): {"run_id": "f9f95d45d006", "status": "running", "returncode": null, ...}
-MCP <- status poll 4 (final): {"run_id": "f9f95d45d006", "status": "succeeded", "returncode": 0, ...}
-MCP -> call_tool: {"tool": "run", "arguments": {"runfile_json": "{\"model\": {\"kind\": \"csr\", \"dir\": \"goldens/stage0/haldane/operators\", \"label\": \"haldane\", \"operators\": [\"VX\", \"VY\"]}, ..., \"word\": \"Tr[VX delta(E-H) VY dG-(E)/dE]\", \"expansion\": {\"moments\": 128, \"window\": [-4.5, 4.5], \"trace\": \"exact\", \"states\": 512}, \"reconstruction\": {\"kernel\": \"jackson\", \"broadening_meV\": 10.0, \"formulas\": [\"bastin\", \"sea\", \"surf\", \"greenwood\"], \"legacy_text_round_trip\": true}, \"output\": {\"dir\": \"out/g5\", ...}}"}}
-MCP <- run (isError=False, returned in 0.007 s): {"run_id": "53d8a156c55c", "log": "$TMP/s7mcp/out/g5/run_53d8a156c55c.log", "output_dir": "$TMP/s7mcp/out/g5"}
-MCP <- status (isError=False, returned in 0.004 s): {"run_id": "53d8a156c55c", "status": "running", "returncode": null, ...}
-MCP <- status poll 127 (final): {"run_id": "53d8a156c55c", "status": "succeeded", "returncode": 0, ...}
-MCP -> call_tool: {"tool": "run", "arguments": {"runfile_json": "{\"model\": {\"kind\": \"csr\", \"dir\": \"/etc\", ...}, \"output\": {\"dir\": \"out/outside\", ...}}"}}
-MCP <- run (isError=True, returned in 0.792 s): "Error executing tool run"
+MCP -> call_tool: {"tool": "run", "arguments": {"runfile_json": "<g1.json, output.dir out/g1>"}}
+MCP <- run (isError=False, returned in 0.110 s): {"run_id": "56e9b79b307b", "log": "$TMP/s7mcp/out/g1/run_56e9b79b307b.log", "output_dir": "$TMP/s7mcp/out/g1"}
+MCP <- status (isError=False, returned in 0.007 s): {"run_id": "56e9b79b307b", "status": "running", "returncode": null, ...}
+MCP RESULT g1: succeeded
+MCP -> call_tool: {"tool": "run", "arguments": {"runfile_json": "<g5.json, output.dir out/g5>"}}
+MCP <- run (isError=False, returned in 0.009 s): {"run_id": "00f304e902e5", ...}
+MCP <- status (isError=False, returned in 0.005 s): {"run_id": "00f304e902e5", "status": "running", ...}
+MCP RESULT g5: succeeded
+MCP -> call_tool: {"tool": "run", "arguments": {"runfile_json": "<g1.json with model.dir /etc>"}}
+MCP <- run (isError=True, returned in 0.028 s): "Error executing tool run: Access denied: path '/etc' resolves to '/etc' outside configured root '$TMP/s7mcp'"
 MCP RESULT confinement (model.dir=/etc): refused (isError=True); out dir created: False
-IDENTICAL [MCP] g1.json -> chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D (G1)
-IDENTICAL [MCP] g5.json -> haldane/NonEqOpVX-{VY,VX}haldaneKPM_M128x128_stateexact.chebmom2D (G5)  (2 files)
-IDENTICAL [MCP] g5.json -> haldane/Kubo{Bastin,BastinSea,BastinSurf,GreenWood}_...JACKSON.dat (G5)  (4 files)
+IDENTICAL [MCP] g1 -> G1 (1 file); g5 -> G5 (6 files)
 ```
-The full JSON, unabridged, is in the gate logs `~/s7logs/gate7.log` and `gate7_quick.log` on TCN.
+The full JSON is in `~/s7logs/gate7tail.log`. The refusal reason now reaches the client, so S7 of the
+first run is fixed.
 
-On the refused call:
-- the agent gets only the generic "Error executing tool run";
-- the reason (`ValueError: Access denied: path '/etc' ... outside configured root`) goes to the
-  server's stderr as an `UnexpectedToolError` traceback.
+## 5. Refusals (CLI, `python -m lsquant run <bad>.json --out <dir>`: exit 1, stderr, output dir not created)
 
-On 6ec46f1 the same call came back with `isError=False`. 9f8ccc8 corrected the flag, but not the
-message (S7).
+| case | stderr |
+|---|---|
+| unknown_operator | `Unknown operator 'FOO' in word 'Tr[FOO delta(E-H)]' (registered operators: [...])` |
+| rank_3 | `Unsupported word ... of rank 3 ...; nearest recognised shape is 'Tr[VX delta(E-H) VX delta(E-H)]' (kubo_greenwood)` |
+| mixed_basis | `Mixed basis without explicit transform: operator 'VX@bloch' is in 'bloch' basis while calculation/active basis is 'real' ...` |
+| ut_without_time | `Word 'Tr[VX delta(E-H) U(t)^+ VX U(t)]' contains time evolution U(t) without 'time' parameters ...` |
+| unknown_key_top (model.dir missing) | `Unknown key 'unknown_extra_key' in run file (top-level); ...` |
+| unknown_key_nested (model.dir missing) | `Unknown key 'windw' in run file (expansion); ...` |
+| g_plus | `Unrecognised word shape 'Tr[VX delta(E-H) VY G+(E)]'; nearest recognised shape is 'Tr[VX delta(E-H) VY dG-(E)/dE]' (kubo_bastin)` |
+| g_minus | same, for `G-(E)` |
+| dg_plus | same, for `dG+(E)/dE` |
+| window_eigen_csr | `expansion.window='eigen' is not supported for model.kind='csr' (no k blocks; use gershgorin or an explicit window)` |
+| formula_unmatched (g1 with `bastin`) | `Reconstruction formula 'bastin' in reconstruction.formulas does not match any word in ['Tr[delta(E-H)]'] (allowed formulas for given word(s): ['dos', 'dos_curve'])` |
 
-## 5. Refusals through the CLI (`python -m lsquant run <bad>.json --out <dir>`)
+`words describe` refuses the same words. It still accepts `Tr[VX delta(E-H) U(t)^+ VX U(t)]`
+without time (default time, by design). S1 of the first run is fixed.
 
-| case | run file | exit | stderr | output dir |
-|---|---|---|---|---|
-| unknown operator | g1 + `Tr[FOO delta(E-H)]` | 1 | `Unknown operator 'FOO' in word ... (registered operators: ['1', 'A', 'B', 'O', 'P', 'PX', ... 'VZSZ'])` | not created |
-| rank 3 | g2 + `Tr[VX delta VY delta VZ delta]` | 1 | `Unsupported word ... of rank 3 ...; nearest recognised shape is 'Tr[VX delta(E-H) VX delta(E-H)]' (kubo_greenwood)` | not created |
-| mixed basis | g1 + `Tr[VX@bloch delta(E-H)]` | 1 | `Mixed basis without explicit transform: operator 'VX@bloch' is in 'bloch' basis while calculation/active basis is 'real' ...` | not created |
-| U(t) without time | g6 without `time` + `Tr[VX delta(E-H) U(t)^+ VX U(t)]` | 1 | `Word ... contains time evolution U(t) without 'time' parameters (steps and tmax required)` | not created |
-| unknown key (top) | g1 + `unknown_extra_key`, `model.dir` = missing path | 1 | `Unknown key 'unknown_extra_key' in run file (top-level); allowed keys are [...]` | not created |
-| unknown key (nested) | g1 + `expansion.windw`, `model.dir` = missing path | 1 | `Unknown key 'windw' in run file (expansion); allowed keys are [...]` | not created |
+## 6. Tutorial 06: localisation of the 142 differing files
 
-Both unknown-key run files point `model.dir` at a path that does not exist. The message is still the
-key error, which shows that validation precedes any load.
+**What differs.** The numerators are fine and only the denominators fail:
+- Every numerator curve is byte-identical: `meanTimeProjSZ-PZ*`, `meanTimeProjSX-PX*`, both
+  top-level and captured.
+- Every denominator curve differs: `meanTimeProj1-P*`, the word `Tr[P U(t)^+ 1 U(t) delta(E-H) P]`.
+  First differing line of `captured/0001_meanTimeProj1-PZey_L20_D0.05...dat`: new `0 0.0532345`,
+  golden `0 9.98496e-07`.
+- The new curve is constant in t and equal to the numerator at t = 0, which is
+  `Tr[P delta P]`, the correct value for the identity.
+- The golden values are about 1e-6 and noisy.
 
-`words describe` without a run file (reported, not gated):
-- `FOO`, rank 3 and `@bloch` are refused, with the same messages as above.
-- `Tr[VX G+(E) VY delta(E-H)]` is refused with a nearest-shape message.
-- `Tr[VX delta(E-H) U(t)^+ VX U(t)]` is accepted (describe uses default time parameters, by design).
-- **`Tr[VX delta(E-H) VY G+(E)]`, `Tr[VX delta(E-H) VY G-(E)]` and `Tr[VX delta(E-H) VY dG+(E)/dE]`
-  are ACCEPTED as `kubo_bastin`** (formula `bastin`, engine word `VX delta VY delta`): smell S1.
+**Origin.** It is a legacy defect in the golden, not a new defect:
+- The stage-0 pipeline (`examples/06_spin_relaxation_square/lsqrelax.py:57`, `rp_spin.py:51,64`) calls
+  `inline_compute-kpm-TimeEvProjetedOp <label> 1 <proj> ...`.
+- That driver builds its operators from `operators/<label>.<ID>.CSR`
+  (`legacy-final:src/inline_compute-kpm-TimeEvProjetedOp.cpp:53-62`).
+- `make_ey.py` and `make_rashba.py` never write a `<label>.1.CSR`.
+- `legacy-final:include/sparse_matrix.hpp:132-133`: `BuildOPFromCSRFile` returns silently when
+  `OPERATOR_FromCSRFile` fails, so `OP[1]` stays an unbuilt matrix.
 
-## 6. Defects (localised, not fixed)
+**Why the stage-0 figure was still right.** The tutorial normalises the curve as
+`s = num / mean(den)`, then `s / s[0]`. The denominator's scale cancels:
+- `ey_ratelaw.dat` agrees to 1.8e-16 relative (rounding);
+- the stage-0 figures matched.
 
-**D1: every G10 run file fails.** 8/8 run files, both routes, at T = 16 and 1. The errors are
-`'_core.ExactInverseOverlap' object is not callable` (generalised) and
-`'_core.ExactInverseSqrtOverlap' object is not callable` (Löwdin).
+**Decision for Fable.** Two options:
+- re-bless the 139 denominator curves, the two `ey_ratelaw.dat` and `captured/index.tsv` from the new
+  code, with this reason, as was done for G4c / D2;
+- or have the run file emulate the defect (not recommended).
 
-- **Cause.** `lsquant/api/bindings.cpp:263,265,267` binds `overlap`, `inverse_overlap` and
-  `inverse_sqrt_overlap` of `MetricPolicy` as read-only **properties**, but the Python side calls
-  them as methods:
-  - `python/lsquant/runfile.py:1158` (`metric_obj.inverse_sqrt_overlap()`) and `:1176`
-    (`metric_obj.inverse_overlap()`) on 9f8ccc8;
-  - `python/lsquant/words/compiler.py:484, 490, 519, 523, 539, 542, 547, 579, 586`
-    (`inverse_*_overlap()`) and `:524, 548` (`overlap()`).
-- `python/lsquant/_core.pyi:93,95` declares them as methods, so the stub is out of sync with the binding.
-- The developer's report lists G10 run files, but the self-check never runs them.
-- **Probe.** I made a scratch copy of `python/lsquant` (`/tmp/s7probe*`; the repository is unchanged)
-  with only those call sites changed from `x()` to `x`, run at T = 16 against `stage6_nonorth` with
-  the run file's arguments:
-  - `g10_chain1d_real_lowdin`: 4/4 files byte-identical (.chebmom1D, .chebmom2D, both .chebmom);
-  - `g10_chain1d_{real,complex}_generalised` and `g10_haldane_{real,complex}_generalised`: 16/16
-    byte-identical.
-  - The other Löwdin probes were stopped for time (dense S^-1/2, about 45 min per word on loaded TCN)
-    and belong to the final run.
-  - With only `inverse_*` changed, the generalised Kubo word still failed at `metric_policy_obj.overlap()`
-    (`'_core.SparseMatrixOperator' object is not callable`).
+Nothing under `goldens/` was touched.
 
-**D2: every G9 exact-trace run file fails.** `g9_{graphene,haldane}_{eigen,bloch_exact}`, T = 16
-and 1, with `int() argument must be a string, a bytes-like object or a real number, not 'NoneType'`.
+## 7. T = 1 versus T = 16 on the Aron node (in progress at hand-off)
 
-- **Cause.** These run files omit `expansion.states`, so `RunFile` resolves it to `None`. The preview
-  compile at `runfile.py` (the `compile_preview` loop, `execute_runfile`) passes `rf.expansion`
-  unchanged. `words/compiler.py:401`, `int(exp_cfg.get("states", cfg.get("states", 1)))`, then gets
-  `None`, because the key is present.
-- **Probe.** With line 401 changed to treat `None` as absent, in a scratch copy, the 4 run files
-  against `stage5_bases` with the same arguments give `g9_graphene_{bloch_exact,eigen}` 16/16
-  and `g9_haldane_{bloch_exact,eigen}` 32/32 byte-identical in all.
+Following Fable, the thread-count identity is checked on `tcn-aronnode` (96 cores), not on the fat node.
 
-## 7. Figure
+| item | value |
+|---|---|
+| worktree | `~/lsquant-codex-7` at `5e8186d`, detached |
+| build | `~/lsquant-codex-7-build`, gcc 9.4.0, Python 3.10.22 |
+| cmake | the `~/lsquant/aron_build.sh` line: `lsq-env` Eigen, FFTW and GSL, Release |
+| `build/w2s_csr` | copied from the fat-node worktree; Aron has no wannier2sparse binary (S3) |
+| run script | `~/s7logs/aron_runs7.sh`, root PID 433093 |
+| outputs | `~/s7aron/T16` and `~/s7aron/T1` |
+| log | `~/s7aron/runs.log` |
 
-`figures/out/stage_7/fig_stage_7.png` (generated with `python3 figures/stage_7.py --runs ~/s7keep/T16`).
-The data are the full-run outputs on 9f8ccc8, which include tutorials 02 and 05 because the full set
-was already run. Caption (`fig_stage_7.caption.txt`):
+The script runs all 40 run files at T = 16 one after another, and at T = 1 up to 24 at a time,
+longest first.
 
-> FIG. 7. The six tutorial figures of stage 0 (left, legacy build, figures/out/stage_0) beside the same
-> curves drawn from the outputs of `python -m lsquant run runs/goldens/tutorial0N.json` (middle, solid)
-> over the stage-0 captures (dashed), with the residual new - golden (right). OMP_NUM_THREADS = 16,
-> KPM_SEED = 12345.
-> (a) tutorial 01 from runs/goldens/tutorial01.json: 24 of 24 golden files (every non-PNG file;
-> captured/index.tsv checked by sha1) byte-identical; max |new - golden| 0.
-> (b) tutorial 02 from runs/goldens/tutorial02.json: 194 of 194; 0.
-> (c) tutorial 03 from runs/goldens/tutorial03.json: 9 of 9; 0.
-> (d) tutorial 04 from runs/goldens/tutorial04.json: 4 of 4; 0.
-> (e) tutorial 05 from runs/goldens/tutorial05.json: 17 of 17; 0.
-> (f) tutorial 06: stage-0 figure only; there is no runs/goldens/tutorial06.json, so tutorial 06 is not
-> reproduced from words.
+Status at hand-off (22:29 CEST):
+- 37 of 40 T = 1 runs are done, all with exit 0. Still running: `tutorial06` and the two dense
+  Löwdin chain1d files.
+- The T = 16 queue is on `tutorial06`, its first file.
 
-The middle panels show the curves as written in the files (raw legacy units, e.g. sigma_xy before
-the tutorial's normalisation by the plateau). Panels 01, 03 and 04 are the closure set. Panels 02
-and 05 come from the same full run and are also identical.
+To finish: `bash ~/s7logs/aron_cmp7.sh` on Aron. It cmp's every file of `T1/<run file>` against
+`T16/<run file>` (excluding `run.resolved.json`) and prints IDENTICAL/DIFFERS per run file, with
+totals.
 
-## 8. Smells
+Aron is not byte-identical to the fat-node goldens: gcc 9.4, Eigen and glibc 2.31 give last-bit
+differences, measured in `~/lsquant/aron_build.log` and `/tmp/aron_g5diff` on Aron. Only T = 1 versus
+T = 16 is compared there.
 
-- **S1 (a word approximated instead of refused).** `match_catalogue`
-  (`words/catalogue.py`, rank-2 branch) maps any second spectral slot in
-  `{dG-/dE, dG+/dE, G-, G+}` to `kubo_bastin`, with the same engine word `VX delta VY delta` and
-  formula `bastin`.
-  - `Tr[VX delta(E-H) VY G+(E)]` and `Tr[VX delta(E-H) VY G-(E)]` are not the Bastin integrand, yet
-    they compile to it silently.
-  - `dG+/dE` is the conjugate term, also folded in without comment.
-  - The brief says a word the catalogue does not recognise is refused, never approximated.
-- **S2 (words that do nothing).** Generator run files (tutorial01, tutorial02, tutorial05) validate
-  `word`, `expansion`, `time`, `reconstruction` and `model.params`, then
-  `_execute_generator_runfile` calls `run_tutorial01(out_dir)` / `run_tutorial02(out_dir)` /
-  `run_tutorial05(out_dir)` (runfile.py on 9f8ccc8, lines 767, 771, 792). Every parameter is
-  hard-coded in `apps/tutorial0N.py`.
-  - Changing the run file's word or moments changes nothing.
-  - These goldens are therefore reproduced by the tutorial apps, not "from words".
-  - Review-1 item 1 replaced `script` by a generator name; the dispatch itself is unchanged.
-- **S3 (an implicit extra word).** When a Bastin `VX-VY` word asks for `greenwood`,
-  `execute_runfile` silently appends the companion word `Tr[VX delta(E-H) VX delta(E-H)]`
-  (runfile.py, comment "append the companion longitudinal word"). This is how g5 and tutorial03 get
-  `KuboGreenWood_NonEqOpVX-VX...`.
-- **S4 (a value approximated instead of refused).** For `model.kind = csr`, `expansion.window = "eigen"`
-  falls through to Gershgorin (runfile.py, `else: window = window_from_gershgorin(ham)`), with no
-  error and no record in `run.resolved.json`.
-- **S5 (stub out of sync).** `_core.pyi` declares `overlap`, `inverse_overlap` and
-  `inverse_sqrt_overlap` as methods while the binding exposes properties; this is the root of D1.
-- **S6 (G9 real basis).** The `g9_*_real*` run files build the real basis in lsquant (no `csr_dir`);
-  the stage-5 gate used the wannier2sparse CSR (`--csr-dir`). Bytes match `stage5_bases` without
-  `--csr-dir`, but the configuration the stage-5 gate certified is not the one the run files use.
-- **S7 (MCP error reporting).** Tools raise a bare `ValueError`. Under mcp 2.3.0 the agent receives
-  "Error executing tool run" without the reason, and the server prints a traceback on stderr. A
-  `ToolError` would carry the message.
-- **S8 (coverage).**
-  - There is no run file for tutorial 06.
-  - G10 run files exist only for the exact applier; the stage-6 gate also covered ischo and chebyshev.
-  - The self-check runs only g1 and g5, which is why D1 and D2 reached the tester.
-- **Hygiene.** `tutorial01.json` writes operators, BOUNDS and state files into the output dir
-  (expected for a generator). No run wrote into the repository (`git status` clean apart from the
-  tester's files).
+## 8. Section 2.5: the deleted legacy tree (`scripts/check_goldens.sh 7tail`, HEAD 9cdbe0f)
 
-Checks with nothing found:
-- **eval:** no `eval`/`exec`/`literal_eval` in the word language, run file, CLI or MCP server.
-  `exec_module` appears only in `apps/tutorial0{1,2,3,5}.py`, which import the example generators by
-  path.
-- **basis or word under core:** the stage-1 to stage-5 greps and the stage-7 grep are empty on code
-  lines.
-- **goldens:** nothing re-blessed, nothing under `goldens/` touched (the harness only reads it).
-- **legacy tree:** not deleted, as instructed; codex 2.5 skipped.
+```
+PASS  src/, include/, test/ absent from the working tree
+PASS  git ls-files src include test: 0 files
+PASS  build ~/lsquant-unified-build7c configured from this tree
+PASS  CMakeLists.txt: 0 legacy target lines
+PASS  scripts/regenerate_goldens.sh removed
+PASS  legacy shell scripts under examples/: 0
+PASS  tag legacy-final exists (commit 05e2f655); it holds the legacy tree (187 files under src include test); it is an ancestor of HEAD
+PASS  git worktree add /tmp/legacy-opus7 legacy-final
+PASS  legacy-final: cmake -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON && cmake --build (exit 0)
+PASS  legacy binaries inline_compute-kpm-{nonEqOp,spectralOp}, inline_kubo{Bastin,BastinSea,BastinSurf,Greenwood}FromChebmom built
+stage 0 with the legacy-final build: IDENTICAL G1, G2 (T = 16, 1, 64), G5 moments and 4 curves (T = 16): 12/12
+INFO  worktree /tmp/legacy-opus7 removed
+```
+The provenance of the goldens stays reproducible from `legacy-final`.
 
-## 9. Run history and incident
+## 9. Behaviour of `ensure_w2s_csr_dir` (review-2 item 6), as Fable asked
 
-- **6ec46f1, 10:10 UTC.** A full gate started. The G10 `stage6_nonorth` references (dense Löwdin,
-  about 45 min per word) made the T = 1 pass infeasible, so I stopped the run (11:25) and changed the
-  harness to run those references once, and only when the run file produced moments.
-- **Incident.** When I stopped my gate at 11:25 UTC I killed pid 3921966 by mistake. It was
-  `bash scripts/check_goldens.sh 6 build6`, the stage-6 tester's gate. Its EXIT trap removed its
-  temporary directory, so that run was lost.
-  - The pkill that Fable was told about (about 11:26) was this kill of mine, not the other session's.
-  - The stage-6 session has since restarted (`check_goldens.sh 6only build6`). I have not touched it again.
-  - From then on I killed only processes identified by their full command line as mine.
-- **11:25.** A restart on 6ec46f1 was stopped at 11:35 to move to 9f8ccc8, as Fable asked.
-- **9f8ccc8, 11:35 to 12:21.** Self-check, then the full gate (`S7_SET=all`, T = 16 and 1), section 3b.
-- **12:24 to about 12:45.** Quick closure gate (`S7_SET=quick`, T = 16) with the final harness,
-  section 3a.
+The tests are in `~/s7logs/w2stest.log`. Each runs `g9_graphene_real.json` with a different `csr_dir`.
 
-## 10. Files
+| case | setup | result |
+|---|---|---|
+| A | committed run file (`csr_dir: build/w2s_csr/graphene`); the directory did not exist; `~/wannier2sparse/build/wannier2sparse` present | Exit 0. The run silently created `<worktree>/build/w2s_csr/graphene/{graphene.HAM.CSR, graphene.VX.CSR, graphene.out}` inside the repository's ignored `build/` (`git status --ignored` shows `!! build/`). Those CSRs are byte-identical to a fresh wannier2sparse run, and the run's outputs are byte-identical to `stage5_bases --csr-dir`. |
+| B | csr_dir absent, no binary reachable (`HOME` redirected, `W2S_BIN` unset, not in PATH: `find_w2s_binary() -> None`) | Exit 1 with `RealBasis: '.../csrB/graphene.HAM.CSR' not found in csr_dir '.../csrB'`. The generation step does nothing silently and the load then fails. The message does not say that wannier2sparse was not found or where it was looked for. `run.resolved.json` was already written. |
+| C | csr_dir exists, non-empty, holds a 6×4×1 wannier2sparse output | Not regenerated. Exit 1 with `receipt '.../graphene.out' supercell (6, 4, 1) does not match requested supercell (48, 48, 1)`: the receipt check catches it. |
+| D | csr_dir exists but is empty | Generated. Exit 0, and moments and curves are identical to A. Only the `source` paths in `*.basis.json` differ. |
 
-- `scripts/check_goldens.sh` (stage 7, 7aux, S7_SET)
-- `figures/stage_7.py`
-- `figures/out/stage_7/fig_stage_7.png` and `fig_stage_7.caption.txt`
-- this `tests.md`
+## 10. Figure
 
-Logs on TCN: `~/s7logs/{gate7.log, gate7_quick.log, selfcheck2.log, probe*.log}`. Kept outputs:
-`~/s7keep` (full run, T16 and T1) and `~/s7keep_quick`.
+`figures/out/stage_7/fig_stage_7.png`, from `python3 figures/stage_7.py --runs ~/s7keepc/T16`.
+Caption (condensed from `fig_stage_7.caption.txt`):
+
+> FIG. 7. The six tutorial figures of stage 0 (left, legacy build, figures/out/stage_0) beside the
+> same curves drawn from the outputs of `python -m lsquant run runs/goldens/tutorial0N.json` (middle,
+> solid) over the stage-0 captures (dashed), with the residual new - golden (right). OMP_NUM_THREADS =
+> 16, KPM_SEED = 12345, head 5e8186d.
+> (a) to (e) tutorials 01 to 05: 24/24, 194/194, 9/9, 4/4 and 17/17 golden files byte-identical
+> (every non-PNG file; captured/index.tsv by sha1); max |new - golden| 0.
+> (f) tutorial 06 from runs/goldens/tutorial06.json: 139 of 281 byte-identical. The 141 differing data
+> files are the 139 denominator curves of the word with operator '1' (TimeProj1-P*),
+> captured/0254_ey_ratelaw.dat and ey_ratelaw.dat; captured/index.tsv also differs on those entries.
+> Drawn: the EY numerator curves, all byte-identical (residual 0). See tests.md section 6 for the
+> legacy defect behind the golden denominators.
+
+## 11. Smells
+
+- **S1 (fixed).** `G+`, `G-` and `dG+/dE` are now refused.
+- **S2 (mostly fixed).** Tutorials 01, 02 and 05 now compile the run file's word with its
+  parameters. Residual: `apps/tutorial06.py:125-127` builds its own word strings
+  (`Tr[P:{proj} U(t)^+ {op} U(t) delta(E-H) P:{proj}]`). The run file's `words` are only validated
+  (`tutorial06.py:231-232`).
+- **S3 (new, item 6).**
+  - `ensure_w2s_csr_dir` writes into the repository tree (`build/w2s_csr/...`) as a side effect of a run.
+  - It depends on a machine-local binary path (`~/wannier2sparse/build/wannier2sparse`, `W2S_BIN`, PATH).
+    On Aron the binary is absent and the run files only work after the CSRs are copied.
+  - Without the binary the error does not name the missing binary (case B).
+  - A non-empty `csr_dir` is never regenerated. Only the receipt's supercell check protects against
+    stale files (case C).
+- **S4 (new).** `tests/dev/stage_7_check.py:370-372` hard-codes `REPO/build[/lsquant_core]/stage6_nonorth`,
+  so it fails with any other build directory.
+- **S5 (legacy left behind, not in the brief's list).**
+  - `legacy/` still tracks 19 legacy driver sources (quarantine of 5b5db0c).
+  - Documentation and example scripts still name `inline_*` drivers (AGENTS.md, README.md,
+    `agent_template/`, `docs/spectral_scales.md`, `examples/*/lsq*.py`, ...).
+  - `examples/06/lsqrelax.py` and `rp_spin.py` still call the deleted drivers.
+- **S6 (golden defect).** Tutorial 06 denominators come from a legacy load of a missing operator file
+  (section 6). This is a candidate for re-blessing, not a code defect.
+- **S7 (cost).**
+  - The dense exact Löwdin chain1d run files take 17 to 42 min at 16 threads on a loaded node.
+  - `tutorial06` takes about 2 h.
+  - Neither is feasible at 1 thread on the shared fat node, hence `S7_T1_SKIP` and the Aron split.
+- **Not found:**
+  - no `eval`, `exec` or `literal_eval` in the word language, run file, CLI or MCP;
+  - no basis or word names under core (greps empty);
+  - no golden re-blessed or touched.
+
+## 12. Run history
+
+| time (UTC) | event |
+|---|---|
+| 16:04 | merge of 5e8186d; fresh build |
+| 16:05 to 17:27 | stage6 references pre-computed (`~/s7ref6c`, my PIDs, reniced to 19) |
+| 16:11 to 20:22 | gate at T = 16 over all 40 run files; stopped at the start of the T = 1 phase by `~/s7logs/watch.sh`, which killed only the process tree of my recorded PID after saving the T = 16 outputs |
+| 20:22 to 20:40 | `7tail` |
+| 19:50 onwards | T = 1 versus T = 16 on Aron |

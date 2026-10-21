@@ -13,8 +13,7 @@ One row per tutorial:
   right   the residual new - golden of the drawn curves, and in the title the number of
           byte-identical files and the max |new - golden| over every numeric file of the
           tutorial golden (all of captured/ and the top-level curves).
-Tutorial 06 has no run file under runs/goldens/; its row shows the stage-0 figure and
-says so.
+Tutorial 06 (Elliott-Yafet and Dyakonov-Perel spin relaxation) is drawn from its EY curves.
 
 usage: python3 figures/stage_7.py --runs <dir> [--out figures/out/stage_7]
   <dir> holds the run-file outputs tutorial01 ... tutorial05 (scripts/check_goldens.sh 7
@@ -89,7 +88,7 @@ def tutorial_stats(n, run_dir):
                 p = os.path.join(run_dir, "captured", name)
                 ok = ok and os.path.isfile(p) and hashlib.sha1(open(p, "rb").read()).hexdigest() == sha
             same += int(ok)
-            worst = worst if ok else np.inf
+            # a mismatching index entry is a mismatching capture, counted there
             continue
         if not os.path.isfile(new):
             worst = np.inf
@@ -103,6 +102,22 @@ def tutorial_stats(n, run_dir):
         a, b = tokens(new), tokens(g)
         worst = max(worst, float(np.max(np.abs(a - b))) if a.shape == b.shape else np.inf)
     return same, tot, worst
+
+
+def differing(n, run_dir):
+    """Relative paths of the non-PNG golden files of tutorial n that are not byte-identical."""
+    gdir = os.path.join(GOLD, "%02d" % n)
+    out = []
+    for g in sorted(glob.glob(os.path.join(gdir, "**", "*"), recursive=True)):
+        if not os.path.isfile(g) or g.endswith(".png"):
+            continue
+        rel = os.path.relpath(g, gdir)
+        new = os.path.join(run_dir, rel)
+        if rel == os.path.join("captured", "index.tsv"):
+            continue
+        if not (os.path.isfile(new) and filecmp.cmp(new, g, shallow=False)):
+            out.append(rel)
+    return out
 
 
 def pairs(n, run_dir):
@@ -130,12 +145,16 @@ def pairs(n, run_dir):
     elif n == 5:
         for f in cap("*meanCorrelationVX*.dat"):
             out.append(("W = " + os.path.basename(f).split("_W")[1].split("KPM")[0], f, curve))
+    elif n == 6:
+        for f in cap("*_meanTimeProjSZ-PZey_L20_D*.dat"):
+            out.append(("EY, D = " + os.path.basename(f).split("_D")[1].split("KPM")[0], f, curve))
     return [(lab, os.path.join(run_dir, os.path.relpath(g, gdir)), g, rd) for lab, g, rd in out]
 
 
 XLAB = {1: ("E (eV)", "DOS"), 2: ("t (hbar/eV)", "MSD"), 3: ("E (eV)", "sigma (e^2/h)"),
-        4: ("t (hbar/eV)", "Re mu_0(t)"), 5: ("t (hbar/eV)", "MSD")}
-RUNFILE = {n: "runs/goldens/tutorial%02d.json" % n for n in range(1, 6)}
+        4: ("t (hbar/eV)", "Re mu_0(t)"), 5: ("t (hbar/eV)", "MSD"),
+        6: ("t (hbar/eV)", "projected spin")}
+RUNFILE = {n: "runs/goldens/tutorial%02d.json" % n for n in range(1, 7)}
 
 
 def main():
@@ -151,14 +170,6 @@ def main():
         ax[row, 0].imshow(mpimg.imread(png))
         ax[row, 0].set_axis_off()
         ax[row, 0].set_title("(%s) stage 0, tutorial %02d: %s" % ("abcdef"[row], n, MAIN_PNG[n]), fontsize=9)
-        if n == 6:
-            for k in (1, 2):
-                ax[row, k].set_axis_off()
-            ax[row, 1].text(0.0, 0.5, "tutorial 06: no run file under runs/goldens/\n"
-                            "(not reproduced from words in this handoff)", fontsize=10, va="center")
-            cap.append("(f) tutorial 06: stage-0 figure only; there is no runs/goldens/tutorial06.json, "
-                       "so tutorial 06 is not reproduced from words.")
-            continue
         rdir = os.path.join(a.runs, "tutorial%02d" % n)
         same, tot, worst = tutorial_stats(n, rdir)
         resmax = 0.0
@@ -180,6 +191,12 @@ def main():
         cap.append("(%s) tutorial %02d from %s: %d of %d golden files (goldens/stage0/tutorials/%02d, "
                    "every non-PNG file; captured/index.tsv checked by sha1) byte-identical; max |new - golden| over all of them %.3g; drawn curves "
                    "residual %.3g." % ("abcdef"[row], n, RUNFILE[n], same, tot, n, worst, resmax))
+        if same < tot:
+            bad = differing(n, rdir)
+            den = [b for b in bad if "TimeProj1-" in b]
+            cap[-1] += (" The %d differing files: %d denominator curves of the word with operator '1' "
+                        "(TimeProj1-P*), %s, and captured/index.tsv on those entries. Drawn: the numerator curves, all byte-identical."
+                        % (len(bad), len(den), ", ".join(b for b in bad if "TimeProj1-" not in b)))
     fig.suptitle("FIG. 7. The tutorial figures regenerated from run files (python -m lsquant run), beside stage 0",
                  fontsize=12)
     fig.tight_layout(rect=(0, 0, 1, 0.985))

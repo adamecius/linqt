@@ -61,19 +61,27 @@
 #   stage 7  words, run files, CLI and MCP (handoff 0007): for every run file under
 #            runs/goldens/, `python3 -m lsquant run <file> --out <tmp>` at OMP_NUM_THREADS =
 #            16 and 1 (S7_THREADS), then cmp of every produced file against its golden: G1, G2,
-#            G3, G4, G4c, G5, G6, G7 (goldens/stage0), tutorials 01 to 05 (every non-PNG file
-#            of goldens/stage0/tutorials/0N, same relative path); G9 run files against
-#            stage5_bases run with the run file's arguments (byte) plus figures/stage_5_table.py
-#            on the run-file outputs; G10 run files against stage6_nonorth with the run file's
-#            arguments (byte) plus max relative difference vs G1/G2/G5 <= 1e-10 (stage-6 brief
-#            section 6, exact applier). Then the MCP server (g1.json, g5.json through the `run`
-#            and `status` tools, outputs cmp'd; a model dir outside --root must be refused), the
-#            CLI refusals (non-zero exit, stderr, no output dir), the greps of stages 1 to 5 and
-#            the stage-7 greps. Totals per golden and thread count at the end. S7_KEEP=<dir>
-#            keeps the run-file outputs (figures/stage_7.py). Stage "7aux" runs only the MCP
-#            and refusal parts. S7_SET=quick runs only the closure subset of handoff 0007
-#            (g1 g2 g3 g4 g4c g5 g7_s{x,y,z} g9_graphene_{real,eigen} g10_haldane_real_generalised
-#            tutorial01 tutorial03 tutorial04) at 16 threads; S7_SET=all (default) runs every run file.
+#            G3, G4, G4c, G5, G6, G7 (goldens/stage0), tutorials 01 to 06 (every non-PNG file
+#            of goldens/stage0/tutorials/0N, same relative path; captured/index.tsv by sha1);
+#            G9 run files against stage5_bases run with the run file's arguments, including its
+#            csr_dir (byte), the csr_dir CSR files against a fresh wannier2sparse run, plus
+#            figures/stage_5_table.py on the run-file outputs; G10 run files against
+#            stage6_nonorth with the run file's resolved metric (byte; computed once, at the first
+#            thread count, into S7_REF6) plus max relative difference vs G1/G2/G5 at the stage-6
+#            brief's tolerance (exact 1e-10, ischo 1e-9, chebyshev 1e-8). Run files listed in
+#            S7_T1_SKIP (default: the two dense exact Lowdin chain1d files) run at the first thread
+#            count only. Then the MCP server (g1.json, g5.json through the `run` and `status`
+#            tools, outputs cmp'd; a model dir outside --root must be refused), the CLI refusals
+#            (non-zero exit, stderr, no output dir), the greps of stages 1 to 5 and the stage-7
+#            greps, and codex.md section 2.5 (stage7_deleted: no src/ include/ test/, the
+#            legacy-final tag, a worktree of it in S7_LEGACY_WT builds the legacy drivers and
+#            reproduces the stage-0 G1, G2, G5 pipelines). Totals per golden and thread count.
+#            S7_KEEP=<dir> keeps the run-file outputs (figures/stage_7.py). Stages "7aux" (MCP and
+#            refusals), "7deleted" (section 2.5) and "7tail" (MCP, refusals, greps, section 2.5)
+#            run one part. S7_SET=list runs the run files named in S7_LIST. S7_SET=quick runs the
+#            closure subset of handoff 0007 (g1 g2 g3 g4 g4c g5 g7_s{x,y,z}
+#            g9_graphene_{real,eigen} g10_haldane_real_generalised tutorial01 tutorial03
+#            tutorial04) at 16 threads; S7_SET=all (default) runs every run file.
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -661,15 +669,24 @@ stage5_grep() {
 # from a golden file; `lsquant reconstruct` is not part of the gate), the stage-5 convention
 # rows (s5_conv.py). Totals are printed per golden and per thread count.
 S7_THREADS="${S7_THREADS:-16 1}"
+# G10 run files whose dense exact Lowdin route takes ~45 min per word at 16 threads are run at the
+# first thread count only (their 1-thread repeat would take many hours on a shared node).
+S7_T1_SKIP="${S7_T1_SKIP-g10_chain1d_real_lowdin g10_chain1d_complex_lowdin}"
+S7_REF6="${S7_REF6:-}"
+s7skip() { [ "$1" = "${S7_THREADS%% *}" ] && return 1; case " $S7_T1_SKIP " in *" $2 "*) return 0 ;; esac; return 1; }
 S7_RUNS="$REPO/runs/goldens"
 G1F2=NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
 declare -A S7I S7D S7ORDER
 # S7_SET=all (default): every run file. S7_SET=quick: the closure subset of handoff 0007 (16 threads
 # by default; g6, g7, the other g9 and g10 files, tutorial02 and tutorial05 deferred to the final run).
+# S7_SET=list: the run files named in S7_LIST (space separated), at S7_THREADS.
 S7_SET="${S7_SET:-all}"
 S7_QUICK="g1 g2 g3 g4 g4c g5 g7_sx g7_sy g7_sz g9_graphene_real g9_graphene_eigen g10_haldane_real_generalised tutorial01 tutorial03 tutorial04"
 [ "$S7_SET" = quick ] && S7_THREADS="${S7_THREADS_QUICK:-16}"
-s7want() { [ "$S7_SET" = all ] && return 0; case " $S7_QUICK " in *" $1 "*) return 0 ;; esac; return 1; }
+s7want() {
+  [ "$S7_SET" = all ] && return 0
+  case " $([ "$S7_SET" = list ] && echo "$S7_LIST" || echo "$S7_QUICK") " in *" $1 "*) return 0 ;; esac; return 1
+}
 
 # captured/index.tsv: every line "<NNNN_name> <sha1> <source>" must name a produced capture with that sha1
 s7idx() {   # <group> <produced captured dir> <golden index.tsv> <tag>
@@ -692,8 +709,25 @@ s7cmp() {   # <group> <new> <golden> <tag>   (compare(), plus a per-group tally)
   if [ "$NFAIL" -eq "$before" ]; then S7I[$g]=$(( ${S7I[$g]:-0} + 1 )); else S7D[$g]=$(( ${S7D[$g]:-0} + 1 )); fi
 }
 
-# max relative difference (scripts/golden_diff.py definition), 0 when cmp-identical
-s7relval() { cmp -s "$1" "$2" && { echo 0; return; }; python3 "$REPO/scripts/golden_diff.py" "$1" "$2" 2>&1 | grep -o 'max rel diff [^ ]*' | awk '{print $4}'; }
+# max relative difference as the stage-6 gate defines it (handoff 0006 tests.md 2.1):
+# rel = max_k |new_k - gold_k| / max_k |gold_k| over the data (moment files: lines after the
+# two header lines; curves: the value column), 0 when cmp-identical. The pointwise relative
+# difference of scripts/golden_diff.py is ~1 on moments that vanish by symmetry, so it is not used.
+s7relval() {
+  cmp -s "$1" "$2" && { echo 0; return; }
+  python3 - "$1" "$2" <<'PY'
+import sys
+def data(p):
+    L = open(p).read().split("\n")
+    if p.endswith((".chebmom1D", ".chebmom2D", ".chebmomTD")):
+        return [float(t) for l in L[2:] for t in l.split()]
+    return [float(l.split()[1]) for l in L if len(l.split()) >= 2]
+a, b = data(sys.argv[1]), data(sys.argv[2])
+if len(a) != len(b): print("inf"); sys.exit()
+m = max(abs(x) for x in b) or 1.0
+print("%.3e" % (max(abs(x - y) for x, y in zip(a, b)) / m))
+PY
+}
 
 s7rel() {   # <group> <new> <golden> <tol|INFO> <tag>
   local g="$1" new="$2" gold="$3" tol="$4" tag="$5" r
@@ -722,8 +756,8 @@ run_s7() {   # <threads> <run file name> <outdir>
   printf "          [T=%s] python -m lsquant run runs/goldens/%-36s wall %8.2f s, %4d files written\n" "$T" "$n.json" "$(echo "$e - $s" | bc)" "$(find "$W" -type f 2>/dev/null | wc -l)"
 }
 
-s7_ref5() {   # <threads> <model> <cfg> <outdir>: stage5_bases with the run file's arguments
-  local T="$1" m="$2" c="$3" O="$4" w a
+s7_ref5() {   # <threads> <model> <cfg> <outdir> [csr dir]: stage5_bases with the run file's arguments
+  local T="$1" m="$2" c="$3" O="$4" C="${5:-}" w a
   case "$c" in
     real) a="--basis real --trace random --states 32" ;;
     bloch) a="--basis bloch --trace random --states 32" ;;
@@ -732,6 +766,7 @@ s7_ref5() {   # <threads> <model> <cfg> <outdir>: stage5_bases with the run file
     real_w1) a="--basis real --trace random --states 32 --disorder 1 --disorder-seed 7" ;;
     bloch_w1) a="--basis bloch --trace random --states 32 --disorder 1 --disorder-seed 7" ;;
   esac
+  [ -z "$C" ] || a="$a --csr-dir $C"
   for w in dos kuboxx; do
     mkdir -p "$O/$w"
     ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR7:$REPO/python" python3 -m lsquant.apps.stage5_bases \
@@ -740,20 +775,27 @@ s7_ref5() {   # <threads> <model> <cfg> <outdir>: stage5_bases with the run file
   done
 }
 
-s7_ref6() {   # <threads> <model> <variant> <route> <outdir>: stage6_nonorth with the run file's arguments
-  local T="$1" m="$2" v="$3" r="$4" O="$5" w win st M
+# stage6_nonorth with the run file's resolved metric (run.resolved.json of the run): route, applier,
+# order, coeff_tol, tol, max_iter, max_dim; words dos+kubo (chain1d) or kuboxy+kubo (haldane)
+s7_ref6() {   # <threads> <model> <variant> <resolved run file> <outdir>
+  local T="$1" m="$2" v="$3" J="$4" O="$5" w win st M ma
   if [ "$m" = chain1d ]; then win="-2 2"; st=2048; M=64; set -- dos kubo; else win="-4.5 4.5"; st=512; M=128; set -- kuboxy kubo; fi
-  mkdir -p "$O"
+  ma="$(python3 -c 'import json,sys; x=json.load(open(sys.argv[1]))["metric"]; print("--route %s --applier %s --order %d --coeff-tol %r --tol %r --max-iter %d --max-dim %d" % (x["route"], x["applier"], x["order"], x["coeff_tol"], x["tol"], x["max_iter"], x["max_dim"]))' "$J")"
+  mkdir -p "$O"; echo "stage6_nonorth $ma" >"$O.args"
   for w in "$@"; do
-    OMP_NUM_THREADS=$T "$EXE6" --fixture "$GOLD/nonorth/$m/$v" --label $m --window $win --route $r --applier exact \
-      --order 60 --tol 1e-13 --trace exact --states $st --moments $M --word $w --out "$O" >>"$O.log" 2>&1 \
-      || echo "          [T=$T] stage6_nonorth $m $v $r $w failed: $(tail -1 "$O.log")"
+    OMP_NUM_THREADS=$T "$EXE6" --fixture "$GOLD/nonorth/$m/$v" --label $m --window $win $ma \
+      --trace exact --states $st --moments $M --word $w --out "$O" >>"$O.log" 2>&1 \
+      || echo "          [T=$T] stage6_nonorth $m $v $w failed: $(tail -1 "$O.log")"
   done
 }
 
 s7_goldens() {   # <threads>: every run file, every golden
-  local T="$1" B="$TMP/s7/T$1" n f g m c v r W R
-  for f in "$S7_RUNS"/*.json; do n="$(basename "$f" .json)"; s7want $n && run_s7 $T $n "$B/$n"; done
+  local T="$1" B="$TMP/s7/T$1" n f g m c v r W R C tol a
+  for f in "$S7_RUNS"/*.json; do
+    n="$(basename "$f" .json)"; s7want $n || continue
+    if s7skip $T $n; then echo "          [T=$T] $n.json not run at this thread count (S7_T1_SKIP)"; continue; fi
+    run_s7 $T $n "$B/$n"
+  done
   echo "   [T=$T] per-golden comparison"
   s7want g1 && s7cmp "T$T G1" "$B/g1/$G1F" "$GOLD/chain1d/$G1F" "[T=$T] g1.json -> chain1d/$G1F (G1)"
   s7want g2 && s7cmp "T$T G2" "$B/g2/$G1F2" "$GOLD/chain1d/$G1F2" "[T=$T] g2.json -> chain1d/$G1F2 (G2)"
@@ -791,7 +833,7 @@ s7_goldens() {   # <threads>: every run file, every golden
   # tutorials: every non-PNG file of the stage-0 tutorial golden, at the same relative path; the
   # capture index captured/index.tsv of the stage-0 shim (name, sha1, source path in the legacy
   # pipeline's temporary directory) is metadata, checked by sha1 against the produced captures
-  for n in 01 02 03 04 05; do
+  for n in 01 02 03 04 05 06; do
     s7want tutorial$n || continue
     W="$B/tutorial$n"
     while IFS= read -r f; do
@@ -804,11 +846,23 @@ s7_goldens() {   # <threads>: every run file, every golden
       [ -f "$GOLD/tutorials/$n/$f" ] || echo "INFO      [T=$T] tutorial$n.json wrote $f (no golden at that path)"
     done < <(cd "$W" 2>/dev/null && find . -type f | sed 's|^\./||' | sort)
   done
-  # G9: run files vs stage5_bases with the same arguments (byte), then the stage-5 table on the run files
+  # G9: run files vs stage5_bases with the same arguments (byte), then the stage-5 table on the run files.
+  # A run file's model.csr_dir (resolved against the repository) is passed to stage5_bases as --csr-dir;
+  # at the first thread count the CSR files there are cmp'd with a fresh wannier2sparse run in $TMP.
   for m in graphene haldane; do
     for c in real bloch bloch_exact eigen real_w1 bloch_w1; do
       s7want g9_${m}_$c || continue
-      R="$TMP/s7ref5/T$T/$m/$c"; s7_ref5 $T $m $c "$R"
+      C="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["model"].get("csr_dir") or "")' "$S7_RUNS/g9_${m}_$c.json")"
+      [ -z "$C" ] || case "$C" in /*) ;; *) C="$REPO/$C" ;; esac
+      if [ -n "$C" ] && [ ! -e "$TMP/s7w2s/$m.done" ]; then
+        mkdir -p "$TMP/s7w2s/$m"; : >"$TMP/s7w2s/$m.done"
+        ( cd "$GOLD/bases/$m/model" && "$S5_W2S" $m 48 48 1 VX -o "$TMP/s7w2s/$m" --quiet --no-log-file ) >"$TMP/s7w2s/$m.log" 2>&1 \
+          || echo "          wannier2sparse $m failed: $(tail -1 "$TMP/s7w2s/$m.log")"
+        for f in "$TMP/s7w2s/$m"/*.CSR; do
+          s7cmp "T$T G9 csr_dir" "$C/$(basename "$f")" "$f" "[T=$T] g9 run-file csr_dir ${C#$REPO/}/$(basename "$f") vs fresh wannier2sparse $m 48 48 1 VX"
+        done
+      fi
+      R="$TMP/s7ref5/T$T/$m/$c"; s7_ref5 $T $m $c "$R" "$C"
       for f in "$R"/dos/* "$R"/kuboxx/*; do
         [ -f "$f" ] || continue
         s7cmp "T$T G9" "$B/g9_${m}_$c/$(basename "$f")" "$f" "[T=$T] g9_${m}_$c.json -> stage5_bases $c $(basename "$(dirname "$f")")/$(basename "$f") (G9)"
@@ -824,7 +878,8 @@ s7_goldens() {   # <threads>: every run file, every golden
       done
     done
   done
-  if [ "$S7_SET" = all ]; then
+  n=0; for m in graphene haldane; do for c in real bloch bloch_exact eigen real_w1 bloch_w1; do s7want g9_${m}_$c && n=$((n + 1)); done; done
+  if [ $n -eq 12 ]; then
   echo "   [T=$T] figures/stage_5_table.py on the run-file outputs"
   ( cd "$REPO" && OMP_NUM_THREADS=16 PYTHONPATH="$PYDIR7:$REPO/python" python3 "$REPO/figures/stage_5_table.py" "$TMP/s7tab/T$T" "$GOLD/bases" ) >"$TMP/s7_table_T$T.txt" 2>&1
   sed 's/^/          /' "$TMP/s7_table_T$T.txt"
@@ -835,38 +890,44 @@ s7_goldens() {   # <threads>: every run file, every golden
   else
     echo "INFO      [T=$T] figures/stage_5_table.py skipped (S7_SET=$S7_SET: the table needs all six G9 configurations of both models)"
   fi
-  # G10: run files vs stage6_nonorth with the same arguments (byte), then vs the orthogonal goldens
-  for m in chain1d haldane; do
-    for v in real complex; do
-      for r in lowdin generalised; do
-        s7want g10_${m}_${v}_$r || continue
-        # stage6_nonorth (dense exact S^-1/2 on 2048 sites: ~45 min per word on a loaded TCN) is run
-        # once, at the first thread count, and only when the run file produced its moment files
-        n=g10_${m}_${v}_$r; R="$TMP/s7ref6/$n"
-        if ! ls "$B/$n"/*.chebmom* >/dev/null 2>&1; then
-          g="T$T G10"; [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
-          echo "DIFFERS   [T=$T] $n.json produced no moment file ($(tail -1 "$B/$n.err")); stage6_nonorth reference not run"
-          NFAIL=$((NFAIL + 1)); NCMP=$((NCMP + 1)); S7D[$g]=$(( ${S7D[$g]:-0} + 1 ))
-        else
-          [ -d "$R" ] || s7_ref6 $T $m $v $r "$R"
-        fi
-        for f in "$R"/*; do
-          [ -f "$f" ] && ls "$B/$n"/*.chebmom* >/dev/null 2>&1 || continue
-          s7cmp "T$T G10" "$B/$n/$(basename "$f")" "$f" "[T=$T] $n.json -> stage6_nonorth $(basename "$f") (G10)"
-        done
-        if [ $m = chain1d ]; then
-          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G1F" "$GOLD/chain1d/$G1F" 1e-10 "[T=$T] $n.json $G1F vs G1"
-          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G1F2" "$GOLD/chain1d/$G1F2" 1e-10 "[T=$T] $n.json $G1F2 vs G2"
-          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G3F" "$GOLD/chain1d/$G3F" INFO "[T=$T] $n.json $G3F vs G3 (curve, 6 digits)"
-        else
-          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G5XY.chebmom2D" "$GOLD/haldane/$G5XY.chebmom2D" 1e-10 "[T=$T] $n.json $G5XY.chebmom2D vs G5"
-          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G5XX.chebmom2D" "$GOLD/haldane/$G5XX.chebmom2D" 1e-10 "[T=$T] $n.json $G5XX.chebmom2D vs G5"
-          for g in KuboBastin_${G5XY} KuboBastinSea_${G5XY} KuboBastinSurf_${G5XY} KuboGreenWood_${G5XX}; do
-            s7rel "T$T G10 vs G1/G2/G5" "$B/$n/${g}JACKSON.dat" "$GOLD/haldane/${g}JACKSON.dat" INFO "[T=$T] $n.json ${g}JACKSON.dat vs G5 (curve, 6 digits)"
-          done
-        fi
-      done
+  # G10: run files vs stage6_nonorth with the run file's resolved metric (byte), then vs the orthogonal
+  # goldens at the stage-6 brief's tolerance (exact 1e-10, ischo 1e-9, chebyshev 1e-8). stage6_nonorth
+  # (dense exact S^-1/2 on 2048 sites: ~45 min per word on a loaded TCN) runs once per run file, at the
+  # first thread count, into S7_REF6 (default $TMP/s7ref6; an existing <dir>/<run file> is reused).
+  for f in "$S7_RUNS"/g10_*.json; do
+    n="$(basename "$f" .json)"; s7want $n || continue
+    s7skip $T $n && continue
+    m="$(echo $n | cut -d_ -f2)"; v="$(echo $n | cut -d_ -f3)"
+    R="$S7_REF6/$n"
+    if ! ls "$B/$n"/*.chebmom* >/dev/null 2>&1; then
+      g="T$T G10"; [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
+      echo "DIFFERS   [T=$T] $n.json produced no moment file ($(tail -1 "$B/$n.err")); stage6_nonorth reference not run"
+      NFAIL=$((NFAIL + 1)); NCMP=$((NCMP + 1)); S7D[$g]=$(( ${S7D[$g]:-0} + 1 ))
+      continue
+    fi
+    # a reference pre-computed outside the gate (S7_REF6 set by the caller) is used once its log says DONE
+    if [ -n "${S7_REF6_WAIT_LOG:-}" ]; then until grep -q "^DONE $n " "$S7_REF6_WAIT_LOG"; do sleep 60; done; fi
+    [ -d "$R" ] || s7_ref6 $T $m $v "$B/$n/run.resolved.json" "$R"
+    a="stage6_nonorth $(python3 -c 'import json,sys; x=json.load(open(sys.argv[1]))["metric"]; print("--route %s --applier %s --order %d --coeff-tol %r --tol %r --max-iter %d --max-dim %d" % (x["route"], x["applier"], x["order"], x["coeff_tol"], x["tol"], x["max_iter"], x["max_dim"]))' "$B/$n/run.resolved.json")"
+    [ "$a" = "$(cat "$R.args" 2>/dev/null)" ]; s7chk $? "[T=$T] $n.json: reference arguments equal the run's resolved metric ($a)"
+    for r in "$R"/*; do
+      [ -f "$r" ] || continue
+      s7cmp "T$T G10" "$B/$n/$(basename "$r")" "$r" "[T=$T] $n.json -> stage6_nonorth $(basename "$r") (G10)"
     done
+    case "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["metric"]["applier"])' "$B/$n/run.resolved.json")" in
+      exact) tol=1e-10 ;; ischo) tol=1e-9 ;; *) tol=1e-8 ;;
+    esac
+    if [ $m = chain1d ]; then
+      s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G1F" "$GOLD/chain1d/$G1F" $tol "[T=$T] $n.json $G1F vs G1"
+      s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G1F2" "$GOLD/chain1d/$G1F2" $tol "[T=$T] $n.json $G1F2 vs G2"
+      s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G3F" "$GOLD/chain1d/$G3F" INFO "[T=$T] $n.json $G3F vs G3 (curve, 6 digits)"
+    else
+      s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G5XY.chebmom2D" "$GOLD/haldane/$G5XY.chebmom2D" $tol "[T=$T] $n.json $G5XY.chebmom2D vs G5"
+      s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G5XX.chebmom2D" "$GOLD/haldane/$G5XX.chebmom2D" $tol "[T=$T] $n.json $G5XX.chebmom2D vs G5"
+      for g in KuboBastin_${G5XY} KuboBastinSea_${G5XY} KuboBastinSurf_${G5XY} KuboGreenWood_${G5XX}; do
+        s7rel "T$T G10 vs G1/G2/G5" "$B/$n/${g}JACKSON.dat" "$GOLD/haldane/${g}JACKSON.dat" INFO "[T=$T] $n.json ${g}JACKSON.dat vs G5 (curve, 6 digits)"
+      done
+    fi
   done
 }
 
@@ -967,7 +1028,13 @@ PY
   mk ut_without_time g6 'time=DEL; reconstruction=DEL; word="Tr[VX delta(E-H) U(t)^+ VX U(t)]"'
   mk unknown_key_top g1 'unknown_extra_key=1; model.dir="does/not/exist"'
   mk unknown_key_nested g1 'expansion.windw=[-2,2]; model.dir="does/not/exist"'
-  for f in unknown_operator rank_3 mixed_basis ut_without_time unknown_key_top unknown_key_nested; do
+  mk g_plus g5 'words=DEL; reconstruction=DEL; word="Tr[VX delta(E-H) VY G+(E)]"'
+  mk g_minus g5 'words=DEL; reconstruction=DEL; word="Tr[VX delta(E-H) VY G-(E)]"'
+  mk dg_plus g5 'words=DEL; reconstruction=DEL; word="Tr[VX delta(E-H) VY dG+(E)/dE]"'
+  mk window_eigen_csr g1 'expansion.window="eigen"'
+  mk formula_unmatched g1 'reconstruction={"broadening_meV": 120, "formulas": ["bastin"]}'
+  for f in unknown_operator rank_3 mixed_basis ut_without_time unknown_key_top unknown_key_nested \
+           g_plus g_minus dg_plus window_eigen_csr formula_unmatched; do
     s7_refuse $f run "$R/$f.json" --out "$R/out_$f"
   done
   # the same words through `words describe` (no run file): reported
@@ -985,6 +1052,8 @@ stage7_setup() {
   ls "$PYDIR7"/_core*.so >/dev/null 2>&1 || { echo "ERROR: _core*.so not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
   EXE6="$BUILD/lsquant_core/stage6_nonorth"
   [ -x "$EXE6" ] || { echo "ERROR: $EXE6 missing"; exit 2; }
+  [ -n "$S7_REF6" ] || S7_REF6="$TMP/s7ref6"
+  [ -x "$S5_W2S" ] || { echo "ERROR: wannier2sparse binary $S5_W2S missing (set W2S_BIN)"; exit 2; }
 }
 
 s7_totals() {
@@ -1005,6 +1074,44 @@ stage7() {
   [ -z "${S7_KEEP:-}" ] || { rm -rf "$S7_KEEP"; cp -r "$TMP/s7" "$S7_KEEP"; echo "   stage-7 outputs kept in $S7_KEEP"; }
 }
 
+
+# codex.md section 2.5: the deleted legacy tree. The build under test comes from this tree without
+# src/, include/, test/; the legacy-final tag still builds the legacy drivers in a separate worktree
+# (S7_LEGACY_WT, default /tmp/legacy-opus7), and that legacy build reproduces G1, G2, G5 (stage 0).
+S7_LEGACY_WT="${S7_LEGACY_WT:-/tmp/legacy-opus7}"
+s7chk() {   # <ok 0|1> <text>
+  NCMP=$((NCMP + 1))
+  if [ "$1" -eq 0 ]; then echo "PASS      $2"; else echo "FAIL      $2"; NFAIL=$((NFAIL + 1)); fi
+}
+stage7_deleted() {
+  local d n t b home rc
+  echo "== stage 7 section 2.5: deleted legacy tree (HEAD $(git -C "$REPO" rev-parse --short HEAD))"
+  for d in src include test; do [ ! -e "$REPO/$d" ]; s7chk $? "$d/ absent from the working tree"; done
+  n="$(git -C "$REPO" ls-files src include test | wc -l)"; [ "$n" -eq 0 ]; s7chk $? "git ls-files src include test: $n files"
+  home="$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "$BUILD/CMakeCache.txt")"
+  [ "$(cd "$home" && pwd -P)" = "$(cd "$REPO" && pwd -P)" ]; s7chk $? "build $BUILD configured from this tree ($home)"
+  n="$(grep -cE 'inline_|kuboBastinFromChebmom|add_subdirectory\((src|test)' "$REPO/CMakeLists.txt")"; [ "$n" -eq 0 ]; s7chk $? "CMakeLists.txt: $n legacy target lines"
+  [ ! -e "$REPO/scripts/regenerate_goldens.sh" ]; s7chk $? "scripts/regenerate_goldens.sh removed"
+  n="$(git -C "$REPO" ls-files 'examples/*.sh' 'examples/**/*.sh' | wc -l)"; [ "$n" -eq 0 ]; s7chk $? "legacy shell scripts under examples/: $n"
+  echo "INFO      files still tracked under legacy/ (quarantine of commit 5b5db0c, not part of the brief's list): $(git -C "$REPO" ls-files legacy | wc -l)"
+  echo "INFO      tracked files mentioning inline_ drivers outside handoff/, goldens/, legacy/: $(git -C "$REPO" grep -l 'inline_compute\|inline_kubo' -- . ':!handoff' ':!goldens' ':!legacy' | tr '\n' ' ')"
+  t="$(git -C "$REPO" rev-parse --verify -q legacy-final^{commit})"; [ -n "$t" ]; s7chk $? "tag legacy-final exists ($t)"
+  [ -n "$t" ] || return
+  n="$(git -C "$REPO" ls-tree -r --name-only legacy-final -- src include test | wc -l)"; [ "$n" -gt 0 ]; s7chk $? "legacy-final holds the legacy tree ($n files under src include test)"
+  git -C "$REPO" merge-base --is-ancestor legacy-final HEAD; s7chk $? "legacy-final is an ancestor of HEAD"
+  rm -rf "$S7_LEGACY_WT"; git -C "$REPO" worktree prune
+  git -C "$REPO" worktree add --detach "$S7_LEGACY_WT" legacy-final >"$TMP/s7legacy_wt.log" 2>&1; s7chk $? "git worktree add $S7_LEGACY_WT legacy-final"
+  b="$S7_LEGACY_WT/build"
+  ( cmake -S "$S7_LEGACY_WT" -B "$b" -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON && cmake --build "$b" -j 32 ) >"$TMP/s7legacy_build.log" 2>&1; rc=$?
+  s7chk $rc "legacy-final: cmake -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON && cmake --build (exit $rc; $(tail -1 "$TMP/s7legacy_build.log"))"
+  for d in inline_compute-kpm-nonEqOp inline_compute-kpm-spectralOp inline_kuboBastinFromChebmom \
+           inline_kuboBastinSeaFromChebmom inline_kuboBastinSurfFromChebmom inline_kuboGreenwoodFromChebmom; do
+    [ -x "$b/$d" ]; s7chk $? "legacy binary $d built"
+  done
+  echo "   legacy provenance: the stage-0 pipelines with the legacy-final build (G1, G2 at 16, 1, 64 threads; G5 at 16)"
+  BUILD="$b" stage0
+  git -C "$REPO" worktree remove --force "$S7_LEGACY_WT" && echo "INFO      worktree $S7_LEGACY_WT removed"
+}
 # words and run files live in python/lsquant; the engine knows none of it, and nothing evaluates text
 stage7_grep() {
   local all hits coms pat='catalogue|runfile|grammar|Tr\[|mcp'
@@ -1029,7 +1136,9 @@ case "$STAGE" in
   4) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep ;;
   5) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep ;;
   5only) stage5; stage5_grep ;;
-  7) stage7; core_grep; stage2_grep; stage3_grep; stage4_grep; stage5_grep; stage7_grep ;;
+  7) stage7; core_grep; stage2_grep; stage3_grep; stage4_grep; stage5_grep; stage7_grep; stage7_deleted ;;
+  7deleted) stage7_deleted ;;
+  7tail) stage7_setup; s7_mcp; s7_refusals; s7_totals; core_grep; stage2_grep; stage3_grep; stage4_grep; stage5_grep; stage7_grep; stage7_deleted ;;
   7aux) stage7_setup; s7_mcp; s7_refusals; s7_totals ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
