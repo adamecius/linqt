@@ -76,6 +76,7 @@ class RealBasis:
         *,
         disorder_w: float = 0.0,
         seed: int = 12345,
+        disorder_seed: int | None = None,
         disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
         csr_dir: str | None = None,
         use_w2s_csr: bool = True,
@@ -89,6 +90,7 @@ class RealBasis:
         self.dimension = self.num_cells * self.num_wann
         self.disorder_w = float(disorder_w)
         self.seed = int(seed)
+        self.disorder_seed = self.seed if disorder_seed is None else int(disorder_seed)
         self._csr_dir = csr_dir
         self._use_w2s_csr = bool(use_w2s_csr)
 
@@ -110,7 +112,9 @@ class RealBasis:
                 self._h_op_clean, self._v_op
             )
         elif self.disorder_w > 0.0:
-            v_arr = make_anderson_disorder(self.dimension, self.disorder_w, self.seed)
+            v_arr = make_anderson_disorder(
+                self.dimension, self.disorder_w, self.disorder_seed
+            )
             self._disorder_vec = v_arr
             self._v_op = _core.DiagonalOperator(v_arr)
             self._h_op = _core.OperatorSum(self._h_op_clean, self._v_op)
@@ -261,6 +265,7 @@ class BlochBasis:
         *,
         disorder_w: float = 0.0,
         seed: int = 12345,
+        disorder_seed: int | None = None,
         disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
     ) -> None:
         if len(supercell) != 3:
@@ -272,6 +277,7 @@ class BlochBasis:
         self.dimension = self.num_cells * self.num_wann
         self.disorder_w = float(disorder_w)
         self.seed = int(seed)
+        self.disorder_seed = self.seed if disorder_seed is None else int(disorder_seed)
 
         self.k_points = model.k_mesh(self.supercell)
         self.phases = model.bloch_phases(self.k_points)
@@ -300,7 +306,9 @@ class BlochBasis:
                 self._hk_op, self._sandwich_v
             )
         elif self.disorder_w > 0.0:
-            v_arr = make_anderson_disorder(self.dimension, self.disorder_w, self.seed)
+            v_arr = make_anderson_disorder(
+                self.dimension, self.disorder_w, self.disorder_seed
+            )
             self._disorder_vec = v_arr
             self._v_op = _core.DiagonalOperator(v_arr)
             self._sandwich_v = _core.SandwichOperator(self.transform, self._v_op)
@@ -394,6 +402,9 @@ class BlochBasis:
             eigvals, _ = np.linalg.eigh(self.hk_array)
             self._eig_bounds = (float(np.min(eigvals)), float(np.max(eigvals)))
         emin, emax = self._eig_bounds
+        if self.disorder_w > 0.0:
+            emin -= 0.5 * self.disorder_w
+            emax += 0.5 * self.disorder_w
         width = emax - emin
         if width <= 0.0:
             emin -= 1.0
@@ -636,17 +647,30 @@ def make_basis(
     *,
     disorder_w: float = 0.0,
     seed: int = 12345,
+    disorder_seed: int | None = None,
     disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
+    csr_dir: str | None = None,
 ) -> RealBasis | BlochBasis | EigenBasis:
     """Construct one of :class:`RealBasis`, :class:`BlochBasis`, or :class:`EigenBasis` by name."""
     key = basis_name.strip().lower()
     if key == "real":
         return RealBasis(
-            model, supercell, disorder_w=disorder_w, seed=seed, disorder=disorder
+            model,
+            supercell,
+            disorder_w=disorder_w,
+            seed=seed,
+            disorder_seed=disorder_seed,
+            disorder=disorder,
+            csr_dir=csr_dir,
         )
     if key == "bloch":
         return BlochBasis(
-            model, supercell, disorder_w=disorder_w, seed=seed, disorder=disorder
+            model,
+            supercell,
+            disorder_w=disorder_w,
+            seed=seed,
+            disorder_seed=disorder_seed,
+            disorder=disorder,
         )
     if key == "eigen":
         return EigenBasis(model, supercell, disorder_w=disorder_w, seed=seed)
