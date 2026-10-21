@@ -116,6 +116,67 @@ Parameters a README does not fix, and deviations:
 - 06: `rp_validate.py` with `OMP_NUM_THREADS=64` (README); `rp_spin.py` sets `KPM_SEED=1..20`
   and `OMP_NUM_THREADS=16` per random vector itself.
 
+## G9 — `bases/graphene/`, `bases/haldane/` (stage 5; independent oracle, not the legacy build)
+
+G9 is the only golden not produced by the legacy LSQUANT build: AGENTS.md section 8 names
+`wannier2sparse/tools/hr_exactdiag.py` (exact diagonalisation on a k mesh, independent code)
+as its oracle. Generated on TCN on 2026-10-21 by the stage-5 tester (handoff
+`0005-bloch-and-eigen-bases`, branch `handoff/0005-codex`) with Python 3.10.12, numpy 2.2.6.
+
+| Item | Value |
+|---|---|
+| wannier2sparse | `~/wannier2sparse` at `3f553db8dc2f226f44592b6ee2a717d3cd71d8c7` (local edits only in `tools/block_pilot.cpp`, `docs/FINDINGS.md`, `roadmap_plans.md`; `tools/hr_exactdiag.py`, `examples/gen_models.py` and `src/` clean). The pinned `26cab4a` of `scripts/fetch_wannier2sparse.sh` has no `tools/hr_exactdiag.py`. |
+| Models | `python3 examples/gen_models.py` (graphene: t = -1 eV, a1 = (1.5, 0.8660254, 0), a2 = (1.5, -0.8660254, 0), tau_B = (1, 0, 0); Haldane: t1 = -1, t2 = 0.15, phi = pi/2). Committed unchanged as `<model>/model/<model>_hr.dat`, `.uc`, `.xyz`. |
+| Velocities | `wannier2sparse <model> 1 1 1 VX VY --mode bundle -o bund` (velocity mode `berry_connection`, `-i (R.lat + tau_b - tau_a) H`, eV Angstrom); `bund/<model>.w2sp/operators/VX.hr.dat`, `VY.hr.dat` copied to `<model>/model/<model>_vx_hr.dat`, `_vy_hr.dat` (the file names `hr_exactdiag.py sigma` reads). |
+| Window | eigenvalues of `H(k)` on the commensurate 48 x 48 Gamma mesh `k = n/48` (the k mesh of the 48 x 48 x 1 supercell): both models span [-3, 3] eV; padded 10 %: `[-3.3, 3.3]` eV, half-width a = 3.3 eV. |
+| Broadening | Gaussian sigma = pi a / M with M = 256 (the Jackson resolution of 256 moments on that window) = 0.0404970928 eV = 40.4970928 meV. |
+| Mesh | `--nk 48`: hr_exactdiag's mesh is the shifted (i + 1/2)/48 mesh, not the Gamma mesh of the supercell (part of the finite-size difference of the G9 row). |
+| Grid | `--emin -3.3 --emax 3.3 --ngrid 2641` (spacing 2.5 meV). |
+
+Commands (in a scratch copy of the generated models, `<m>` = graphene, haldane):
+
+```
+python3 ~/wannier2sparse/tools/hr_exactdiag.py dos   <m> --nk 48 --eta 0.0404970928 --ngrid 2641 --emin -3.3000000000 --emax 3.3000000000 --out goldens/stage0/bases/<m>/G9_dos
+python3 ~/wannier2sparse/tools/hr_exactdiag.py sigma <m> --nk 48 --eta 0.0404970928 --ngrid 2641 --emin -3.3000000000 --emax 3.3000000000 --comp xx --out goldens/stage0/bases/<m>/G9_sigma_xx
+```
+
+Files per model: `G9_dos.json` (`energy_eV`, `dos` per cell, integral 2.000),
+`G9_sigma_xx.json` (`energy_eV`, `sigma_xx_e2h`), `G9_params.txt` (window, a, M, sigma, grid,
+nk, pad: read by `scripts/check_goldens.sh 5` for the window and the broadening of the
+lsquant runs), `model/` (the inputs above). Units and caveats of the oracle, as used by the
+gate (`figures/stage_5_table.py`): the DOS is per cell (lsquant's extensive curve is divided
+by N_k = 2304); `sigma_xx_e2h` carries the prefactor 2 pi^2 / A with A = |a1_x a2_y| =
+1.299 A^2 (`cmd_sigma`; the true honeycomb cell |a1 x a2| = 2.598 A^2, so for these two
+models the printed values are twice the e^2/h value; `cell_area_2d` in the same file
+documents this pitfall but `cmd_sigma` does not use it). The gate compares shapes through
+the fixed analytic factor 2 pi / (A N_k) and prints the least-squares factor next to it.
+
+The whole generation is `goldens/stage0/bases/gen_g9.sh <repo>` (committed next to the
+files; it generates the models in a scratch directory, writes the bundle velocities, derives
+the window and the broadening, and runs the two commands above per model). A second run into
+a scratch tree reproduced all 16 files byte for byte.
+
+sha256:
+
+```
+d7cbacdc4b6bdffb5bd8afcab09695cd8f5c08114b4fb20f6ad02f6706969f9b  bases/graphene/G9_dos.json
+b823599cf32f762953f123f1564a6bcb793ceaa0e22d9b8292c48d3395c727fc  bases/graphene/G9_sigma_xx.json
+d79065b5bd8708d2520c56f7b235846049bd87fe8dc9eef93da7cc92cb474a43  bases/graphene/G9_params.txt
+1dc70fea90f60fc8340ee0ced64639a6d9390f7f636a5eea10c06dc333ab2fde  bases/graphene/model/graphene_hr.dat
+0bc2d2218e7805356c364afce524055907c1fccc287ef88cff54e6e4ba022560  bases/graphene/model/graphene.uc
+2779e3f2fecf3dcff54fad0817088b4b9ab536293cb7e30f44b525a13563cdf9  bases/graphene/model/graphene.xyz
+b3014714d39c0354052b6d0308b6b3a92bbb0da6d0cda0ee6d032a7b443cc2b6  bases/graphene/model/graphene_vx_hr.dat
+204b566f8a05dc3405219a49630b204beaed79a2d4cbba06324783951e53d8f5  bases/graphene/model/graphene_vy_hr.dat
+8cce83692f3e2820899ad73ff930e2ab1aac566a3e7e5ec7d664a3bd925ce789  bases/haldane/G9_dos.json
+203c94cc23096c84d01c15391ebb3fd68d2e290a3c8887e0d1f0db11385d3ddf  bases/haldane/G9_sigma_xx.json
+d79065b5bd8708d2520c56f7b235846049bd87fe8dc9eef93da7cc92cb474a43  bases/haldane/G9_params.txt
+d4b53b22c4e33e067ad0ca77a6ac66c0aa76d1379d2d265e0278700dcd83d706  bases/haldane/model/haldane_hr.dat
+0bc2d2218e7805356c364afce524055907c1fccc287ef88cff54e6e4ba022560  bases/haldane/model/haldane.uc
+2779e3f2fecf3dcff54fad0817088b4b9ab536293cb7e30f44b525a13563cdf9  bases/haldane/model/haldane.xyz
+b7bdaaad6a393fc5da52d9d0109f0872dc5c86f5771c2e8a688f3523627d05b8  bases/haldane/model/haldane_vx_hr.dat
+ea86f1903319c27467003d92f6e332248ae9a7dfcb991a38571c552054f18c10  bases/haldane/model/haldane_vy_hr.dat
+```
+
 ## Stability
 
 `scripts/check_goldens.sh 0 build` reran G1, G2, G5 (16 threads) and G1, G2 (1 and 64

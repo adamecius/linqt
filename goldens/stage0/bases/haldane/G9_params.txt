@@ -1,0 +1,8 @@
+window_lower -3.3000000000
+window_upper 3.3000000000
+half_width 3.3000000000
+moments 256
+sigma_eV 0.0404970928
+ngrid 2641
+nk 48
+pad 0.10

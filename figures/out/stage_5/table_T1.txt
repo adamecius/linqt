@@ -1,0 +1,94 @@
+INFO  graphene DOS real     written .dat vs recomputed curve: nrel 2.42e-06 (6-digit text)
+INFO  graphene DOS bloch    written .dat vs recomputed curve: nrel 2.42e-06 (6-digit text)
+INFO  graphene DOS blochx   written .dat vs recomputed curve: nrel 2.49e-06 (6-digit text)
+INFO  graphene DOS eigen    written .dat vs recomputed curve: nrel 2.49e-06 (6-digit text)
+INFO  graphene DOS W1 real  written .dat vs recomputed curve: nrel 3.59e-06 (6-digit text)
+INFO  graphene DOS W1 bloch written .dat vs recomputed curve: nrel 3.59e-06 (6-digit text)
+PASS  graphene DOS W=0 real vs bloch moments (random 32, seed 12345): nrel 2.465e-14 (tol 1e-09); prel 6.253e-12
+INFO  graphene DOS W=0 real vs bloch curve: nrel 1.694e-14
+PASS  graphene DOS W=0 bloch(exact) vs eigen curve: nrel 1.925e-15 (tol 1e-08); moments nrel 1.360e-15
+INFO  graphene DOS W=0 bloch(random 32) vs eigen curve: nrel 2.938e-02 (stochastic trace error)
+INFO  graphene DOS W=0 real(random 32) vs eigen curve: nrel 2.938e-02 (stochastic trace error)
+FAIL  graphene DOS W=0 real   vs G9 on |E|<2.5: nrel 1.520e-01 at E=-1.001 (tol 2e-02); prel 3.870e-01
+FAIL  graphene DOS W=0 bloch  vs G9 on |E|<2.5: nrel 1.520e-01 at E=-1.001 (tol 2e-02); prel 3.870e-01
+FAIL  graphene DOS W=0 blochx vs G9 on |E|<2.5: nrel 1.221e-01 at E=+0.999 (tol 2e-02); prel 4.385e-01
+FAIL  graphene DOS W=0 eigen  vs G9 on |E|<2.5: nrel 1.221e-01 at E=+0.999 (tol 2e-02); prel 4.385e-01
+INFO  graphene DOS W=0 eigen vs G9 over the whole KPM grid |E| <= 3.135: nrel 1.221e-01
+INFO  graphene DOS W=0 independent moments (hr_exactdiag H(k) + wannier2sparse VX, Gamma mesh n/48, exact): eigen nrel 2.442e-14, bloch(exact) nrel 2.442e-14, real(random 32) nrel 1.446e-02, bloch(random 32) nrel 1.446e-02
+INFO  graphene DOS W=0 mesh effect: G9 (mesh (i+1/2)/48) vs the same Gaussian formula on the Gamma mesh n/48: nrel 8.479e-02 on the mask
+INFO  graphene DOS W=0 kernel effect: eigen (Jackson, M=256) vs Gaussian on the Gamma mesh n/48: nrel 3.281e-02 on the mask
+INFO  graphene DOS W=0 eigen vs G9 on the mask without |(|E| - E_vH)| <= 0.15 eV (E_vH = 1.000, M-point energies): nrel 1.297e-01 at E=-1.183; real 1.379e-01, bloch 1.379e-01
+PASS  graphene DOS W=1 (seed 7) real vs bloch moments (random 32, seed 12345): nrel 2.105e-14 (tol 1e-09); prel 1.800e-12
+INFO  graphene DOS W=1 real vs bloch curve: nrel 2.145e-14
+INFO  graphene DOS W=1 eigen: skipped as codex.md 2.4 directs (no per-k eigenbasis with disorder; N_k W = 4608)
+INFO  graphene sigma_xx real     written .dat vs recomputed curve: nrel 1.19e-06 (6-digit text)
+INFO  graphene sigma_xx bloch    written .dat vs recomputed curve: nrel 1.19e-06 (6-digit text)
+INFO  graphene sigma_xx blochx   written .dat vs recomputed curve: nrel 1.23e-06 (6-digit text)
+INFO  graphene sigma_xx eigen    written .dat vs recomputed curve: nrel 1.23e-06 (6-digit text)
+INFO  graphene sigma_xx W1 real  written .dat vs recomputed curve: nrel 5.26e-07 (6-digit text)
+INFO  graphene sigma_xx W1 bloch written .dat vs recomputed curve: nrel 5.26e-07 (6-digit text)
+PASS  graphene sigma_xx W=0 real vs bloch moments (random 32, seed 12345): nrel 2.425e-15 (tol 1e-09); prel 1.273e-10
+INFO  graphene sigma_xx W=0 real vs bloch curve: nrel 4.649e-15
+PASS  graphene sigma_xx W=0 bloch(exact) vs eigen curve: nrel 2.890e-15 (tol 1e-08); moments nrel 5.542e-15
+INFO  graphene sigma_xx W=0 bloch(random 32) vs eigen curve: nrel 4.365e-02 (stochastic trace error)
+INFO  graphene sigma_xx W=0 real(random 32) vs eigen curve: nrel 4.365e-02 (stochastic trace error)
+INFO  graphene sigma_xx units: analytic factor 2 pi/(A_hr N_k) = 2.099305e-03 (A_hr = 1.299038, true cell area 2.598076), least squares 1.608725e-03, ratio 0.76631
+FAIL  graphene sigma_xx W=0 real   vs G9 on |E|<2.5: nrel 8.076e-01 at E=-0.996 (tol 5e-02); prel 8.385e-01
+FAIL  graphene sigma_xx W=0 bloch  vs G9 on |E|<2.5: nrel 8.076e-01 at E=-0.996 (tol 5e-02); prel 8.385e-01
+FAIL  graphene sigma_xx W=0 blochx vs G9 on |E|<2.5: nrel 7.684e-01 at E=+0.996 (tol 5e-02); prel 8.284e-01
+FAIL  graphene sigma_xx W=0 eigen  vs G9 on |E|<2.5: nrel 7.684e-01 at E=+0.996 (tol 5e-02); prel 8.284e-01
+INFO  graphene sigma_xx W=0 eigen vs G9 over the whole KPM grid |E| <= 3.135: nrel 7.684e-01
+INFO  graphene sigma_xx W=0 independent moments (hr_exactdiag H(k) + wannier2sparse VX, Gamma mesh n/48, exact): eigen nrel 1.146e-14, bloch(exact) nrel 1.109e-14, real(random 32) nrel 9.478e-03, bloch(random 32) nrel 9.478e-03
+INFO  graphene sigma_xx W=0 mesh effect: G9 (mesh (i+1/2)/48) vs the same Gaussian formula on the Gamma mesh n/48: nrel 6.129e-01 on the mask
+INFO  graphene sigma_xx W=0 kernel effect: eigen (Jackson, M=256) vs Gaussian on the Gamma mesh n/48: nrel 2.758e-01 on the mask
+INFO  graphene sigma_xx W=0 eigen vs G9 on the mask without |(|E| - E_vH)| <= 0.15 eV (E_vH = 1.000, M-point energies): nrel 5.597e-01 at E=+1.242; real 5.748e-01, bloch 5.748e-01
+PASS  graphene sigma_xx W=1 (seed 7) real vs bloch moments (random 32, seed 12345): nrel 3.869e-16 (tol 1e-09); prel 3.346e-12
+INFO  graphene sigma_xx W=1 real vs bloch curve: nrel 2.527e-15
+INFO  graphene sigma_xx W=1 eigen: skipped as codex.md 2.4 directs (no per-k eigenbasis with disorder; N_k W = 4608)
+INFO  haldane DOS real     written .dat vs recomputed curve: nrel 1.79e-06 (6-digit text)
+INFO  haldane DOS bloch    written .dat vs recomputed curve: nrel 1.79e-06 (6-digit text)
+INFO  haldane DOS blochx   written .dat vs recomputed curve: nrel 1.81e-06 (6-digit text)
+INFO  haldane DOS eigen    written .dat vs recomputed curve: nrel 1.81e-06 (6-digit text)
+INFO  haldane DOS W1 real  written .dat vs recomputed curve: nrel 2.89e-06 (6-digit text)
+INFO  haldane DOS W1 bloch written .dat vs recomputed curve: nrel 2.89e-06 (6-digit text)
+PASS  haldane DOS W=0 real vs bloch moments (random 32, seed 12345): nrel 2.465e-14 (tol 1e-09); prel 9.021e-12
+INFO  haldane DOS W=0 real vs bloch curve: nrel 1.254e-14
+PASS  haldane DOS W=0 bloch(exact) vs eigen curve: nrel 1.858e-15 (tol 1e-08); moments nrel 2.319e-15
+INFO  haldane DOS W=0 bloch(random 32) vs eigen curve: nrel 1.450e-02 (stochastic trace error)
+INFO  haldane DOS W=0 real(random 32) vs eigen curve: nrel 1.450e-02 (stochastic trace error)
+FAIL  haldane DOS W=0 real   vs G9 on 0.5<|E|<2.5: nrel 3.670e-02 at E=+2.003 (tol 2e-02); prel 1.000e+00
+FAIL  haldane DOS W=0 bloch  vs G9 on 0.5<|E|<2.5: nrel 3.670e-02 at E=+2.003 (tol 2e-02); prel 1.000e+00
+FAIL  haldane DOS W=0 blochx vs G9 on 0.5<|E|<2.5: nrel 2.851e-02 at E=+2.110 (tol 2e-02); prel 1.000e+00
+FAIL  haldane DOS W=0 eigen  vs G9 on 0.5<|E|<2.5: nrel 2.851e-02 at E=+2.110 (tol 2e-02); prel 1.000e+00
+INFO  haldane DOS W=0 eigen vs G9 over the whole KPM grid |E| <= 3.135: nrel 4.979e-02
+INFO  haldane DOS W=0 independent moments (hr_exactdiag H(k) + wannier2sparse VX, Gamma mesh n/48, exact): eigen nrel 2.442e-14, bloch(exact) nrel 2.442e-14, real(random 32) nrel 1.065e-02, bloch(random 32) nrel 1.065e-02
+INFO  haldane DOS W=0 mesh effect: G9 (mesh (i+1/2)/48) vs the same Gaussian formula on the Gamma mesh n/48: nrel 1.353e-02 on the mask
+INFO  haldane DOS W=0 kernel effect: eigen (Jackson, M=256) vs Gaussian on the Gamma mesh n/48: nrel 2.234e-02 on the mask
+INFO  haldane DOS W=0 eigen vs G9 on the mask without |(|E| - E_vH)| <= 0.15 eV (E_vH = 1.000, M-point energies): nrel 4.844e-02 at E=+2.110; real 6.235e-02, bloch 6.235e-02
+PASS  haldane DOS W=1 (seed 7) real vs bloch moments (random 32, seed 12345): nrel 2.172e-14 (tol 1e-09); prel 2.695e-12
+INFO  haldane DOS W=1 real vs bloch curve: nrel 1.770e-14
+INFO  haldane DOS W=1 eigen: skipped as codex.md 2.4 directs (no per-k eigenbasis with disorder; N_k W = 4608)
+INFO  haldane sigma_xx real     written .dat vs recomputed curve: nrel 1.61e-06 (6-digit text)
+INFO  haldane sigma_xx bloch    written .dat vs recomputed curve: nrel 1.61e-06 (6-digit text)
+INFO  haldane sigma_xx blochx   written .dat vs recomputed curve: nrel 1.59e-06 (6-digit text)
+INFO  haldane sigma_xx eigen    written .dat vs recomputed curve: nrel 1.59e-06 (6-digit text)
+INFO  haldane sigma_xx W1 real  written .dat vs recomputed curve: nrel 5.99e-07 (6-digit text)
+INFO  haldane sigma_xx W1 bloch written .dat vs recomputed curve: nrel 5.99e-07 (6-digit text)
+PASS  haldane sigma_xx W=0 real vs bloch moments (random 32, seed 12345): nrel 2.216e-15 (tol 1e-09); prel 9.533e-11
+INFO  haldane sigma_xx W=0 real vs bloch curve: nrel 5.866e-15
+PASS  haldane sigma_xx W=0 bloch(exact) vs eigen curve: nrel 5.741e-15 (tol 1e-08); moments nrel 3.570e-15
+INFO  haldane sigma_xx W=0 bloch(random 32) vs eigen curve: nrel 4.854e-02 (stochastic trace error)
+INFO  haldane sigma_xx W=0 real(random 32) vs eigen curve: nrel 4.854e-02 (stochastic trace error)
+INFO  haldane sigma_xx units: analytic factor 2 pi/(A_hr N_k) = 2.099305e-03 (A_hr = 1.299038, true cell area 2.598076), least squares 1.670020e-03, ratio 0.79551
+FAIL  haldane sigma_xx W=0 real   vs G9 on 0.5<|E|<2.5: nrel 5.318e-01 at E=+2.004 (tol 5e-02); prel 1.000e+00
+FAIL  haldane sigma_xx W=0 bloch  vs G9 on 0.5<|E|<2.5: nrel 5.318e-01 at E=+2.004 (tol 5e-02); prel 1.000e+00
+FAIL  haldane sigma_xx W=0 blochx vs G9 on 0.5<|E|<2.5: nrel 4.773e-01 at E=-1.783 (tol 5e-02); prel 1.000e+00
+FAIL  haldane sigma_xx W=0 eigen  vs G9 on 0.5<|E|<2.5: nrel 4.773e-01 at E=+1.783 (tol 5e-02); prel 1.000e+00
+INFO  haldane sigma_xx W=0 eigen vs G9 over the whole KPM grid |E| <= 3.135: nrel 4.773e-01
+INFO  haldane sigma_xx W=0 independent moments (hr_exactdiag H(k) + wannier2sparse VX, Gamma mesh n/48, exact): eigen nrel 9.792e-15, bloch(exact) nrel 9.588e-15, real(random 32) nrel 9.429e-03, bloch(random 32) nrel 9.429e-03
+INFO  haldane sigma_xx W=0 mesh effect: G9 (mesh (i+1/2)/48) vs the same Gaussian formula on the Gamma mesh n/48: nrel 1.871e-01 on the mask
+INFO  haldane sigma_xx W=0 kernel effect: eigen (Jackson, M=256) vs Gaussian on the Gamma mesh n/48: nrel 3.587e-01 on the mask
+INFO  haldane sigma_xx W=0 eigen vs G9 on the mask without |(|E| - E_vH)| <= 0.15 eV (E_vH = 1.000, M-point energies): nrel 4.773e-01 at E=+1.783; real 5.318e-01, bloch 5.318e-01
+PASS  haldane sigma_xx W=1 (seed 7) real vs bloch moments (random 32, seed 12345): nrel 4.899e-16 (tol 1e-09); prel 6.276e-12
+INFO  haldane sigma_xx W=1 real vs bloch curve: nrel 2.332e-15
+INFO  haldane sigma_xx W=1 eigen: skipped as codex.md 2.4 directs (no per-k eigenbasis with disorder; N_k W = 4608)
