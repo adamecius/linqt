@@ -706,3 +706,391 @@ stage_5_check: ALL CHECKS PASSED
 
 STAGE 7 SELF-CHECK PASS
 ```
+
+
+---
+
+## Review 2 applied
+
+1. **Item 1 (`2055207`)**: Replaced all eleven `MetricPolicy` method calls (`overlap()`, `inverse_overlap()`, `inverse_sqrt_overlap()`) with property accesses (`overlap`, `inverse_overlap`, `inverse_sqrt_overlap`) and annotated them with `@property` in the type stub — `python/lsquant/runfile.py`, `python/lsquant/words/compiler.py`, `python/lsquant/_core.pyi`.
+2. **Item 2 (`44ee28e`)**: Added `_get_or(mapping, key, default)` so keys present with value `None` (including `expansion.states`) fall back to their defaults across compilation and run-file resolution — `python/lsquant/words/compiler.py`, `python/lsquant/runfile.py`.
+3. **Item 3 (`65a40c6`)**: Restricted the `kubo_bastin` catalogue entry to `dG-/dE` only (refusing `G+(E)`, `G-(E)`, and `dG+(E)/dE` with the nearest-shape message) and refused `expansion.window='eigen'` on `model.kind='csr'` models during validation and execution — `python/lsquant/words/catalogue.py`, `python/lsquant/runfile.py`.
+4. **Item 4 (`71ddce5`)**: Parameterised `run_tutorial01`, `run_tutorial02`, and `run_tutorial05` to accept and honour all run-file `word`, `expansion`, `time`, `reconstruction`, and `model.params` settings while validating allowed keys per generator in `validate_runfile_dict` — `python/lsquant/apps/tutorial01.py`, `python/lsquant/apps/tutorial02.py`, `python/lsquant/apps/tutorial05.py`, `python/lsquant/runfile.py`, `runs/goldens/tutorial02.json`, `runs/goldens/tutorial05.json`.
+5. **Item 5 (`3d69bab`)**: Removed the implicit Greenwood word injection from `execute_runfile`, refused any `reconstruction.formulas` entry whose required word is not declared in `word`/`words`, and listed both words explicitly in multi-formula run files — `python/lsquant/words/catalogue.py`, `python/lsquant/words/compiler.py`, `python/lsquant/runfile.py`, `runs/goldens/g5.json`, `runs/goldens/tutorial03.json`, `runs/goldens/tutorial05.json`, `runs/goldens/g10_haldane_real_lowdin.json`, `runs/goldens/g10_haldane_real_generalised.json`, `runs/goldens/g10_haldane_complex_lowdin.json`, `runs/goldens/g10_haldane_complex_generalised.json`.
+6. **Item 6 (`bf49444`)**: Set `"csr_dir": "build/w2s_csr/<seed>"` in all four G9 real-basis run files and updated `RealBasis` to invoke `wannier2sparse` automatically when `csr_dir` is not yet populated — `python/lsquant/bases.py`, `runs/goldens/g9_graphene_real.json`, `runs/goldens/g9_graphene_real_w1.json`, `runs/goldens/g9_haldane_real.json`, `runs/goldens/g9_haldane_real_w1.json`.
+7. **Item 7 (`7ae3510`)**: Wrapped MCP tool handler exceptions in `mcp.server.fastmcp.exceptions.ToolError(str(exc))` so error reasons are returned to MCP clients in `CallToolResult.content[0].text` (`isError=True`) — `python/lsquant/mcp_server.py`.
+8. **Item 8 (`12255e9`)**: Added `python/lsquant/apps/tutorial06.py` and `runs/goldens/tutorial06.json` (reproducing `goldens/stage0/tutorials/06/`), added G10 run files for the `chebyshev` and `ischo` overlap appliers (`g10_chain1d_real_lowdin_chebyshev.json`, `g10_chain1d_real_generalised_chebyshev.json`, `g10_chain1d_real_generalised_ischo.json`), and extended `tests/dev/stage_7_check.py` to test the new refusals, MCP error reasons, `g9_graphene_eigen.json`, and `g10_chain1d_real_generalised.json` — `python/lsquant/apps/tutorial06.py`, `python/lsquant/runfile.py`, `runs/goldens/tutorial06.json`, `runs/goldens/g10_chain1d_real_lowdin_chebyshev.json`, `runs/goldens/g10_chain1d_real_generalised_chebyshev.json`, `runs/goldens/g10_chain1d_real_generalised_ischo.json`, `tests/dev/stage_7_check.py`.
+
+### `tests/dev/stage_7_check.py` Output on TCN (`~/lsquant-agi-build`)
+
+```text
+== (a) Catalogue canonical parse/print round-trip ==
+  PASS  Tr[delta(E-H)]                             -> shape=dos_identity         plan_builder=dos_plan
+  PASS  Tr[A delta(E-H)]                           -> shape=dos_operator         plan_builder=dos_plan
+  PASS  Tr[VX delta(E-H) VX delta(E-H)]            -> shape=kubo_greenwood       plan_builder=kubo_plan
+  PASS  Tr[VX delta(E-H) VY dG-(E)/dE]             -> shape=kubo_bastin          plan_builder=kubo_plan
+  PASS  Tr[[X,U(t)]^+ delta(E-H) [X,U(t)]]         -> shape=msd                  plan_builder=msd_plan
+  PASS  Tr[P U(t)^+ SX U(t) delta(E-H) P]          -> shape=projected_evolution  plan_builder=projected_evolution_plan
+  PASS  Tr[A delta(E-H) U(t)^+ B U(t)]             -> shape=time_correlation     plan_builder=time_correlation_plan
+  PASS  Tr[sea[VX delta(E-H) VY dG-(E)/dE]]        -> shape=kubo_bastin          plan_builder=kubo_plan
+  PASS  Tr[P:PX U(t)^+ SX U(t) delta(E-H) P:PX]    -> shape=projected_evolution  plan_builder=projected_evolution_plan
+  PASS  Tr[B^+ VX@bloch B delta(E-H)]              -> shape=dos_operator         plan_builder=dos_plan
+
+== (b) Refusal of 5 malformed / unsupported inputs ==
+  PASS  [unknown_operator] refused with: Unknown operator 'FOO' in word 'Tr[FOO delta(E-H)]' (registered operators: ['1', 'VX', 'VY'])
+  PASS  [rank_3] refused with: Unsupported word 'Tr[VX delta(E-H) VY delta(E-H) VZ delta(E-H)]' of rank 3 (3 expanded spectral slots): rank >= 3 moment tensors are out of scope; nearest recognised shape is 'Tr[VX delta(E-H) VX delta(E-H)]' (kubo_greenwood)
+  PASS  [mixed_basis_without_transform] refused with: Mixed basis without explicit transform: operator 'VX@bloch' is in 'bloch' basis while calculation/active basis is 'real' (insert explicit B^+ ... B or U^+ ... U transform)
+  PASS  [ut_without_time] refused with: Word 'Tr[A delta(E-H) U(t)^+ B U(t)]' contains time evolution U(t) without 'time' parameters (steps and tmax required)
+  PASS  [unknown_key_in_runfile] refused with: Unknown key 'unknown_extra_key' in run file (top-level); allowed keys are ['basis', 'expansion', 'metric', 'model', 'output', 'reconstruction', 'time', 'word', 'words']
+  PASS  [unsupported_green_word] refused with: Unrecognised word shape 'Tr[VX delta(E-H) VY G+(E)]'; nearest recognised shape is 'Tr[VX delta(E-H) VY dG-(E)/dE]' (kubo_bastin)
+  PASS  [eigen_window_on_csr] refused with: expansion.window='eigen' is not supported for model.kind='csr' (no k blocks; use gershgorin or an explicit window)
+  PASS  [unmatched_formula_for_word] refused with: Reconstruction formula 'greenwood' in reconstruction.formulas does not match any word in ['Tr[VX delta(E-H) VY dG-(E)/dE]'] (allowed formulas for given word(s): ['bastin', 'bastin_fft', 'kubo_bastin', 'kubo_bastin_fft', 'kubo_bastin_sea', 'kubo_bastin_surf', 'sea', 'surf'])
+  PASS  [unknown_generator_param] refused with: Unknown key 'bogus_param' in run file (model.params (make_chain)); allowed keys are ['hopping_t', 'sizes']
+  PASS  [unknown_generator] refused with: Unknown generator name 'evil_script' in run file (model.name); allowed generators are ['gen_models', 'make_chain', 'make_chain_mag', 'make_disordered_chain', 'make_ey', 'make_haldane', 'make_rashba', 'make_square']
+  PASS  [window_default_by_basis] real->gershgorin, bloch->eigen, eigen->eigen
+  PASS  [runfile_schema] all 40 files in runs/goldens/*.json validated
+
+== (c) CLI reproduction of G1, G5, G9 (g9_graphene_eigen.json), and G10 (g10_chain1d_real_generalised.json) ==
+  PASS  cmp IDENTICAL: G1 (SpectralOp1chain1dKPM_M64_stateexact.chebmom1D)
+  PASS  cmp IDENTICAL: G5 (NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G5 (NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G5 (KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G5 (KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G5 (KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G5 (KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (KuboGreenWood_NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.basis.json)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (SpectralOp1graphene_eigen_KPM_M256_stateexact.basis.json)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (SpectralOp1graphene_eigen_KPM_M256_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (SpectralOp1graphene_eigen_KPM_M256_stateexact.chebmom1D)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (meanSpectralOp1graphene_eigen_KPM_M256_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (SpectralOp1chain1dKPM_M64_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (SpectralOp1chain1dKPM_M64_stateexact.chebmom1D)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat)
+
+== (d) MCP server subprocess vs CLI JSON equivalence ==
+  MCP tools registered: ['words_describe', 'run', 'status', 'reconstruct', 'inspect']
+  MCP -> call_tool: {"tool": "words_describe", "arguments": {"word": "Tr[VX delta(E-H) VY dG-(E)/dE]"}}
+  MCP <- words_describe response:
+    {
+      "word": {
+        "canonical": "Tr[VX delta(E-H) VY dG-(E)/dE]",
+        "sea": false,
+        "rank": 2,
+        "time_dependent": false,
+        "slots": [
+          {
+            "type": "operator",
+            "name": "VX",
+            "operator_key": "VX"
+          },
+          {
+            "type": "spectral",
+            "kind": "delta",
+            "token": "delta(E-H)",
+            "mode": "expand"
+          },
+          {
+            "type": "operator",
+            "name": "VY",
+            "operator_key": "VY"
+          },
+          {
+            "type": "spectral",
+            "kind": "dG-/dE",
+            "token": "dG-(E)/dE",
+            "mode": "expand"
+          }
+        ]
+      },
+      "catalogue": {
+        "shape_id": "kubo_bastin",
+        "canonical_example": "Tr[VX delta(E-H) VY dG-(E)/dE]",
+        "plan_builder": "kubo_plan",
+        "default_reconstruction": "kubo_bastin",
+        "default_formulas": [
+          "bastin"
+        ],
+        "engine_word": "VX delta VY delta",
+        "legacy_moment_prefix": "NonEqOpVX-VY",
+        "legacy_moment_ext": ".chebmom2D",
+        "operators": [
+          {
+            "type": "operator",
+            "name": "VX",
+            "operator_key": "VX"
+          },
+          {
+            "type": "operator",
+            "name": "VY",
+            "operator_key": "VY"
+          }
+        ]
+      },
+      "plan": {
+        "word": "VX delta VY delta",
+        "instructions": [
+          {
+            "op": "Expand",
+            "num_moments": 64
+          },
+          {
+            "op": "ApplyOperator",
+            "operator_index": 1,
+            "operator_name": "VY"
+          },
+          {
+            "op": "MirrorToBra"
+          },
+          {
+            "op": "ApplyOperator",
+            "operator_index": 0,
+            "operator_name": "VX"
+          },
+          {
+            "op": "Expand",
+            "num_moments": 64
+          },
+          {
+            "op": "Trace",
+            "num_weights": 1
+          }
+        ]
+      },
+      "operators": [
+        "VX",
+        "VY"
+      ],
+      "reconstruction": {
+        "shape_id": "kubo_bastin",
+        "default_reconstruction": "kubo_bastin",
+        "formulas": [
+          "bastin"
+        ],
+        "kernel": "jackson",
+        "broadening_meV": null,
+        "fermi_energies": [],
+        "num_points": null,
+        "use_fft_grid": false,
+        "legacy_moment_prefix": "NonEqOpVX-VY",
+        "legacy_moment_ext": ".chebmom2D",
+        "legacy_text_round_trip": false
+      },
+      "dt": null
+    }
+  PASS  MCP words_describe JSON == CLI words describe JSON
+  MCP -> call_tool: {"tool": "inspect", "arguments": {"path": "goldens/stage0/chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D"}}
+  MCP <- inspect response:
+    {
+      "kind": "moments",
+      "path": "/home/ICN2/jgarcia/lsquant-agi-build/goldens/stage0/chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D",
+      "rank": 1,
+      "dims": [
+        64
+      ],
+      "system_size": 2048,
+      "number_of_states": 0,
+      "state_label": "exact",
+      "word": "",
+      "window": [
+        -2.0,
+        2.0
+      ],
+      "band_width": 4.0,
+      "half_width": 2.0,
+      "band_center": 0.0,
+      "kpm_weighted": true,
+      "symmetrised": false,
+      "number_of_time_steps": 0,
+      "time_step": 0.0
+    }
+  PASS  MCP inspect JSON == CLI inspect JSON
+  PASS  MCP error responses preserve reason: 'Error executing tool words_describe: Unrecognised word shape 'Tr[VX delta(E-H) VY G+(E)]'; nearest recognised shape is 'Tr[VX delta(E-H) VY dG-(E)/dE]' (kubo_bastin)'
+
+STAGE 7 SELF-CHECK PASS
+```
+
+### G9 and G10 Run Files (`python -m lsquant run` + `cmp` on TCN)
+
+```text
+== G9 run files (12 run files under runs/goldens/g9_*.json) ==
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> meanSpectralOp1graphene_bloch_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> SpectralOp1graphene_bloch_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> SpectralOp1graphene_bloch_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_bloch.json -> SpectralOp1graphene_bloch_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M256x256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> meanSpectralOp1graphene_bloch_KPM_M256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> SpectralOp1graphene_bloch_KPM_M256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> SpectralOp1graphene_bloch_KPM_M256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_graphene_bloch_exact.json -> SpectralOp1graphene_bloch_KPM_M256_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> meanSpectralOp1graphene_bloch_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> NonEqOpVX-VXgraphene_bloch_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> SpectralOp1graphene_bloch_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> SpectralOp1graphene_bloch_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_bloch_w1.json -> SpectralOp1graphene_bloch_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> KuboGreenWood_NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> meanSpectralOp1graphene_eigen_KPM_M256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> SpectralOp1graphene_eigen_KPM_M256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> SpectralOp1graphene_eigen_KPM_M256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_graphene_eigen.json -> SpectralOp1graphene_eigen_KPM_M256_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g9_graphene_real.json -> KuboGreenWood_NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_real.json -> meanSpectralOp1graphene_real_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_real.json -> NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_real.json -> NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_real.json -> NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_graphene_real.json -> SpectralOp1graphene_real_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_real.json -> SpectralOp1graphene_real_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_real.json -> SpectralOp1graphene_real_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> KuboGreenWood_NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> meanSpectralOp1graphene_real_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> SpectralOp1graphene_real_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> SpectralOp1graphene_real_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_graphene_real_w1.json -> SpectralOp1graphene_real_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> KuboGreenWood_NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> meanSpectralOp1haldane_bloch_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> SpectralOp1haldane_bloch_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> SpectralOp1haldane_bloch_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_bloch.json -> SpectralOp1haldane_bloch_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> KuboGreenWood_NonEqOpVX-VXhaldane_bloch_KPM_M256x256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> meanSpectralOp1haldane_bloch_KPM_M256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> SpectralOp1haldane_bloch_KPM_M256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> SpectralOp1haldane_bloch_KPM_M256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_haldane_bloch_exact.json -> SpectralOp1haldane_bloch_KPM_M256_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> KuboGreenWood_NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> meanSpectralOp1haldane_bloch_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> NonEqOpVX-VXhaldane_bloch_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> SpectralOp1haldane_bloch_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> SpectralOp1haldane_bloch_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_bloch_w1.json -> SpectralOp1haldane_bloch_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> KuboGreenWood_NonEqOpVX-VXhaldane_eigen_KPM_M256x256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> meanSpectralOp1haldane_eigen_KPM_M256_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> NonEqOpVX-VXhaldane_eigen_KPM_M256x256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> NonEqOpVX-VXhaldane_eigen_KPM_M256x256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> NonEqOpVX-VXhaldane_eigen_KPM_M256x256_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> SpectralOp1haldane_eigen_KPM_M256_stateexact.basis.json
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> SpectralOp1haldane_eigen_KPM_M256_stateexact.chebmom
+IDENTICAL  runs/goldens/g9_haldane_eigen.json -> SpectralOp1haldane_eigen_KPM_M256_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g9_haldane_real.json -> KuboGreenWood_NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_real.json -> meanSpectralOp1haldane_real_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_real.json -> NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_real.json -> NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_real.json -> NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_haldane_real.json -> SpectralOp1haldane_real_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_real.json -> SpectralOp1haldane_real_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_real.json -> SpectralOp1haldane_real_KPM_M256_statedefault.chebmom1D
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> KuboGreenWood_NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> meanSpectralOp1haldane_real_KPM_M256_statedefaultJACKSON.dat
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> NonEqOpVX-VXhaldane_real_KPM_M256x256_statedefault.chebmom2D
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> SpectralOp1haldane_real_KPM_M256_statedefault.basis.json
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> SpectralOp1haldane_real_KPM_M256_statedefault.chebmom
+IDENTICAL  runs/goldens/g9_haldane_real_w1.json -> SpectralOp1haldane_real_KPM_M256_statedefault.chebmom1D
+
+== G10 run files (11 run files under runs/goldens/g10_*.json) ==
+IDENTICAL  runs/goldens/g10_chain1d_complex_generalised.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_complex_generalised.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_complex_generalised.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_complex_generalised.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_complex_generalised.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_complex_generalised.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_chain1d_complex_lowdin.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_complex_lowdin.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_complex_lowdin.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_complex_lowdin.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_complex_lowdin.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_complex_lowdin.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_chebyshev.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_chebyshev.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_chebyshev.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_chebyshev.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_chebyshev.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_chebyshev.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_ischo.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_ischo.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_ischo.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_ischo.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_ischo.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_generalised_ischo.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin_chebyshev.json -> KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin_chebyshev.json -> meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin_chebyshev.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin_chebyshev.json -> NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin_chebyshev.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_chain1d_real_lowdin_chebyshev.json -> SpectralOp1chain1dKPM_M64_stateexact.chebmom1D
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_complex_generalised.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_complex_lowdin.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_real_generalised.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom
+IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
+
+== TOTAL: 12 G9 + 11 G10 run files, 170 files compared with cmp: 0 failures ==
+```
