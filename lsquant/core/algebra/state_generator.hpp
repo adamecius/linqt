@@ -5,6 +5,8 @@
  * Defines the polymorphic `StateGenerator` interface and its concrete implementations:
  * `RandomPhaseStates` (reproducing the legacy Mersenne Twister random-phase convention),
  * `LocalStates` (unit coordinate vectors for local projections or full exact traces),
+ * `BlockLocalStates` (per-orbital block-uniform vectors for exact k-space traces in `W` states),
+ * `TransformedStates` (applies a unitary `LinearOperator` to an inner state stream),
  * and `UserStates` (caller-provided state vectors).
  */
 #ifndef LSQUANT_CORE_ALGEBRA_STATE_GENERATOR_HPP_
@@ -14,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "core/algebra/linear_operator.hpp"
 #include "core/algebra/types.hpp"
 
 namespace lsquant {
@@ -215,6 +218,150 @@ private:
   std::vector<Index> sites_;
   Index current_ = 0;
   std::string label_;
+};
+
+/**
+ * @brief Deterministic generator yielding `W` block-uniform orbital states for exact block traces.
+ *
+ * Solves the problem of computing the exact trace `(1 / N_k) sum_k Tr_W[...]` of any
+ * block-diagonal operator in `W` state evaluations instead of `N_k * W`. Blocks `ik`
+ * are ordered with `m_1` fastest (`ik = m_1 + N_1 * m_2 + N_1 * N_2 * m_3`), matching
+ * `wannier2sparse` and `BlochTransform`. For each orbital index `r in 0..W-1`, yields
+ * a unit-norm vector of length `N_k * W` with `1 / sqrt(N_k)` at `ik * W + r` for every
+ * `ik in 0..N_k-1` and `0` elsewhere. Because `NumberOfStates() == W`, dividing the
+ * accumulated trace by `NumberOfStates()` produces `(1 / (N_k * W)) Tr[...]`, identical
+ * to a full `N_k * W` coordinate trace.
+ *
+ * @warning Valid as an exact trace only when all operators in the evaluated word are
+ *          block-diagonal with block size `W` (no inter-block mixing).
+ * @par Pitfall
+ *      Do not use `BlockLocalStates` when real-space disorder couples distinct `k`
+ *      blocks; use `RandomPhaseStates` (or `TransformedStates`) in that regime.
+ */
+class BlockLocalStates : public StateGenerator {
+public:
+  /**
+   * @brief Compute the `n_1`-fastest flat block/cell index `m_1 + N_1 * m_2 + N_1 * N_2 * m_3`.
+   */
+  static Index BlockIndex(Index m1, Index m2, Index m3, Index n1, Index n2) {
+    return m1 + n1 * (m2 + n2 * m3);
+  }
+
+  /**
+   * @brief Construct a block-uniform state generator for `numBlocks` blocks of size `blockSize`.
+   *
+   * @param numBlocks Number of diagonal blocks `N_k > 0`.
+   * @param blockSize Block dimension (orbital count) `W > 0`.
+   *
+   * @warning Throws `std::invalid_argument` if `numBlocks <= 0` or `blockSize <= 0`.
+   * @par Pitfall
+   *      Reports `NumberOfStates() == blockSize` (`W`) and `Dimension() == numBlocks * blockSize`.
+   */
+  BlockLocalStates(Index numBlocks, Index blockSize);
+
+  /**
+   * @brief Construct a block-uniform state generator for an `(n1, n2, n3)` grid with `blockSize` orbitals.
+   *
+   * @param n1        Grid count `N_1 > 0` (fastest axis).
+   * @param n2        Grid count `N_2 > 0` (middle axis).
+   * @param n3        Grid count `N_3 > 0` (slowest axis).
+   * @param blockSize Block dimension (orbital count) `W > 0`.
+   */
+  BlockLocalStates(Index n1, Index n2, Index n3, Index blockSize);
+
+  /**
+   * @brief Return the total vector dimension `N_k * W`.
+   *
+   * @return Dimension `N_k * W > 0`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Return the number of orbital states `W`.
+   *
+   * @return State count `W > 0`.
+   */
+  Index NumberOfStates() const override;
+
+  /**
+   * @brief Populate `out` with state `r` having `1 / sqrt(N_k)` at `ik * W + r` for all `ik`.
+   *
+   * @param out Vector of length `N_k * W` overwritten with the `r`-th orbital state.
+   * @return    `true` if a state was written, `false` when all `W` states have been yielded.
+   */
+  bool Next(Vector& out) override;
+
+  /**
+   * @brief Rewind the orbital cursor to `0`.
+   */
+  void Reset() override;
+
+  /**
+   * @brief Return `"exact"`.
+   *
+   * @return `"exact"`.
+   */
+  std::string Label() const override;
+
+private:
+  Index numBlocks_;
+  Index blockSize_;
+  Index current_ = 0;
+};
+
+/**
+ * @brief State-generator adapter applying a `LinearOperator` transform to an inner generator.
+ *
+ * Solves the problem of evaluating stochastic traces in two unitarily equivalent
+ * representations (e.g. real space and Bloch space via `BlochTransform`) on the exact
+ * same physical state vectors `|r' > = U |r>` so that finite-sample stochastic moments
+ * match to machine precision.
+ *
+ * @warning Both `transform` and `inner` must outlive this `TransformedStates` instance
+ *          and have identical `Dimension()`.
+ * @par Pitfall
+ *      `Reset()` forwards to `inner.Reset()` so repeated runs replay the same transformed
+ *      sequence.
+ */
+class TransformedStates : public StateGenerator {
+public:
+  /**
+   * @brief Construct a generator yielding `transform * |r>` for each state from `inner`.
+   *
+   * @param transform Unitary transform operator `U` (must match `inner.Dimension()`).
+   * @param inner     Wrapped source-state generator.
+   */
+  TransformedStates(const LinearOperator& transform, StateGenerator& inner);
+
+  /**
+   * @brief Return the vector dimension `N`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Return `inner.NumberOfStates()`.
+   */
+  Index NumberOfStates() const override;
+
+  /**
+   * @brief Draw the next state from `inner` and transform it into `out`.
+   */
+  bool Next(Vector& out) override;
+
+  /**
+   * @brief Reset the inner generator.
+   */
+  void Reset() override;
+
+  /**
+   * @brief Return `inner.Label()`.
+   */
+  std::string Label() const override;
+
+private:
+  const LinearOperator* transform_;
+  StateGenerator* inner_;
+  Vector scratch_;
 };
 
 /**

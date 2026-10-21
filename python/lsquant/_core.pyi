@@ -29,12 +29,98 @@ class LinearOperator:
     def is_identity(self) -> bool: ...
     @property
     def is_hermitian(self) -> bool: ...
+    @overload
+    def multiply(
+        self, x: Union[npt.NDArray[np.complex128], Sequence[complex]]
+    ) -> npt.NDArray[np.complex128]: ...
+    @overload
+    def multiply(
+        self,
+        a: complex,
+        x: Union[npt.NDArray[np.complex128], Sequence[complex]],
+        b: complex,
+        y: npt.NDArray[np.complex128],
+    ) -> None: ...
 
 class SparseMatrixOperator(LinearOperator):
     def __init__(self, matrix: SparseMatrix) -> None: ...
 
 class IdentityOperator(LinearOperator):
     def __init__(self, dim: int) -> None: ...
+
+class DiagonalOperator(LinearOperator):
+    def __init__(
+        self,
+        values: Union[
+            npt.NDArray[np.complex128],
+            npt.NDArray[np.float64],
+            Sequence[complex],
+            Sequence[float],
+        ],
+    ) -> None: ...
+    def adjoint(self) -> DiagonalOperator: ...
+
+class ScaledOperator(LinearOperator):
+    def __init__(self, alpha: complex, op: LinearOperator) -> None: ...
+
+class OperatorSum(LinearOperator):
+    def __init__(self, first: LinearOperator, second: LinearOperator) -> None: ...
+
+class OperatorProduct(LinearOperator):
+    def __init__(self, first: LinearOperator, second: LinearOperator) -> None: ...
+
+class AdjointOperator(LinearOperator):
+    @overload
+    def __init__(self, op: LinearOperator) -> None: ...
+    @overload
+    def __init__(self, matrix: SparseMatrix) -> None: ...
+
+class SandwichOperator(LinearOperator):
+    def __init__(self, B: LinearOperator, V: LinearOperator) -> None: ...
+
+class BlockDiagonalOperator(LinearOperator):
+    @overload
+    def __init__(self, blocks: npt.NDArray[np.complex128]) -> None: ...
+    @overload
+    def __init__(
+        self,
+        num_blocks: int,
+        block_size: int,
+        blocks: Union[npt.NDArray[np.complex128], Sequence[complex]],
+    ) -> None: ...
+    @property
+    def num_blocks(self) -> int: ...
+    @property
+    def block_size(self) -> int: ...
+    def adjoint(self) -> BlockDiagonalOperator: ...
+
+class BlochDirection:
+    RealToBloch: BlochDirection
+    BlochToReal: BlochDirection
+
+class BlochTransform(LinearOperator):
+    def __init__(
+        self,
+        n1: int,
+        n2: int,
+        n3: int,
+        num_orbitals: int,
+        atom_phases: Union[npt.NDArray[np.complex128], Sequence[complex], None] = None,
+        direction: BlochDirection = ...,
+    ) -> None: ...
+    @property
+    def n1(self) -> int: ...
+    @property
+    def n2(self) -> int: ...
+    @property
+    def n3(self) -> int: ...
+    @property
+    def num_cells(self) -> int: ...
+    @property
+    def num_orbitals(self) -> int: ...
+    @property
+    def direction(self) -> BlochDirection: ...
+    def adjoint(self) -> BlochTransform: ...
 
 class StateGenerator:
     @property
@@ -50,6 +136,12 @@ class RandomPhaseStates(StateGenerator):
 
 class LocalStates(StateGenerator):
     def __init__(self, dim: int, sites: Union[npt.NDArray[np.int64], Sequence[int]]) -> None: ...
+
+class BlockLocalStates(StateGenerator):
+    def __init__(self, num_blocks: int, block_size: int) -> None: ...
+
+class TransformedStates(StateGenerator):
+    def __init__(self, transform: LinearOperator, inner: StateGenerator) -> None: ...
 
 class UserStates(StateGenerator):
     def __init__(
@@ -83,7 +175,10 @@ class SpectralWindow:
     def center(self) -> float: ...
 
 class RescaledOperator(LinearOperator):
+    @overload
     def __init__(self, matrix: SparseMatrix, window: SpectralWindow) -> None: ...
+    @overload
+    def __init__(self, operator: LinearOperator, window: SpectralWindow) -> None: ...
     @property
     def window(self) -> SpectralWindow: ...
 

@@ -1,6 +1,7 @@
 /**
  * @file state_generator.cpp
- * @brief Implementation of RandomPhaseStates, LocalStates, and UserStates.
+ * @brief Implementation of RandomPhaseStates, LocalStates, BlockLocalStates,
+ *        TransformedStates, and UserStates.
  */
 #include "core/algebra/state_generator.hpp"
 
@@ -92,6 +93,73 @@ bool LocalStates::Next(Vector& out) {
 void LocalStates::Reset() { current_ = 0; }
 
 std::string LocalStates::Label() const { return label_; }
+
+BlockLocalStates::BlockLocalStates(Index numBlocks, Index blockSize)
+    : numBlocks_(numBlocks), blockSize_(blockSize), current_(0) {
+  if (numBlocks <= 0 || blockSize <= 0) {
+    throw std::invalid_argument(
+        "BlockLocalStates: numBlocks and blockSize must be positive");
+  }
+}
+
+BlockLocalStates::BlockLocalStates(Index n1, Index n2, Index n3, Index blockSize)
+    : numBlocks_(n1 * n2 * n3), blockSize_(blockSize), current_(0) {
+  if (n1 <= 0 || n2 <= 0 || n3 <= 0 || blockSize <= 0) {
+    throw std::invalid_argument(
+        "BlockLocalStates: grid dimensions and blockSize must be positive");
+  }
+}
+
+Index BlockLocalStates::Dimension() const { return numBlocks_ * blockSize_; }
+
+Index BlockLocalStates::NumberOfStates() const { return blockSize_; }
+
+bool BlockLocalStates::Next(Vector& out) {
+  if (current_ >= blockSize_) {
+    return false;
+  }
+  const Index dim = Dimension();
+  out.assign(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  const Scalar amp(1.0 / std::sqrt(static_cast<double>(numBlocks_)), 0.0);
+  const std::size_t w = static_cast<std::size_t>(blockSize_);
+  const std::size_t r = static_cast<std::size_t>(current_);
+  for (Index ik = 0; ik < numBlocks_; ++ik) {
+    out[static_cast<std::size_t>(ik) * w + r] = amp;
+  }
+  ++current_;
+  return true;
+}
+
+void BlockLocalStates::Reset() { current_ = 0; }
+
+std::string BlockLocalStates::Label() const { return "exact"; }
+
+TransformedStates::TransformedStates(const LinearOperator& transform, StateGenerator& inner)
+    : transform_(&transform),
+      inner_(&inner),
+      scratch_(static_cast<std::size_t>(inner.Dimension()), Scalar(0.0, 0.0)) {
+  if (transform.Dimension() != inner.Dimension()) {
+    throw std::invalid_argument(
+        "TransformedStates: transform and inner state dimensions must match");
+  }
+}
+
+Index TransformedStates::Dimension() const { return transform_->Dimension(); }
+
+Index TransformedStates::NumberOfStates() const { return inner_->NumberOfStates(); }
+
+bool TransformedStates::Next(Vector& out) {
+  if (!inner_->Next(scratch_)) {
+    return false;
+  }
+  out.resize(static_cast<std::size_t>(transform_->Dimension()), Scalar(0.0, 0.0));
+  transform_->Multiply(Scalar(1.0, 0.0), scratch_, Scalar(0.0, 0.0), out);
+  return true;
+}
+
+void TransformedStates::Reset() { inner_->Reset(); }
+
+std::string TransformedStates::Label() const { return inner_->Label(); }
 
 UserStates::UserStates(std::vector<Vector> states)
     : states_(std::move(states)), current_(0) {

@@ -1,10 +1,11 @@
 /**
  * @file rescaled_operator.hpp
- * @brief LinearOperator holding an owned, affinely rescaled CSR copy of a Hamiltonian.
+ * @brief LinearOperator affinely rescaling a Hamiltonian into `[-1, 1]`.
  *
  * Precomputes `H~ = window.Scale() * H + window.Shift() * I` via `SparseMatrix::Rescaled`
- * without mutating the caller's matrix `H`, reproducing the exact IEEE-754 rounding of the
- * legacy in-place `Rescale` path.
+ * when constructed from a `SparseMatrix` (reproducing the exact IEEE-754 rounding of the
+ * legacy in-place `Rescale` path), or evaluates `a * (scale * H + shift * I) * x + b * y`
+ * on the fly when constructed from a general matrix-free `LinearOperator`.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_RESCALED_OPERATOR_HPP_
 #define LSQUANT_CORE_CHEBYSHEV_RESCALED_OPERATOR_HPP_
@@ -19,21 +20,20 @@ namespace lsquant {
  * @brief Dimensionless rescaled operator `H~ = Scale * H + Shift * I` for Chebyshev recursion.
  *
  * Solves the problem of mapping a physical Hamiltonian `H` into the Chebyshev domain
- * `[-1, 1]` without mutating `H` while maintaining bit-for-bit agreement with the legacy
- * in-place CSR rescaling. Holds its own compressed `SparseMatrix` built via
- * `H.Rescaled(window.Scale(), window.Shift())`. Construction takes `O(dim + nnz)` time and
- * space; each `Multiply` takes `O(nnz)` time.
+ * `[-1, 1]` without mutating `H`. When constructed from a `SparseMatrix`, holds its own
+ * compressed `SparseMatrix` built via `H.Rescaled(window.Scale(), window.Shift())` for
+ * bit-for-bit agreement with legacy CSR rescaling. When constructed from a general
+ * `LinearOperator`, wraps `H` without copying and applies `Scale * H + Shift * I` on the fly.
  *
  * @warning Throws `std::invalid_argument` if `window.upper <= window.lower`.
  * @par Pitfall
- *      Evaluating `Scale * (H * x) + Shift * x` on the fly instead of multiplying by the
- *      rescaled CSR matrix changes floating-point rounding and breaks byte identity with
- *      legacy goldens.
+ *      When constructed from a `LinearOperator`, the referenced operator `H` must outlive
+ *      this `RescaledOperator` instance.
  */
 class RescaledOperator : public LinearOperator {
 public:
   /**
-   * @brief Construct the rescaled operator `H~` from `H` and `window`.
+   * @brief Construct the rescaled operator `H~` from a `SparseMatrix` and `window`.
    *
    * @param H      Physical sparse Hamiltonian (not modified).
    * @param window Spectral window `[lower, upper]` with `upper > lower`.
@@ -46,6 +46,18 @@ public:
   RescaledOperator(const SparseMatrix& H, const SpectralWindow& window);
 
   /**
+   * @brief Construct the rescaled operator `H~` from a general `LinearOperator` and `window`.
+   *
+   * @param H      Physical matrix-free Hamiltonian (must outlive `*this`).
+   * @param window Spectral window `[lower, upper]` with `upper > lower`.
+   *
+   * @warning Throws `std::invalid_argument` if `!(window.upper > window.lower)`.
+   * @par Pitfall
+   *      Does not copy `H`; keep `H` alive for the lifetime of this `RescaledOperator`.
+   */
+  RescaledOperator(const LinearOperator& H, const SpectralWindow& window);
+
+  /**
    * @brief Return the operator dimension `N`.
    *
    * @return Dimension `N >= 0`.
@@ -53,7 +65,7 @@ public:
   Index Dimension() const override;
 
   /**
-   * @brief Compute `y = a * H~ * x + b * y` using the owned rescaled CSR matrix.
+   * @brief Compute `y = a * H~ * x + b * y`.
    *
    * @param a Scalar multiplier for `H~ * x`.
    * @param x Input vector of length `Dimension()`.
@@ -65,7 +77,7 @@ public:
   using LinearOperator::Multiply;
 
   /**
-   * @brief Return cached Hermiticity of the rescaled matrix.
+   * @brief Return cached Hermiticity of the rescaled operator.
    *
    * @return `true` if `H~` is Hermitian within `1e-12`, `false` otherwise.
    */
@@ -81,7 +93,9 @@ public:
 private:
   SpectralWindow window_;
   SparseMatrix rescaled_;
-  bool isHermitian_;
+  const LinearOperator* op_ = nullptr;
+  Index dimension_ = 0;
+  bool isHermitian_ = false;
 };
 
 namespace chebyshev {

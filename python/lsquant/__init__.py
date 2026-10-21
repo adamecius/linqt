@@ -16,7 +16,8 @@ except ImportError:
 
     _sys.modules[f"{__name__}._core"] = _core
 
-from . import kernels, moments, reconstruct, spectral_functions
+from . import bases, kernels, models, moments, reconstruct, spectral_functions
+from .bases import BlochBasis, EigenBasis, RealBasis, make_basis
 from .kernels import jackson_damping, jackson_damping_2d
 from .moments import (
     HBAR,
@@ -41,6 +42,7 @@ from .reconstruct import (
 )
 from .spectral_functions import (
     DeltaFunction,
+    GaussianDelta,
     GreenRetarded,
     GreenRetardedDerivative,
     SpectralFunction,
@@ -54,10 +56,16 @@ from .spectral_functions import (
 
 __all__ = [
     "_core",
+    "bases",
     "kernels",
+    "models",
     "moments",
     "reconstruct",
     "spectral_functions",
+    "RealBasis",
+    "BlochBasis",
+    "EigenBasis",
+    "make_basis",
     "jackson_damping",
     "jackson_damping_2d",
     "HBAR",

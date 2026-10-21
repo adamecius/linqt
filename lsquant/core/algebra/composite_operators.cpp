@@ -4,7 +4,13 @@
  */
 #include "core/algebra/composite_operators.hpp"
 
+#include <cmath>
+#include <complex>
 #include <stdexcept>
+#include <utility>
+
+#include "core/algebra/bloch_transform.hpp"
+#include "core/algebra/block_diagonal_operator.hpp"
 
 namespace lsquant {
 
@@ -25,6 +31,45 @@ void IdentityOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) 
     const std::size_t idx = static_cast<std::size_t>(i);
     y[idx] = a * x[idx] + b * y[idx];
   }
+}
+
+DiagonalOperator::DiagonalOperator(std::vector<Scalar> values)
+    : values_(std::move(values)) {
+  bool herm = true;
+  for (const Scalar& v : values_) {
+    if (std::abs(v.imag()) > 1e-12) {
+      herm = false;
+      break;
+    }
+  }
+  isHermitian_ = herm;
+}
+
+Index DiagonalOperator::Dimension() const {
+  return static_cast<Index>(values_.size());
+}
+
+void DiagonalOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const {
+  const Index dim = Dimension();
+  if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
+    throw std::invalid_argument("DiagonalOperator::Multiply: vector dimension mismatch");
+  }
+  const Scalar* dPtr = values_.data();
+  const Scalar* xPtr = x.data();
+  Scalar* yPtr = y.data();
+  #pragma omp parallel for schedule(static)
+  for (Index i = 0; i < dim; ++i) {
+    const Scalar xi = xPtr[i];
+    yPtr[i] = a * dPtr[i] * xi + b * yPtr[i];
+  }
+}
+
+DiagonalOperator DiagonalOperator::Adjoint() const {
+  std::vector<Scalar> conjVals(values_.size());
+  for (std::size_t i = 0; i < values_.size(); ++i) {
+    conjVals[i] = std::conj(values_[i]);
+  }
+  return DiagonalOperator(std::move(conjVals));
 }
 
 ScaledOperator::ScaledOperator(Scalar alpha, const LinearOperator& op)
@@ -100,11 +145,25 @@ bool OperatorProduct::IsHermitian() const {
 AdjointOperator::AdjointOperator(const LinearOperator& op) : isHermitian_(op.IsHermitian()) {
   if (const auto* sparseOp = dynamic_cast<const SparseMatrixOperator*>(&op)) {
     adjointMatrix_ = sparseOp->Matrix().Adjoint();
+  } else if (const auto* blochOp = dynamic_cast<const BlochTransform*>(&op)) {
+    ownedAdjoint_ = std::make_shared<BlochTransform>(blochOp->Adjoint());
+  } else if (const auto* blockOp = dynamic_cast<const BlockDiagonalOperator*>(&op)) {
+    if (blockOp->IsHermitian()) {
+      forwardedOp_ = &op;
+    } else {
+      ownedAdjoint_ = std::make_shared<BlockDiagonalOperator>(blockOp->Adjoint());
+    }
+  } else if (const auto* diagOp = dynamic_cast<const DiagonalOperator*>(&op)) {
+    if (diagOp->IsHermitian()) {
+      forwardedOp_ = &op;
+    } else {
+      ownedAdjoint_ = std::make_shared<DiagonalOperator>(diagOp->Adjoint());
+    }
   } else if (op.IsHermitian()) {
     forwardedOp_ = &op;
   } else {
     throw std::invalid_argument(
-        "AdjointOperator: non-Hermitian operator must be a SparseMatrixOperator");
+        "AdjointOperator: unsupported non-Hermitian LinearOperator type");
   }
 }
 
@@ -115,17 +174,47 @@ Index AdjointOperator::Dimension() const {
   if (adjointMatrix_.has_value()) {
     return adjointMatrix_->Dimension();
   }
+  if (ownedAdjoint_ != nullptr) {
+    return ownedAdjoint_->Dimension();
+  }
   return forwardedOp_->Dimension();
 }
 
 void AdjointOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const {
   if (adjointMatrix_.has_value()) {
     adjointMatrix_->Multiply(a, x, b, y);
+  } else if (ownedAdjoint_ != nullptr) {
+    ownedAdjoint_->Multiply(a, x, b, y);
   } else {
     forwardedOp_->Multiply(a, x, b, y);
   }
 }
 
 bool AdjointOperator::IsHermitian() const { return isHermitian_; }
+
+SandwichOperator::SandwichOperator(const LinearOperator& B, const LinearOperator& V)
+    : b_(&B),
+      v_(&V),
+      bAdjoint_(B),
+      t1_(static_cast<std::size_t>(B.Dimension()), Scalar(0.0, 0.0)),
+      t2_(static_cast<std::size_t>(B.Dimension()), Scalar(0.0, 0.0)) {
+  if (B.Dimension() != V.Dimension()) {
+    throw std::invalid_argument("SandwichOperator: B and V dimensions must match");
+  }
+}
+
+Index SandwichOperator::Dimension() const { return b_->Dimension(); }
+
+void SandwichOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const {
+  const Index dim = Dimension();
+  if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
+    throw std::invalid_argument("SandwichOperator::Multiply: vector dimension mismatch");
+  }
+  bAdjoint_.Multiply(Scalar(1.0, 0.0), x, Scalar(0.0, 0.0), t1_);
+  v_->Multiply(Scalar(1.0, 0.0), t1_, Scalar(0.0, 0.0), t2_);
+  b_->Multiply(a, t2_, b, y);
+}
+
+bool SandwichOperator::IsHermitian() const { return v_->IsHermitian(); }
 
 }  // namespace lsquant
