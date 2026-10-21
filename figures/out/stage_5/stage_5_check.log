@@ -1,6 +1,7 @@
 [check a] BlochTransform vs dense B (6,4,1) graphene: rel(B x) = 3.563e-15, rel(B^+ x) = 3.221e-15
 [check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 5.648e-17, max|B^+ B x - x| = 5.722e-17
 [check b] (graphene 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (graphene 6x4x1) right-size CSR with wrong receipt raises ValueError: PASS
 [check b] (graphene 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.780e-16
 [check c] (graphene 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.483e-16
 [check b] (haldane 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
@@ -18,7 +19,7 @@
 [check f] G7 chain1d_mag spin precession byte-identical to golden: PASS
 stage_5_check: ALL CHECKS PASSED
 
-real	0m36.887s
-user	7m51.564s
-sys	0m2.726s
+real	0m35.836s
+user	7m43.189s
+sys	0m3.425s
 EXIT:0

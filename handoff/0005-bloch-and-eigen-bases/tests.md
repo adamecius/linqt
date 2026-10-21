@@ -12,10 +12,14 @@ tolerance or a stage-0 to stage-4 golden was edited. Edited or added by the test
 | Run | developer head | tester head before the run | G9 | gate | logs (`figures/out/stage_5/`) |
 |---|---|---|---|---|---|
 | 1 | `7109c20` | `81ad680` (fast-forward of `7109c20`) | shifted 48 x 48 mesh, Gaussian pi a / M (first codex.md) | FAIL 32/137, then FAIL 37/149 with the convention rows counted | `check_goldens_stage5_run1_7109c20.log`, `check_goldens_stage5_run1b_7109c20.log`, `build_run1.log`, `stage_5_check_run1.log`, `fig_stage_5_run1.*` |
-| **2 (closure)** | **`dd989b0`** (review 2, items 1 to 6) | merge `001d41a` of `origin/handoff/0005-agi` (contains `origin/cpp-unified` `5cb02fe`, so G4c and the stage-4 harness of `209dfd6`) | **Gamma-centred 48 x 48, Gaussian 40 meV (revised codex.md 2.2)** | **PASS, 155/155** | `build.log`, `stage_5_check.log`, `gen_g9.log`, `check_goldens_stage5.log`, `table_T16.txt`, `table_T1.txt`, `figure_run.log`, `fig_stage_5.*` |
+| 2 | `dd989b0` (review 2, items 1 to 6) | merge `001d41a` of `origin/handoff/0005-agi` (contains `origin/cpp-unified` `5cb02fe`, so G4c and the stage-4 harness of `209dfd6`) | Gamma-centred 48 x 48, Gaussian 40 meV (revised codex.md 2.2) | PASS, 155/155 | `check_goldens_stage5_run2_dd989b0.log`, `stage_5_check_run2_dd989b0.log`, `table_T{16,1}_run2_dd989b0.txt`, `figure_run_run2_dd989b0.log`, `fig_stage_5_run2_dd989b0.*`, `build.log`, `gen_g9.log` |
+| **3 (final)** | **`642955b`** (review 3: strict CSR receipt, operator sources in `basis.json`, `<seed>_<basis>` in the stems; Python only, no rebuild needed: the build of run 2 is the build of the same C++) | merge `2e7e5e7` | same G9 as run 2 (unchanged) | **PASS, 155/155** | `check_goldens_stage5.log`, `stage_5_check.log`, `table_T16.txt`, `table_T1.txt`, `figure_run.log`, `fig_stage_5.*` |
 
-**Result (closure run, `dd989b0`): GATE PASS (stage 5), 155 of 155 rows, 0 failures, exit 0
-(29 min 21 s).**
+**Result (final run 3, `642955b`): GATE PASS (stage 5), 155 of 155 rows, 0 failures, exit 0
+(28 min 21 s).** Every gated row and every convention row of run 3 is identical in text to
+run 2 (diff of the PASS/FAIL lines empty), and the figure caption is byte-identical. The
+numbers below are those of run 3 (= run 2). The self-check adds one line (the strict receipt,
+PASS) and is otherwise unchanged.
 
 - Stages 1 to 4 (real-space path): **71 of 71 IDENTICAL**, with G4c. All greps are empty.
 - Real vs Bloch moments, tolerance 1e-9: **2.4e-14 or better at W = 0, 1.9e-14 or better at
@@ -50,12 +54,13 @@ FFTW reaches `lsquant_core` through `pkg_check_modules(FFTW3 REQUIRED IMPORTED_T
 no extra flag. `fftw3.h` is included only in `lsquant/core/algebra/bloch_transform.cpp`.
 Warnings: 101, all in the legacy tree; **0 under `lsquant/`**.
 
-## 2. Developer self-check, `tests/dev/stage_5_check.py`, OMP_NUM_THREADS = 16 (exit 0)
+## 2. Developer self-check, `tests/dev/stage_5_check.py`, OMP_NUM_THREADS = 16 (run 3, exit 0)
 
 ```
 [check a] BlochTransform vs dense B (6,4,1) graphene: rel(B x) = 3.563e-15, rel(B^+ x) = 3.221e-15
 [check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 5.648e-17, max|B^+ B x - x| = 5.722e-17
 [check b] (graphene 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (graphene 6x4x1) right-size CSR with wrong receipt raises ValueError: PASS
 [check b] (graphene 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.780e-16
 [check c] (graphene 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.483e-16
 [check b] (haldane 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
@@ -73,7 +78,7 @@ Warnings: 101, all in the legacy tree; **0 under `lsquant/`**.
 [check f] G7 chain1d_mag spin precession byte-identical to golden: PASS
 stage_5_check: ALL CHECKS PASSED
 
-real	0m36.887s
+real	0m35.836s
 EXIT:0
 ```
 
@@ -207,7 +212,7 @@ runs. The 32 real-space files are counted; the 64 Bloch and eigen files are repo
 runs single-threaded, and the OpenMP loops (phases, blocks) write each element from one
 thread.
 
-### 4.6 Wall times (process wall time, seconds, T = 16 / T = 1; node shared)
+### 4.6 Wall times (run 2; process wall time, seconds, T = 16 / T = 1; node shared; run 3 equal or up to 15 % faster)
 
 | Run | graphene DOS | graphene kuboxx | Haldane DOS | Haldane kuboxx |
 |---|---|---|---|---|
@@ -263,6 +268,16 @@ Gone since run 1:
 - The format adapter.
 - The disorder-seed wrapper.
 - `report.md`'s "no open questions": section 5 now lists the known limitations.
+- Silent fallbacks in the wannier2sparse CSR loading (run 2), gone in run 3 (review 3 item 1).
+  A CSR of the right size with a wrong receipt now raises; the self-check line is
+  `[check b] (graphene 6x4x1) right-size CSR with wrong receipt raises ValueError: PASS`.
+  `basis.json` records the source and sha256 of every operator. For example, run 3's graphene
+  real kuboxx has `"HAM": {"source": "wannier2sparse .../graphene.HAM.CSR 2f9b8614..."}` and
+  the same for `VX`.
+- Output names without the basis (run 2), gone in run 3 (review 3 item 2). The legacy stem
+  carries `<seed>_<basis>` again, e.g. `SpectralOp1graphene_bloch_KPM_M256_statedefault.chebmom1D`
+  and `NonEqOpVX-VXgraphene_real_KPM_M256x256_statedefault.chebmom2D`. The harness needed no
+  change: it globs per run directory.
 
 Remaining:
 
@@ -275,20 +290,12 @@ Remaining:
   constructor from a general `LinearOperator` (on-the-fly `scale H + shift`), against "the
   engine does not change" (brief section 2). `MomentEngine`, `Plan` and `ChebyshevRecursion`
   are untouched, and G1 to G8 plus G4c are byte-identical.
-- **Silent fallbacks in `RealBasis._try_load_w2s_csr`:** it uses `except Exception: pass` /
-  `continue` on the `.out` receipt and on the CSR read, and a CSR with no readable `.out` is
-  accepted if only its dimension matches. `basis.json` does not record whether the CSR came
-  from wannier2sparse or from the lsquant builder. Here the two are identical (section 4.3),
-  but a stale or foreign CSR of the right dimension would be used without a trace.
 - **Thread safety:** `SandwichOperator` (`mutable t1_, t2_`) and `BlochTransform` (one FFTW
   workspace per instance) are not safe for concurrent `Multiply` on one object. This is now
   documented in the headers and the report, and is fine today: the engine parallelises inside
   one `Multiply`.
 - **Output precision:** curves are written with 6 significant digits (legacy), so 1e-8
   comparisons go through the moments.
-- **Output names:** the stem no longer carries the basis (`SpectralOp1grapheneKPM_M256_...`
-  for real, Bloch and eigen alike). The basis is only in `basis.json`, so outputs of different
-  bases in one directory overwrite each other.
 - **Oracle side (wannier2sparse, not LSQUANT):**
   - `hr_exactdiag.py sigma` uses half the honeycomb cell area (factor stated in section 3).
   - Its mesh is hard-coded (hence the wrapper).
