@@ -77,9 +77,9 @@ Accordingly, in `MomentEngine` bytecode:
 
 Verification on the orthogonal Haldane fixture (`goldens/stage0/haldane/operators`) after merging `origin/cpp-unified` (`552de6e`):
 ```text
-$ ./build/lsquant_core/stage6_nonorth --fixture goldens/stage0/haldane/operators --label haldane --window -4.5 4.5 --route naive --applier exact --trace exact --moments 128 --word kuboxy --out /tmp/stage6_out/g5_orth
-stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/g5_orth/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 tol=1.000000e-13 max_iterations=200 residual=0.000000e+00
-$ cmp /tmp/stage6_out/g5_orth/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D goldens/stage0/haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
+$ ./build/lsquant_core/stage6_nonorth --fixture goldens/stage0/haldane/operators --label haldane --window -4.5 4.5 --route naive --applier exact --trace exact --moments 128 --word kuboxy --out /tmp/stage6_r2_out/g5_orth
+stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/g5_orth/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=0.000000e+00
+$ cmp /tmp/stage6_r2_out/g5_orth/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D goldens/stage0/haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D
 (exit 0, byte-for-byte identical)
 ```
 
@@ -122,9 +122,9 @@ Executed on TCN (`jh-x`, `~/lsquant-agi-0006-build`):
 
 ```text
 === Stage 6 Self-Check: Rotated chain1d (N = 2048) ===
-[1] real: max |eigvalsh(H', S') - eigvalsh(H)| = 2.065015e-14
+[1] real: max |eigvalsh(H', S') - eigvalsh(H)| = 1.154632e-14
 [4] real: max ||S^-1_cheb v - S^-1_exact v|| / ||S^-1_exact v|| (M_S=60) = 1.452447e-12
-[2] real route=lowdin      applier=exact     applier_res=2.686186e-14 max|mu - G1|=7.956630e-13 max|mu - delta_m0|=7.956630e-13
+[2] real route=lowdin      applier=exact     applier_res=2.687185e-14 max|mu - G1|=7.959603e-13 max|mu - delta_m0|=7.959603e-13
 [2] real route=generalised applier=exact     applier_res=3.918055e-16 max|mu - G1|=4.664319e-16 max|mu - delta_m0|=4.664319e-16
 [3] real route=lowdin      applier=chebyshev (M_S=12, eff_order=12) applier_res=7.094662e-05 max|mu - delta_m0|=5.308428e-04
 [3] real route=generalised applier=chebyshev (M_S=12, eff_order=12) applier_res=2.580411e-04 max|mu - delta_m0|=1.859680e-03
@@ -134,7 +134,7 @@ Executed on TCN (`jh-x`, `~/lsquant-agi-0006-build`):
 [3] real route=generalised applier=ischo     (tol=1e-13) applier_res=1.345871e-16 max|mu - delta_m0|=2.737152e-15
 [1] complex: max |eigvalsh(H', S') - eigvalsh(H)| = 7.993606e-15
 [4] complex: max ||S^-1_cheb v - S^-1_exact v|| / ||S^-1_exact v|| (M_S=60) = 9.664000e-13
-[2] complex route=lowdin      applier=exact     applier_res=3.004640e-14 max|mu - G1|=6.211824e-13 max|mu - delta_m0|=6.211824e-13
+[2] complex route=lowdin      applier=exact     applier_res=3.004363e-14 max|mu - G1|=6.202940e-13 max|mu - delta_m0|=6.202940e-13
 [2] complex route=generalised applier=exact     applier_res=4.162287e-16 max|mu - G1|=1.022115e-15 max|mu - delta_m0|=1.022115e-15
 [3] complex route=lowdin      applier=chebyshev (M_S=60, eff_order=33) applier_res=1.782907e-12 max|mu - delta_m0|=9.336730e-13
 [3] complex route=generalised applier=chebyshev (M_S=60, eff_order=36) applier_res=1.138146e-12 max|mu - delta_m0|=2.915651e-12
@@ -144,23 +144,41 @@ Executed on TCN (`jh-x`, `~/lsquant-agi-0006-build`):
 
 ---
 
-## 5. `stage6_nonorth` Runs Across Routes, Appliers, and Models (`/tmp/stage6_out`)
+## 5. `stage6_nonorth` Runs Across Routes, Appliers, and Models (`/tmp/stage6_r2_out`)
 
 One-line stdout summary from each `stage6_nonorth` run on TCN (`jh-x`):
 
 ```text
-stage6_nonorth: route=lowdin applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_out/chain1d_complex_dos_lowdin_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 tol=1.000000e-13 max_iterations=200 residual=2.791140e-14
-stage6_nonorth: route=lowdin applier=chebyshev word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_out/chain1d_complex_dos_lowdin_chebyshev/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 effective_order=33 tol=1.000000e-13 max_iterations=200 residual=1.758820e-12
-stage6_nonorth: route=generalised applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_out/chain1d_complex_dos_generalised_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 tol=1.000000e-13 max_iterations=200 residual=4.014038e-16
-stage6_nonorth: route=generalised applier=ischo word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_out/chain1d_complex_dos_generalised_ischo/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 tol=1.000000e-13 max_iterations=200 iterations=0 residual=8.810763e-16
-stage6_nonorth: route=generalised applier=chebyshev word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_out/chain1d_complex_dos_generalised_chebyshev/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 effective_order=36 tol=1.000000e-13 max_iterations=200 residual=1.131409e-12
-stage6_nonorth: route=naive applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_out/chain1d_complex_dos_naive_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 tol=1.000000e-13 max_iterations=200 residual=0.000000e+00
-stage6_nonorth: route=lowdin applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/haldane_complex_kuboxy_lowdin_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 tol=1.000000e-13 max_iterations=200 residual=1.523399e-14
-stage6_nonorth: route=lowdin applier=chebyshev word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/haldane_complex_kuboxy_lowdin_chebyshev/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 effective_order=31 tol=1.000000e-13 max_iterations=200 residual=2.213699e-12
-stage6_nonorth: route=generalised applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/haldane_complex_kuboxy_generalised_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 tol=1.000000e-13 max_iterations=200 residual=1.034914e-15
-stage6_nonorth: route=generalised applier=ischo word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/haldane_complex_kuboxy_generalised_ischo/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 tol=1.000000e-13 max_iterations=200 iterations=6 residual=8.559000e-14
-stage6_nonorth: route=generalised applier=chebyshev word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/haldane_complex_kuboxy_generalised_chebyshev/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 effective_order=34 tol=1.000000e-13 max_iterations=200 residual=1.136662e-12
-stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_out/haldane_complex_kuboxy_naive_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 tol=1.000000e-13 max_iterations=200 residual=0.000000e+00
+stage6_nonorth: route=lowdin applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/chain1d_complex_dos_lowdin_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=2.793692e-14
+stage6_nonorth: route=lowdin applier=chebyshev word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/chain1d_complex_dos_lowdin_chebyshev/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 effective_order=33 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.758820e-12
+stage6_nonorth: route=generalised applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/chain1d_complex_dos_generalised_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=4.014038e-16
+stage6_nonorth: route=generalised applier=ischo word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/chain1d_complex_dos_generalised_ischo/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 iterations=0 residual=8.810763e-16
+stage6_nonorth: route=generalised applier=chebyshev word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/fast_chain1d_complex_dos_generalised_chebyshev/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 effective_order=36 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.131409e-12
+stage6_nonorth: route=naive applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/fast_chain1d_complex_dos_naive_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=4.014038e-16
+stage6_nonorth: route=naive applier=exact word=kubo dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/fast_chain1d_complex_kubo_naive_exact/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=4.014038e-16
+stage6_nonorth: route=naive applier=exact word=dos dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/fast_chain1d_real_dos_naive_exact/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=3.737300e-16
+stage6_nonorth: route=naive applier=exact word=kubo dim=2048 states=2048 (exact) M=64 -> /tmp/stage6_r2_out/fast_chain1d_real_kubo_naive_exact/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=3.737300e-16
+stage6_nonorth: route=lowdin applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kuboxy_lowdin_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.523896e-14
+stage6_nonorth: route=lowdin applier=chebyshev word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kuboxy_lowdin_chebyshev/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 effective_order=31 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=2.213699e-12
+stage6_nonorth: route=generalised applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kuboxy_generalised_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.034914e-15
+stage6_nonorth: route=generalised applier=ischo word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kuboxy_generalised_ischo/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 iterations=6 residual=8.559000e-14
+stage6_nonorth: route=generalised applier=chebyshev word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kuboxy_generalised_chebyshev/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 effective_order=34 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.136662e-12
+stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kuboxy_naive_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.034914e-15
+stage6_nonorth: route=naive applier=exact word=kubo dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_complex_kubo_naive_exact/NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.034914e-15
+stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_real_kuboxy_naive_exact/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.035231e-15
+stage6_nonorth: route=naive applier=exact word=kubo dim=512 states=512 (exact) M=128 -> /tmp/stage6_r2_out/fast_haldane_real_kubo_naive_exact/NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D order=60 coeff_tol=1.000000e-12 tol=1.000000e-13 max_iterations=200 max_dim=4096 residual=1.035231e-15
+```
+
+Relative differences of `--route naive` (legacy estimator on `S^-1 H~` with `S^-1 V'` on both sides and no `S` on the bra) against G1, G2, and G5 (`dos` passes at machine precision while `kubo` and `kuboxy` fail by `O(1)`):
+```text
+chain1d/real dos         max_rel=4.664319e-16  max_abs=4.664319e-16
+chain1d/real kubo        max_rel=1.988538e-01  max_abs=7.954151e-01
+chain1d/complex dos      max_rel=1.022115e-15  max_abs=1.022115e-15
+chain1d/complex kubo     max_rel=1.808786e-01  max_abs=7.235146e-01
+haldane/real kuboxy      max_rel=1.772195e-01  max_abs=5.285148e-01
+haldane/real kubo        max_rel=1.846809e-01  max_abs=8.070416e-01
+haldane/complex kuboxy   max_rel=1.744568e-01  max_abs=5.202759e-01
+haldane/complex kubo     max_rel=1.764640e-01  max_abs=7.711343e-01
 ```
 
 (`--route lowdin --applier ischo` is rejected with `std::invalid_argument` because `IschoInverseOverlap` provides `S^-1`, whereas the Löwdin sandwich requires `S^-1/2`.)
@@ -171,8 +189,8 @@ stage6_nonorth: route=naive applier=exact word=kuboxy dim=512 states=512 (exact)
 
 1. **Stage-2 and Stage-3 merge (`origin/cpp-unified` at `552de6e`) and `lsquant._core` binding**:
    `handoff/0006-agi` now merges `origin/cpp-unified` (`552de6e`, closing stages 2 and 3) and binds `MetricPolicy`, `OrthogonalMetric`, `NonOrthogonalMetric`, `ExactInverseOverlap`, `ExactInverseSqrtOverlap`, `IschoInverseOverlap` (`last_iterations`, `last_error`), `ChebyshevInverseOverlap` (`effective_order`), `ChebyshevInverseSqrtOverlap` (`effective_order`), `LowdinOperator`, `MetricInverseProduct`, `GeneralisedRescaledOperator`, and the `LinearOperator` overload of `RescaledOperator` in `lsquant/api/bindings.cpp` and `python/lsquant/_core.pyi`. `make_nonorth_fixtures.py` and `stage_6_check.py` remain self-contained on `numpy`/`scipy` and `stage6_nonorth`.
-2. **Sub-`1e-18` pruning of the dense inverse in `ExactInverseOverlap` and `ExactInverseSqrtOverlap`**:
-   Both classes compute the full dense inverse (`Eigen::LLT<Eigen::MatrixXcd>`) and dense inverse square root (`Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd>`) in their constructors as specified, and then store entries with `|A_{ij}| > 1e-18` (below IEEE-754 double precision rounding noise `2.22e-16`) in an internal compressed `SparseMatrix` while preserving `< 1e-12` agreement with G1.
+2. **Sub-`1e-18` pruning (`kExactInverseDropThreshold = 1e-18`) of the dense inverse in `ExactInverseOverlap` and `ExactInverseSqrtOverlap`**:
+   Both classes compute the full dense inverse (`Eigen::LLT<Eigen::MatrixXcd>`) and dense inverse square root (`Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd>`) in their constructors as specified, and then store entries with `|A_{ij}| > kExactInverseDropThreshold` (`1e-18`, below IEEE-754 double precision rounding noise `2.22e-16`, so the exact appliers stay exact) in an internal compressed `SparseMatrix` while preserving `< 1e-12` agreement with G1.
 
 ---
 

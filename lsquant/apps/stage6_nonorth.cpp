@@ -7,16 +7,21 @@
  * non-orthogonal route (`lowdin`, `generalised`, or `naive`), overlap applier (`exact`,
  * `ischo`, or `chebyshev`), Chebyshev applier order, PCG tolerance, trace generator (`exact`
  * or `random`), moment count `M`, observable word (`dos`, `kubo`, or `kuboxy`), and output
- * directory. Executes the corresponding bytecode `Plan` with `MomentEngine` without modifying
- * the engine or plan instruction set, and writes both the legacy `.chebmom1D`/`.chebmom2D`
- * file and the unified `.chebmom` file. Also supports `--check-appliers` to benchmark the
- * C++ overlap appliers against `ExactInverseOverlap` and `ExactInverseSqrtOverlap` on
- * deterministic random vectors.
+ * directory. Note that `--route naive` implements the legacy non-orthogonal estimator
+ * (`theory.md` section 4.1): recursion on `S^-1 H~` (`GeneralisedRescaledOperator`) with
+ * `S^-1 V'` (`MetricInverseProduct(S^-1, V')`) on both sides and no `S` on the bra; it
+ * reproduces the DOS (where no velocity enters) but is wrong for Kubo moments when `S != I`
+ * because the symmetric trace estimator is not metric-covariant. Executes the corresponding
+ * bytecode `Plan` with `MomentEngine` without modifying the engine or plan instruction set,
+ * and writes both the legacy `.chebmom1D`/`.chebmom2D` file and the unified `.chebmom` file.
+ * Also supports `--check-appliers` to benchmark the C++ overlap appliers against
+ * `ExactInverseOverlap` and `ExactInverseSqrtOverlap` on deterministic random vectors.
  */
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <exception>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -49,9 +54,10 @@ struct CliOptions {
   std::string route = "lowdin";
   std::string applier = "exact";
   int order = 60;
+  double coeffTol = 1e-12;
   double tol = 1e-13;
   int maxIter = 200;
-  double dropTol = 1e-3;
+  lsquant::Index maxDim = 4096;
   std::string traceMode = "exact";
   unsigned seed = 12345;
   bool hasSeed = false;
@@ -61,13 +67,38 @@ struct CliOptions {
   int batchSize = -1;
   std::string outDir = ".";
   bool checkAppliers = false;
+  bool showHelp = false;
 };
+
+void PrintUsage(std::ostream& os) {
+  os << "Usage: stage6_nonorth --fixture <dir> --label <model> --window <lower> <upper>\n"
+     << "                      [--route lowdin|generalised|naive]\n"
+     << "                      [--applier exact|ischo|chebyshev]\n"
+     << "                      [--order <P>] [--coeff-tol <ctol>] [--tol <t>]\n"
+     << "                      [--max-iter <n>] [--max-dim <Nmax>]\n"
+     << "                      [--trace exact|random] [--seed <s>] [--states <R>]\n"
+     << "                      [--moments <M>] [--batch <B>] --word dos|kubo|kuboxy\n"
+     << "                      [--out <dir>] [--check-appliers]\n\n"
+     << "Routes:\n"
+     << "  lowdin       Symmetric Lowdin sandwich H_L = S^-1/2 H' S^-1/2, V_L = S^-1/2 V' S^-1/2.\n"
+     << "  generalised  Recursion on S^-1 (a H' + b S') with S^-1 V' on ket and adjoint\n"
+     << "               bra S T_m(S^-1 H~) S^-1 V' S^-1 |r> (theory.md Eqs. 2a-2c).\n"
+     << "  naive        Legacy estimator (wrong for Kubo when S != I, theory.md section 4.1):\n"
+     << "               recursion on S^-1 (a H' + b S') (GeneralisedRescaledOperator) with\n"
+     << "               S^-1 V' (MetricInverseProduct(S^-1, V')) on both sides and no S on\n"
+     << "               the bra (the symmetric stage-1 plan); passes on dos and fails on\n"
+     << "               kubo/kuboxy by O(1) because the trace estimator is not covariant.\n";
+}
 
 CliOptions ParseArgs(int argc, char* argv[]) {
   CliOptions opts;
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
+    if (arg == "--help" || arg == "-h") {
+      opts.showHelp = true;
+      return opts;
+    }
     auto requireNext = [&](const char* flag) -> std::string {
       if (i + 1 >= argc) {
         throw std::invalid_argument(std::string("stage6_nonorth: missing argument for ") + flag);
@@ -89,12 +120,14 @@ CliOptions ParseArgs(int argc, char* argv[]) {
       opts.applier = requireNext("--applier");
     } else if (arg == "--order") {
       opts.order = std::stoi(requireNext("--order"));
+    } else if (arg == "--coeff-tol") {
+      opts.coeffTol = std::stod(requireNext("--coeff-tol"));
     } else if (arg == "--tol") {
       opts.tol = std::stod(requireNext("--tol"));
     } else if (arg == "--max-iter") {
       opts.maxIter = std::stoi(requireNext("--max-iter"));
-    } else if (arg == "--drop-tol") {
-      opts.dropTol = std::stod(requireNext("--drop-tol"));
+    } else if (arg == "--max-dim") {
+      opts.maxDim = std::stoll(requireNext("--max-dim"));
     } else if (arg == "--trace") {
       opts.traceMode = requireNext("--trace");
     } else if (arg == "--seed") {
@@ -122,6 +155,12 @@ CliOptions ParseArgs(int argc, char* argv[]) {
   }
   if (opts.label.empty()) {
     throw std::invalid_argument("stage6_nonorth: --label <label> is required");
+  }
+  if (opts.coeffTol < 0.0 || !std::isfinite(opts.coeffTol)) {
+    throw std::invalid_argument("stage6_nonorth: --coeff-tol must be non-negative and finite");
+  }
+  if (opts.maxDim <= 0) {
+    throw std::invalid_argument("stage6_nonorth: --max-dim must be positive");
   }
   if (opts.checkAppliers) {
     return opts;
@@ -185,12 +224,13 @@ int RunApplierChecks(const CliOptions& opts) {
   std::unique_ptr<lsquant::ExactInverseOverlap> exactInv;
   std::unique_ptr<lsquant::ExactInverseSqrtOverlap> exactInvSqrt;
   if (includeExact) {
-    exactInv = std::make_unique<lsquant::ExactInverseOverlap>(sMat);
-    exactInvSqrt = std::make_unique<lsquant::ExactInverseSqrtOverlap>(sMat);
+    exactInv = std::make_unique<lsquant::ExactInverseOverlap>(sMat, opts.maxDim);
+    exactInvSqrt = std::make_unique<lsquant::ExactInverseSqrtOverlap>(sMat, opts.maxDim);
   }
   const lsquant::IschoInverseOverlap ischoInv(sMat, opts.tol, opts.maxIter);
-  const lsquant::ChebyshevInverseOverlap chebInv(sMat, boundsOfS, opts.order);
-  const lsquant::ChebyshevInverseSqrtOverlap chebInvSqrt(sMat, boundsOfS, opts.order);
+  const lsquant::ChebyshevInverseOverlap chebInv(sMat, boundsOfS, opts.order, opts.coeffTol);
+  const lsquant::ChebyshevInverseSqrtOverlap chebInvSqrt(sMat, boundsOfS, opts.order,
+                                                         opts.coeffTol);
 
   lsquant::RandomPhaseStates rng(dim, 10, opts.seed);
   lsquant::Vector v(static_cast<std::size_t>(dim), lsquant::Scalar(0.0, 0.0));
@@ -249,7 +289,8 @@ int RunApplierChecks(const CliOptions& opts) {
 
   std::cout << std::scientific << std::setprecision(16)
             << "stage6_nonorth: check_appliers label=" << opts.label << " dim=" << dim
-            << " order=" << opts.order << " tol=" << opts.tol
+            << " order=" << opts.order << " coeff_tol=" << opts.coeffTol << " tol=" << opts.tol
+            << " max_iterations=" << opts.maxIter << " max_dim=" << opts.maxDim
             << " max_rel_diff_sinv_cheb_vs_exact=" << maxDiffChebVsExact
             << " max_rel_diff_sinv_ischo_vs_exact=" << maxDiffIschoVsExact
             << " max_rel_diff_sinvsqrt_cheb_vs_exact=" << maxDiffSqrtChebVsExact
@@ -311,6 +352,10 @@ lsquant::Plan BuildGeneralisedKuboPlan(const std::string& wordName, int sinvBraO
 int main(int argc, char* argv[]) {
   try {
     const CliOptions opts = ParseArgs(argc, argv);
+    if (opts.showHelp) {
+      PrintUsage(std::cout);
+      return 0;
+    }
     if (opts.checkAppliers) {
       return RunApplierChecks(opts);
     }
@@ -348,21 +393,23 @@ int main(int argc, char* argv[]) {
     const lsquant::IschoInverseOverlap* ischoPtr = nullptr;
     int effectiveOrder = -1;
 
-    if (opts.route == "naive") {
+    const std::string sPath = opts.fixtureDir + "/" + opts.label + ".S.CSR";
+    const bool hasOverlapFile = std::ifstream(sPath).good();
+
+    if (opts.route == "naive" && !hasOverlapFile) {
       metric = std::make_unique<lsquant::OrthogonalMetric>(dim);
     } else {
-      const std::string sPath = opts.fixtureDir + "/" + opts.label + ".S.CSR";
       sMat = lsquant::ReadCsrText(sPath);
       const lsquant::SparseMatrixOperator sOp(*sMat);
 
       if (opts.route == "lowdin") {
         inverseApplier = std::make_unique<lsquant::IdentityOperator>(dim);
         if (opts.applier == "exact") {
-          inverseSqrtApplier = std::make_unique<lsquant::ExactInverseSqrtOverlap>(*sMat);
+          inverseSqrtApplier = std::make_unique<lsquant::ExactInverseSqrtOverlap>(*sMat, opts.maxDim);
         } else {
           const lsquant::SpectralBounds boundsOfS = ComputePaddedOverlapBounds(sOp);
           auto chebSqrt = std::make_unique<lsquant::ChebyshevInverseSqrtOverlap>(
-              *sMat, boundsOfS, opts.order);
+              *sMat, boundsOfS, opts.order, opts.coeffTol);
           effectiveOrder = chebSqrt->EffectiveOrder();
           inverseSqrtApplier = std::move(chebSqrt);
         }
@@ -370,7 +417,7 @@ int main(int argc, char* argv[]) {
             *sMat, *inverseApplier, *inverseSqrtApplier);
       } else {
         if (opts.applier == "exact") {
-          inverseApplier = std::make_unique<lsquant::ExactInverseOverlap>(*sMat);
+          inverseApplier = std::make_unique<lsquant::ExactInverseOverlap>(*sMat, opts.maxDim);
         } else if (opts.applier == "ischo") {
           auto ischo =
               std::make_unique<lsquant::IschoInverseOverlap>(*sMat, opts.tol, opts.maxIter);
@@ -379,7 +426,7 @@ int main(int argc, char* argv[]) {
         } else {
           const lsquant::SpectralBounds boundsOfS = ComputePaddedOverlapBounds(sOp);
           auto cheb = std::make_unique<lsquant::ChebyshevInverseOverlap>(
-              *sMat, boundsOfS, opts.order);
+              *sMat, boundsOfS, opts.order, opts.coeffTol);
           effectiveOrder = cheb->EffectiveOrder();
           inverseApplier = std::move(cheb);
         }
@@ -391,7 +438,7 @@ int main(int argc, char* argv[]) {
 
     std::unique_ptr<lsquant::LowdinOperator> lowdinH;
     std::unique_ptr<lsquant::LinearOperator> rescaledH;
-    if (opts.route == "naive") {
+    if (metric->IsOrthogonal()) {
       rescaledH = std::make_unique<lsquant::RescaledOperator>(ham, window);
     } else if (opts.route == "lowdin") {
       lowdinH = std::make_unique<lsquant::LowdinOperator>(metric->InverseSqrtOverlap(), hamOp);
@@ -429,11 +476,20 @@ int main(int argc, char* argv[]) {
       const lsquant::SparseMatrixOperator vxOp(vxMat);
 
       if (opts.route == "naive") {
-        lsquant::MomentEngine engine(*rescaledH, {&vxOp}, *stateGen, opts.batchSize);
-        const lsquant::Plan plan =
-            BuildHermitianKuboPlan("VX delta VX delta", 0, 0, opts.numMoments);
-        mu = engine.Run(plan);
-        mu.word = plan.word;
+        if (metric->IsOrthogonal()) {
+          lsquant::MomentEngine engine(*rescaledH, {&vxOp}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VX delta", 0, 0, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        } else {
+          const lsquant::MetricInverseProduct sinvVx(metric->InverseOverlap(), vxOp);
+          lsquant::MomentEngine engine(*rescaledH, {&sinvVx}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VX delta", 0, 0, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        }
       } else if (opts.route == "lowdin") {
         const lsquant::LowdinOperator lowdinVx(metric->InverseSqrtOverlap(), vxOp);
         lsquant::MomentEngine engine(*rescaledH, {&lowdinVx}, *stateGen, opts.batchSize);
@@ -474,11 +530,21 @@ int main(int argc, char* argv[]) {
       const lsquant::SparseMatrixOperator vyOp(vyMat);
 
       if (opts.route == "naive") {
-        lsquant::MomentEngine engine(*rescaledH, {&vxOp, &vyOp}, *stateGen, opts.batchSize);
-        const lsquant::Plan plan =
-            BuildHermitianKuboPlan("VX delta VY delta", 0, 1, opts.numMoments);
-        mu = engine.Run(plan);
-        mu.word = plan.word;
+        if (metric->IsOrthogonal()) {
+          lsquant::MomentEngine engine(*rescaledH, {&vxOp, &vyOp}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VY delta", 0, 1, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        } else {
+          const lsquant::MetricInverseProduct sinvVx(metric->InverseOverlap(), vxOp);
+          const lsquant::MetricInverseProduct sinvVy(metric->InverseOverlap(), vyOp);
+          lsquant::MomentEngine engine(*rescaledH, {&sinvVx, &sinvVy}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VY delta", 0, 1, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        }
       } else if (opts.route == "lowdin") {
         const lsquant::LowdinOperator lowdinVx(metric->InverseSqrtOverlap(), vxOp);
         const lsquant::LowdinOperator lowdinVy(metric->InverseSqrtOverlap(), vyOp);
@@ -542,8 +608,9 @@ int main(int argc, char* argv[]) {
     if (effectiveOrder >= 0) {
       std::cout << " effective_order=" << effectiveOrder;
     }
-    std::cout << std::scientific << std::setprecision(6) << " tol=" << opts.tol
-              << std::defaultfloat << " max_iterations=" << opts.maxIter;
+    std::cout << std::scientific << std::setprecision(6) << " coeff_tol=" << opts.coeffTol
+              << " tol=" << opts.tol << std::defaultfloat << " max_iterations=" << opts.maxIter
+              << " max_dim=" << opts.maxDim;
     if (ischoPtr != nullptr) {
       std::cout << " iterations=" << ischoPtr->LastIterations();
     }

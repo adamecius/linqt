@@ -131,9 +131,9 @@ void ApplyChebyshevSeries(const SparseMatrix& S, double center, double halfwidth
   }
 }
 
-SparseMatrix CompressDenseMatrix(const Eigen::MatrixXcd& dense, double dropThreshold = 1e-18) {
+SparseMatrix CompressDenseMatrix(const Eigen::MatrixXcd& dense) {
   const Index dim = static_cast<Index>(dense.rows());
-  const double sqThreshold = dropThreshold * dropThreshold;
+  const double sqThreshold = kExactInverseDropThreshold * kExactInverseDropThreshold;
   std::vector<Index> rowPointers(static_cast<std::size_t>(dim + 1), 0);
   std::vector<Index> columns;
   std::vector<Scalar> values;

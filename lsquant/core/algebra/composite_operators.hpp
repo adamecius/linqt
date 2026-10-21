@@ -318,8 +318,8 @@ private:
 /**
  * @brief Matrix-free symmetric Löwdin sandwich `S^{-1/2} O S^{-1/2}`.
  *
- * Solves the problem of transforming a non-orthogonal basis representation `O'` of a
- * physical operator into the orthonormal Löwdin representation without materialising
+ * Solves the problem of transforming an operator `O'` with overlap `S` into the
+ * orthonormal Löwdin coefficient representation without materialising
  * dense `N x N` matrices. Evaluates `t1 = S^{-1/2} x`, `t2 = O t1`, and
  * `y = a * S^{-1/2} t2 + b * y` using two temporary vectors of length `Dimension()` per
  * `Multiply` call. Complexity is `O(2 * cost(S^{-1/2}) + cost(O) + N)`.
@@ -379,7 +379,7 @@ private:
  * @brief Matrix-free one-sided product `S^{-1} O` for the generalised non-orthogonal route.
  *
  * Solves the problem of representing the effective operator `S^{-1} O'` in the
- * non-orthogonal basis where `O'` maps coordinates to covariant dual components and
+ * coefficient representation where `O'` maps coordinates to covariant dual components and
  * `S^{-1}` raises the index back to contravariant coordinates. Evaluates `t = O x` into a
  * single temporary vector and then `y = a * S^{-1} t + b * y`. Complexity is
  * `O(cost(S^{-1}) + cost(O) + N)`.

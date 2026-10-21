@@ -32,13 +32,23 @@
 namespace lsquant {
 
 /**
+ * @brief Magnitude threshold below which entries of the dense `S^-1` and `S^-1/2` matrices
+ *        are pruned when compressing into internal CSR storage.
+ *
+ * Set to `1e-18`, below IEEE-754 double-precision rounding noise (`2.22e-16`), so the exact
+ * appliers stay exact while dropping exact structural zeros.
+ */
+inline constexpr double kExactInverseDropThreshold = 1e-18;
+
+/**
  * @brief Exact dense Cholesky (`LLT`) inverse applier `y = a * S^-1 * x + b * y`.
  *
  * Solves the problem of providing a machine-precision reference applier for `S^-1` on small to
  * moderate system sizes (`Dimension() <= maxDimension`). Materialises `S` as a dense matrix,
  * computes its exact Hermitian positive-definite Cholesky factorisation `Eigen::LLT`, and
- * stores `S^-1 = LLT(S).solve(I)`. Construction costs `O(N^3)` time and `O(N^2)` memory; each
- * `Multiply` costs `O(N^2)` time.
+ * stores entries of `S^-1 = LLT(S).solve(I)` with magnitude above `kExactInverseDropThreshold`
+ * (`1e-18`, below double rounding, so the exact appliers stay exact). Construction costs
+ * `O(N^3)` time and `O(N^2)` memory; each `Multiply` costs `O(N^2)` time.
  *
  * @warning Throws `std::invalid_argument` if `S.Dimension() > maxDimension` or `!S.IsHermitian()`,
  *          and `std::runtime_error` if `S` is not positive definite (`LLT` fails).
@@ -99,8 +109,10 @@ private:
  * Solves the problem of providing a machine-precision dense reference for `S^-1/2` on the
  * Löwdin route (`--route lowdin --applier exact`) when `Dimension() <= maxDimension`.
  * Diagonalises the dense overlap matrix `S = U diag(lambda) U^+` via
- * `Eigen::SelfAdjointEigenSolver` and forms `S^-1/2 = U diag(lambda^-1/2) U^+`. Construction
- * costs `O(N^3)` time and `O(N^2)` memory; each `Multiply` costs `O(N^2)` time.
+ * `Eigen::SelfAdjointEigenSolver` and stores entries of `S^-1/2 = U diag(lambda^-1/2) U^+`
+ * with magnitude above `kExactInverseDropThreshold` (`1e-18`, below double rounding, so the
+ * exact appliers stay exact). Construction costs `O(N^3)` time and `O(N^2)` memory; each
+ * `Multiply` costs `O(N^2)` time.
  *
  * @warning Throws `std::invalid_argument` if `S.Dimension() > maxDimension` or `!S.IsHermitian()`,
  *          and `std::runtime_error` if `S` has a non-positive eigenvalue.
@@ -166,9 +178,13 @@ private:
  * conjugate-transpose upper solve `L^+` and initial guess `z_0 = M^-1 x`. Complexity per
  * application is `O(k * nnz(S))` where `k <= maxIterations` is the number of PCG iterations
  * required to reach relative residual `||x - S z||_2 / ||x||_2 <= tolerance`.
+ * `LastIterations()` and `LastError()` describe the last solve, and the applier is not safe
+ * for concurrent `Multiply` on one object.
  *
  * @warning Throws `std::runtime_error` at construction if the incomplete Cholesky factorisation
- *          cannot stabilise `S` to positive definiteness.
+ *          cannot stabilise `S` to positive definiteness. Because `Multiply` updates mutable
+ *          last-solve diagnostics (`LastIterations()`/`LastError()`), this applier is not safe
+ *          for concurrent `Multiply` calls on a single object.
  * @par Pitfall
  *      Choosing `tolerance` too loose (e.g., `1e-5`) introduces non-Hermitian drift that
  *      accumulates across Chebyshev recursion steps `T_m(S^-1 H~)`.
