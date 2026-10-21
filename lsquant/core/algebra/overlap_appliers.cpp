@@ -131,6 +131,19 @@ void ApplyChebyshevSeries(const SparseMatrix& S, double center, double halfwidth
   }
 }
 
+class ScopedEigenSingleThread {
+public:
+  ScopedEigenSingleThread() : previousThreads_(Eigen::nbThreads()) {
+    Eigen::setNbThreads(1);
+  }
+  ~ScopedEigenSingleThread() { Eigen::setNbThreads(previousThreads_); }
+  ScopedEigenSingleThread(const ScopedEigenSingleThread&) = delete;
+  ScopedEigenSingleThread& operator=(const ScopedEigenSingleThread&) = delete;
+
+private:
+  int previousThreads_;
+};
+
 SparseMatrix CompressDenseMatrix(const Eigen::MatrixXcd& dense) {
   const Index dim = static_cast<Index>(dense.rows());
   const double sqThreshold = kExactInverseDropThreshold * kExactInverseDropThreshold;
@@ -171,13 +184,16 @@ ExactInverseOverlap::ExactInverseOverlap(const SparseMatrix& S, Index maxDimensi
   }
 
   const Eigen::MatrixXcd denseS(S.Eigen());
-  Eigen::LLT<Eigen::MatrixXcd> llt(denseS);
-  if (llt.info() != Eigen::Success) {
-    throw std::runtime_error(
-        "ExactInverseOverlap: exact Cholesky (LLT) failed; S is not positive definite");
+  Eigen::MatrixXcd denseInv;
+  {
+    ScopedEigenSingleThread singleThread;
+    Eigen::LLT<Eigen::MatrixXcd> llt(denseS);
+    if (llt.info() != Eigen::Success) {
+      throw std::runtime_error(
+          "ExactInverseOverlap: exact Cholesky (LLT) failed; S is not positive definite");
+    }
+    denseInv = llt.solve(Eigen::MatrixXcd::Identity(dimension_, dimension_));
   }
-  const Eigen::MatrixXcd denseInv =
-      llt.solve(Eigen::MatrixXcd::Identity(dimension_, dimension_));
   inverse_ = CompressDenseMatrix(denseInv);
 }
 
@@ -203,17 +219,21 @@ ExactInverseSqrtOverlap::ExactInverseSqrtOverlap(const SparseMatrix& S, Index ma
   }
 
   const Eigen::MatrixXcd denseS(S.Eigen());
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(denseS);
-  if (es.info() != Eigen::Success) {
-    throw std::runtime_error("ExactInverseSqrtOverlap: dense eigensolver failed on S");
+  Eigen::MatrixXcd denseInvSqrt;
+  {
+    ScopedEigenSingleThread singleThread;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(denseS);
+    if (es.info() != Eigen::Success) {
+      throw std::runtime_error("ExactInverseSqrtOverlap: dense eigensolver failed on S");
+    }
+    const Eigen::VectorXd evals = es.eigenvalues();
+    if (evals.minCoeff() <= 0.0) {
+      throw std::runtime_error("ExactInverseSqrtOverlap: S is not positive definite");
+    }
+    const Eigen::VectorXd invSqrtEvals = evals.cwiseSqrt().cwiseInverse();
+    denseInvSqrt =
+        es.eigenvectors() * invSqrtEvals.asDiagonal() * es.eigenvectors().adjoint();
   }
-  const Eigen::VectorXd evals = es.eigenvalues();
-  if (evals.minCoeff() <= 0.0) {
-    throw std::runtime_error("ExactInverseSqrtOverlap: S is not positive definite");
-  }
-  const Eigen::VectorXd invSqrtEvals = evals.cwiseSqrt().cwiseInverse();
-  const Eigen::MatrixXcd denseInvSqrt =
-      es.eigenvectors() * invSqrtEvals.asDiagonal() * es.eigenvectors().adjoint();
   inverseSqrt_ = CompressDenseMatrix(denseInvSqrt);
 }
 
