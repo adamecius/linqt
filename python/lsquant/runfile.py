@@ -18,11 +18,10 @@ from .moments import run_plan, window_from_gershgorin
 from .reconstruct import (
     dos_curve,
     kubo_bastin,
-    kubo_bastin_fft,
     kubo_bastin_sea,
     kubo_bastin_surf,
+    kubo_fft_grid,
     kubo_greenwood,
-    kubo_greenwood_fft,
     time_correlation_curve,
 )
 from .words import compile as compile_word, parse as parse_word
@@ -639,35 +638,25 @@ def _reconstruct_single_formula(
     """
     f = formula.lower()
     if f in ("dos", "dos_curve"):
-        energies, values = dos_curve(
-            mu, broadening_meV, num_points=num_points
-        )
+        energies, values = dos_curve(mu, broadening_meV)
         return [("mean", "JACKSON.dat", energies, values)]
     if f in ("greenwood", "kubo_greenwood"):
-        energies, values = kubo_greenwood(
-            mu, broadening_meV, num_points=num_points
-        )
+        energies, values = kubo_greenwood(mu, broadening_meV)
         return [("KuboGreenWood_", "JACKSON.dat", energies, values)]
     if f in ("bastin", "kubo_bastin"):
-        energies, values = kubo_bastin(
-            mu, broadening_meV, num_points=num_points
-        )
+        energies, values = kubo_bastin(mu, broadening_meV)
         return [("KuboBastin_", "JACKSON.dat", energies, values)]
     if f in ("sea", "kubo_bastin_sea"):
-        energies, values = kubo_bastin_sea(
-            mu, broadening_meV, num_points=num_points
-        )
+        energies, values = kubo_bastin_sea(mu, broadening_meV)
         return [("KuboBastinSea_", "JACKSON.dat", energies, values)]
     if f in ("surf", "kubo_bastin_surf"):
-        energies, values = kubo_bastin_surf(
-            mu, broadening_meV, num_points=num_points
-        )
+        energies, values = kubo_bastin_surf(mu, broadening_meV)
         return [("KuboBastinSurf_", "JACKSON.dat", energies, values)]
     if f in ("greenwood_fft", "kubo_greenwood_fft"):
-        energies, values = kubo_greenwood_fft(mu, broadening_meV)
+        energies, values = kubo_fft_grid(mu, broadening_meV, formula="greenwood")
         return [("KuboGreenWood_", "JACKSON_FFTgrid.dat", energies, values)]
     if f in ("bastin_fft", "kubo_bastin_fft"):
-        energies, values = kubo_bastin_fft(mu, broadening_meV)
+        energies, values = kubo_fft_grid(mu, broadening_meV, formula="bastin")
         return [("KuboBastin_", "JACKSON_FFTgrid.dat", energies, values)]
     if f in ("time_correlation", "time_correlation_curve"):
         out: list[tuple[str, str, np.ndarray, np.ndarray]] = []
@@ -1172,23 +1161,25 @@ def execute_runfile(
 
             prefix = compiled.reconstruction.legacy_moment_prefix
             ext = compiled.reconstruction.legacy_moment_ext
-            if mu.rank == 2:
+            if mu.number_of_time_steps > 0:
+                if compiled.match.entry.shape_id in ("msd", "time_correlation"):
+                    assert rf.time is not None
+                    tmax_val = rf.time.get("tmax")
+                    if tmax_val is None and compiled.dt is not None:
+                        tmax_val = compiled.dt * (int(rf.time["steps"]) - 1)
+                    tmax_str = f"{float(tmax_val):g}"
+                    stem = (
+                        f"{prefix}{label}KPM_M{num_moments}"
+                        f"_state{tmax_str}{state_label}"
+                    )
+                else:
+                    stem = (
+                        f"{prefix}{label}KPM_M{num_moments}_state{state_label}"
+                    )
+            elif mu.rank == 2:
                 stem = (
                     f"{prefix}{label}KPM_M{num_moments}x{num_moments}"
                     f"_state{state_label}"
-                )
-            elif mu.number_of_time_steps > 0 and compiled.match.entry.shape_id in (
-                "msd",
-                "time_correlation",
-            ):
-                assert rf.time is not None
-                tmax_val = rf.time.get("tmax")
-                if tmax_val is None and compiled.dt is not None:
-                    tmax_val = compiled.dt * (int(rf.time["steps"]) - 1)
-                tmax_str = f"{float(tmax_val):g}"
-                stem = (
-                    f"{prefix}{label}KPM_M{num_moments}"
-                    f"_state{tmax_str}{state_label}"
                 )
             else:
                 stem = f"{prefix}{label}KPM_M{num_moments}_state{state_label}"
@@ -1274,15 +1265,24 @@ def execute_runfile(
             if rf.reconstruction.get("per_site_dos") and mu.rank == 1:
                 # Reconstruct per-site DOS on 30 * M points with full M moments (broadening = 1/M)
                 full_m_meV = 1.0e-6
-                e_ps, v_ps = dos_curve(
-                    mu_for_recon, full_m_meV, num_points=30 * num_moments
-                )
+                e_ps, v_ps = dos_curve(mu_for_recon, full_m_meV)
                 ps_path = os.path.join(out_dir, "DOS_reconstructed.dat")
-                with open(ps_path, "w", encoding="utf-8") as fh:
-                    for ex, vx in zip(e_ps, v_ps):
-                        val_per_site = float(vx) / float(dim)
-                        if np.isfinite(val_per_site):
-                            fh.write(f"{float(ex):.10g} {val_per_site:.10g}\n")
+                tmp_ps_path = os.path.join(out_dir, ".tmp_dos_standalone.dat")
+                _core.WriteCurveText(tmp_ps_path, e_ps, v_ps)
+                with (
+                    open(tmp_ps_path, encoding="utf-8") as fin,
+                    open(ps_path, "w", encoding="utf-8") as fout,
+                ):
+                    for line in fin:
+                        parts = line.split()
+                        if len(parts) >= 2 and all(
+                            tok.lower() not in ("nan", "inf", "-inf", "+inf")
+                            for tok in parts[:2]
+                        ):
+                            c1 = float(parts[0])
+                            c2 = float(parts[1]) / float(dim)
+                            fout.write(f"{c1:.10g} {c2:.10g}\n")
+                os.remove(tmp_ps_path)
                 curve_files.append(ps_path)
                 written_files.append(ps_path)
 

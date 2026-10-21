@@ -204,13 +204,16 @@ def tool_inspect(path: str) -> str:
 
 
 def create_mcp_server(root_dir: str | None = None) -> Any:
-    """Create and configure the FastMCP server instance."""
-    from mcp.server.fastmcp import FastMCP
+    """Create and configure the FastMCP / MCPServer instance."""
+    try:
+        from mcp.server.mcpserver import MCPServer as _ServerClass
+    except ImportError:
+        from mcp.server.fastmcp import FastMCP as _ServerClass
 
     if root_dir is not None:
         set_configured_root(root_dir)
 
-    mcp = FastMCP("lsquant")
+    mcp = _ServerClass("lsquant")
 
     @mcp.tool(name="words_describe")
     def words_describe(word: str) -> str:
