@@ -7,24 +7,24 @@
 ```text
  lsquant/CMakeLists.txt                        |   4 +-
  lsquant/api/bindings.cpp                      | 141 +++++++-
- lsquant/core/algebra/bloch_transform.cpp      | 202 +++++++++++
- lsquant/core/algebra/bloch_transform.hpp      | 202 +++++++++++
+ lsquant/core/algebra/bloch_transform.cpp      | 215 +++++++++++
+ lsquant/core/algebra/bloch_transform.hpp      | 227 ++++++++++++
  lsquant/core/algebra/block_diagonal_operator.cpp | 121 +++++++
- lsquant/core/algebra/block_diagonal_operator.hpp | 132 ++++++++
- lsquant/core/algebra/composite_operators.cpp  | 114 ++++++-
- lsquant/core/algebra/composite_operators.hpp  | 162 ++++++++-
- lsquant/core/algebra/state_generator.cpp      |  57 ++++
- lsquant/core/algebra/state_generator.hpp      | 111 ++++++
- lsquant/core/chebyshev/rescaled_operator.cpp  |  58 +++-
- lsquant/core/chebyshev/rescaled_operator.hpp  |  47 ++-
+ lsquant/core/algebra/block_diagonal_operator.hpp | 126 +++++++
+ lsquant/core/algebra/composite_operators.cpp  |  91 ++++-
+ lsquant/core/algebra/composite_operators.hpp  | 171 ++++++++-
+ lsquant/core/algebra/state_generator.cpp      |  62 +++-
+ lsquant/core/algebra/state_generator.hpp      | 128 +++++++
+ lsquant/core/chebyshev/rescaled_operator.cpp  |  62 +++-
+ lsquant/core/chebyshev/rescaled_operator.hpp  |  42 ++-
  python/lsquant/__init__.py                    |   9 +-
- python/lsquant/_core.pyi                      |  95 ++++++
- python/lsquant/apps/stage5_bases.py           | 272 +++++++++++++++
- python/lsquant/bases.py                       | 408 +++++++++++++++++++++++
- python/lsquant/models/__init__.py             |  36 ++
- python/lsquant/models/wannier.py              | 467 ++++++++++++++++++++++++++
+ python/lsquant/_core.pyi                      |  95 +++++
+ python/lsquant/apps/stage5_bases.py           | 326 +++++++++++++++++
+ python/lsquant/bases.py                       | 520 +++++++++++++++++++++++++++
+ python/lsquant/models/__init__.py             |  33 ++
+ python/lsquant/models/wannier.py              | 576 ++++++++++++++++++++++++++++++
  python/lsquant/moments.py                     |   2 +-
- tests/dev/stage_5_check.py                    | 517 +++++++++++++++++++++++++++++
+ tests/dev/stage_5_check.py                    | 521 +++++++++++++++++++++++++++
 ```
 
 Full `git diff --stat main...handoff/0005-agi`:
@@ -156,7 +156,7 @@ Full `git diff --stat main...handoff/0005-agi`:
 
 ## 3. Verbatim Outputs on TCN
 
-### 3.1 `tests/dev/stage_5_check.py` and `stage5_bases` CLI Suite
+### 3.1 `tests/dev/stage_5_check.py` and `stage5_bases` CLI Suite (default `--window eigen`)
 
 ```text
 [check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 6.206e-17, max|B^+ B x - x| = 5.004e-17
@@ -165,10 +165,10 @@ Full `git diff --stat main...handoff/0005-agi`:
 [check b] (haldane 8x8x1) max_x ||H_k x - B H_csr B^+ x||_inf = 5.496e-16
 [check c] (haldane 8x8x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 6.474e-16
 [check d] Anderson disorder W=1.0 (seed=12345): max|mu_real - mu_bloch| DOS(64) = 4.680e-16, VX-VX(64x64) = 5.761e-14
-[check e] (16,16,1) real vs bloch: DOS max|d_mu|=8.105e-15, max_rel|d_curve|=6.915e-15; KuboXX max|d_mu|=5.898e-13, max|d_curve/N|=5.313e-14, max_rel|d_curve|=1.655e-14
-[check e] (16,16,1) real vs eigen: DOS max|d_mu|=7.883e-15, max_rel|d_curve|=6.825e-15; KuboXX max|d_mu|=6.040e-13, max|d_curve/N|=4.588e-14, max_rel|d_curve|=1.429e-14
-[check e] (16,16,1) bloch vs eigen: DOS max|d_mu|=1.222e-15, max_rel|d_curve|=1.203e-15; KuboXX max|d_mu|=1.279e-13, max|d_curve/N|=7.256e-15, max_rel|d_curve|=2.260e-15
-[check e] Jackson KPM (M=128) vs Gaussian exact-diag: rel_L2(DOS)=2.130e-02, rel_L2(KuboXX)=4.250e-02
+[check e] (16,16,1) real vs bloch: DOS max|d_mu|=6.550e-15, max_rel|d_curve|=3.186e-15; KuboXX max|d_mu|=6.182e-13, max|d_curve/N|=2.587e-14, max_rel|d_curve|=7.503e-15
+[check e] (16,16,1) real vs eigen: DOS max|d_mu|=5.884e-15, max_rel|d_curve|=3.144e-15; KuboXX max|d_mu|=5.898e-13, max|d_curve/N|=2.609e-14, max_rel|d_curve|=7.567e-15
+[check e] (16,16,1) bloch vs eigen: DOS max|d_mu|=2.443e-15, max_rel|d_curve|=1.802e-15; KuboXX max|d_mu|=1.777e-13, max|d_curve/N|=8.438e-15, max_rel|d_curve|=2.447e-15
+[check e] Jackson KPM (M=128) vs Gaussian exact-diag: rel_L2(DOS)=2.252e-02, rel_L2(KuboXX)=4.272e-02
 [check f] G1 chain1d DOS byte-identical to golden: PASS
 [check f] G4 graphene Kubo byte-identical to golden: PASS
 [check f] G7 chain1d_mag spin precession byte-identical to golden: PASS
@@ -205,18 +205,18 @@ EXIT_SELF_CHECK:0
 /tmp/s5_cli_test/dis_bloch_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M64x64_statedefault.chebmom
 /tmp/s5_cli_test/dis_bloch_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M64x64_statedefaultJACKSON.dat
 --- GOLDEN_DIFF CLEAN REAL vs BLOCH vs EIGEN ---
-first-diff line 13 col 1, new=-1.1251999999999995 golden=-1.1251999999999993; max abs diff 8.105e-15 at line 127 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
+first-diff line 13 col 1, new=-1.0740740740740722 golden=-1.0740740740740751; max abs diff 6.550e-15 at line 67 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
 no line differs (difference is in line endings or trailing bytes)
-first-diff line 13 col 2, new=-6.6051571316167092e-18 golden=0; max abs diff 1.221e-15 at line 135 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
+first-diff line 13 col 2, new=-4.2356979628604462e-18 golden=0; max abs diff 2.442e-15 at line 137 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
 no line differs (difference is in line endings or trailing bytes)
-first-diff line 11 col 1, new=22.058081999999722 golden=22.058081999999978; max abs diff 5.898e-13 at line 16265 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
-first-diff line 1 col 2, new=4.12156e-07 golden=4.12184e-07; max abs diff 2.800e-11 at line 1 col 2; max rel diff 6.793e-05 at line 1 col 2; DEFECT level (>= 1e-12)
-first-diff line 11 col 1, new=22.058081999999978 golden=22.058081999999985; max abs diff 1.279e-13 at line 15878 col 1; max rel diff 1.000e+00 at line 4683 col 2; DEFECT level (>= 1e-12)
-first-diff line 1 col 2, new=4.12184e-07 golden=4.1218e-07; max abs diff 4.000e-12 at line 1 col 2; max rel diff 9.704e-06 at line 1 col 2; DEFECT level (>= 1e-12)
+first-diff line 11 col 1, new=22.058081999999722 golden=22.058081999999978; max abs diff 6.182e-13 at line 7235 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
+first-diff line 1 col 2, new=1.24915e-06 golden=1.24914e-06; max abs diff 1.000e-11 at line 3 col 2; max rel diff 8.005e-06 at line 1 col 2; DEFECT level (>= 1e-12)
+first-diff line 11 col 1, new=22.058081999999978 golden=22.058081999999985; max abs diff 1.776e-13 at line 649 col 1; max rel diff 1.000e+00 at line 3703 col 2; DEFECT level (>= 1e-12)
+first-diff line 127 col 2, new=2.79419e-06 golden=2.7942e-06; max abs diff 1.000e-11 at line 127 col 2; max rel diff 3.579e-06 at line 127 col 2; DEFECT level (>= 1e-12)
 --- GOLDEN_DIFF DISORDERED REAL vs BLOCH (W=1.0, seed=12345) ---
-first-diff line 11 col 1, new=1 golden=0.99999999999999978; max abs diff 4.649e-16 at line 70 col 1; max rel diff 1.800e+00 at line 14 col 2; DEFECT level (>= 1e-12)
+first-diff line 11 col 1, new=1 golden=0.99999999999999978; max abs diff 4.441e-16 at line 64 col 1; max rel diff 1.949e+00 at line 18 col 2; DEFECT level (>= 1e-12)
 no line differs (difference is in line endings or trailing bytes)
-first-diff line 12 col 1, new=-1.1522844451345624 golden=-1.1522844451345626; max abs diff 5.684e-14 at line 2883 col 1; max rel diff 5.444e-11 at line 1842 col 2; DEFECT level (>= 1e-12)
+first-diff line 12 col 1, new=-1.1854778242125124 golden=-1.1854778242125126; max abs diff 6.395e-14 at line 3005 col 1; max rel diff 3.255e-11 at line 69 col 2; DEFECT level (>= 1e-12)
 no line differs (difference is in line endings or trailing bytes)
 ```
 
