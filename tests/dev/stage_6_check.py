@@ -31,7 +31,13 @@ import numpy as np
 import scipy.linalg as la
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-for _p in (_REPO_ROOT / "build" / "lsquant_core", _REPO_ROOT / "python"):
+_RAW_BUILD_DIR = os.environ.get("LSQUANT_BUILD_DIR", "build")
+_BUILD_DIR = (
+    Path(_RAW_BUILD_DIR).resolve()
+    if os.path.isabs(_RAW_BUILD_DIR)
+    else (_REPO_ROOT / _RAW_BUILD_DIR).resolve()
+)
+for _p in (_BUILD_DIR / "lsquant_core", _BUILD_DIR, _REPO_ROOT / "python"):
     if _p.is_dir() and str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
@@ -141,10 +147,15 @@ def main() -> int:
         default=_REPO_ROOT,
         help="Repository root directory.",
     )
+    default_exe = (
+        _BUILD_DIR / "stage6_nonorth"
+        if (_BUILD_DIR / "stage6_nonorth").is_file()
+        else _BUILD_DIR / "lsquant_core" / "stage6_nonorth"
+    )
     parser.add_argument(
         "--exe",
         type=Path,
-        default=_REPO_ROOT / "build" / "lsquant_core" / "stage6_nonorth",
+        default=default_exe,
         help="Path to the stage6_nonorth executable.",
     )
     args = parser.parse_args()
