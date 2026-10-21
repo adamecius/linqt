@@ -15,9 +15,11 @@ objects and is completely agnostic of which basis adapter produced them.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
+import shlex
 from typing import Sequence
 import numpy as np
 import numpy.typing as npt
@@ -26,6 +28,171 @@ from . import _core
 from .models.wannier import WannierModel
 from .moments import window_from_gershgorin
 from .spectral_functions import GaussianDelta
+
+_W2S_ALL_OPERATORS: tuple[str, ...] = (
+    "VX",
+    "VY",
+    "VZ",
+    "SX",
+    "SY",
+    "SZ",
+    "VXSX",
+    "VXSY",
+    "VXSZ",
+    "VYSX",
+    "VYSY",
+    "VYSZ",
+    "VZSX",
+    "VZSY",
+    "VZSZ",
+)
+
+
+def _parse_w2s_command_line(
+    cmd: str, out_path: str
+) -> tuple[
+    str | None,
+    str | None,
+    tuple[int, int, int] | None,
+    set[str] | None,
+    str | None,
+]:
+    """Parse ``invocation.command_line`` from a ``wannier2sparse`` ``.out`` receipt."""
+    try:
+        tokens = shlex.split(cmd)
+    except ValueError as exc:
+        raise ValueError(
+            f"RealBasis: malformed command_line in receipt '{out_path}': {exc}"
+        ) from exc
+    if not tokens:
+        raise ValueError(f"RealBasis: empty command_line in receipt '{out_path}'")
+
+    one_arg_opts = {
+        "-o",
+        "--output-dir",
+        "-p",
+        "--project",
+        "--seed",
+        "--mode",
+        "-x",
+        "--input-file",
+        "--create",
+        "-inp",
+        "--inp",
+        "--win",
+        "--qe-bands",
+        "--log-level",
+        "--log-file",
+        "--velocity-mode",
+        "--tb",
+        "--r-dat",
+    }
+    zero_arg_opts = {
+        "--write",
+        "--verbose",
+        "--quiet",
+        "--no-log-file",
+        "--bounds",
+        "--exact-spin",
+        "--covariant-velocity",
+        "--orbital-l",
+        "--orbital-L",
+    }
+    known_checks = {
+        "all",
+        "hermiticity",
+        "sum_rules",
+        "algebra",
+        "aliasing",
+        "bounds",
+    }
+
+    config_path: str | None = None
+    explicit_seed: str | None = None
+    want_all = False
+    extra_ops: set[str] = set()
+    positional: list[str] = []
+
+    i = 1
+    n = len(tokens)
+    while i < n:
+        tok = tokens[i]
+        if tok in one_arg_opts:
+            if i + 1 >= n:
+                raise ValueError(
+                    f"RealBasis: missing value after '{tok}' in command_line of '{out_path}'"
+                )
+            val = tokens[i + 1]
+            if tok == "--seed":
+                explicit_seed = val
+            elif tok in ("-x", "--input-file"):
+                config_path = val
+            i += 2
+        elif tok == "--op-file":
+            if i + 2 >= n:
+                raise ValueError(
+                    f"RealBasis: missing arguments after '--op-file' in command_line of '{out_path}'"
+                )
+            extra_ops.add(tokens[i + 1].strip().upper())
+            i += 3
+        elif tok == "--spin-current":
+            if i + 2 >= n:
+                raise ValueError(
+                    f"RealBasis: missing arguments after '--spin-current' in command_line of '{out_path}'"
+                )
+            extra_ops.add(
+                f"J{tokens[i + 1].strip().upper()}S{tokens[i + 2].strip().upper()}"
+            )
+            i += 3
+        elif tok == "--check":
+            if i + 1 < n and tokens[i + 1] in known_checks:
+                i += 2
+            else:
+                i += 1
+        elif tok in zero_arg_opts:
+            if tok == "--exact-spin":
+                extra_ops.update(("SXEXACT", "SYEXACT", "SZEXACT"))
+            elif tok in ("--orbital-l", "--orbital-L"):
+                extra_ops.update(("LX", "LY", "LZ"))
+            i += 1
+        elif tok == "all":
+            want_all = True
+            i += 1
+        elif len(tok) > 1 and tok.startswith("-") and not tok[1].isdigit():
+            raise ValueError(
+                f"RealBasis: unknown option '{tok}' in command_line of '{out_path}'"
+            )
+        else:
+            positional.append(tok)
+            i += 1
+
+    if config_path is not None:
+        cmd_label = positional[0] if positional else None
+        return cmd_label, explicit_seed, None, None, config_path
+
+    if len(positional) < 4:
+        raise ValueError(
+            f"RealBasis: command_line in receipt '{out_path}' is missing positional LABEL N1 N2 N3"
+        )
+    cmd_label = positional[0]
+    try:
+        n1, n2, n3 = int(positional[1]), int(positional[2]), int(positional[3])
+    except ValueError as exc:
+        raise ValueError(
+            f"RealBasis: non-integer supercell dimensions in command_line of '{out_path}'"
+        ) from exc
+    if n1 < 1 or n2 < 1 or n3 < 1:
+        raise ValueError(
+            f"RealBasis: invalid supercell dimensions {(n1, n2, n3)} in command_line of '{out_path}'"
+        )
+    cmd_sc = (n1, n2, n3)
+    pos_ops = (
+        set(_W2S_ALL_OPERATORS)
+        if want_all
+        else {op.strip().upper() for op in positional[4:]}
+    )
+    cmd_ops = {"HAM"} | pos_ops | extra_ops
+    return cmd_label, explicit_seed, cmd_sc, cmd_ops, None
 
 
 def make_anderson_disorder(
@@ -94,12 +261,33 @@ class RealBasis:
         self._csr_dir = csr_dir
         self._use_w2s_csr = bool(use_w2s_csr)
 
-        loaded_ham = self._try_load_w2s_csr("HAM")
-        self._h_csr: _core.SparseMatrix = (
-            loaded_ham
-            if loaded_ham is not None
-            else model.hamiltonian_csr(self.supercell)
-        )
+        self._op_sources: dict[str, str] = {}
+        self._w2s_active_dir: str | None = None
+        self._w2s_receipt_ops: set[str] | None = None
+
+        if self._use_w2s_csr:
+            seed_name = self.model.seed_name
+            if self._csr_dir is not None:
+                ham_candidate = os.path.join(self._csr_dir, f"{seed_name}.HAM.CSR")
+                if not os.path.isfile(ham_candidate):
+                    raise FileNotFoundError(
+                        f"RealBasis: '{ham_candidate}' not found in csr_dir '{self._csr_dir}'"
+                    )
+                self._w2s_active_dir = self._csr_dir
+            elif self.model.model_dir is not None:
+                ham_candidate = os.path.join(
+                    self.model.model_dir, f"{seed_name}.HAM.CSR"
+                )
+                if os.path.isfile(ham_candidate):
+                    self._w2s_active_dir = self.model.model_dir
+
+        if self._w2s_active_dir is not None:
+            self._w2s_receipt_ops = self._validate_w2s_receipt(self._w2s_active_dir)
+            self._h_csr, ham_src = self._load_w2s_csr("HAM")
+            self._op_sources["HAM"] = ham_src
+        else:
+            self._h_csr = model.hamiltonian_csr(self.supercell)
+            self._op_sources["HAM"] = "built by lsquant"
         self._h_op_clean = _core.SparseMatrixOperator(self._h_csr)
 
         if disorder is not None:
@@ -126,42 +314,216 @@ class RealBasis:
         self._vel_csr_cache: dict[str, _core.SparseMatrix] = {}
         self._op_cache: dict[str, _core.LinearOperator] = {}
 
-    def _try_load_w2s_csr(self, op_name: str) -> _core.SparseMatrix | None:
-        """Load ``<seed>.<op_name>.CSR`` written by ``wannier2sparse`` if present and matching ``self.supercell``."""
-        if not self._use_w2s_csr:
-            return None
+    def _validate_w2s_receipt(self, d: str) -> set[str]:
+        """Strictly validate ``<seed>.out`` in ``d`` for label, supercell, and operator list."""
         seed = self.model.seed_name
-        search_dirs: list[str] = []
-        if self._csr_dir is not None:
-            search_dirs.append(self._csr_dir)
-        if self.model.model_dir is not None and self.model.model_dir not in search_dirs:
-            search_dirs.append(self.model.model_dir)
-            ops_sub = os.path.join(self.model.model_dir, "operators")
-            if os.path.isdir(ops_sub) and ops_sub not in search_dirs:
-                search_dirs.append(ops_sub)
+        out_path = os.path.join(d, f"{seed}.out")
+        if not os.path.isfile(out_path):
+            raise FileNotFoundError(
+                f"RealBasis: found '{seed}.HAM.CSR' in '{d}', but wannier2sparse receipt '{out_path}' is missing"
+            )
+        try:
+            with open(out_path, encoding="utf-8") as fh:
+                meta = json.load(fh)
+        except Exception as exc:
+            raise ValueError(
+                f"RealBasis: failed to read wannier2sparse receipt '{out_path}': {exc}"
+            ) from exc
+        if not isinstance(meta, dict):
+            raise ValueError(
+                f"RealBasis: wannier2sparse receipt '{out_path}' must be a JSON object"
+            )
 
-        for d in search_dirs:
-            csr_path = os.path.join(d, f"{seed}.{op_name}.CSR")
-            if not os.path.isfile(csr_path):
-                continue
-            out_path = os.path.join(d, f"{seed}.out")
-            if os.path.isfile(out_path):
+        if "status" in meta and meta["status"] != "success":
+            raise ValueError(
+                f"RealBasis: wannier2sparse receipt '{out_path}' has status {meta['status']!r} (expected 'success')"
+            )
+
+        inv = meta.get("invocation")
+        if inv is not None and not isinstance(inv, dict):
+            raise ValueError(
+                f"RealBasis: wannier2sparse receipt '{out_path}' field 'invocation' must be an object"
+            )
+        inv_dict = inv if isinstance(inv, dict) else {}
+        if "mode" in inv_dict and inv_dict["mode"] != "sparse":
+            raise ValueError(
+                f"RealBasis: wannier2sparse receipt '{out_path}' has mode {inv_dict['mode']!r} (expected 'sparse')"
+            )
+
+        cmd_label: str | None = None
+        cmd_seed: str | None = None
+        cmd_sc: tuple[int, int, int] | None = None
+        cmd_ops: set[str] | None = None
+        if "command_line" in inv_dict and inv_dict["command_line"] is not None:
+            if (
+                not isinstance(inv_dict["command_line"], str)
+                or not inv_dict["command_line"].strip()
+            ):
+                raise ValueError(
+                    f"RealBasis: wannier2sparse receipt '{out_path}' has invalid 'command_line'"
+                )
+            cmd_label, cmd_seed, cmd_sc, cmd_ops, _ = _parse_w2s_command_line(
+                inv_dict["command_line"], out_path
+            )
+
+        labels_found: list[str] = []
+        if "label" in meta:
+            if not isinstance(meta["label"], str) or not meta["label"].strip():
+                raise ValueError(f"RealBasis: receipt '{out_path}' has invalid 'label'")
+            labels_found.append(meta["label"].strip())
+        if "label" in inv_dict:
+            if not isinstance(inv_dict["label"], str) or not inv_dict["label"].strip():
+                raise ValueError(
+                    f"RealBasis: receipt '{out_path}' has invalid invocation 'label'"
+                )
+            labels_found.append(inv_dict["label"].strip())
+        if cmd_label is not None:
+            labels_found.append(cmd_label)
+        if not labels_found:
+            raise ValueError(f"RealBasis: receipt '{out_path}' does not specify a label")
+        for lbl in labels_found:
+            if lbl != seed:
+                raise ValueError(
+                    f"RealBasis: receipt '{out_path}' label {lbl!r} does not match model seed {seed!r}"
+                )
+        if cmd_seed is not None and cmd_seed != seed:
+            raise ValueError(
+                f"RealBasis: receipt '{out_path}' --seed {cmd_seed!r} does not match model seed {seed!r}"
+            )
+
+        supercells_found: list[tuple[int, int, int]] = []
+        for sc_raw in (meta.get("supercell"), inv_dict.get("supercell")):
+            if sc_raw is not None:
+                if not isinstance(sc_raw, (list, tuple)) or len(sc_raw) != 3:
+                    raise ValueError(
+                        f"RealBasis: receipt '{out_path}' has invalid 'supercell' {sc_raw!r}"
+                    )
                 try:
-                    with open(out_path, encoding="utf-8") as fh:
-                        meta = json.load(fh)
-                    sc = meta.get("supercell")
-                    if isinstance(sc, list) and len(sc) == 3:
-                        if (int(sc[0]), int(sc[1]), int(sc[2])) != self.supercell:
-                            continue
-                except Exception:  # noqa: BLE001
-                    pass
-            try:
-                mat = _core.ReadCsrText(csr_path)
-            except Exception:  # noqa: BLE001
-                continue
-            if int(mat.dimension) == self.dimension:
-                return mat
-        return None
+                    sc_tup = (int(sc_raw[0]), int(sc_raw[1]), int(sc_raw[2]))
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(
+                        f"RealBasis: receipt '{out_path}' has non-integer 'supercell' {sc_raw!r}"
+                    ) from exc
+                supercells_found.append(sc_tup)
+        if cmd_sc is not None:
+            supercells_found.append(cmd_sc)
+        if not supercells_found:
+            raise ValueError(
+                f"RealBasis: receipt '{out_path}' does not specify a supercell"
+            )
+        for sc_tup in supercells_found:
+            if sc_tup != self.supercell:
+                raise ValueError(
+                    f"RealBasis: receipt '{out_path}' supercell {sc_tup} does not match requested supercell {self.supercell}"
+                )
+
+        op_sets_found: list[set[str]] = []
+        if "outputs" in meta:
+            outputs_raw = meta["outputs"]
+            if not isinstance(outputs_raw, list) or not outputs_raw:
+                raise ValueError(
+                    f"RealBasis: receipt '{out_path}' field 'outputs' must be a non-empty list"
+                )
+            out_ops: set[str] = set()
+            for entry in outputs_raw:
+                if isinstance(entry, dict):
+                    op_nm = entry.get("name")
+                    if not isinstance(op_nm, str) or not op_nm.strip():
+                        raise ValueError(
+                            f"RealBasis: receipt '{out_path}' has an output entry without a valid 'name'"
+                        )
+                    op_key = op_nm.strip().upper()
+                    op_path = entry.get("path")
+                    if isinstance(op_path, str) and op_path.strip():
+                        expected_base = f"{seed}.{op_key}.CSR"
+                        if os.path.basename(op_path.strip()) != expected_base:
+                            raise ValueError(
+                                f"RealBasis: receipt '{out_path}' output '{op_key}' path '{op_path}' does not match '{expected_base}'"
+                            )
+                    out_ops.add(op_key)
+                elif isinstance(entry, str) and entry.strip():
+                    out_ops.add(entry.strip().upper())
+                else:
+                    raise ValueError(
+                        f"RealBasis: receipt '{out_path}' has invalid entry in 'outputs'"
+                    )
+            op_sets_found.append(out_ops)
+
+        if "operators" in meta:
+            ops_raw = meta["operators"]
+            if not isinstance(ops_raw, list) or not ops_raw:
+                raise ValueError(
+                    f"RealBasis: receipt '{out_path}' field 'operators' must be a non-empty list"
+                )
+            op_list_set: set[str] = set()
+            for item in ops_raw:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError(
+                        f"RealBasis: receipt '{out_path}' has invalid operator name in 'operators'"
+                    )
+                op_list_set.add(item.strip().upper())
+            op_sets_found.append(op_list_set)
+
+        if cmd_ops is not None:
+            op_sets_found.append(cmd_ops)
+
+        if not op_sets_found:
+            raise ValueError(
+                f"RealBasis: receipt '{out_path}' does not specify an operator list"
+            )
+
+        canonical_ops = op_sets_found[0]
+        if "HAM" not in canonical_ops:
+            raise ValueError(
+                f"RealBasis: receipt '{out_path}' operator list {sorted(canonical_ops)} does not include 'HAM'"
+            )
+        for other_ops in op_sets_found[1:]:
+            if other_ops != canonical_ops:
+                raise ValueError(
+                    f"RealBasis: receipt '{out_path}' has inconsistent operator lists: {sorted(canonical_ops)} vs {sorted(other_ops)}"
+                )
+
+        prefix = f"{seed}."
+        suffix = ".CSR"
+        disk_ops: set[str] = set()
+        for fname in os.listdir(d):
+            if fname.startswith(prefix) and fname.endswith(suffix):
+                op_part = fname[len(prefix) : -len(suffix)].strip().upper()
+                if op_part:
+                    disk_ops.add(op_part)
+        if disk_ops != canonical_ops:
+            raise ValueError(
+                f"RealBasis: receipt '{out_path}' operator list {sorted(canonical_ops)} does not match CSR files on disk {sorted(disk_ops)} in '{d}'"
+            )
+        return canonical_ops
+
+    def _load_w2s_csr(self, op_name: str) -> tuple[_core.SparseMatrix, str]:
+        """Load ``<seed>.<op_name>.CSR`` from the validated ``wannier2sparse`` directory and return ``(mat, source_str)``."""
+        assert self._w2s_active_dir is not None
+        assert self._w2s_receipt_ops is not None
+        key = op_name.strip().upper()
+        seed = self.model.seed_name
+        out_path = os.path.join(self._w2s_active_dir, f"{seed}.out")
+        if key not in self._w2s_receipt_ops:
+            raise ValueError(
+                f"RealBasis: operator '{key}' is not in wannier2sparse receipt '{out_path}' (operators: {sorted(self._w2s_receipt_ops)})"
+            )
+        csr_path = os.path.join(self._w2s_active_dir, f"{seed}.{key}.CSR")
+        if not os.path.isfile(csr_path):
+            raise FileNotFoundError(
+                f"RealBasis: CSR file '{csr_path}' listed in receipt '{out_path}' is missing"
+            )
+        h = hashlib.sha256()
+        with open(csr_path, "rb") as fh:
+            while chunk := fh.read(1024 * 1024):
+                h.update(chunk)
+        sha256_hex = h.hexdigest()
+        mat = _core.ReadCsrText(csr_path)
+        if int(mat.dimension) != self.dimension:
+            raise ValueError(
+                f"RealBasis: CSR '{csr_path}' dimension {mat.dimension} does not match expected supercell dimension {self.dimension}"
+            )
+        return mat, f"wannier2sparse {csr_path} {sha256_hex}"
 
     @property
     def hamiltonian_csr(self) -> _core.SparseMatrix:
@@ -173,6 +535,24 @@ class RealBasis:
         """Return the real-space diagonal disorder array if present."""
         return self._disorder_vec
 
+    @property
+    def operator_sources(self) -> dict[str, str]:
+        """Return a copy of the provenance dictionary for all materialised operators."""
+        return dict(self._op_sources)
+
+    def operator_source(self, name: str) -> str:
+        """Return the provenance string (``wannier2sparse <path> <sha256>`` or ``built by lsquant``) for ``name``."""
+        key = name.strip().upper()
+        if key in ("H", "HAM"):
+            return self._op_sources["HAM"]
+        if key in ("1", "I", "ID", "IDENTITY"):
+            return "built by lsquant"
+        if key in ("VX", "VY", "VZ"):
+            if key not in self._op_sources:
+                self.velocity_csr(key)
+            return self._op_sources[key]
+        raise ValueError(f"RealBasis.operator_source: unknown operator '{name}'")
+
     def hamiltonian(self) -> _core.LinearOperator:
         """Return the Hamiltonian :class:`~lsquant._core.LinearOperator` in real space."""
         return self._h_op
@@ -183,12 +563,13 @@ class RealBasis:
         if key not in ("VX", "VY", "VZ"):
             raise ValueError(f"RealBasis.velocity_csr: unsupported velocity '{name}'")
         if key not in self._vel_csr_cache:
-            loaded_vel = self._try_load_w2s_csr(key)
-            self._vel_csr_cache[key] = (
-                loaded_vel
-                if loaded_vel is not None
-                else self.model.velocity_csr(self.supercell, key)
-            )
+            if self._w2s_active_dir is not None:
+                mat, src = self._load_w2s_csr(key)
+                self._vel_csr_cache[key] = mat
+                self._op_sources[key] = src
+            else:
+                self._vel_csr_cache[key] = self.model.velocity_csr(self.supercell, key)
+                self._op_sources[key] = "built by lsquant"
         return self._vel_csr_cache[key]
 
     def operator(self, name: str) -> _core.LinearOperator:
@@ -326,6 +707,22 @@ class BlochBasis:
     def disorder_values(self) -> npt.NDArray[np.complex128] | None:
         """Return the real-space diagonal disorder array if present."""
         return self._disorder_vec
+
+    @property
+    def operator_sources(self) -> dict[str, str]:
+        """Return the provenance dictionary for operators on this Bloch basis."""
+        out = {"HAM": "built by lsquant"}
+        for key in self._op_cache:
+            if key in ("VX", "VY", "VZ"):
+                out[key] = "built by lsquant"
+        return out
+
+    def operator_source(self, name: str) -> str:
+        """Return the provenance string for operator ``name``."""
+        key = name.strip().upper()
+        if key in ("1", "I", "ID", "IDENTITY", "H", "HAM", "VX", "VY", "VZ"):
+            return "built by lsquant"
+        raise ValueError(f"BlochBasis.operator_source: unknown operator '{name}'")
 
     def hamiltonian(self) -> _core.LinearOperator:
         """Return the Hamiltonian :class:`~lsquant._core.LinearOperator` in Bloch space."""
@@ -469,6 +866,22 @@ class EigenBasis:
         self.u_op = _core.BlockDiagonalOperator(self.eigenvectors)
         self.u_dagger_op = _core.BlockDiagonalOperator(self.eigenvectors_dagger)
         self._op_cache: dict[str, _core.LinearOperator] = {}
+
+    @property
+    def operator_sources(self) -> dict[str, str]:
+        """Return the provenance dictionary for operators on this eigenbasis."""
+        out = {"HAM": "built by lsquant"}
+        for key in self._op_cache:
+            if key in ("VX", "VY", "VZ"):
+                out[key] = "built by lsquant"
+        return out
+
+    def operator_source(self, name: str) -> str:
+        """Return the provenance string for operator ``name``."""
+        key = name.strip().upper()
+        if key in ("1", "I", "ID", "IDENTITY", "H", "HAM", "VX", "VY", "VZ"):
+            return "built by lsquant"
+        raise ValueError(f"EigenBasis.operator_source: unknown operator '{name}'")
 
     def hamiltonian(self) -> _core.LinearOperator:
         """Return ``DiagonalOperator(eps)``."""

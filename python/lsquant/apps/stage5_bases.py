@@ -33,6 +33,10 @@ In all three bases, ``stage5_bases`` runs the identical :class:`~lsquant._core.P
 file (``.chebmom1D`` or ``.chebmom2D``), the new ``.chebmom`` file, the curve
 with the legacy filename (``mean<stem>JACKSON.dat`` or
 ``KuboGreenWood_<stem>JACKSON.dat``), and ``<stem>.basis.json`` to ``--out``.
+Output filenames use ``<seed>_<basis>`` as the label part of the legacy stem
+(e.g. ``SpectralOp1graphene_bloch_KPM_M256_stateexact.chebmom1D``) so that the
+three bases written to one directory do not overwrite each other; the legacy
+stem is kept otherwise.
 """
 
 from __future__ import annotations
@@ -285,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
         word_key = args.word.strip().lower()
 
         if word_key == "dos":
+            used_ops = ["HAM"]
             plan = dos_plan(
                 num_moments,
                 int(state_gen.number_of_states),
@@ -303,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
                 mu.number_of_states = basis.dimension
             energies, values = dos_curve(mu, float(args.broadening_meV))
             stem = (
-                f"SpectralOp1{model.seed_name}KPM_M{num_moments}"
+                f"SpectralOp1{model.seed_name}_{args.basis}_KPM_M{num_moments}"
                 f"_state{mu.state_label}"
             )
             legacy_cheb_path = os.path.join(args.out, f"{stem}.chebmom1D")
@@ -313,11 +318,13 @@ def main(argv: list[str] | None = None) -> int:
         elif word_key in ("kuboxx", "kuboxy"):
             op_vx = basis.operator("VX")
             if word_key == "kuboxx":
+                used_ops = ["HAM", "VX"]
                 operators = [op_vx]
                 left_idx, right_idx = 0, 0
                 word_str = "VX delta VX delta"
                 op_tag = "VX-VX"
             else:
+                used_ops = ["HAM", "VX", "VY"]
                 op_vy = basis.operator("VY")
                 operators = [op_vx, op_vy]
                 left_idx, right_idx = 0, 1
@@ -342,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
                 mu.number_of_states = basis.dimension
             energies, values = kubo_greenwood(mu, float(args.broadening_meV))
             stem = (
-                f"NonEqOp{op_tag}{model.seed_name}KPM_M"
+                f"NonEqOp{op_tag}{model.seed_name}_{args.basis}_KPM_M"
                 f"{num_moments}x{num_moments}_state{mu.state_label}"
             )
             legacy_cheb_path = os.path.join(args.out, f"{stem}.chebmom2D")
@@ -371,6 +378,10 @@ def main(argv: list[str] | None = None) -> int:
             "moments": int(num_moments),
             "broadening_meV": float(args.broadening_meV),
             "word": word_key,
+            "operators": {
+                op_name: {"source": basis.operator_source(op_name)}
+                for op_name in used_ops
+            },
         }
         _core.WriteChebmom(cheb_path, mu)
         _core.WriteCurveText(dat_path, energies, values)

@@ -5,28 +5,28 @@
 `git diff --stat origin/handoff/0004-agi -- lsquant python tests` (stage-5 code delta on top of stage 4):
 
 ```text
- lsquant/CMakeLists.txt                           |   4 +-
- lsquant/api/bindings.cpp                         | 145 ++++-
- lsquant/core/algebra/bloch_transform.cpp         | 217 +++++++
- lsquant/core/algebra/bloch_transform.hpp         | 228 +++++++
- lsquant/core/algebra/block_diagonal_operator.cpp | 121 ++++
- lsquant/core/algebra/block_diagonal_operator.hpp | 126 ++++
- lsquant/core/algebra/composite_operators.cpp     |  91 ++-
- lsquant/core/algebra/composite_operators.hpp     | 176 +++++-
- lsquant/core/algebra/state_generator.cpp         |  70 ++-
- lsquant/core/algebra/state_generator.hpp         | 147 +++++
- lsquant/core/chebyshev/rescaled_operator.cpp     |  62 +-
- lsquant/core/chebyshev/rescaled_operator.hpp     |  42 +-
- python/lsquant/__init__.py                       |  10 +-
- python/lsquant/_core.pyi                         |  95 +++
- python/lsquant/apps/stage5_bases.py              | 391 ++++++++++++
- python/lsquant/bases.py                          | 679 +++++++++++++++++++++
- python/lsquant/models/__init__.py                |  33 ++
- python/lsquant/models/wannier.py                 | 633 ++++++++++++++++++++
- python/lsquant/moments.py                        |   2 +-
- python/lsquant/spectral_functions.py             |  19 +
- tests/dev/stage_5_check.py                       | 719 +++++++++++++++++++++++
- 21 files changed, 3967 insertions(+), 43 deletions(-)
+ lsquant/CMakeLists.txt                           |    4 +-
+ lsquant/api/bindings.cpp                         |  145 ++-
+ lsquant/core/algebra/bloch_transform.cpp         |  217 +++++
+ lsquant/core/algebra/bloch_transform.hpp         |  228 +++++
+ lsquant/core/algebra/block_diagonal_operator.cpp |  121 +++
+ lsquant/core/algebra/block_diagonal_operator.hpp |  126 +++
+ lsquant/core/algebra/composite_operators.cpp     |   91 +-
+ lsquant/core/algebra/composite_operators.hpp     |  176 +++-
+ lsquant/core/algebra/state_generator.cpp         |   70 +-
+ lsquant/core/algebra/state_generator.hpp         |  147 +++
+ lsquant/core/chebyshev/rescaled_operator.cpp     |   62 +-
+ lsquant/core/chebyshev/rescaled_operator.hpp     |   42 +-
+ python/lsquant/__init__.py                       |   10 +-
+ python/lsquant/_core.pyi                         |   95 ++
+ python/lsquant/apps/stage5_bases.py              |  402 ++++++++
+ python/lsquant/bases.py                          | 1092 ++++++++++++++++++++++
+ python/lsquant/models/__init__.py                |   33 +
+ python/lsquant/models/wannier.py                 |  633 +++++++++++++
+ python/lsquant/moments.py                        |    2 +-
+ python/lsquant/spectral_functions.py             |   19 +
+ tests/dev/stage_5_check.py                       |  741 +++++++++++++++
+ 21 files changed, 4413 insertions(+), 43 deletions(-)
 ```
 
 Full `git diff --stat main...handoff/0005-agi`:
@@ -164,6 +164,7 @@ Full `git diff --stat main...handoff/0005-agi`:
 [check a] BlochTransform vs dense B (6,4,1) graphene: rel(B x) = 3.563e-15, rel(B^+ x) = 3.221e-15
 [check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 5.648e-17, max|B^+ B x - x| = 5.722e-17
 [check b] (graphene 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (graphene 6x4x1) right-size CSR with wrong receipt raises ValueError: PASS
 [check b] (graphene 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.780e-16
 [check c] (graphene 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.483e-16
 [check b] (haldane 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
@@ -186,63 +187,76 @@ EXIT=0
 ### 3.2 `python -m lsquant.apps.stage5_bases` CLI Suite (`OMP_NUM_THREADS=16`, default `--window eigen`)
 
 ```text
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/real_dos>
-SpectralOp1grapheneKPM_M128_stateexact.chebmom1D
-SpectralOp1grapheneKPM_M128_stateexact.chebmom
-meanSpectralOp1grapheneKPM_M128_stateexactJACKSON.dat
-SpectralOp1grapheneKPM_M128_stateexact.basis.json
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/bloch_dos>
-SpectralOp1grapheneKPM_M128_stateexact.chebmom1D
-SpectralOp1grapheneKPM_M128_stateexact.chebmom
-meanSpectralOp1grapheneKPM_M128_stateexactJACKSON.dat
-SpectralOp1grapheneKPM_M128_stateexact.basis.json
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis eigen --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/eigen_dos>
-SpectralOp1grapheneKPM_M128_stateexact.chebmom1D
-SpectralOp1grapheneKPM_M128_stateexact.chebmom
-meanSpectralOp1grapheneKPM_M128_stateexactJACKSON.dat
-SpectralOp1grapheneKPM_M128_stateexact.basis.json
+Opening File: /tmp/s5_cli_r3_5tx9od8x/graphene/graphene.xyz
+Velocity mode: berry_connection
+Creating the Current matrix J0
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --csr-dir <w2s_csr> --out <out/w0_dos>
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_real_KPM_M128_stateexact.chebmom1D
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_real_KPM_M128_stateexact.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/meanSpectralOp1graphene_real_KPM_M128_stateexactJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_real_KPM_M128_stateexact.basis.json
+  operators in SpectralOp1graphene_real_KPM_M128_stateexact.basis.json: {"HAM": {"source": "wannier2sparse /tmp/s5_cli_r3_5tx9od8x/w2s_graphene_16x16/graphene.HAM.CSR beb91b9064cd91450a2ae4d0593f22213ee00ede582f53a20409b543acb9e692"}}
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/w0_dos>
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_bloch_KPM_M128_stateexact.chebmom1D
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_bloch_KPM_M128_stateexact.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/meanSpectralOp1graphene_bloch_KPM_M128_stateexactJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_bloch_KPM_M128_stateexact.basis.json
+  operators in SpectralOp1graphene_bloch_KPM_M128_stateexact.basis.json: {"HAM": {"source": "built by lsquant"}}
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis eigen --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/w0_dos>
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_eigen_KPM_M128_stateexact.chebmom1D
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_eigen_KPM_M128_stateexact.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/meanSpectralOp1graphene_eigen_KPM_M128_stateexactJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w0_dos/SpectralOp1graphene_eigen_KPM_M128_stateexact.basis.json
+  operators in SpectralOp1graphene_eigen_KPM_M128_stateexact.basis.json: {"HAM": {"source": "built by lsquant"}}
   [dos W=0 real vs bloch] max|d_mu|=7.439e-15, max|d_dat|=0.000e+00
   [dos W=0 real vs eigen] max|d_mu|=7.438e-15, max|d_dat|=0.000e+00
   [dos W=0 bloch vs eigen] max|d_mu|=2.109e-15, max|d_dat|=0.000e+00
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/real_kuboxx>
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom2D
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom
-KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_stateexactJACKSON.dat
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.basis.json
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/bloch_kuboxx>
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom2D
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom
-KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_stateexactJACKSON.dat
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.basis.json
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis eigen --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/eigen_kuboxx>
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom2D
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom
-KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_stateexactJACKSON.dat
-NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --csr-dir <w2s_csr> --out <out/w0_kuboxx>
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexact.chebmom2D
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexact.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexactJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexact.basis.json
+  operators in NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexact.basis.json: {"HAM": {"source": "wannier2sparse /tmp/s5_cli_r3_5tx9od8x/w2s_graphene_16x16/graphene.HAM.CSR beb91b9064cd91450a2ae4d0593f22213ee00ede582f53a20409b543acb9e692"}, "VX": {"source": "wannier2sparse /tmp/s5_cli_r3_5tx9od8x/w2s_graphene_16x16/graphene.VX.CSR 8eeffd788d5afe0a4c78473c7e0cb7da8d37fac5c85daf8c5b1ba5d2a2f13368"}}
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/w0_kuboxx>
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexact.chebmom2D
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexact.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexactJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexact.basis.json
+  operators in NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexact.basis.json: {"HAM": {"source": "built by lsquant"}, "VX": {"source": "built by lsquant"}}
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis eigen --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/w0_kuboxx>
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexact.chebmom2D
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexact.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexactJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w0_kuboxx/NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexact.basis.json
+  operators in NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexact.basis.json: {"HAM": {"source": "built by lsquant"}, "VX": {"source": "built by lsquant"}}
   [kuboxx W=0 real vs bloch] max|d_mu|=4.352e-14, max|d_dat|=0.000e+00
   [kuboxx W=0 real vs eigen] max|d_mu|=4.308e-14, max|d_dat|=0.000e+00
   [kuboxx W=0 bloch vs eigen] max|d_mu|=7.994e-15, max|d_dat|=0.000e+00
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word dos --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_real_dos>
-SpectralOp1grapheneKPM_M128_statedefault.chebmom1D
-SpectralOp1grapheneKPM_M128_statedefault.chebmom
-meanSpectralOp1grapheneKPM_M128_statedefaultJACKSON.dat
-SpectralOp1grapheneKPM_M128_statedefault.basis.json
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word dos --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_bloch_dos>
-SpectralOp1grapheneKPM_M128_statedefault.chebmom1D
-SpectralOp1grapheneKPM_M128_statedefault.chebmom
-meanSpectralOp1grapheneKPM_M128_statedefaultJACKSON.dat
-SpectralOp1grapheneKPM_M128_statedefault.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word dos --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_dos>
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/SpectralOp1graphene_real_KPM_M128_statedefault.chebmom1D
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/SpectralOp1graphene_real_KPM_M128_statedefault.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/meanSpectralOp1graphene_real_KPM_M128_statedefaultJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/SpectralOp1graphene_real_KPM_M128_statedefault.basis.json
+  operators in SpectralOp1graphene_real_KPM_M128_statedefault.basis.json: {"HAM": {"source": "built by lsquant"}}
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word dos --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_dos>
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/SpectralOp1graphene_bloch_KPM_M128_statedefault.chebmom1D
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/SpectralOp1graphene_bloch_KPM_M128_statedefault.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/meanSpectralOp1graphene_bloch_KPM_M128_statedefaultJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w1_dos/SpectralOp1graphene_bloch_KPM_M128_statedefault.basis.json
+  operators in SpectralOp1graphene_bloch_KPM_M128_statedefault.basis.json: {"HAM": {"source": "built by lsquant"}}
   [dos W=1 (disorder-seed=7, state-seed=12345) real vs bloch] max|d_mu|=7.080e-16, max|d_dat|=0.000e+00
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word kuboxx --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_real_kuboxx>
-NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom2D
-NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom
-KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_statedefaultJACKSON.dat
-NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.basis.json
-$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word kuboxx --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_bloch_kuboxx>
-NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom2D
-NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom
-KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_statedefaultJACKSON.dat
-NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word kuboxx --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_kuboxx>
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_statedefault.chebmom2D
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_statedefault.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_real_KPM_M128x128_statedefaultJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_statedefault.basis.json
+  operators in NonEqOpVX-VXgraphene_real_KPM_M128x128_statedefault.basis.json: {"HAM": {"source": "built by lsquant"}, "VX": {"source": "built by lsquant"}}
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word kuboxx --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_kuboxx>
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_statedefault.chebmom2D
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_statedefault.chebmom
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M128x128_statedefaultJACKSON.dat
+/tmp/s5_cli_r3_5tx9od8x/w1_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_statedefault.basis.json
+  operators in NonEqOpVX-VXgraphene_bloch_KPM_M128x128_statedefault.basis.json: {"HAM": {"source": "built by lsquant"}, "VX": {"source": "built by lsquant"}}
   [kuboxx W=1 (disorder-seed=7, state-seed=12345) real vs bloch] max|d_mu|=1.465e-15, max|d_dat|=0.000e+00
 EXIT=0
 ```
