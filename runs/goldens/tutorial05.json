@@ -45,7 +45,8 @@
       2.0
     ],
     "formulas": [
-      "time_correlation"
+      "time_correlation",
+      "dos"
     ],
     "legacy_text_round_trip": true
   },

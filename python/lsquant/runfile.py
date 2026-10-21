@@ -25,6 +25,7 @@ from .reconstruct import (
     time_correlation_curve,
 )
 from .words import compile as compile_word, parse as parse_word
+from .words.catalogue import SHAPE_ALLOWED_FORMULAS
 
 
 ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
@@ -481,22 +482,62 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     if "metric" in raw and raw["metric"] is not None:
         basis_spec["metric"] = dict(raw["metric"])
 
+    raw_rec_obj = (
+        dict(raw["reconstruction"])
+        if isinstance(raw.get("reconstruction"), Mapping)
+        else None
+    )
+    req_formulas_raw = (
+        raw_rec_obj.get("formulas") if raw_rec_obj is not None else None
+    )
+    if req_formulas_raw is not None and not isinstance(
+        req_formulas_raw, (list, tuple)
+    ):
+        raise ValueError("reconstruction.formulas must be a list of strings")
+
+    union_allowed_formulas: set[str] = set()
     for w in words_list:
         parsed_w = parse_word(w)
-        compile_word(
+        comp_base = compile_word(
             parsed_w,
             basis=basis_spec,
             params={
                 "expansion": dict(exp),
                 "time": dict(raw["time"]) if raw.get("time") else None,
                 "metric": dict(raw["metric"]) if raw.get("metric") else None,
-                "reconstruction": (
-                    dict(raw["reconstruction"])
-                    if raw.get("reconstruction")
-                    else None
-                ),
             },
         )
+        w_allowed = SHAPE_ALLOWED_FORMULAS.get(
+            comp_base.match.entry.shape_id, frozenset()
+        )
+        union_allowed_formulas.update(w_allowed)
+        if raw_rec_obj is not None:
+            rec_for_w = dict(raw_rec_obj)
+            if req_formulas_raw is not None:
+                rec_for_w["formulas"] = [
+                    str(f)
+                    for f in req_formulas_raw
+                    if str(f).lower() in w_allowed
+                ]
+            compile_word(
+                parsed_w,
+                basis=basis_spec,
+                params={
+                    "expansion": dict(exp),
+                    "time": dict(raw["time"]) if raw.get("time") else None,
+                    "metric": dict(raw["metric"]) if raw.get("metric") else None,
+                    "reconstruction": rec_for_w,
+                },
+            )
+
+    if req_formulas_raw is not None:
+        for f in req_formulas_raw:
+            if str(f).lower() not in union_allowed_formulas:
+                raise ValueError(
+                    f"Reconstruction formula '{f}' in reconstruction.formulas "
+                    f"does not match any word in {words_list} "
+                    f"(allowed formulas for given word(s): {sorted(union_allowed_formulas)})"
+                )
 
 
 @dataclass
@@ -964,8 +1005,7 @@ def execute_runfile(
             "written_files": written_files,
         }
 
-    # Build list of words to run. If word is VX-VY Kubo-Bastin and "greenwood" is also in
-    # reconstruction.formulas, append the companion longitudinal word Tr[VX delta(E-H) VX delta(E-H)].
+    # Build list of words to run from rf.words (no implicit companion words).
     words_to_run: list[tuple[str, list[str] | None]] = []
     req_formulas = rf.reconstruction.get("formulas")
     for w_str in rf.words:
@@ -977,27 +1017,17 @@ def execute_runfile(
                 "expansion": rf.expansion,
                 "time": rf.time,
                 "metric": rf.metric,
-                "reconstruction": rf.reconstruction,
             },
         )
-        if (
-            comp_preview.match.entry.shape_id == "kubo_bastin"
-            and req_formulas
-            and "greenwood" in [f.lower() for f in req_formulas]
-            and len(comp_preview.match.operators) == 2
-            and comp_preview.match.operators[0].operator_key
-            != comp_preview.match.operators[1].operator_key
-        ):
-            bastin_f = [
-                f for f in req_formulas if f.lower() != "greenwood"
-            ]
-            op_a = comp_preview.match.operators[0].canonical()
-            words_to_run.append((w_str, bastin_f))
-            words_to_run.append(
-                (f"Tr[{op_a} delta(E-H) {op_a} delta(E-H)]", ["greenwood"])
-            )
-        else:
-            words_to_run.append((w_str, req_formulas))
+        allowed_f = SHAPE_ALLOWED_FORMULAS.get(
+            comp_preview.match.entry.shape_id, frozenset()
+        )
+        w_formulas = (
+            [f for f in req_formulas if f.lower() in allowed_f]
+            if req_formulas is not None
+            else None
+        )
+        words_to_run.append((w_str, w_formulas))
 
     moment_files: list[str] = []
     curve_files: list[str] = []

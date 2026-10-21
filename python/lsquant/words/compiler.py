@@ -19,6 +19,7 @@ from ..moments import (
 from .catalogue import (
     CATALOGUE,
     CatalogueMatch,
+    SHAPE_ALLOWED_FORMULAS,
     match_catalogue,
     validate_word_bases,
 )
@@ -684,6 +685,14 @@ def compile(
     raw_formulas = recon_cfg.get("formulas")
     if raw_formulas is not None:
         formulas = tuple(str(f) for f in raw_formulas)
+        allowed_f = SHAPE_ALLOWED_FORMULAS.get(shape_id, frozenset())
+        for f in formulas:
+            if f.lower() not in allowed_f:
+                raise ValueError(
+                    f"Reconstruction formula '{f}' does not match word "
+                    f"'{parsed.canonical()}' (shape '{shape_id}'; allowed formulas: "
+                    f"{sorted(allowed_f)})"
+                )
     else:
         formulas = match.default_formulas
 

@@ -19,6 +19,10 @@
     "tol": 1e-13
   },
   "word": "Tr[VX delta(E-H) VY dG-(E)/dE]",
+  "words": [
+    "Tr[VX delta(E-H) VY dG-(E)/dE]",
+    "Tr[VX delta(E-H) VX delta(E-H)]"
+  ],
   "expansion": {
     "moments": 128,
     "window": [
