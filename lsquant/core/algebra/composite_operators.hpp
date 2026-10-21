@@ -393,8 +393,13 @@ private:
  * using two internal scratch vectors:
  * `t1 = B^+ * x`, `t2 = V * t1`, `y = a * B * t2 + b * y`.
  *
+ * `Multiply` uses per-object mutable scratch buffers (`t1_`, `t2_`) and is not
+ * safe to call concurrently on the same `SandwichOperator` object (the engine
+ * never does).
+ *
  * @warning `B` and `V` must have the same `Dimension()` and must outlive this
- *          `SandwichOperator` instance.
+ *          `SandwichOperator` instance. `Multiply` is not reentrant across
+ *          threads sharing one `SandwichOperator` instance.
  * @par Pitfall
  *      In `SandwichOperator(B, V)`, `B^+` acts on the input ket `x` first, then
  *      `V`, and finally `B` maps back to the output representation.

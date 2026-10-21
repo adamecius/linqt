@@ -2,29 +2,31 @@
 
 ## 1. Files Created / Modified
 
-`git diff --stat origin/handoff/0004-agi...handoff/0005-agi` (stage-5 delta on top of stage 4 + merged `origin/cpp-unified` docs):
+`git diff --stat origin/handoff/0004-agi -- lsquant python tests` (stage-5 code delta on top of stage 4):
 
 ```text
- lsquant/CMakeLists.txt                        |   4 +-
- lsquant/api/bindings.cpp                      | 141 +++++++-
- lsquant/core/algebra/bloch_transform.cpp      | 215 +++++++++++
- lsquant/core/algebra/bloch_transform.hpp      | 227 ++++++++++++
- lsquant/core/algebra/block_diagonal_operator.cpp | 121 +++++++
- lsquant/core/algebra/block_diagonal_operator.hpp | 126 +++++++
- lsquant/core/algebra/composite_operators.cpp  |  91 ++++-
- lsquant/core/algebra/composite_operators.hpp  | 171 ++++++++-
- lsquant/core/algebra/state_generator.cpp      |  62 +++-
- lsquant/core/algebra/state_generator.hpp      | 128 +++++++
- lsquant/core/chebyshev/rescaled_operator.cpp  |  62 +++-
- lsquant/core/chebyshev/rescaled_operator.hpp  |  42 ++-
- python/lsquant/__init__.py                    |   9 +-
- python/lsquant/_core.pyi                      |  95 +++++
- python/lsquant/apps/stage5_bases.py           | 326 +++++++++++++++++
- python/lsquant/bases.py                       | 520 +++++++++++++++++++++++++++
- python/lsquant/models/__init__.py             |  33 ++
- python/lsquant/models/wannier.py              | 576 ++++++++++++++++++++++++++++++
- python/lsquant/moments.py                     |   2 +-
- tests/dev/stage_5_check.py                    | 521 +++++++++++++++++++++++++++
+ lsquant/CMakeLists.txt                           |   4 +-
+ lsquant/api/bindings.cpp                         | 145 ++++-
+ lsquant/core/algebra/bloch_transform.cpp         | 217 +++++++
+ lsquant/core/algebra/bloch_transform.hpp         | 228 +++++++
+ lsquant/core/algebra/block_diagonal_operator.cpp | 121 ++++
+ lsquant/core/algebra/block_diagonal_operator.hpp | 126 ++++
+ lsquant/core/algebra/composite_operators.cpp     |  91 ++-
+ lsquant/core/algebra/composite_operators.hpp     | 176 +++++-
+ lsquant/core/algebra/state_generator.cpp         |  70 ++-
+ lsquant/core/algebra/state_generator.hpp         | 147 +++++
+ lsquant/core/chebyshev/rescaled_operator.cpp     |  62 +-
+ lsquant/core/chebyshev/rescaled_operator.hpp     |  42 +-
+ python/lsquant/__init__.py                       |  10 +-
+ python/lsquant/_core.pyi                         |  95 +++
+ python/lsquant/apps/stage5_bases.py              | 391 ++++++++++++
+ python/lsquant/bases.py                          | 679 +++++++++++++++++++++
+ python/lsquant/models/__init__.py                |  33 ++
+ python/lsquant/models/wannier.py                 | 633 ++++++++++++++++++++
+ python/lsquant/moments.py                        |   2 +-
+ python/lsquant/spectral_functions.py             |  19 +
+ tests/dev/stage_5_check.py                       | 719 +++++++++++++++++++++++
+ 21 files changed, 3967 insertions(+), 43 deletions(-)
 ```
 
 Full `git diff --stat main...handoff/0005-agi`:
@@ -156,68 +158,93 @@ Full `git diff --stat main...handoff/0005-agi`:
 
 ## 3. Verbatim Outputs on TCN
 
-### 3.1 `tests/dev/stage_5_check.py` and `stage5_bases` CLI Suite (default `--window eigen`)
+### 3.1 `tests/dev/stage_5_check.py` (`OMP_NUM_THREADS=16`)
 
 ```text
-[check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 6.206e-17, max|B^+ B x - x| = 5.004e-17
-[check b] (graphene 8x8x1) max_x ||H_k x - B H_csr B^+ x||_inf = 7.109e-16
-[check c] (graphene 8x8x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 7.109e-16
-[check b] (haldane 8x8x1) max_x ||H_k x - B H_csr B^+ x||_inf = 5.496e-16
-[check c] (haldane 8x8x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 6.474e-16
-[check d] Anderson disorder W=1.0 (seed=12345): max|mu_real - mu_bloch| DOS(64) = 4.680e-16, VX-VX(64x64) = 5.761e-14
-[check e] (16,16,1) real vs bloch: DOS max|d_mu|=6.550e-15, max_rel|d_curve|=3.186e-15; KuboXX max|d_mu|=6.182e-13, max|d_curve/N|=2.587e-14, max_rel|d_curve|=7.503e-15
-[check e] (16,16,1) real vs eigen: DOS max|d_mu|=5.884e-15, max_rel|d_curve|=3.144e-15; KuboXX max|d_mu|=5.898e-13, max|d_curve/N|=2.609e-14, max_rel|d_curve|=7.567e-15
-[check e] (16,16,1) bloch vs eigen: DOS max|d_mu|=2.443e-15, max_rel|d_curve|=1.802e-15; KuboXX max|d_mu|=1.777e-13, max|d_curve/N|=8.438e-15, max_rel|d_curve|=2.447e-15
-[check e] Jackson KPM (M=128) vs Gaussian exact-diag: rel_L2(DOS)=2.252e-02, rel_L2(KuboXX)=4.272e-02
+[check a] BlochTransform vs dense B (6,4,1) graphene: rel(B x) = 3.563e-15, rel(B^+ x) = 3.221e-15
+[check a] BlochTransform unitarity (8,8,1) graphene: max|B B^+ x - x| = 5.648e-17, max|B^+ B x - x| = 5.722e-17
+[check b] (graphene 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (graphene 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.780e-16
+[check c] (graphene 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.483e-16
+[check b] (haldane 6x4x1) max|H_real_basis - H_w2s_csr| = 0.000e+00
+[check b] (haldane 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = 4.100e-16
+[check c] (haldane 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = 2.582e-16
+[check c] (haldane 48x48x1) rel ||v_x x - B VX_w2s B^+ x||_inf = 6.990e-16
+[check d] Anderson disorder W=1.0 (seed=12345): max|mu_real - mu_bloch| DOS(64) = 4.719e-16, VX-VX(64x64) = 1.556e-15
+[check e] (16,16,1) real vs bloch: DOS max|d_mu|=7.439e-15, max_rel|d_curve|=2.943e-15; KuboXX max|d_mu|=4.352e-14, max|d_curve/N|=1.399e-14, max_rel|d_curve|=9.851e-15
+[check e] (16,16,1) real vs eigen: DOS max|d_mu|=7.438e-15, max_rel|d_curve|=2.968e-15; KuboXX max|d_mu|=4.308e-14, max|d_curve/N|=1.343e-14, max_rel|d_curve|=9.457e-15
+[check e] (16,16,1) bloch vs eigen: DOS max|d_mu|=2.109e-15, max_rel|d_curve|=9.730e-16; KuboXX max|d_mu|=7.994e-15, max|d_curve/N|=1.278e-15, max_rel|d_curve|=9.001e-16
+[check e] Jackson KPM (M=128) vs Gaussian exact-diag: rel_L2(DOS)=1.150e-02, rel_L2(KuboXX)=4.129e-02
+[check e] (graphene 12x12x1) EigenBasis.exact_dos/exact_sigma_xx vs hr_exactdiag (Gamma mesh): rel_dos=1.822e-15, rel_sigma_xx=2.758e-15
 [check f] G1 chain1d DOS byte-identical to golden: PASS
 [check f] G4 graphene Kubo byte-identical to golden: PASS
 [check f] G7 chain1d_mag spin precession byte-identical to golden: PASS
 stage_5_check: ALL CHECKS PASSED
-EXIT_SELF_CHECK:0
-=== CLI clean real dos ===
-/tmp/s5_cli_test/clean_real_dos/SpectralOp1graphene_real_KPM_M128_stateexact.chebmom
-/tmp/s5_cli_test/clean_real_dos/mean_SpectralOp1graphene_real_KPM_M128_stateexactJACKSON.dat
-=== CLI clean real kuboxx ===
-/tmp/s5_cli_test/clean_real_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexact.chebmom
-/tmp/s5_cli_test/clean_real_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_real_KPM_M128x128_stateexactJACKSON.dat
-=== CLI clean bloch dos ===
-/tmp/s5_cli_test/clean_bloch_dos/SpectralOp1graphene_bloch_KPM_M128_stateexact.chebmom
-/tmp/s5_cli_test/clean_bloch_dos/mean_SpectralOp1graphene_bloch_KPM_M128_stateexactJACKSON.dat
-=== CLI clean bloch kuboxx ===
-/tmp/s5_cli_test/clean_bloch_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexact.chebmom
-/tmp/s5_cli_test/clean_bloch_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M128x128_stateexactJACKSON.dat
-=== CLI clean eigen dos ===
-/tmp/s5_cli_test/clean_eigen_dos/SpectralOp1graphene_eigen_KPM_M128_stateexact.chebmom
-/tmp/s5_cli_test/clean_eigen_dos/mean_SpectralOp1graphene_eigen_KPM_M128_stateexactJACKSON.dat
-=== CLI clean eigen kuboxx ===
-/tmp/s5_cli_test/clean_eigen_kuboxx/NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexact.chebmom
-/tmp/s5_cli_test/clean_eigen_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_eigen_KPM_M128x128_stateexactJACKSON.dat
-=== CLI disordered W=1.0 real dos ===
-/tmp/s5_cli_test/dis_real_dos/SpectralOp1graphene_real_KPM_M64_statedefault.chebmom
-/tmp/s5_cli_test/dis_real_dos/mean_SpectralOp1graphene_real_KPM_M64_statedefaultJACKSON.dat
-=== CLI disordered W=1.0 real kuboxx ===
-/tmp/s5_cli_test/dis_real_kuboxx/NonEqOpVX-VXgraphene_real_KPM_M64x64_statedefault.chebmom
-/tmp/s5_cli_test/dis_real_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_real_KPM_M64x64_statedefaultJACKSON.dat
-=== CLI disordered W=1.0 bloch dos ===
-/tmp/s5_cli_test/dis_bloch_dos/SpectralOp1graphene_bloch_KPM_M64_statedefault.chebmom
-/tmp/s5_cli_test/dis_bloch_dos/mean_SpectralOp1graphene_bloch_KPM_M64_statedefaultJACKSON.dat
-=== CLI disordered W=1.0 bloch kuboxx ===
-/tmp/s5_cli_test/dis_bloch_kuboxx/NonEqOpVX-VXgraphene_bloch_KPM_M64x64_statedefault.chebmom
-/tmp/s5_cli_test/dis_bloch_kuboxx/KuboGreenWood_NonEqOpVX-VXgraphene_bloch_KPM_M64x64_statedefaultJACKSON.dat
---- GOLDEN_DIFF CLEAN REAL vs BLOCH vs EIGEN ---
-first-diff line 13 col 1, new=-1.0740740740740722 golden=-1.0740740740740751; max abs diff 6.550e-15 at line 67 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
-no line differs (difference is in line endings or trailing bytes)
-first-diff line 13 col 2, new=-4.2356979628604462e-18 golden=0; max abs diff 2.442e-15 at line 137 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
-no line differs (difference is in line endings or trailing bytes)
-first-diff line 11 col 1, new=22.058081999999722 golden=22.058081999999978; max abs diff 6.182e-13 at line 7235 col 1; max rel diff 1.000e+00 at line 13 col 2; DEFECT level (>= 1e-12)
-first-diff line 1 col 2, new=1.24915e-06 golden=1.24914e-06; max abs diff 1.000e-11 at line 3 col 2; max rel diff 8.005e-06 at line 1 col 2; DEFECT level (>= 1e-12)
-first-diff line 11 col 1, new=22.058081999999978 golden=22.058081999999985; max abs diff 1.776e-13 at line 649 col 1; max rel diff 1.000e+00 at line 3703 col 2; DEFECT level (>= 1e-12)
-first-diff line 127 col 2, new=2.79419e-06 golden=2.7942e-06; max abs diff 1.000e-11 at line 127 col 2; max rel diff 3.579e-06 at line 127 col 2; DEFECT level (>= 1e-12)
---- GOLDEN_DIFF DISORDERED REAL vs BLOCH (W=1.0, seed=12345) ---
-first-diff line 11 col 1, new=1 golden=0.99999999999999978; max abs diff 4.441e-16 at line 64 col 1; max rel diff 1.949e+00 at line 18 col 2; DEFECT level (>= 1e-12)
-no line differs (difference is in line endings or trailing bytes)
-first-diff line 12 col 1, new=-1.1854778242125124 golden=-1.1854778242125126; max abs diff 6.395e-14 at line 3005 col 1; max rel diff 3.255e-11 at line 69 col 2; DEFECT level (>= 1e-12)
-no line differs (difference is in line endings or trailing bytes)
+EXIT=0
+```
+
+### 3.2 `python -m lsquant.apps.stage5_bases` CLI Suite (`OMP_NUM_THREADS=16`, default `--window eigen`)
+
+```text
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/real_dos>
+SpectralOp1grapheneKPM_M128_stateexact.chebmom1D
+SpectralOp1grapheneKPM_M128_stateexact.chebmom
+meanSpectralOp1grapheneKPM_M128_stateexactJACKSON.dat
+SpectralOp1grapheneKPM_M128_stateexact.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/bloch_dos>
+SpectralOp1grapheneKPM_M128_stateexact.chebmom1D
+SpectralOp1grapheneKPM_M128_stateexact.chebmom
+meanSpectralOp1grapheneKPM_M128_stateexactJACKSON.dat
+SpectralOp1grapheneKPM_M128_stateexact.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis eigen --supercell 16 16 1 --word dos --moments 128 --trace exact --broadening-meV 200 --out <out/eigen_dos>
+SpectralOp1grapheneKPM_M128_stateexact.chebmom1D
+SpectralOp1grapheneKPM_M128_stateexact.chebmom
+meanSpectralOp1grapheneKPM_M128_stateexactJACKSON.dat
+SpectralOp1grapheneKPM_M128_stateexact.basis.json
+  [dos W=0 real vs bloch] max|d_mu|=7.439e-15, max|d_dat|=0.000e+00
+  [dos W=0 real vs eigen] max|d_mu|=7.438e-15, max|d_dat|=0.000e+00
+  [dos W=0 bloch vs eigen] max|d_mu|=2.109e-15, max|d_dat|=0.000e+00
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/real_kuboxx>
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom2D
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom
+KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_stateexactJACKSON.dat
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/bloch_kuboxx>
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom2D
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom
+KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_stateexactJACKSON.dat
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis eigen --supercell 16 16 1 --word kuboxx --moments 128 --trace exact --broadening-meV 200 --out <out/eigen_kuboxx>
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom2D
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.chebmom
+KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_stateexactJACKSON.dat
+NonEqOpVX-VXgrapheneKPM_M128x128_stateexact.basis.json
+  [kuboxx W=0 real vs bloch] max|d_mu|=4.352e-14, max|d_dat|=0.000e+00
+  [kuboxx W=0 real vs eigen] max|d_mu|=4.308e-14, max|d_dat|=0.000e+00
+  [kuboxx W=0 bloch vs eigen] max|d_mu|=7.994e-15, max|d_dat|=0.000e+00
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word dos --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_real_dos>
+SpectralOp1grapheneKPM_M128_statedefault.chebmom1D
+SpectralOp1grapheneKPM_M128_statedefault.chebmom
+meanSpectralOp1grapheneKPM_M128_statedefaultJACKSON.dat
+SpectralOp1grapheneKPM_M128_statedefault.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word dos --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_bloch_dos>
+SpectralOp1grapheneKPM_M128_statedefault.chebmom1D
+SpectralOp1grapheneKPM_M128_statedefault.chebmom
+meanSpectralOp1grapheneKPM_M128_statedefaultJACKSON.dat
+SpectralOp1grapheneKPM_M128_statedefault.basis.json
+  [dos W=1 (disorder-seed=7, state-seed=12345) real vs bloch] max|d_mu|=7.080e-16, max|d_dat|=0.000e+00
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis real --supercell 16 16 1 --word kuboxx --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_real_kuboxx>
+NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom2D
+NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom
+KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_statedefaultJACKSON.dat
+NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.basis.json
+$ python -m lsquant.apps.stage5_bases --model <graphene> --seed graphene --basis bloch --supercell 16 16 1 --word kuboxx --moments 128 --trace random --states 8 --seed 12345 --disorder 1.0 --disorder-seed 7 --broadening-meV 200 --out <out/w1_bloch_kuboxx>
+NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom2D
+NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.chebmom
+KuboGreenWood_NonEqOpVX-VXgrapheneKPM_M128x128_statedefaultJACKSON.dat
+NonEqOpVX-VXgrapheneKPM_M128x128_statedefault.basis.json
+  [kuboxx W=1 (disorder-seed=7, state-seed=12345) real vs bloch] max|d_mu|=1.465e-15, max|d_dat|=0.000e+00
+EXIT=0
 ```
 
 ---
@@ -225,12 +252,24 @@ no line differs (difference is in line endings or trailing bytes)
 ## 4. Deviations from the Brief
 
 1. **`TransformedStates(transform, inner)` in `lsquant/core/algebra/state_generator.hpp`**:
-   Added `TransformedStates` alongside `BlockLocalStates` so that when `BlochBasis.states("random", num_states, seed)` (or `EigenBasis.states("random", ...)`) is requested, it applies $B$ (`RealToBloch`) to `RandomPhaseStates(dim, num_states, seed)`. Since $B$ is unitary, $|r_k\rangle = B |r_R\rangle$ is a properly normalised isotropic random state in Bloch space and represents the **exact same physical state vector** as $|r_R\rangle$ in real space, allowing finite-sample stochastic traces in `RealBasis` and `BlochBasis` (at both $W = 0$ and $W > 0$) to match to $\sim 10^{-14}$ for any number of states $R$.
+   Added `TransformedStates` alongside `BlockLocalStates` so that when `BlochBasis.states("random", num_states, seed)` (or `EigenBasis.states("random", ...)`) is requested, it applies $B$ (`RealToBloch`) to `RandomPhaseStates(dim, num_states, seed)`. Since $B$ is unitary, $|r_k\rangle = B |r_R\rangle$ is a properly normalised isotropic random state in Bloch space and represents the **exact same physical state vector** as $|r_R\rangle$ in real space, allowing finite-sample stochastic traces in `RealBasis` and `BlochBasis` (at both $W = 0$ and $W > 0$) to match to $\sim 10^{-15}$ for any number of states $R$.
 2. **`--seed` argument handling in `python/lsquant/apps/stage5_bases.py`**:
-   The CLI example in Section 4 of the brief passes both `--seed graphene` (model seed prefix) and `--seed 12345` (PRNG integer seed) on the same command line. `stage5_bases.py` accepts `--seed` with `action="append"` (plus optional `--label` and `--rng-seed`) and automatically disambiguates model prefix strings from integer RNG seeds so both single-`--seed` and dual-`--seed` invocations work seamlessly.
+   The CLI example in Section 6 of the brief passes both `--seed graphene` (model seed prefix) and `--seed 12345` (PRNG integer seed) on the same command line. `stage5_bases.py` accepts `--seed` with `action="append"` (plus optional `--label` and `--rng-seed`) and disambiguates integer state seeds from model prefix strings (unless a `<tok>_hr.dat` file literally exists for that token) so both single-`--seed` and dual-`--seed` invocations work seamlessly.
 
 ---
 
-## 5. Open Questions for Fable
+## 5. Known Limitations and Resolved Defect Notes
 
-None. All checks (a)–(f) and the three-basis `stage5_bases` runs pass within machine precision.
+1. **Conflict with the first `brief.md` on the sign of $B$ and cell numbering (D3, resolved in `brief.md` Section 3 and Review 2 Item 1)**:
+   - The first version of `brief.md` wrote $B_{(k,\alpha),(R,\beta)} = \delta_{\alpha\beta} N_k^{-1/2} \exp(+i \mathbf{k} \cdot (\mathbf{R} + \boldsymbol{\tau}_\alpha))$ (`FFTW_BACKWARD` for `RealToBloch`) and C row-major cell index $i_R = n_1 N_2 N_3 + n_2 N_3 + n_3$.
+   - Because `wannier2sparse` builds $(H_{\text{CSR}})_{(R,\alpha),(R+dR,\beta)} = H_{\alpha\beta}(dR)$ with $n_1$-fastest cell index $i_R = n_1 + N_1 n_2 + N_1 N_2 n_3$, satisfying $B H_{\text{CSR}} B^\dagger = H(k)$ requires $B_{(k,\alpha),(R,\beta)} = \delta_{\alpha\beta} N_k^{-1/2} \exp(-i \mathbf{k} \cdot (\mathbf{R} + \boldsymbol{\tau}_\alpha))$ (`FFTW_FORWARD` on FFTW dimension array `{N_3, N_2, N_1}`) and $i_R = n_1 + N_1 n_2 + N_1 N_2 n_3$ (`n_1` fastest) everywhere. Both are now aligned with `wannier2sparse` and the corrected `brief.md` Section 3, and `RealBasis` loads `<seed>.HAM.CSR` and `<seed>.VX.CSR` written by `wannier2sparse` when present (or builds an identical CSR in Python otherwise).
+2. **`read_hr` sparse vs. dense `_hr.dat` files (D1, resolved in Review 2 Item 2)**:
+   - `read_hr` now parses `R_1 R_2 R_3 i j re im` hopping lines by content, assigning `ndegen[ir]` in the order of first appearance of each `R` (matching `wannier2sparse` and `hr_exactdiag.py`), so both sparse hand-written/`gen_models.py` files and dense Wannier90 files are supported. If a file lists fewer distinct `R` vectors than `nrpts` in the header (e.g. a vector whose entire $W \times W$ block is omitted), only the appearing `R` vectors are stored; duplicate `(R, i, j)` lines overwrite earlier ones in file order.
+3. **`read_xyz` single-header vs. two-header `.xyz` files (D2, resolved in Review 2 Item 3)**:
+   - `read_xyz` now accepts both `wannier2sparse`'s single-header format (orbital count line followed immediately by `<label> <x> <y> <z>` lines, no comment line) and the standard two-header XYZ format (orbital count line, comment line, orbital lines). Note that `wannier2sparse`'s own C++ reader (`read_xyz_file`) requires the single-header format without a comment line.
+4. **Thread-safety of `BlochTransform` and `SandwichOperator` (Review 2 Item 6)**:
+   - Each `BlochTransform` instance owns a single FFTW workspace (`inBuffer_`, `outBuffer_`, `plan_`), and each `SandwichOperator` instance owns mutable scratch vectors (`t1_`, `t2_`). Concurrent calls to `Multiply` on the *same* `BlochTransform` or `SandwichOperator` instance from multiple threads are therefore not thread-safe. This is safe in `MomentEngine`, which calls `Multiply` sequentially per state and parallelises with OpenMP only *inside* a single `Multiply` call.
+5. **`EigenBasis` scope (`W = 0` only)**:
+   - `EigenBasis` diagonalises the $N_k$ decoupled $W \times W$ blocks $H(k)$ of a translationally invariant crystal (`disorder_w == 0`). For non-zero real-space disorder (`disorder_w > 0`), $k$-blocks are coupled across the full $(N_k W) \times (N_k W)$ supercell and `EigenBasis` raises `ValueError`.
+6. **Comparison with `wannier2sparse/tools/hr_exactdiag.py` (`EigenBasis.exact_dos` and `exact_sigma_xx`, Review 2 Item 4)**:
+   - `hr_exactdiag.py` uses a half-step shifted mesh $k_i = (n_i + 1/2)/N_i$ by default (whereas the periodic $N_1 \times N_2 \times N_3$ supercell has the $\Gamma$-centred mesh $k_i = n_i / N_i$), and its `cmd_sigma` uses $A_{\text{hr}} = |a_{1x} a_{2y}|$ (half the honeycomb unit-cell area for `gen_models.py` graphene/Haldane) with prefactor $(2\pi^2 / A_{\text{hr}}) / N_k$. `EigenBasis.exact_sigma_xx` uses the stage-3 `kubo_greenwood` normalisation $\pi \sum_{k,n,m} |v_{x,nm}(k)|^2 g(E-\varepsilon_n) g(E-\varepsilon_m)$, so multiplying `exact_sigma_xx` by $2\pi / (A_{\text{hr}} N_k)$ matches `hr_exactdiag.py` evaluated on the same $\Gamma$-centred mesh to $\sim 2.8 \times 10^{-15}$.
