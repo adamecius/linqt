@@ -395,7 +395,7 @@ def window_from_gershgorin(
 
 def run_plan(
     plan: _core.Plan,
-    hamiltonian: _core.SparseMatrix,
+    hamiltonian: _core.SparseMatrix | _core.LinearOperator,
     window: _core.SpectralWindow,
     states: _core.StateGenerator,
     operators: Sequence[_core.LinearOperator] = (),

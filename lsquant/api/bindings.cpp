@@ -20,6 +20,8 @@
 #include <vector>
 
 #include "compat/legacy_kernels.hpp"
+#include "core/algebra/bloch_transform.hpp"
+#include "core/algebra/block_diagonal_operator.hpp"
 #include "core/algebra/composite_operators.hpp"
 #include "core/algebra/linear_operator.hpp"
 #include "core/algebra/sparse_matrix.hpp"
@@ -164,13 +166,141 @@ PYBIND11_MODULE(_core, m) {
   py::class_<LinearOperator>(m, "LinearOperator")
       .def_property_readonly("dimension", &LinearOperator::Dimension)
       .def_property_readonly("is_identity", &LinearOperator::IsIdentity)
-      .def_property_readonly("is_hermitian", &LinearOperator::IsHermitian);
+      .def_property_readonly("is_hermitian", &LinearOperator::IsHermitian)
+      .def(
+          "multiply",
+          [](const LinearOperator& op,
+             const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& x) {
+            if (x.ndim() != 1) {
+              throw std::invalid_argument("LinearOperator.multiply: x must be a 1D complex128 array");
+            }
+            const Index dim = op.Dimension();
+            if (static_cast<Index>(x.size()) != dim) {
+              throw std::invalid_argument("LinearOperator.multiply: x dimension mismatch");
+            }
+            Vector xVec(x.data(), x.data() + x.size());
+            Vector yVec(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+            op.Multiply(Scalar(1.0, 0.0), xVec, Scalar(0.0, 0.0), yVec);
+            py::array_t<Scalar> out(static_cast<py::ssize_t>(dim));
+            if (dim > 0) {
+              std::copy(yVec.begin(), yVec.end(), out.mutable_data());
+            }
+            return out;
+          },
+          py::arg("x"))
+      .def(
+          "multiply",
+          [](const LinearOperator& op, Scalar a,
+             const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& x, Scalar b,
+             py::array_t<Scalar, py::array::c_style>& y) {
+            if (x.ndim() != 1 || y.ndim() != 1) {
+              throw std::invalid_argument(
+                  "LinearOperator.multiply: x and y must be 1D complex128 arrays");
+            }
+            const Index dim = op.Dimension();
+            if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
+              throw std::invalid_argument("LinearOperator.multiply: vector dimension mismatch");
+            }
+            Vector xVec(x.data(), x.data() + x.size());
+            Vector yVec(y.data(), y.data() + y.size());
+            op.Multiply(a, xVec, b, yVec);
+            if (dim > 0) {
+              std::copy(yVec.begin(), yVec.end(), y.mutable_data());
+            }
+          },
+          py::arg("a"), py::arg("x"), py::arg("b"), py::arg("y"));
 
   py::class_<SparseMatrixOperator, LinearOperator>(m, "SparseMatrixOperator")
       .def(py::init<const SparseMatrix&>(), py::arg("matrix"), py::keep_alive<1, 2>());
 
   py::class_<IdentityOperator, LinearOperator>(m, "IdentityOperator")
       .def(py::init<Index>(), py::arg("dim"));
+
+  py::class_<DiagonalOperator, LinearOperator>(m, "DiagonalOperator")
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& vals) {
+             if (vals.ndim() != 1) {
+               throw std::invalid_argument(
+                   "DiagonalOperator: values must be a 1D complex128/float64 array");
+             }
+             return DiagonalOperator(std::vector<Scalar>(vals.data(), vals.data() + vals.size()));
+           }),
+           py::arg("values"))
+      .def(py::init<std::vector<Scalar>>(), py::arg("values"))
+      .def("adjoint", &DiagonalOperator::Adjoint);
+
+  py::class_<ScaledOperator, LinearOperator>(m, "ScaledOperator")
+      .def(py::init<Scalar, const LinearOperator&>(), py::arg("alpha"), py::arg("op"),
+           py::keep_alive<1, 3>());
+
+  py::class_<OperatorSum, LinearOperator>(m, "OperatorSum")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("first"),
+           py::arg("second"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<OperatorProduct, LinearOperator>(m, "OperatorProduct")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("first"),
+           py::arg("second"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<AdjointOperator, LinearOperator>(m, "AdjointOperator")
+      .def(py::init<const LinearOperator&>(), py::arg("op"), py::keep_alive<1, 2>())
+      .def(py::init<const SparseMatrix&>(), py::arg("matrix"));
+
+  py::class_<SandwichOperator, LinearOperator>(m, "SandwichOperator")
+      .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("B"), py::arg("V"),
+           py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
+
+  py::class_<BlockDiagonalOperator, LinearOperator>(m, "BlockDiagonalOperator")
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& arr) {
+             if (arr.ndim() != 3 || arr.shape(1) != arr.shape(2)) {
+               throw std::invalid_argument(
+                   "BlockDiagonalOperator: blocks array must have shape (N_k, W, W)");
+             }
+             const Index nk = static_cast<Index>(arr.shape(0));
+             const Index w = static_cast<Index>(arr.shape(1));
+             std::vector<Scalar> vec(arr.data(), arr.data() + arr.size());
+             return BlockDiagonalOperator(nk, w, std::move(vec));
+           }),
+           py::arg("blocks"))
+      .def(py::init([](Index numBlocks, Index blockSize,
+                       const py::array_t<Scalar, py::array::c_style | py::array::forcecast>& arr) {
+             std::vector<Scalar> vec(arr.data(), arr.data() + arr.size());
+             return BlockDiagonalOperator(numBlocks, blockSize, std::move(vec));
+           }),
+           py::arg("num_blocks"), py::arg("block_size"), py::arg("blocks"))
+      .def(py::init<Index, Index, std::vector<Scalar>>(), py::arg("num_blocks"),
+           py::arg("block_size"), py::arg("blocks"))
+      .def_property_readonly("num_blocks", &BlockDiagonalOperator::NumBlocks)
+      .def_property_readonly("block_size", &BlockDiagonalOperator::BlockSize)
+      .def("adjoint", &BlockDiagonalOperator::Adjoint);
+
+  py::enum_<BlochDirection>(m, "BlochDirection")
+      .value("RealToBloch", BlochDirection::RealToBloch)
+      .value("BlochToReal", BlochDirection::BlochToReal);
+
+  py::class_<BlochTransform, LinearOperator>(m, "BlochTransform")
+      .def(py::init([](Index n1, Index n2, Index n3, Index numOrbitals,
+                       py::object atomPhasesObj, BlochDirection direction) {
+             std::vector<Scalar> phases;
+             if (!atomPhasesObj.is_none()) {
+               auto arr = py::array_t<Scalar, py::array::c_style | py::array::forcecast>::ensure(
+                   atomPhasesObj);
+               if (!arr) {
+                 throw std::invalid_argument(
+                     "BlochTransform: atom_phases must be a complex128 array");
+               }
+               phases.assign(arr.data(), arr.data() + arr.size());
+             }
+             return BlochTransform(n1, n2, n3, numOrbitals, std::move(phases), direction);
+           }),
+           py::arg("n1"), py::arg("n2"), py::arg("n3"), py::arg("num_orbitals"),
+           py::arg("atom_phases") = py::none(),
+           py::arg("direction") = BlochDirection::RealToBloch)
+      .def_property_readonly("n1", &BlochTransform::N1)
+      .def_property_readonly("n2", &BlochTransform::N2)
+      .def_property_readonly("n3", &BlochTransform::N3)
+      .def_property_readonly("num_cells", &BlochTransform::NumCells)
+      .def_property_readonly("num_orbitals", &BlochTransform::NumOrbitals)
+      .def_property_readonly("direction", &BlochTransform::GetDirection)
+      .def("adjoint", &BlochTransform::Adjoint);
 
   py::class_<StateGenerator>(m, "StateGenerator")
       .def_property_readonly("dimension", &StateGenerator::Dimension)
@@ -192,6 +322,13 @@ PYBIND11_MODULE(_core, m) {
            }),
            py::arg("dim"), py::arg("sites"))
       .def(py::init<Index, std::vector<Index>>(), py::arg("dim"), py::arg("sites"));
+
+  py::class_<BlockLocalStates, StateGenerator>(m, "BlockLocalStates")
+      .def(py::init<Index, Index>(), py::arg("num_blocks"), py::arg("block_size"));
+
+  py::class_<TransformedStates, StateGenerator>(m, "TransformedStates")
+      .def(py::init<const LinearOperator&, StateGenerator&>(), py::arg("transform"),
+           py::arg("inner"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
 
   py::class_<UserStates, StateGenerator>(m, "UserStates")
       .def(py::init([](const std::vector<py::array_t<Scalar, py::array::c_style>>& arrays) {
@@ -229,6 +366,8 @@ PYBIND11_MODULE(_core, m) {
 
   py::class_<RescaledOperator, LinearOperator>(m, "RescaledOperator")
       .def(py::init<const SparseMatrix&, const SpectralWindow&>(), py::arg("matrix"),
+           py::arg("window"), py::keep_alive<1, 2>())
+      .def(py::init<const LinearOperator&, const SpectralWindow&>(), py::arg("operator"),
            py::arg("window"), py::keep_alive<1, 2>())
       .def_property_readonly("window", &RescaledOperator::Window);
 
