@@ -2,24 +2,21 @@
 lsqtransport.py -- charge transport on the 2D square Anderson lattice.
 
 For each disorder strength W it builds the model, runs the KPM mean-square
-displacement, and reconstructs DeltaX^2(E,t) at the working energy E. From those
-it forms the running diffusion coefficient D(E,t) = DeltaX^2/(2t), the
-semiclassical maximum D_max = max_t D, the KPM density of states rho(E), the
-Einstein conductivity sigma = e^2 rho D_max, and the mean free path
-ell = 2 D_max / v_F. It writes two figures:
+displacement word `Tr[[X, U(t)]^+ delta(E-H) [X, U(t)]]` and DOS word
+`Tr[delta(E-H)]` via `lsquant.runfile.execute_runfile`, and reconstructs
+DeltaX^2(E,t) at the working energy E. From those it forms the running diffusion
+coefficient D(E,t) = DeltaX^2/(2t), the semiclassical maximum D_max = max_t D,
+the KPM density of states rho(E), the Einstein conductivity sigma = e^2 rho D_max,
+and the mean free path ell = 2 D_max / v_F. It writes two figures:
 
   fig_diffusion.png  -- D(E,t) for every W (ballistic -> diffusive -> localized)
   fig_transport.png  -- sigma(W) and ell(W)
 
 Everything is toy-scale and illustrative, not converged production numbers.
-The lsquant / inline binaries are found on PATH or under $LSQUANT_BIN.
 """
 import os
 import sys
 import glob
-import json
-import subprocess
-from shutil import which
 
 import numpy as np
 import matplotlib
@@ -29,8 +26,18 @@ import matplotlib.pyplot as plt
 import make_square
 
 # Shared publication (APS/PRL) plot style: examples/prl_style.py.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_EX_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT = os.path.dirname(_EX_DIR)
+for _p in (
+    _EX_DIR,
+    os.path.join(_REPO_ROOT, "python"),
+    os.path.join(_REPO_ROOT, "build", "lsquant_core"),
+    os.path.join(_REPO_ROOT, "build"),
+):
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
 import prl_style as prl
+from lsquant.runfile import execute_runfile
 
 L = 200                       # linear lattice size (L*L sites)
 E = 2.0                       # working energy (away from E=0 van Hove and band edges)
@@ -40,27 +47,49 @@ ETA_MEV = 80                  # reconstruction broadening
 SEED = "1"
 
 
-def _bin(name):
-    bindir = os.environ.get("LSQUANT_BIN")
-    if bindir and os.path.exists(os.path.join(bindir, name)):
-        return os.path.join(bindir, name)
-    return which(name) or name
-
-
-def _run(argv):
-    env = dict(os.environ, KPM_SEED=SEED)
-    subprocess.run(argv, check=True, env=env,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+def _read_bounds():
+    with open("BOUNDS", encoding="utf-8") as fh:
+        b_lo, b_hi = (float(x) for x in fh.readline().split()[:2])
+    return [b_lo, b_hi]
 
 
 def diffusion(label):
-    """Run the MSD (via `lsquant compute`, mode msd), reconstruct DeltaX^2(E,t)."""
-    with open("msd.json", "w") as f:
-        json.dump({"mode": "msd", "label": label, "operator": "VX",
-                   "num_moments": M, "num_times": NTIME, "tmax": TMAX}, f)
-    _run([_bin("lsquant"), "compute", "--config", "msd.json"])
-    mom = sorted(glob.glob("Correlation*%s*chebmomTD" % label))[-1]
-    _run([_bin("inline_timeCorrelationsFromChebmom"), mom, str(ETA_MEV), str(E)])
+    """Run the MSD word via `execute_runfile`, reconstruct DeltaX^2(E,t)."""
+    execute_runfile(
+        {
+            "model": {
+                "kind": "csr",
+                "dir": os.path.abspath("operators"),
+                "label": label,
+                "operators": ["VX"],
+            },
+            "word": "Tr[[X, U(t)]^+ delta(E-H) [X, U(t)]]",
+            "expansion": {
+                "moments": M,
+                "window": _read_bounds(),
+                "trace": "random_phase",
+                "states": 1,
+                "seed": int(SEED),
+            },
+            "time": {
+                "steps": NTIME,
+                "tmax": TMAX,
+                "bessel": "legacy",
+            },
+            "reconstruction": {
+                "kernel": "jackson",
+                "broadening_meV": ETA_MEV,
+                "fermi_energies": [E],
+                "formulas": ["time_correlation"],
+                "legacy_text_round_trip": True,
+            },
+            "output": {
+                "dir": os.path.abspath("."),
+                "legacy_names": True,
+                "legacy_layout": True,
+            },
+        }
+    )
     dat = sorted(glob.glob("mean*%s*EF%f*dat" % (label, E)))[-1]
     t, dx2 = np.loadtxt(dat, unpack=True)
     good = t > 0
@@ -69,13 +98,34 @@ def diffusion(label):
 
 def dos_at(label, norb):
     """KPM DOS rho(E) per site for this disordered sample."""
-    cfg = {"mode": "spectral", "label": label, "operator": "1",
-           "num_moments": 1024, "state": "default"}
-    with open("dos.json", "w") as f:
-        json.dump(cfg, f)
-    _run([_bin("lsquant"), "compute", "--config", "dos.json"])
-    mom = sorted(glob.glob("SpectralOp1%s*chebmom1D" % label))[-1]
-    _run([_bin("lsquant"), "reconstruct", mom, "dos", str(ETA_MEV)])
+    execute_runfile(
+        {
+            "model": {
+                "kind": "csr",
+                "dir": os.path.abspath("operators"),
+                "label": label,
+            },
+            "word": "Tr[delta(E-H)]",
+            "expansion": {
+                "moments": 1024,
+                "window": _read_bounds(),
+                "trace": "random_phase",
+                "states": 1,
+                "seed": int(SEED),
+            },
+            "reconstruction": {
+                "kernel": "jackson",
+                "broadening_meV": ETA_MEV,
+                "formulas": ["dos"],
+                "legacy_text_round_trip": True,
+            },
+            "output": {
+                "dir": os.path.abspath("."),
+                "legacy_names": True,
+                "legacy_layout": True,
+            },
+        }
+    )
     dat = sorted(glob.glob("meanSpectralOp1%s*JACKSON.dat" % label))[-1]
     en, dos = np.loadtxt(dat, unpack=True)
     return float(np.interp(E, en, dos)) / norb

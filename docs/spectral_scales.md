@@ -147,8 +147,7 @@ Two practical points the `spin_precession` test relies on:
 The same expansion underlies the velocity-autocorrelation and mean-square-displacement routes.
 For the clean chain, MSD(E,t) ∝ t² and the energy-resolved coefficient tracks the conductivity
 slope `dσ/dt = (1/π)√(4−E²)` (the `msd_ballistic` test checks the √(4−E²) energy law by exact
-trace). Note `inline_compute-kpm-CorrOp`'s state-file/`numStates` argument handling is currently
-unreliable (`atoi("exact")=0`), so the VAC route is not yet a deterministic golden.
+trace).
 
 ---
 

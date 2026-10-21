@@ -12,14 +12,12 @@ in-plane. Writes fig_dp.png.
 
 Energy-resolved spin: S_a(E,t) = <phi(t)|S_a delta(E-H)|phi(t)> / <phi|delta(E-H)|phi>.
 The denominator is conserved (energy), so we normalise by its time-average. Exact
-trace -> deterministic. The binaries are found on PATH or under $LSQUANT_BIN.
+trace -> deterministic. Evaluated via `lsquant.runfile.execute_runfile` (using
+run-file dicts modelled on `runs/goldens/tutorial06.json`).
 Toy-scale and illustrative, not converged production numbers.
 """
 import os
 import sys
-import glob
-import subprocess
-from shutil import which
 
 import numpy as np
 import matplotlib
@@ -28,6 +26,7 @@ import matplotlib.pyplot as plt
 
 import make_ey
 import make_rashba
+import rp_spin
 
 # Shared publication (APS/PRL) plot style: examples/prl_style.py.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,36 +36,11 @@ E = 2.0
 HBAR = 0.6582119624
 
 
-def _bin(name):
-    b = os.environ.get("LSQUANT_BIN")
-    return os.path.join(b, name) if b and os.path.exists(os.path.join(b, name)) else (which(name) or name)
-
-
-def _run(argv):
-    subprocess.run(argv, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
 def spin_vs_time(label, N, op, proj, M, ntime, tmax, eta_mev=140):
     """Return (t, S(E,t)) normalised to S(0)=1, by exact trace at energy E."""
-    state = "exact"
-    if not os.path.exists(state):
-        with open(state, "w") as f:
-            f.write("local\n%d\n%s\n" % (N, "\n".join(map(str, range(N)))))
-    _run([_bin("inline_compute-kpm-TimeEvProjetedOp"), label, op, proj,
-          str(M), str(ntime), str(tmax), state])
-    _run([_bin("inline_compute-kpm-TimeEvProjetedOp"), label, "1", proj,
-          str(M), str(ntime), str(tmax), state])
-    num_mom = sorted(glob.glob("TimeProj%s-%s%s*chebmomTD" % (op, proj, label)))[-1]
-    den_mom = sorted(glob.glob("TimeProj1-%s%s*chebmomTD" % (proj, label)))[-1]
-    _run([_bin("inline_timeCorrelationsFromChebmom"), num_mom, str(eta_mev), str(E)])
-    num_dat = sorted(glob.glob("mean*%s-%s%s*EF%f*dat" % (op, proj, label, E)))[-1]
-    _run([_bin("inline_timeCorrelationsFromChebmom"), den_mom, str(eta_mev), str(E)])
-    den_dat = sorted(glob.glob("mean*1-%s%s*EF%f*dat" % (proj, label, E)))[-1]
-    t, num = np.loadtxt(num_dat, unpack=True)
-    _, den = np.loadtxt(den_dat, unpack=True)
-    good = t > 0
-    s = num[good] / den[good].mean()
-    return t[good], s / s[0]
+    return rp_spin.exact_spin_vs_time(
+        label, N, op, proj, M, ntime, tmax, eta_mev=eta_mev
+    )
 
 
 def fit_rate(t, s, lo=0.2, hi=0.85):

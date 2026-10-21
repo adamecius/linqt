@@ -68,16 +68,15 @@ $\mathrm{MSD}(E,t)$ at a Fermi energy:
 
 ```bash
 cat > run_msd.json <<'JSON'
-{ "mode": "msd", "label": "chain1d_dis_N512_W1", "operator": "VX",
-  "num_moments": 256, "num_times": 128, "tmax": 600 }
+{ "model": { "kind": "csr", "dir": "operators", "label": "chain1d_dis_N512_W1", "operators": ["VX"] },
+  "word": "Tr[[X, U(t)]^+ delta(E-H) [X, U(t)]]",
+  "expansion": { "moments": 256, "window": [-2.5, 2.5], "trace": "random_phase", "states": 1, "seed": 12345 },
+  "time": { "steps": 128, "tmax": 600.0, "bessel": "legacy" },
+  "reconstruction": { "kernel": "jackson", "broadening_meV": 10.0, "fermi_energies": [0.0], "formulas": ["time_correlation"], "legacy_text_round_trip": true },
+  "output": { "dir": "." } }
 JSON
-lsquant compute --config run_msd.json
-inline_timeCorrelationsFromChebmom Correlation*chain1d_dis_N512_W1*chebmomTD 10 0.0   # (soon: a unified `lsquant reconstruct … msd` verb)
+python -m lsquant run run_msd.json
 ```
-
-> **Entry points.** The moments use the modern `lsquant compute`. The time-domain
-> reconstruction still uses `inline_timeCorrelationsFromChebmom`; a unified
-> `lsquant reconstruct … ` time-domain verb is planned and will replace it.
 
 This evaluates the velocity-velocity correlation over $128$ time steps out to
 $t = 600$ and writes a time-dependent moment file, then a two-column curve of

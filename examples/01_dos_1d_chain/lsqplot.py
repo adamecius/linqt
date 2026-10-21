@@ -9,10 +9,6 @@ files, and plots. It drives the modern unified `lsquant` entry points:
     lsquant reconstruct <m> dos <eta> performs the reconstruction sum
                                       rho(E) = sum_m g_m mu_m T_m(E)
 
-(Both are byte-identical to the older inline_compute-kpm-spectralOp /
-spectralFunctionFromChebmom drivers -- guarded by the config_equivalence test --
-but the `lsquant compute|reconstruct` verbs are the supported surface.)
-
 The reconstruction sum runs over a fine energy grid and every moment, so it is
 left in C++. Python reads its small text output and draws the figure. Reading
 the moments themselves (a few hundred numbers) is light, so that part is done
@@ -42,26 +38,17 @@ import prl_style as prl
 # locate and call the compiled kernels
 # ----------------------------------------------------------------------
 def _bin(name):
-    """Resolve a LSQUANT executable from LSQUANT_BIN or the PATH.
-
-    The build-dir target names carry an 'inline_' prefix for the *FromChebmom drivers
-    (e.g. inline_spectralFunctionFromChebmom); an install may expose them without it. Try the
-    given name and its 'inline_'-prefixed variant, so the example works against either.
-    """
-    candidates = [name]
-    if not name.startswith("inline_"):
-        candidates.append("inline_" + name)
+    """Resolve an LSQUANT executable from LSQUANT_BIN or the PATH."""
     root = os.environ.get("LSQUANT_BIN", "")
-    for nm in candidates:
-        if root:
-            cand = os.path.join(root, nm)
-            if os.path.exists(cand):
-                return cand
-        found = shutil.which(nm)
-        if found:
-            return found
+    if root:
+        cand = os.path.join(root, name)
+        if os.path.exists(cand):
+            return cand
+    found = shutil.which(name)
+    if found:
+        return found
     raise FileNotFoundError(
-        f"could not find '{name}' (tried {candidates}). Build LSQUANT and set LSQUANT_BIN "
+        f"could not find '{name}'. Build LSQUANT and set LSQUANT_BIN "
         f"to the directory that holds the executables."
     )
 
@@ -88,9 +75,8 @@ def compute_moments(label, M, statefile):
     with tempfile.TemporaryDirectory() as wd:
         _stage(wd, label)
         shutil.copy(statefile, os.path.join(wd, os.path.basename(statefile)))
-        # Modern entry point: `lsquant compute` (mode spectral, operator 1 = identity).
-        # Byte-identical to the legacy `inline_compute-kpm-spectralOp` (guarded by the
-        # config_equivalence test); the "state" field is the trace state-vector file.
+        # Unified entry point: `lsquant compute` (mode spectral, operator 1 = identity);
+        # the "state" field is the trace state-vector file.
         with open(os.path.join(wd, "run_dos.json"), "w") as cfg:
             json.dump({"mode": "spectral", "label": label, "operator": "1",
                        "num_moments": M, "state": os.path.basename(statefile)}, cfg)
