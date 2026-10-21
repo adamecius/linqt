@@ -30,6 +30,15 @@
 #            seed 12345, 1 state, M = 64); G4 curves bastin at 64 meV, sea and surf
 #            at 10 meV (sea_surf/), greenwood_fft and bastin_fft at 10 meV
 #            (fft_grid/); grep -rn "compat/" lsquant/core lsquant/io must be empty.
+#   stage 6  non-orthogonal metric (handoff 0006): stages 1, 2 and 3 in full, then
+#            build_dir/lsquant_core/stage6_nonorth on the rotated fixtures
+#            goldens/stage0/nonorth/{chain1d,haldane}/{real,complex}: routes lowdin and
+#            generalised (naive as evidence only), appliers exact, ischo, chebyshev,
+#            moments vs G1, G2 (chain1d dos, kubo) and G5 (Haldane kuboxy = VX-VY,
+#            kubo = VX-VX) at the brief's tolerances (not bytes; see the stage-6 block),
+#            the two routes against each other, and the Haldane Hall plateau C from the
+#            stage-3 Bastin reconstruction of every VX-VY file (|C - 1| <= 0.05).
+#            S6_KEEP=<dir> keeps the runs; S6_THREADS (default 16) sets OMP_NUM_THREADS.
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -323,11 +332,199 @@ stage3_grep() {
   fi
 }
 
+# ---------------------------------------------------------------- stage 6 (non-orthogonal metric)
+# Rotated models (goldens/stage0/nonorth/<model>/<variant>, fixtures of handoff 0006) must
+# reproduce the orthogonal goldens G1, G2 (chain1d) and the G5 moments (Haldane VX-VY,
+# VX-VX). These runs cannot be byte-identical (the applier is a factorisation, an
+# iteration or a truncated series), so the criterion is the brief's tolerance (section 6):
+#   exact 1e-10; ischo (--tol 1e-12) 1e-9; chebyshev (ctor truncation coeffTol 1e-12) 1e-8.
+# Measure (tester's decision, see tests.md):
+#   rel = max_k |mu_new[k] - mu_gold[k]| / max_k |mu_gold[k]|  over all complex moments;
+# the per-element relative difference of scripts/golden_diff.py is printed as well, but it
+# is meaningless on moments that vanish by symmetry (e.g. the odd DOS moments).
+# The two header lines (N BandWidth BandCenter / M) must be numerically identical.
+# Rows: PASS / FAIL (counted); route naive = the legacy symmetric estimator, EVIDENCE (not
+# counted); lowdin + ischo = N/A (ISCHO provides S^-1 only; stage6_nonorth rejects it).
+# Then lowdin vs generalised with the same applier (generalised/ischo vs lowdin/exact) at
+# the same levels, and the Hall plateau C = (mean sigma_xy over |E| < 0.5) / A * 2 pi,
+# A = (dim/2) 3 sqrt(3)/2 (test/hall_haldane.sh, tutorial03.chern_from_plateau), from the
+# stage-3 Bastin reconstruction at 10 meV of every produced VX-VY file: PASS if |C-1| <= 0.05.
+# With S6_KEEP=<dir> the run directories, gate_table.tsv and chern.tsv are kept there
+# (figures/stage_6.py reads them). S6_THREADS sets OMP_NUM_THREADS (default 16).
+S6CMP=""
+S6_LAST=""
+s6_tools() {
+  S6CMP="$TMP/s6cmp.py"
+  cat > "$S6CMP" <<'PYEOF'
+import sys
+def load(p):
+    L = open(p).read().split("\n")
+    h = [L[0].split(), L[1].split()]
+    v = []
+    for l in L[2:]:
+        t = l.split()
+        if t:
+            v.append(complex(float(t[0]), float(t[1]) if len(t) > 1 else 0.0))
+    return h, v
+a, b = load(sys.argv[1]), load(sys.argv[2])
+hdr = [[float(x) for x in r] for r in a[0]] == [[float(x) for x in r] for r in b[0]]
+if len(a[1]) != len(b[1]):
+    print("nan header_ok=%s length %d vs %d" % (hdr, len(a[1]), len(b[1])))
+    sys.exit()
+g = max(abs(x) for x in b[1])
+d = [abs(x - y) for x, y in zip(a[1], b[1])]
+k = max(range(len(d)), key=lambda i: d[i])
+print("%.3e header_ok=%s max_abs=%.3e at_element=%d max|gold|=%.3e" % (d[k] / g, hdr, d[k], k, g))
+PYEOF
+  S6CHERN="$TMP/s6chern.py"
+  cat > "$S6CHERN" <<'PYEOF'
+import sys, math
+import numpy as np
+d = np.loadtxt(sys.argv[1])
+dim = int(sys.argv[2])
+if not np.all(np.isfinite(d)):
+    print("nan nonfinite")
+    sys.exit()
+E, s = d[:, 0], d[:, 1]
+m = np.abs(E) < 0.5
+A = (dim / 2.0) * 3.0 * math.sqrt(3.0) / 2.0
+p = float(np.mean(s[m]))
+print("%.6f plateau=%.6f points=%d" % (p / A * 2 * math.pi, p, int(m.sum())))
+PYEOF
+}
+
+# s6_judge <new> <gold> <tol> <tag> <gate|evidence>; sets S6_LAST="<rel> <verdict>"
+s6_judge() {
+  local new="$1" gold="$2" tol="$3" tag="$4" kind="$5" out rel hdr verdict
+  if [ ! -f "$new" ] || [ ! -f "$gold" ]; then
+    verdict=FAIL; out="nan (missing: $([ -f "$new" ] || basename "$new") $([ -f "$gold" ] || echo "${gold#$TMP/}"))"
+  else
+    out="$(python3 "$S6CMP" "$new" "$gold" 2>&1)"
+    rel="${out%% *}"; hdr="$(echo "$out" | grep -o 'header_ok=[A-Za-z]*')"
+    if python3 -c "import sys; r=float('$rel'); sys.exit(0 if (r == r and r <= $tol and '$hdr' == 'header_ok=True') else 1)" 2>/dev/null
+    then verdict=PASS; else verdict=FAIL; fi
+  fi
+  rel="${out%% *}"
+  if [ "$kind" = evidence ]; then
+    echo "EVIDENCE  $tag  rel=$out  (would be $verdict at tol $tol; not counted)"
+  else
+    NCMP=$((NCMP + 1))
+    [ "$verdict" = PASS ] || NFAIL=$((NFAIL + 1))
+    printf '%-9s %s  rel=%s  tol=%s\n' "$verdict" "$tag" "$out" "$tol"
+  fi
+  if [ -f "$new" ] && [ -f "$gold" ]; then
+    echo "          golden_diff.py: $(python3 "$REPO/scripts/golden_diff.py" "$new" "$gold" 2>&1)"
+  fi
+  S6_LAST="$rel $verdict"
+}
+
+s6_field() { echo "$1" | grep -o " $2=[^ ]*" | head -1 | cut -d= -f2; }
+
+stage6() {
+  local EXE="$BUILD/lsquant_core/stage6_nonorth" PYDIR6 model variant word route applier W tol
+  local args lo hi M gold tag line rc res it eo f b P C kind
+  local XY=NonEqOpVX-VYhaldaneKPM_M128x128_stateexact
+  [ -x "$EXE" ] || EXE="$BUILD/lsquant/stage6_nonorth"
+  [ -x "$EXE" ] || { echo "ERROR: stage6_nonorth not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
+  PYDIR6="$(dirname "$EXE")"
+  # Invoked through a symlink in $TMP (same binary): on TCN another session runs a loop
+  # `pkill -f "stage6_nonorth.*--route lowdin"` that would kill the Lowdin runs (tests.md).
+  local RUNEXE="$TMP/s6_nonorth_exe"; ln -sf "$EXE" "$RUNEXE"
+  s6_tools
+  local KEEP="${S6_KEEP:-}" TSV="$TMP/s6_gate_table.tsv" CTSV="$TMP/s6_chern.tsv" T6="${S6_THREADS:-16}"
+  printf 'model\tvariant\tword\troute\tapplier\tmax_rel\ttol\tverdict\tresidual\titerations\teffective_order\n' > "$TSV"
+  echo "== stage 6: $EXE on goldens/stage0/nonorth vs G1, G2, G5 moments (OMP_NUM_THREADS=$T6)"
+  for model in chain1d haldane; do
+    if [ $model = chain1d ]; then lo=-2; hi=2; M=64; else lo=-4.5; hi=4.5; M=128; fi
+    for variant in real complex; do
+      for word in $([ $model = chain1d ] && echo "dos kubo" || echo "kuboxy kubo"); do
+        case "$model/$word" in
+          chain1d/dos)    gold="$GOLD/chain1d/SpectralOp1chain1dKPM_M64_stateexact.chebmom1D" ;;
+          chain1d/kubo)   gold="$GOLD/chain1d/NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D" ;;
+          haldane/kuboxy) gold="$GOLD/haldane/NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D" ;;
+          haldane/kubo)   gold="$GOLD/haldane/NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D" ;;
+        esac
+        b="$(basename "$gold")"; P="$TMP/s6/${model}_${variant}_${word}"
+        for route in lowdin generalised naive; do
+          for applier in exact ischo chebyshev; do
+            [ $route = naive ] && [ $applier != exact ] && continue
+            tag="$model/$variant $word $route/$applier"
+            if [ $route = lowdin ] && [ $applier = ischo ]; then
+              echo "N/A       $tag  (ISCHO provides S^-1 only; the Lowdin route needs S^-1/2)"
+              printf '%s\t%s\t%s\t%s\t%s\tN/A\t-\tN/A\t-\t-\t-\n' $model $variant $word $route $applier >> "$TSV"
+              continue
+            fi
+            case $applier in
+              exact) tol=1e-10; args="" ;;
+              ischo) tol=1e-9; args="--tol 1e-12" ;;
+              chebyshev) tol=1e-8; args="" ;;
+            esac
+            W="${P}_${route}_${applier}"; mkdir -p "$W"
+            ( cd "$REPO" && OMP_NUM_THREADS=$T6 "$RUNEXE" --fixture "$GOLD/nonorth/$model/$variant" \
+                --label $model --window $lo $hi --route $route --applier $applier $args --trace exact \
+                --moments $M --word $word --out "$W" ) >"$W/run.log" 2>"$W/err.log"; rc=$?
+            [ $rc -eq 0 ] || echo "          [$tag] stage6_nonorth exited $rc: $(tail -1 "$W/err.log")"
+            line="$(grep '^stage6_nonorth:' "$W/run.log" | tail -1)"
+            echo "          stdout: ${line//$W\//}"
+            kind=gate; [ $route = naive ] && kind=evidence
+            s6_judge "$W/$b" "$gold" $tol "$tag" $kind
+            res="$(s6_field "$line" residual)"; it="$(s6_field "$line" iterations)"; eo="$(s6_field "$line" effective_order)"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' $model $variant $word $route $applier \
+              "${S6_LAST% *}" $tol "$([ $kind = evidence ] && echo "EVIDENCE(${S6_LAST#* })" || echo "${S6_LAST#* }")" \
+              "${res:--}" "${it:--}" "${eo:--}" >> "$TSV"
+          done
+        done
+        # the two routes against each other
+        s6_judge "${P}_generalised_exact/$b" "${P}_lowdin_exact/$b" 1e-10 \
+          "$model/$variant $word generalised/exact vs lowdin/exact" gate
+        printf '%s\t%s\t%s\tgeneralised_vs_lowdin\texact\t%s\t1e-10\t%s\t-\t-\t-\n' $model $variant $word ${S6_LAST} >> "$TSV"
+        s6_judge "${P}_generalised_chebyshev/$b" "${P}_lowdin_chebyshev/$b" 1e-8 \
+          "$model/$variant $word generalised/chebyshev vs lowdin/chebyshev" gate
+        printf '%s\t%s\t%s\tgeneralised_vs_lowdin\tchebyshev\t%s\t1e-8\t%s\t-\t-\t-\n' $model $variant $word ${S6_LAST} >> "$TSV"
+        s6_judge "${P}_generalised_ischo/$b" "${P}_lowdin_exact/$b" 1e-9 \
+          "$model/$variant $word generalised/ischo vs lowdin/exact" gate
+        printf '%s\t%s\t%s\tgeneralised_ischo_vs_lowdin_exact\tischo\t%s\t1e-9\t%s\t-\t-\t-\n' $model $variant $word ${S6_LAST} >> "$TSV"
+      done
+    done
+  done
+  # Hall plateau from every produced Haldane VX-VY file (stage-3 Bastin, 10 meV)
+  echo "== stage 6: Hall plateau, python3 -m lsquant.apps.stage3_kubo --formula bastin --broadening-meV 10"
+  printf 'source\tC\tverdict\n' > "$CTSV"
+  C="$(python3 "$S6CHERN" "$GOLD/haldane/KuboBastin_${XY}JACKSON.dat" 512 2>&1)"
+  echo "REFERENCE Hall golden G5 KuboBastin (legacy)  C=$C"
+  printf 'golden_G5\t%s\tREF\n' "${C%% *}" >> "$CTSV"
+  for W in "$TMP"/s6/haldane_*_kuboxy_*; do
+    tag="$(basename "$W")"
+    if [ -f "$W/$XY.chebmom2D" ]; then
+      ( cd "$REPO" && OMP_NUM_THREADS=$T6 PYTHONPATH="$PYDIR6:$REPO/python" python3 -m lsquant.apps.stage3_kubo \
+          --moments "$W/$XY.chebmom2D" --formula bastin --broadening-meV 10 --out "$W" ) >"$W/bastin.log" 2>&1 \
+        || echo "          [$tag] stage3_kubo exited non-zero: $(tail -1 "$W/bastin.log")"
+      C="$(python3 "$S6CHERN" "$W/KuboBastin_${XY}JACKSON.dat" 512 2>&1 | tail -1)"
+    else
+      C="nan (no VX-VY moments produced)"
+    fi
+    if python3 -c "import sys; c=float('${C%% *}'); sys.exit(0 if abs(c - 1) <= 0.05 else 1)" 2>/dev/null
+    then rc=PASS; else rc=FAIL; fi
+    case "$tag" in
+      *_naive_*) echo "EVIDENCE  Hall $tag  C=$C  (would be $rc; not counted)"; rc="EVIDENCE($rc)" ;;
+      *) NCMP=$((NCMP + 1)); [ $rc = PASS ] || NFAIL=$((NFAIL + 1))
+         printf '%-9s Hall %s  C=%s  (|C - 1| <= 0.05)\n' $rc "$tag" "$C" ;;
+    esac
+    printf '%s\t%s\t%s\n' "$tag" "${C%% *}" "$rc" >> "$CTSV"
+  done
+  if [ -n "$KEEP" ]; then
+    mkdir -p "$KEEP"; rm -rf "$KEEP/runs"; cp -r "$TMP/s6" "$KEEP/runs"
+    cp "$TSV" "$KEEP/gate_table.tsv"; cp "$CTSV" "$KEEP/chern.tsv"
+    echo "          kept: $KEEP/{runs,gate_table.tsv,chern.tsv}"
+  fi
+}
+
 case "$STAGE" in
   0) stage0 ;;
   1) stage1; core_grep ;;
   2) stage1; core_grep; stage2; stage2_grep ;;
   3) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep ;;
+  6) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage6 ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
 
