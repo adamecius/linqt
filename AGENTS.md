@@ -197,6 +197,24 @@ Chebyshev `S^-1/2` applier, the Jackson/Lorentz formulas, the Kubo-Bastin Fermi-
 integral and the Sea/Surf decompositions (as coefficient-level recipes), the FFT
 contraction of `Kubo_solver_FFT`.
 
+### State at the stage-7 closure (2026-10-21)
+
+The legacy tree is gone from the working tree: `src/`, `include/`, `test/`, `legacy/`,
+the legacy CMake targets, `scripts/regenerate_goldens.sh` and the legacy shell scripts
+under `examples/`. The tag `legacy-final` (commit `05e2f65`) is the provenance of every
+stage-0 golden: `git worktree add /tmp/legacy legacy-final` and the `build_legacy` recipe
+of `goldens/stage0/PROVENANCE.md` rebuild the six legacy drivers and reproduce G1, G2 and
+G5 byte for byte (verified at the closure, `handoff/0007-words-cli-mcp/tests.md`).
+`lsquant/compat/` stays: it holds the two legacy-exact kernels (the GSL Bessel series of
+the time evolution and the text round trip of the moments) that byte identity with the
+stage-0 captures needs, and nothing else may be added to it. The layout as built differs
+from the plan above in two places, both deliberate: there is no `core/physics/` and no
+`parsers/` in C++, because the words, the catalogue, the compiler to `Plan`s, the run
+file, the CLI and the MCP server live in `python/lsquant/` (`words/`, `runfile.py`,
+`cli.py`, `mcp_server.py`); and the bases are Python classes (`python/lsquant/bases.py`)
+that build `LinearOperator`s and `StateGenerator`s for the engine. Every golden of stage 0
+is reproduced from a run file under `runs/goldens/` through `python -m lsquant run`.
+
 ---
 
 ## 4. Python and sympy
