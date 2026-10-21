@@ -70,6 +70,7 @@
 #            The chain1d runs are repeated at OMP_NUM_THREADS=1 and cmp'd with the main
 #            runs (S6_T1_CHAIN1D=0 skips this). S6_KEEP=<dir> keeps the runs;
 #            S6_THREADS (default 16) sets OMP_NUM_THREADS of the main runs.
+#            Stage "6only" runs the stage-6 part alone.
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -851,6 +852,7 @@ case "$STAGE" in
   4) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep ;;
   5) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep ;;
   6) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep; stage6 ;;
+  6only) stage6 ;;
   5only) stage5; stage5_grep ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
