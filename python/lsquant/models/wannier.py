@@ -71,7 +71,14 @@ def _parse_wsvec(path: str) -> dict[tuple[int, int, int, int, int], list[tuple[i
 def read_hr(
     path: str, wsvec_path: str | None = None
 ) -> tuple[int, npt.NDArray[np.int64], npt.NDArray[np.complex128]]:
-    """Read a Wannier90 ``_hr.dat`` file and fold ``1 / ndegen`` into ``H(R)``.
+    """Read a Wannier90 ``_hr.dat`` file (sparse or dense) and fold ``1 / ndegen`` into ``H(R)``.
+
+    Parses ``R_1 R_2 R_3 i j re im`` records by content and assigns each unique
+    lattice vector ``R = (R_1, R_2, R_3)`` its degeneracy weight ``ndegen[r]``
+    by order of first appearance of ``R`` (matching Wannier90 and
+    ``hr_exactdiag.py``), supporting both sparse ``_hr.dat`` files (such as
+    ``gen_models.py`` that list only non-zero hoppings) and dense ``nrpts * W^2``
+    files as a special case.
 
     Parameters
     ----------
@@ -92,18 +99,31 @@ def read_hr(
         present).
     """
     with open(path, encoding="utf-8") as fh:
-        lines = [ln.strip() for ln in fh if ln.strip()]
-    if len(lines) < 3:
+        raw_lines = fh.read().splitlines()
+    if len(raw_lines) < 3:
         raise ValueError(f"read_hr: truncated _hr.dat file '{path}'")
 
-    num_wann = int(lines[1].split()[0])
-    nrpts = int(lines[2].split()[0])
+    # Line 0 is the Wannier90 comment/header line; collect remaining non-empty lines.
+    lines = [ln.strip() for ln in raw_lines[1:] if ln.strip()]
+    if len(lines) < 2:
+        raise ValueError(f"read_hr: truncated _hr.dat header in '{path}'")
+
+    num_wann = int(lines[0].split()[0])
+    nrpts = int(lines[1].split()[0])
+    if num_wann <= 0 or nrpts <= 0:
+        raise ValueError(
+            f"read_hr: invalid num_wann={num_wann} or nrpts={nrpts} in '{path}'"
+        )
 
     ndegen: list[int] = []
-    idx = 3
-    while len(ndegen) < nrpts:
+    idx = 2
+    while len(ndegen) < nrpts and idx < len(lines):
         ndegen.extend(int(x) for x in lines[idx].split())
         idx += 1
+    if len(ndegen) < nrpts:
+        raise ValueError(
+            f"read_hr: expected {nrpts} ndegen integers in '{path}', found {len(ndegen)}"
+        )
 
     if wsvec_path is None and path.endswith("_hr.dat"):
         candidate = path[: -len("_hr.dat")] + "_wsvec.dat"
@@ -112,43 +132,50 @@ def read_hr(
 
     ws_lut = _parse_wsvec(wsvec_path) if (wsvec_path and os.path.isfile(wsvec_path)) else None
 
-    block_size = num_wann * num_wann
-    total_lines = nrpts * block_size
-    if len(lines) - idx < total_lines:
-        raise ValueError(f"read_hr: expected {total_lines} hopping lines in '{path}'")
-
+    r_order: dict[tuple[int, int, int], int] = {}
     accum: dict[tuple[int, int, int], npt.NDArray[np.complex128]] = {}
-    for ir in range(nrpts):
-        deg = float(ndegen[ir]) if ndegen[ir] > 0 else 1.0
-        base = idx + ir * block_size
-        for m in range(block_size):
-            parts = lines[base + m].split()
-            r1 = int(parts[0])
-            r2 = int(parts[1])
-            r3 = int(parts[2])
-            a = int(parts[3]) - 1
-            b = int(parts[4]) - 1
-            val = complex(float(parts[5]), float(parts[6])) / deg
-            if abs(val) <= np.finfo(np.float64).eps:
+    for line in lines[idx:]:
+        parts = line.split()
+        if len(parts) < 7:
+            continue
+        r1 = int(parts[0])
+        r2 = int(parts[1])
+        r3 = int(parts[2])
+        a = int(parts[3]) - 1
+        b = int(parts[4]) - 1
+        if a < 0 or a >= num_wann or b < 0 or b >= num_wann:
+            raise ValueError(
+                f"read_hr: orbital index ({a + 1}, {b + 1}) out of range 1..{num_wann} in '{path}'"
+            )
+        raw_r = (r1, r2, r3)
+        if raw_r not in r_order:
+            r_order[raw_r] = len(r_order)
+        r_idx = r_order[raw_r]
+        deg = (
+            float(ndegen[r_idx])
+            if (r_idx < len(ndegen) and ndegen[r_idx] > 0)
+            else 1.0
+        )
+        val = complex(float(parts[5]), float(parts[6])) / deg
+        if abs(val) <= np.finfo(np.float64).eps:
+            continue
+        if ws_lut is not None:
+            shifts = ws_lut.get((r1, r2, r3, a, b))
+            if shifts:
+                sub_val = val / float(len(shifts))
+                for t1, t2, t3 in shifts:
+                    key = (r1 + t1, r2 + t2, r3 + t3)
+                    mat = accum.get(key)
+                    if mat is None:
+                        mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
+                        accum[key] = mat
+                    mat[a, b] += sub_val
                 continue
-            if ws_lut is not None:
-                shifts = ws_lut.get((r1, r2, r3, a, b))
-                if shifts:
-                    sub_val = val / float(len(shifts))
-                    for t1, t2, t3 in shifts:
-                        key = (r1 + t1, r2 + t2, r3 + t3)
-                        mat = accum.get(key)
-                        if mat is None:
-                            mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
-                            accum[key] = mat
-                        mat[a, b] += sub_val
-                    continue
-            key = (r1, r2, r3)
-            mat = accum.get(key)
-            if mat is None:
-                mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
-                accum[key] = mat
-            mat[a, b] += val
+        mat = accum.get(raw_r)
+        if mat is None:
+            mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
+            accum[raw_r] = mat
+        mat[a, b] += val
 
     keys = sorted(accum.keys())
     if not keys:

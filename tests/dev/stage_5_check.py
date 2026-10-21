@@ -95,64 +95,56 @@ def _write_wannier_triplet(
 
 
 def _generate_graphene_and_haldane(tmp_dir: str) -> tuple[str, str]:
-    """Generate the ``wannier2sparse`` graphene and Haldane models in ``tmp_dir``."""
-    a = 2.46
-    cc = a / math.sqrt(3.0)
-    uc = np.array(
-        [
-            [0.5 * a, -0.5 * math.sqrt(3.0) * a, 0.0],
-            [0.5 * a, +0.5 * math.sqrt(3.0) * a, 0.0],
-            [0.0, 0.0, 20.0],
-        ],
-        dtype=np.float64,
-    )
-    tau = np.array(
-        [
-            [0.0, 0.0, 0.0],
-            [0.0, cc, 0.0],
-        ],
-        dtype=np.float64,
-    )
+    """Generate the ``wannier2sparse/examples/gen_models.py`` graphene and Haldane models in ``tmp_dir``."""
+    uc_str = "1.5 0.8660254 0\n1.5 -0.8660254 0\n0 0 10\n"
+    xyz_str = "2\ngraphene/haldane basis\nCA 0 0 0\nCB 1 0 0\n"
 
-    t1 = -2.7
-    graphene_h: dict[tuple[int, int, int], np.ndarray] = {}
-
-    def add_hop(
-        store: dict[tuple[int, int, int], np.ndarray],
-        r: tuple[int, int, int],
-        i: int,
-        j: int,
-        val: complex,
+    def write_sparse(
+        out_dir: str,
+        model: str,
+        num_wann: int,
+        rpts: set[tuple[int, int, int]],
+        hoppings: list[tuple[tuple[int, int, int], int, int, float, float]],
     ) -> None:
-        rx, ry, rz = r
-        if (rx, ry, rz) not in store:
-            store[(rx, ry, rz)] = np.zeros((2, 2), dtype=np.complex128)
-        store[(rx, ry, rz)][i, j] += val
-        if not (rx == 0 and ry == 0 and rz == 0 and i == j):
-            if (-rx, -ry, -rz) not in store:
-                store[(-rx, -ry, -rz)] = np.zeros((2, 2), dtype=np.complex128)
-            store[(-rx, -ry, -rz)][j, i] += np.conj(val)
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, f"{model}_hr.dat"), "w", encoding="utf-8") as fh:
+            fh.write(f"{model} (generated)\n{num_wann}\n{len(rpts)}\n")
+            fh.write(" ".join("1" for _ in rpts) + "\n")
+            for r_vec, i, j, re_v, im_v in hoppings:
+                fh.write(
+                    f"{r_vec[0]:d} {r_vec[1]:d} {r_vec[2]:d}  {i:d} {j:d}  "
+                    f"{re_v:.10f} {im_v:.10f}\n"
+                )
+        with open(os.path.join(out_dir, f"{model}.uc"), "w", encoding="utf-8") as fh:
+            fh.write(uc_str)
+        with open(os.path.join(out_dir, f"{model}.xyz"), "w", encoding="utf-8") as fh:
+            fh.write(xyz_str)
 
-    for r_nn in ((0, 0, 0), (-1, 0, 0), (0, -1, 0)):
-        add_hop(graphene_h, r_nn, 0, 1, t1)
-
+    t1 = -1.0
+    g_hops = [
+        ((0, 0, 0), 1, 2, t1, 0.0),
+        ((0, 0, 0), 2, 1, t1, 0.0),
+        ((-1, 0, 0), 1, 2, t1, 0.0),
+        ((1, 0, 0), 2, 1, t1, 0.0),
+        ((0, -1, 0), 1, 2, t1, 0.0),
+        ((0, 1, 0), 2, 1, t1, 0.0),
+    ]
+    g_rpts = {(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0)}
     g_dir = os.path.join(tmp_dir, "graphene")
-    _write_wannier_triplet(g_dir, "graphene", uc, ["C", "C"], tau, graphene_h)
+    write_sparse(g_dir, "graphene", 2, g_rpts, g_hops)
 
-    # Haldane model (with complex NNN hoppings t2 * exp(+i * phi))
-    haldane_h: dict[tuple[int, int, int], np.ndarray] = {}
-    for r_nn in ((0, 0, 0), (-1, 0, 0), (0, -1, 0)):
-        add_hop(haldane_h, r_nn, 0, 1, -2.7)
-    t2 = -0.27
+    t2 = 0.15
     phi = 0.5 * math.pi
-    phase = complex(math.cos(phi), math.sin(phi))
-    ccw_a = [(1, 0, 0), (-1, 1, 0), (0, -1, 0)]
-    for r_nnn in ccw_a:
-        add_hop(haldane_h, r_nnn, 0, 0, t2 * phase)
-        add_hop(haldane_h, r_nnn, 1, 1, t2 * np.conj(phase))
-
+    c_val = t2 * math.cos(phi)
+    s_val = t2 * math.sin(phi)
+    h_hops = list(g_hops)
+    for r_nnn in [(1, 0, 0), (0, -1, 0), (-1, 1, 0)]:
+        h_hops += [(r_nnn, 1, 1, c_val, s_val), (r_nnn, 2, 2, c_val, -s_val)]
+    for r_nnn in [(-1, 0, 0), (0, 1, 0), (1, -1, 0)]:
+        h_hops += [(r_nnn, 1, 1, c_val, -s_val), (r_nnn, 2, 2, c_val, s_val)]
+    h_rpts = {t[0] for t in h_hops}
     h_dir = os.path.join(tmp_dir, "haldane")
-    _write_wannier_triplet(h_dir, "haldane", uc, ["C_A", "C_B"], tau, haldane_h)
+    write_sparse(h_dir, "haldane", 2, h_rpts, h_hops)
     return g_dir, h_dir
 
 
