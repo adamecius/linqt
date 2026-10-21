@@ -19,6 +19,66 @@ The developer branch was tested twice:
 | 1 | `be54b79` | `~/lsquant-unified`, fast-forward | PASS, 65/65 | 3/3, 0/193, 0/16 (02 and 05 exit 1) | `*_run1_be54b79.*`, `fig_stage_4_diag_alias.*` |
 | **2 (closure)** | **`aba179a`** (review 2: tutorials 02/05 call fix, `TimeEvolutionStep` renamed `AxisStep`, `tutorial04 --operators` default, `--batch` help; review 3: `reconstruct.py` axis `(x - shift)/scale`) | worktree `~/lsquant-unified-0004`, merge commit `83be4f7` (`merge_run2.log`) | **FAIL, 69 of 77 IDENTICAL**. The 8 failures are all G4c Bastin curves: energy column only, from a legacy defect (section 4) | **3/3, 193/193, 16/16** | `build.log`, `stage_4_check.log`, `check_goldens_stage4.log`, `figure_run.log`, `fig_stage_4.*`, `g4c_generation.log` |
 
+| **2b (final)** | `aba179a`, same build; G4c re-blessed by Fable's decision (section 0) | worktree `~/lsquant-unified-0004` | **PASS, 71 of 71 IDENTICAL** | (unchanged from run 2) | `check_goldens_stage4.log`; the unblessed run-2 gate log is `check_goldens_stage4_run2_g4c_unblessed.log` |
+
+## 0. Final run (2b): G4c re-blessed, gate PASS 71/71
+
+Fable's decision on G4c: the legacy uniform-grid axis is the defect (D2), and the new code is
+the reference for the energy column. It was applied as follows:
+
+1. **The non-enclosing window is dropped.** `goldens/stage0/graphene/offcentre/` (`-3.5 2.5`)
+   is removed, together with its gate lines. A window that excludes the spectrum is not a
+   golden; S9 is accepted.
+2. **`goldens/stage0/graphene/offcentre_enclosing/` (`BOUNDS` `-8.5 7.5`) is the G4c golden.**
+   - Its `BOUNDS` and `.chebmom2D` stay the legacy files.
+   - The legacy `KuboBastin_...JACKSON.dat` moved to
+     `goldens/stage0/legacy_defects/offcentre_axis/`, together with a copy of its `BOUNDS` and
+     a `README.md` stating the D2 mapping, the FFT-grid path being correct, the identical value
+     column and the +0.4375 eV shift.
+   - The curve golden is now the new-code output, blessed:
+     `OMP_NUM_THREADS=16 python3 -m lsquant.apps.stage3_kubo --operators goldens/stage0/graphene/operators --label graphene_golden --left VX --right VY --window -8.5 7.5 --trace exact --states 256 --moments 128`
+     (wall 32 s), then `--moments <that .chebmom2D> --formula bastin --broadening-meV 10`
+     (wall 1 s), at `aba179a`. sha1 of the blessed curve: `318fad25b2279b3d518041074d65070e12332841`.
+   - Checks before blessing:
+     - the new moments are byte-identical to the legacy moments;
+     - the curve from the legacy moments file is byte-identical to the curve from the new
+       moments;
+     - the value column is byte-identical to the legacy curve.
+   - `PROVENANCE.md` G4c says exactly this, and its "Legacy defects" list gains the
+     `offcentre_axis` entry.
+3. **Gate.** The stage-3 section runs the enclosing window only, at 16 and 1 threads:
+   moments are compared with the legacy moments, and the Bastin curve (from the golden moments
+   and from the produced moments) with the blessed file.
+
+Command: `OMP_NUM_THREADS=16 bash scripts/check_goldens.sh 4 build`, fresh log
+`figures/out/stage_4/check_goldens_stage4.log`, wall 4207 s:
+
+| Section | Files | IDENTICAL | DIFFERS |
+|---|---|---|---|
+| stage 1 | 11 | 11 | 0 |
+| stage 2 | 6 | 6 | 0 |
+| stage 3, G5 and G4 | 24 | 24 | 0 |
+| stage 3, G4c (moments, Bastin from golden moments, Bastin from new moments; at 16 and 1) | 6 | 6 | 0 |
+| stage 4 (G6 moments and 8 curves, G7 × 3; at 16 and 1) | 24 | 24 | 0 |
+| **total** | **71** | **71** | **0** |
+
+`== 71 files compared; failures: 0`, `GATE PASS (stage 4)`, `gate exit: 0`. All four greps
+are empty.
+
+Stage-4 walls in this run:
+
+| Run | 16 threads | 1 thread |
+|---|---|---|
+| G6 moments | 744 s | 23 s |
+| G7 SX | 388 s | 4 s |
+| G7 SY | 202 s | 4 s |
+| G7 SZ | 83 s | 4 s |
+
+The load average was 60 to 95.
+
+Sections 3 and 4 below describe run 2 before the re-blessing: G4c with both windows and the
+legacy curves, 69 of 77. They are kept as the record of the localisation.
+
 About the checkout for run 2: the shared checkout `~/lsquant-unified` had been switched by
 another session to `handoff/0006-codex`, with uncommitted stage-6 work in it. I did not touch
 it. `git worktree add ~/lsquant-unified-0004 handoff/0004-codex` gave this handoff its own
@@ -237,7 +297,8 @@ Caption (verbatim):
 - **D1 (run 1): fixed.** `tutorial02` and `tutorial05` now call `build_chain` and
   `build_square` with the generators' argument order. They produce 193 of 193 and 16 of 16
   IDENTICAL.
-- **D2 (new, legacy, not the new code):** the energy axis of this tree's legacy uniform-grid
+- **D2 (new, legacy, not the new code; resolved for the gate in run 2b by blessing the
+  new-code curve, with the legacy curve kept in `legacy_defects/offcentre_axis/`):** the energy axis of this tree's legacy uniform-grid
   rank-2 reconstruction is `x·HalfWidth + BandCenter/HalfWidth` (section 4.2). It needs to be
   recorded in AGENTS.md section 10, and G4c's curve comparison needs a decision.
 
@@ -267,7 +328,7 @@ Caption (verbatim):
   This is harmless because every stage-4 window is centred.
 - **S8 (resolved as documentation):** the `stage4_time --batch` help now says it does not
   apply to the time-axis path. The extra `.chebmom` output remains and is ignored by the gate.
-- **S9 (new): the legacy G4c window.** As asked for, `[-3.5, 2.5]` excludes the graphene
+- **S9 (accepted by Fable; resolved in run 2b by dropping `offcentre/`): the legacy G4c window.** As asked for, `[-3.5, 2.5]` excludes the graphene
   spectrum, so the moments diverge to about 1e138 (section 4.1). As a golden it is
   arithmetic-only, and it amplifies any future reordering by a huge factor: a single ulp
   change becomes a large absolute difference. `offcentre_enclosing/` is the physically

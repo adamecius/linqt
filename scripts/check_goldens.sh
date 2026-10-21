@@ -30,9 +30,9 @@
 #            seed 12345, 1 state, M = 64); G4 curves bastin at 64 meV, sea and surf
 #            at 10 meV (sea_surf/), greenwood_fft and bastin_fft at 10 meV
 #            (fft_grid/); G4c (graphene VX-VY, window from goldens/stage0/graphene/
-#            {offcentre,offcentre_enclosing}/BOUNDS, exact trace, 256 states, M = 128)
-#            moments, and its Bastin curve at 10 meV from the golden and from the new
-#            moments (a DIFFERS curve also gets an informational value/energy column
+#            offcentre_enclosing/BOUNDS = -8.5 7.5, exact trace, 256 states, M = 128)
+#            moments (legacy), and its Bastin curve at 10 meV from the golden and from
+#            the new moments vs the curve blessed from the new code (legacy defect D2) (a DIFFERS curve also gets an informational value/energy column
 #            note); grep -rn "compat/" lsquant/core lsquant/io must be empty.
 #   stage 4  time evolution (handoff 0004): stages 1 to 3 in full, then
 #            python3 -m lsquant.apps.stage4_time at OMP_NUM_THREADS = 16 and 1:
@@ -331,10 +331,11 @@ stage3() {
             "[T=$T] graphene/fft_grid/KuboGreenWood_${G4XX}JACKSON_FFTgrid.dat (G4 curve, 10 meV)"
     compare "$W/KuboBastin_${G4XX}JACKSON_FFTgrid.dat" "$GOLD/graphene/fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat" \
             "[T=$T] graphene/fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat (G4 curve, 10 meV)"
-    # 5. G4c: graphene VX-VY, off-centre windows from the legacy BOUNDS files (-3.5 2.5, which
-    #    does not enclose the spectrum, and -8.5 7.5, which does), exact trace 256 states,
-    #    M = 128; Bastin at 10 meV from the golden moments and from the produced moments.
-    for G in offcentre offcentre_enclosing; do
+    # 5. G4c: graphene VX-VY, off-centre window from the BOUNDS file (-8.5 7.5), exact trace
+    #    256 states, M = 128: moments vs the legacy moments; Bastin at 10 meV, from the golden
+    #    and from the produced moments, vs the curve blessed from the new code (legacy defect
+    #    D2, goldens/stage0/legacy_defects/offcentre_axis/).
+    for G in offcentre_enclosing; do
       W="$TMP/s3_T${T}_g4c_$G"
       run_s3 $T "$W" "G4c $G VX-VY moments" --operators "$GOLD/graphene/operators" --label graphene_golden --left VX --right VY \
         --window $(cat "$GOLD/graphene/$G/BOUNDS") --trace exact --states 256 --moments 128

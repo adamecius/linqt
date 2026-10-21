@@ -51,50 +51,39 @@ does not write the two committed sidecars `graphene_golden.HAM.desc` and `.VX.de
 moments are computed without them (bounds from the Gershgorin + pad safeguard, header
 `BandWidth = 15.0366847652085`).
 
-## G4c — `graphene/offcentre/` and `graphene/offcentre_enclosing/` (off-centre window, exact trace, `M = 128`, 10 meV)
+## G4c — `graphene/offcentre_enclosing/` (off-centre window, exact trace, `M = 128`, 10 meV)
 
 Added at the stage-4 closure (handoff 0004, review 3) so that the gate covers a window with
-`BandCenter != 0` (`Shift != 0`); every other golden window is centred. Produced on TCN,
-2026-10-20, by the **legacy** drivers of this repository's legacy tree (unchanged since
-`8ecbf83` apart from CMake options), built exactly as in the table above in a separate
-build directory: `cmake -S . -B build_legacy -DLSQUANT_BUILD_NEW_CORE=OFF
--DLSQUANT_BUILD_INPUT_TOOLS=ON`, `cmake --build build_legacy -j 32` (checkout at
-`handoff/0004-codex`, merge of `aba179a`). That build reproduces the G5 Bastin curve byte for
-byte. (`~/lsquant/build` on TCN is an older, unrelated legacy build, `c1d9318`, June 2025: it
-uses a reconstruction grid of `(-0.99, 0.99)` and does **not** reproduce G5; it was not used.)
+`BandCenter != 0` (`Shift != 0`); every other golden window is centred.
 
 Inputs: `operators/graphene_golden.{HAM,VX,VY}.CSR` copied from `graphene/operators/`
-(dim 256, spectrum `[-6.834, 6.834]` eV by dense diagonalisation); a `BOUNDS` file in the run
-directory (window source = `BOUNDS` file, branch 1 of the legacy `SpectralBounds`); an exact
-local-state file over the 256 sites. In a temporary directory, `KPM_SEED=12345
-OMP_NUM_THREADS=16`:
+(dim 256, spectrum `[-6.834, 6.834]` eV by dense diagonalisation); `BOUNDS` = `-8.5 7.5` in the
+run directory (window source = `BOUNDS` file, branch 1 of the legacy `SpectralBounds`; centre
+`-0.5`, encloses the spectrum; header `256 16  -0.5`); an exact local-state file over the 256
+sites.
 
-```
-inline_compute-kpm-nonEqOp graphene_golden VX VY 128 exact
-inline_kuboBastinFromChebmom NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D 10
-```
+- `BOUNDS`, `NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D`: **legacy**. Produced on
+  TCN, 2026-10-20, by this repository's legacy tree (unchanged since `8ecbf83` apart from CMake
+  options), built as in the table above in a separate directory: `cmake -S . -B build_legacy
+  -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON`, `cmake --build build_legacy -j 32`
+  (it reproduces G5 Bastin byte for byte), with `KPM_SEED=12345 OMP_NUM_THREADS=16`:
+  `inline_compute-kpm-nonEqOp graphene_golden VX VY 128 exact`. (`~/lsquant/build` on TCN,
+  `c1d9318`, June 2025, is an older unrelated legacy build that does not reproduce G5; not used.)
+- `KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat`: **blessed from the
+  new code because of legacy defect D2** (Fable's decision, handoff 0004 closure):
+  `OMP_NUM_THREADS=16 python3 -m lsquant.apps.stage3_kubo --moments
+  NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D --formula bastin --broadening-meV 10`
+  at `aba179a` (moments from `stage3_kubo --operators ... --left VX --right VY --window -8.5 7.5
+  --trace exact --states 256 --moments 128`, byte-identical to the legacy moments; the curve from
+  the legacy moments file is byte-identical too). Its value column is byte-identical to the
+  legacy `inline_kuboBastinFromChebmom <mom> 10` output; its energy column is the correct
+  `x*HalfWidth + BandCenter`. The legacy curve, whose energy column is shifted by
+  `BandCenter/HalfWidth - BandCenter = +0.4375` eV, is kept as evidence in
+  `legacy_defects/offcentre_axis/` (see its README).
 
-- `offcentre/`: `BOUNDS` = `-3.5 2.5` (header `256 6  -0.5`). This window, the one asked for,
-  does **not** enclose the spectrum (rescaled eigenvalues reach `-2.11` and `+2.44`), so the
-  Chebyshev moments grow geometrically (`|mu| ~ 1e138` at the last moments, curve values up
-  to `1e139`): a byte-level regression of the arithmetic and of the energy axis only, not a
-  physical result.
-- `offcentre_enclosing/`: `BOUNDS` = `-8.5 7.5` (header `256 16  -0.5`; same centre `-0.5`,
-  encloses the spectrum). Added by the tester for a physically valid off-centre case
-  (graphene `sigma_xy` = 0, values ~1e-16).
-
-Each holds `BOUNDS`, `NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D` and
-`KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat`. Generation log:
+A first G4c window `-3.5 2.5` was dropped: it excludes the spectrum (rescaled eigenvalues up
+to 2.44, moments ~1e138), so it is not a golden. Generation log:
 `figures/out/stage_4/g4c_generation.log`.
-
-**Legacy energy-axis defect recorded in these curves.** The legacy rank-2 reconstruction
-(`src/reconstruction.cpp`, `write_pairs(..., e / sf - shf)` with `sf = 1/HalfWidth`,
-`shf = -BandCenter/HalfWidth`) writes `E = x HalfWidth + BandCenter/HalfWidth` instead of
-`x HalfWidth + BandCenter`: the energy column of both `KuboBastin` files is shifted by
-`BandCenter/HalfWidth - BandCenter` (`+0.333333` eV for `offcentre/`, `+0.4375` eV for
-`offcentre_enclosing/`). The moments and the conductivity column are unaffected. This is the
-reference the legacy produces; it is kept as generated (goldens are never edited), and its
-acceptance is Fable's decision (see `handoff/0004-time-evolution/tests.md`).
 
 ## G5 — `haldane/` (exact trace, `M = 128`, bounds `[-4.5, 4.5]`, 10 meV)
 
@@ -179,3 +168,7 @@ evidence and **are not references**: no harness reads them.
   `Vectors::IterateAll` does not carry the recursion across batches, so block k is shifted
   by k orders. The command, the evidence and the cause are in its `README.md`. The batched
   run of the new core is gated against G2 itself (`scripts/check_goldens.sh 1`).
+- `legacy_defects/offcentre_axis/KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat`:
+  the legacy Bastin curve of G4c (`BOUNDS` `-8.5 7.5`), whose energy column carries legacy defect
+  D2 (uniform-grid axis `x*HalfWidth + BandCenter/HalfWidth`, shifted by +0.4375 eV here); see
+  its `README.md`. The G4c curve golden was blessed from the new code instead.
