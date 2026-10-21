@@ -440,6 +440,24 @@ buildable until stage 7: it is the reference the goldens come from.
 - `~/lsquant/build` on TCN is an older legacy build (`c1d9318`, reconstruction grid at
   0.99) that does not reproduce G5; goldens are generated only from this tree's legacy
   sources built as `goldens/stage0/PROVENANCE.md` describes (`build_legacy`).
+- **The legacy operator loader returns silently on a missing file** (found at the stage-7
+  closure, `handoff/0007-words-cli-mcp/tests.md`): `BuildOPFromCSRFile`
+  (`legacy-final:include/sparse_matrix.hpp:132`) does nothing when `operators/<label>.<op>.CSR`
+  does not exist, so a word with an operator that was never written runs on an empty
+  matrix. Tutorial 06 asked the legacy driver for the identity operator `1`, which
+  `make_ey.py` and `make_rashba.py` never write; its 139 `TimeProj1-P*` curves (the
+  normalising denominators), `ey_ratelaw.dat` and `captured/index.tsv` came from that
+  empty operator (values about 1e-6, noisy) and the stage-0 figure was right only because
+  the tutorial normalises by the same curve. Re-blessed from the new code (which applies
+  the identity) at the stage-7 closure; the legacy files are kept as evidence in
+  `goldens/stage0/legacy_defects/tutorial06_identity_operator/`. The new code refuses a
+  missing operator file.
+- **The CSR readers fold every operator to `1/2 (M + M^+)` silently** (`ReadCsrText`,
+  `lsquant::SparseMatrix::HermitianFold`, legacy `ConvertFromCSR`; kept in the new code
+  for byte identity). A non-Hermitian input, for example a velocity built from a
+  non-Hermitian position matrix (0006b notes section 11), enters the engine as its
+  Hermitian part without any warning. Clean-up item: report the anti-Hermitian norm and
+  refuse above a tolerance.
 
 ---
 
