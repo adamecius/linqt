@@ -533,3 +533,10 @@ Fable commits the closed handoff into `cpp-unified` and pushes it.
 through the Ionos jump host: `ssh ionos` then `ssh jh-x` (or `ssh jose-tcn` from the
 maintainer's machine). The checkout there is `~/lsquant`. Local machines are for
 editing only; a result produced elsewhere is not a gate result.
+**Shared machine rule.** Several sessions (the developer's builds, two or three testers,
+the maintainer's own jobs) run the same programs on TCN at the same time. Nobody kills a
+process by program name or pattern (`pkill -f stage6_nonorth`, `pkill -f check_goldens`):
+every launcher records the PIDs it starts (`nohup ... & echo $! > <stage>.pid`) and stops
+only those. Each session uses its own worktree and build directory. A session that stops
+another session's run has broken the gate of that session and says so in its report.
+(Introduced after the stage-6 tester killed the stage-7 gate by name on 2026-10-21.)
