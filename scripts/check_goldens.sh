@@ -29,7 +29,11 @@
 #            files; G4 moments (graphene VX-VX, --window gershgorin, random phase
 #            seed 12345, 1 state, M = 64); G4 curves bastin at 64 meV, sea and surf
 #            at 10 meV (sea_surf/), greenwood_fft and bastin_fft at 10 meV
-#            (fft_grid/); grep -rn "compat/" lsquant/core lsquant/io must be empty.
+#            (fft_grid/); G4c (graphene VX-VY, window from goldens/stage0/graphene/
+#            {offcentre,offcentre_enclosing}/BOUNDS, exact trace, 256 states, M = 128)
+#            moments, and its Bastin curve at 10 meV from the golden and from the new
+#            moments (a DIFFERS curve also gets an informational value/energy column
+#            note); grep -rn "compat/" lsquant/core lsquant/io must be empty.
 #   stage 4  time evolution (handoff 0004): stages 1 to 3 in full, then
 #            python3 -m lsquant.apps.stage4_time at OMP_NUM_THREADS = 16 and 1:
 #            G6 moments (chain1d_ballistic, --word msd --velocity VX, window [-2, 2],
@@ -270,6 +274,16 @@ run_s3() {   # <threads> <workdir> <tag> <args...>
 G5XY=NonEqOpVX-VYhaldaneKPM_M128x128_stateexact
 G5XX=NonEqOpVX-VXhaldaneKPM_M128x128_stateexact
 G4XX=NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault
+G4CXY=NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact
+
+# Informational, not a verdict: for a two-column curve that DIFFERS, say whether the value
+# column is byte-identical as text and what the energy-column offset (golden - new) is.
+columns_note() {   # <new> <golden>
+  [ -f "$1" ] && [ -f "$2" ] || return 0
+  cmp -s "$1" "$2" && return 0
+  local v; cmp -s <(awk '{print $2}' "$1") <(awk '{print $2}' "$2") && v="identical" || v="DIFFERS"
+  echo "          note: value column $v as text; energy column golden - new: $(paste "$1" "$2" | awk '{d=$3-$1; s+=d; if(NR==1||d<mn)mn=d; if(NR==1||d>mx)mx=d} END{printf "min %.6g max %.6g mean %.6g over %d lines", mn, mx, s/NR, NR}')"
+}
 
 stage3() {
   local T W G
@@ -317,6 +331,22 @@ stage3() {
             "[T=$T] graphene/fft_grid/KuboGreenWood_${G4XX}JACKSON_FFTgrid.dat (G4 curve, 10 meV)"
     compare "$W/KuboBastin_${G4XX}JACKSON_FFTgrid.dat" "$GOLD/graphene/fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat" \
             "[T=$T] graphene/fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat (G4 curve, 10 meV)"
+    # 5. G4c: graphene VX-VY, off-centre windows from the legacy BOUNDS files (-3.5 2.5, which
+    #    does not enclose the spectrum, and -8.5 7.5, which does), exact trace 256 states,
+    #    M = 128; Bastin at 10 meV from the golden moments and from the produced moments.
+    for G in offcentre offcentre_enclosing; do
+      W="$TMP/s3_T${T}_g4c_$G"
+      run_s3 $T "$W" "G4c $G VX-VY moments" --operators "$GOLD/graphene/operators" --label graphene_golden --left VX --right VY \
+        --window $(cat "$GOLD/graphene/$G/BOUNDS") --trace exact --states 256 --moments 128
+      compare "$W/$G4CXY.chebmom2D" "$GOLD/graphene/$G/$G4CXY.chebmom2D" "[T=$T] graphene/$G/$G4CXY.chebmom2D (G4c moments)"
+      run_s3 $T "$W/cg" "G4c $G bastin (golden moments)" --moments "$GOLD/graphene/$G/$G4CXY.chebmom2D" --formula bastin --broadening-meV 10
+      run_s3 $T "$W/cn" "G4c $G bastin (new moments)" --moments "$W/$G4CXY.chebmom2D" --formula bastin --broadening-meV 10
+      for c in cg cn; do
+        compare "$W/$c/KuboBastin_${G4CXY}JACKSON.dat" "$GOLD/graphene/$G/KuboBastin_${G4CXY}JACKSON.dat" \
+                "[T=$T] graphene/$G/KuboBastin_${G4CXY}JACKSON.dat (G4c curve, 10 meV, from $([ $c = cg ] && echo golden || echo new) moments)"
+        columns_note "$W/$c/KuboBastin_${G4CXY}JACKSON.dat" "$GOLD/graphene/$G/KuboBastin_${G4CXY}JACKSON.dat"
+      done
+    done
   done
 }
 

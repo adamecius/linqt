@@ -1,26 +1,294 @@
-# Handoff 0004 — tester report (stage 4 gate: G6 and G7 from Python; tutorials 02, 04, 05)
+# Handoff 0004 — tester report (stage 4 gate: G6 and G7 from Python; tutorials 02, 04, 05; G4c)
 
-Tester: Codex role (Opus subagent driven by Fable). Machine: TCN (`fatnode-tacn`), checkout
-`~/lsquant-unified`. Branch `handoff/0004-codex` was cut from `cpp-unified` (`552de6e`), and
-`origin/handoff/0004-agi` (`be54b79`) was merged into it as a fast-forward. Nothing under
-`lsquant/`, `python/lsquant/`, `tests/dev/`, the legacy tree, `goldens/`, a seed or a tolerance
-was edited. This handoff edited only `scripts/check_goldens.sh` (stage 4 added),
-`figures/stage_4.py` (new) and `figures/out/stage_4/` (logs and figure). Every run used an
-explicit `OMP_NUM_THREADS`. TCN was loaded throughout (load average 60 to 115 on 64 cores,
-with other users' jobs). The developer's own check job in `~/lsquant-agi-build` also ran part
-of the time. All wall times below are affected by this load.
+Tester: Codex role (Opus subagent driven by Fable). Machine: TCN (`fatnode-tacn`).
 
-**Result: GATE PASS (stage 4): 65 of 65 files IDENTICAL, all four greps empty.** That covers
-stages 1 to 3 rerun, plus G6 (moments and 8 curves) and G7 (3 moments) at
-OMP_NUM_THREADS 16 and 1.
+Nothing under `lsquant/`, `python/lsquant/`, `tests/dev/` or the legacy tree was edited, and
+no seed or tolerance was changed. Files edited:
 
-**Tutorials from Python: 04 is 3 of 3 IDENTICAL. 02 is 0 of 193 and 05 is 0 of 16.** The
-apps `tutorial02` and `tutorial05` exit 1 before computing anything, so no files are
-produced (defect D1, section 5). With only the generator entry point aliased in a scratch
-wrapper (not committed), the rest of both pipelines is byte-identical to the goldens:
-02 is 193 of 193 and 05 is 16 of 16 (section 4.2).
+- `scripts/check_goldens.sh`
+- `figures/stage_4.py`
+- `figures/out/stage_4/`
+- this file
+- for the closure run only, the new golden G4c (`goldens/stage0/graphene/offcentre*/`) and
+  its `PROVENANCE.md` entry, as Fable asked. No existing golden file was touched.
 
-## 1. Build (fresh)
+The developer branch was tested twice:
+
+| Run | `origin/handoff/0004-agi` | Checkout | Gate | Tutorials 04 / 02 / 05 | Logs in `figures/out/stage_4/` |
+|---|---|---|---|---|---|
+| 1 | `be54b79` | `~/lsquant-unified`, fast-forward | PASS, 65/65 | 3/3, 0/193, 0/16 (02 and 05 exit 1) | `*_run1_be54b79.*`, `fig_stage_4_diag_alias.*` |
+| **2 (closure)** | **`aba179a`** (review 2: tutorials 02/05 call fix, `TimeEvolutionStep` renamed `AxisStep`, `tutorial04 --operators` default, `--batch` help; review 3: `reconstruct.py` axis `(x - shift)/scale`) | worktree `~/lsquant-unified-0004`, merge commit `83be4f7` (`merge_run2.log`) | **FAIL, 69 of 77 IDENTICAL**. The 8 failures are all G4c Bastin curves: energy column only, from a legacy defect (section 4) | **3/3, 193/193, 16/16** | `build.log`, `stage_4_check.log`, `check_goldens_stage4.log`, `figure_run.log`, `fig_stage_4.*`, `g4c_generation.log` |
+
+About the checkout for run 2: the shared checkout `~/lsquant-unified` had been switched by
+another session to `handoff/0006-codex`, with uncommitted stage-6 work in it. I did not touch
+it. `git worktree add ~/lsquant-unified-0004 handoff/0004-codex` gave this handoff its own
+tree and its own fresh `build/`. My first command in run 2 ran before I noticed the branch
+switch. Its `cd` into the missing `figures/out/stage_4` failed, so its `git mv`, `commit`,
+`merge` and build steps did nothing. I checked afterwards that the stage-6 checkout was
+unchanged: HEAD `a5108e3`, same `git status`.
+
+**Result (run 2, `aba179a`):**
+
+- **Stages 1, 2 and 4 are all IDENTICAL**, at the thread counts of each stage; all greps
+  are empty.
+- **Stage 3 has every pre-existing golden IDENTICAL**, including the centred G4 and G5
+  curves after the `reconstruct.py` axis change. The new G4c moments are IDENTICAL.
+- **The new G4c Bastin curves DIFFER, in the energy column only.** The conductivity column is
+  byte-identical as text, at 16 and 1 threads, whether reconstructed from the golden moments
+  or from the new ones.
+- **The defect is in the legacy, not in the new code.** The legacy rank-2 reconstruction
+  writes `E = x HalfWidth + BandCenter/HalfWidth`. The new code writes the correct
+  `x HalfWidth + BandCenter`.
+- **The tutorials from Python are all IDENTICAL:** 04 is 3 of 3, 02 is 193 of 193, and 05 is
+  16 of 16.
+
+## 1. Build (run 2, fresh)
+
+```
+$ rm -rf build
+$ cmake -S . -B build -DLSQUANT_BUILD_NEW_CORE=ON -DLSQUANT_BUILD_PYTHON=ON -Dpybind11_DIR=...
+cmake exit: 0
+$ cmake --build build -j 32
+build exit: 0
+```
+
+`figures/out/stage_4/build.log` shows 0 warnings under `lsquant/`. As in every run, all 101
+warnings are in the legacy tree.
+
+For G4c a second, legacy-only build was made exactly as `PROVENANCE.md` records the stage-0
+build: `cmake -S . -B build_legacy -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON`,
+then `cmake --build build_legacy -j 32`. It is not committed. The legacy tree is unchanged
+since `8ecbf83` except for CMake options (`git diff --stat 8ecbf83 HEAD -- src include` is
+empty).
+
+## 2. Developer self-check (run 2)
+
+```
+$ PYTHONPATH=build/lsquant_core:python OMP_NUM_THREADS=1 python3 -u tests/dev/stage_4_check.py
+(a) G7 chain1d_mag Gershgorin window = [-2.31, 2.31], BandWidth = 4.62
+(a) G7 TimeProjSX-PX array_equal vs golden: True
+(a) G7 TimeProjSY-PX array_equal vs golden: True
+(a) G7 TimeProjSZ-PX array_equal vs golden: True
+(b) G6 CorrelationVXchain1d array_equal vs golden: True
+(b) G6 EF=+0.0 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+0.5 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+1.0 curve differing lines: 0 (total lines: 64)
+(b) G6 EF=+1.5 curve differing lines: 0 (total lines: 64)
+(c) compat GSL Bessel vs SciPy jv max_abs_diff = 5.551115e-16
+(d) time_correlation_plan chain1d VX-VX (M=64, steps=16, tmax=5, exact) array_equal vs inline_compute-kpm-CorrOp: True
+wall 34.50 s
+exit: 0
+```
+
+I first started it at OMP_NUM_THREADS = 16, as in run 1. Load average reached 140, and after
+49 minutes it was still in part (b), so I stopped it. Its partial output, (a) all `True`, is
+kept in `stage_4_check_T16_aborted.log`. The full check was then run at 1 thread, the
+developer's own setting; it took 34.5 s. The gate covers the 16-thread case.
+
+## 3. Gate (run 2): `OMP_NUM_THREADS=16 bash scripts/check_goldens.sh 4 build`
+
+Log: `figures/out/stage_4/check_goldens_stage4.log`. Wall time: 6810 s. The harness now
+includes G4c in the stage-3 section (section 4).
+
+| Section | Files | IDENTICAL | DIFFERS |
+|---|---|---|---|
+| stage 1 (G1, G2 at 1, 8, 64 threads; batched G2; random-phase rerun) | 11 | 11 | 0 |
+| stage 2 (G1, G3 from Python at 1 and 16 threads) | 6 | 6 | 0 |
+| stage 3, old goldens (G5 moments and 4 curves, G4 moments and 5 curves, at 16 and 1) | 24 | 24 | 0 |
+| stage 3, **G4c** (2 windows × (moments + Bastin from golden moments + Bastin from new moments), at 16 and 1) | 12 | 4 (moments) | **8 (Bastin curves)** |
+| stage 4 (G6 moments, 8 G6 curves, 3 G7 moments, at 16 and 1) | 24 | 24 | 0 |
+| **total** | **77** | **69** | **8** |
+
+Greps, all empty on code lines:
+- `basis|std::cout|getenv` in core;
+- `delta|DOS|Kubo|basis|std::cout|getenv` in core and io;
+- `compat/` in core and io;
+- `time|velocity|spin|projector|bessel|gsl` as whole lowercase words in core and io.
+
+The `plan.hpp` comment lines that said "time-evolution" and "mean-square" are gone from
+the excluded-comment list.
+
+Stage-4 walls at 16 threads: G6 moments 3258 s at 16 threads vs 23 s at 1; G7 53, 52, 177 s at 16 vs 4, 3, 4 s at 1.
+
+The verdict line is `GATE FAIL (stage 4)`. Only the 8 G4c Bastin lines are DIFFERS; each is
+followed by the harness's numeric localisation and an informational column note:
+
+```
+DIFFERS   [T=16] graphene/offcentre/KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat (G4c curve, 10 meV, from golden moments)
+          first-diff line 1 col 1, new=-3.35 golden=-3.01667; ...
+          note: value column identical as text; energy column golden - new: min 0.333328 max 0.33334 mean 0.333333 over 3839 lines
+DIFFERS   [T=16] graphene/offcentre_enclosing/KuboBastin_...JACKSON.dat (G4c curve, 10 meV, from golden moments)
+          first-diff line 1 col 1, new=-8.1 golden=-7.6625; ...
+          note: value column identical as text; energy column golden - new: min 0.437495 max 0.437505 mean 0.4375 over 3839 lines
+```
+
+The same lines appear for the curves built from the new moments, and again at T=1.
+
+## 4. G4c: the off-centre golden
+
+### 4.1 What was generated
+
+`goldens/stage0/graphene/offcentre/` was asked for: `BOUNDS` `-3.5 2.5`. I also added
+`offcentre_enclosing/` (`BOUNDS` `-8.5 7.5`, the same centre of `-0.5`).
+
+Each directory holds `BOUNDS`, `NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D`
+and `KuboBastin_NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexactJACKSON.dat`. The
+`PROVENANCE.md` entry is "G4c". The generation log is `g4c_generation.log`.
+
+In a temporary directory I staged `operators/graphene_golden.{HAM,VX,VY}.CSR`, the `BOUNDS`
+file and an exact local-state file over the 256 sites, then ran, with `KPM_SEED=12345
+OMP_NUM_THREADS=16`:
+
+```
+inline_compute-kpm-nonEqOp graphene_golden VX VY 128 exact
+inline_kuboBastinFromChebmom NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact.chebmom2D 10
+```
+
+The legacy honoured `BOUNDS`: the headers are `256 6  -0.5` and `256 16  -0.5`.
+
+Three decisions, recorded here:
+
+1. **Legacy build: not `~/lsquant/build`.** That directory, suggested in the instructions,
+   holds an older and unrelated legacy build: checkout `c1d9318`, binaries dated June 2025.
+   It reconstructs on the grid `(-0.99, 0.99)` and **does not reproduce G5**: reconstructing
+   the committed G5 VX-VY moments gives `-4.455...`, where the golden first line is
+   `-4.275`. The repository's own legacy build does reproduce G5 Bastin byte for byte, so
+   G4c comes from that build, made as in `PROVENANCE.md` (`build_legacy`, section 1). The
+   moments from both legacy builds are identical (same sha1).
+2. **The requested window does not enclose the spectrum.** By dense diagonalisation the
+   graphene spectrum is `[-6.834, 6.834]` eV, and `[-3.5, 2.5]` covers less than half of it.
+   The rescaled eigenvalues reach -2.11 and +2.44, so the Chebyshev moments grow
+   geometrically: the curve values are up to 1e139. This golden still tests the arithmetic
+   and the energy axis byte for byte, but it is not a physical result. I therefore added
+   `offcentre_enclosing/` (`-8.5 7.5`), which encloses the spectrum. Its graphene
+   `sigma_xy` is about 1e-16, i.e. 0, as expected.
+3. **Gate coverage.** The gate compares the moments, and the Bastin curve both from the
+   golden moments and from the new moments, at 16 and 1 threads.
+
+### 4.2 Result and localisation
+
+| Item | offcentre (`-3.5 2.5`) | offcentre_enclosing (`-8.5 7.5`) |
+|---|---|---|
+| moments (`.chebmom2D`) | IDENTICAL | IDENTICAL |
+| Bastin, value column (text) | identical, 3839 lines | identical, 3839 lines |
+| Bastin, energy column | DIFFERS: golden - new = +0.333333 on every line | DIFFERS: golden - new = +0.4375 on every line |
+| new first / last E | -3.35 / 2.34852 (= -0.95·3 - 0.5 …) | -8.1 / 7.09604 |
+| legacy first / last E | -3.01667 / 2.68185 | -7.6625 / 7.53354 |
+
+The localisation is in the energy axis, not in the moments or the values. The offset is
+exactly `BandCenter/HalfWidth - BandCenter`: -0.5/3 + 0.5 = 0.333333, and -0.5/8 + 0.5 =
+0.4375.
+
+- **New code (review 3):** `E = (x - shift)/scale = x·HalfWidth + BandCenter`. This is
+  correct, with a max deviation of 4e-16.
+- **Legacy, this repository's tree:** `src/reconstruction.cpp` writes the uniform-grid Kubo
+  curves with `write_pairs(values, energies, [sf, shf](double e){ return e / sf - shf; })`,
+  where `sf = ScaleFactor() = 1/HalfWidth` and `shf = ShiftFactor() = -BandCenter/HalfWidth`
+  (`include/chebyshev_moments.hpp:85,88`). That gives `E = x·HalfWidth + BandCenter/HalfWidth`,
+  verified with a max deviation of 7e-6, the 6-digit text precision. **This is a legacy
+  defect.** Review 3's statement that "the legacy maps `x = (E - BandCenter)/HalfWidth`" holds
+  for the FFT-grid path (`e * hw + bc`, `reconstruction.cpp:150`) and for the old
+  `~/lsquant` build, but not for this tree's uniform-grid Bastin, Sea, Surf and Greenwood
+  (`reconstruction.cpp:147-148`, `199`, `223`).
+- The same pattern appears in the unified `lsquant` binary's DOS output
+  (`src/lsquant.cpp:108,240`: `x / ScaleFactor + ShiftFactor`, which is the sign the new code
+  had before review 3). I did not test it.
+- In the centred goldens `BandCenter = 0`, so both forms agree; that is why nothing else
+  moved.
+
+Consequence: G4c's curves faithfully encode a legacy defect. Two ways to close this, for
+Fable to decide:
+
+- (a) accept the energy-column difference with a written reason and re-bless G4c's
+  `KuboBastin` files with the corrected axis; or
+- (b) keep G4c's moments as the golden and compare only the value column of the curves.
+
+No golden was edited and no code was changed. The gate therefore reports FAIL on these 8
+files.
+
+## 5. Figure (run 2): `MPLBACKEND=Agg OPENBLAS_NUM_THREADS=1 python3 figures/stage_4.py --build build --threads 1`
+
+Thread count: run 1 used `--threads 16`. In run 2 the figure ran at 1 thread, because 16
+threads on this load is about 20 times slower (S1): the run-1 attempt of tutorial 02 at 16
+threads had managed only 28 of 192 realisations in 10 minutes. Thread invariance of the
+engine is what the gate checks.
+
+```
+tutorial04: wall 14.0 s, 3 lines printed, 3 of 3 IDENTICAL (3 new captures)
+tutorial02: wall 132.6 s, 193 lines printed, 193 of 193 IDENTICAL (192 new captures)
+tutorial05: wall 223.1 s, 8 lines printed, 16 of 16 IDENTICAL (8 new captures)
+max |new - golden|: (a) 0.0e+00  (b) 0.0e+00  (c) 0.0e+00; (a) max |golden - analytic| 3.997e-15
+exit: 0
+```
+
+- `tutorial04` now reads `goldens/stage0/chain1d_mag/operators` by default.
+- Wall times of the slow tutorials at 1 thread, with load average 90 to 140: tutorial 02
+  took 132.6 s and tutorial 05 took 223.1 s. For comparison, tutorial 05 took 624 s at 16
+  threads in run 1's diagnostic run.
+- The figure is `figures/out/stage_4/fig_stage_4.png`. Its caption is in
+  `fig_stage_4.caption.txt` and the cmp list of all 212 files in `fig_stage_4.cmp.txt`.
+
+Caption (verbatim):
+
+> FIG. 4. Stage 4 (handoff 0004): tutorials 04, 02 and 05 reproduced from Python by python3 -m lsquant.apps.tutorial04|tutorial02|tutorial05 (lsquant package over the pybind11 module lsquant._core, OMP_NUM_THREADS = 1), each run in a temporary directory; time evolution U(dt) = exp(-i H dt/hbar) by the Bessel-Chebyshev series (GSL J_n via lsquant._core.compat, |J_n| <= 1e-15 cut, hbar = 0.6582119624 eV fs), dt = tmax/(steps - 1). (a) Tutorial 04, Larmor precession on chain1d_mag (N = 128, t = -1, J_ex = 0.1 eV): m = 0 row of TimeProj{SX,SY,SZ}-PX (projector PX = (1 + S_x)/2, exact trace over the 128 site states, M = 32, 96 time steps, tmax = 95 fs, Gershgorin window [-2.31, 2.31] eV), normalised by <S_x(0)> as lsqspin.py does; new as filled markers, golden as open grey markers (every 4th step), cos(wt), -sin(wt), 0 with w = 2 J_ex/hbar as thin lines; residual new - analytic below (golden - analytic max 4.00e-15, round-off level); max |new - golden| = 0.0e+00. (b) Tutorial 02, localisation in the 1D Anderson chain (box disorder W = 1 eV, disorder seed and KPM_SEED = r for r = 1..16, one random-phase vector, window from BOUNDS, M = 256, 128 steps, tmax = 600 fs, MSD(E,t) at 10 meV): xi(E) = cal sqrt(<MSD>) over the last 30% of the time window, averaged over the 16 realisations, N = 256, 1024, 4096, E = 0, +-1, 1.9 eV, cal fixed once against the Born length 24(4 - E^2)/W^2 at N = 4096, E = 1 eV (lsqloc.py); new as lines, golden as open markers, Born dashed; residual new - golden below (max 0.0e+00 sites). (c) Tutorial 05, 2D square lattice L = 200 (N = 40000), disorder W = 0.5, 1, 2, 4 eV (seed 1, KPM_SEED = 1, one random-phase vector): D(E,t) = DeltaX^2/(2t) at E = 2 eV from the MSD (M = 256, 160 steps, tmax = 150 fs, 80 meV; the app also writes the DOS, M = 1024, 80 meV); new as lines, golden as open markers (every 8th step); residual new - golden below (max 0.0e+00). Byte comparison with goldens/stage0/tutorials/0N (captured/NNNN_<name> against the capture with the same index and name, top-level .dat by name; cmp criterion): tutorial 04 3 of 3 IDENTICAL; tutorial 02 193 of 193 IDENTICAL; tutorial 05 16 of 16 IDENTICAL. Wall times (TCN, load 60 to 100 on 64 cores): tutorial 04 14.0 s, tutorial 02 132.6 s, tutorial 05 223.1 s. All files IDENTICAL.
+
+## 6. Defects
+
+- **D1 (run 1): fixed.** `tutorial02` and `tutorial05` now call `build_chain` and
+  `build_square` with the generators' argument order. They produce 193 of 193 and 16 of 16
+  IDENTICAL.
+- **D2 (new, legacy, not the new code):** the energy axis of this tree's legacy uniform-grid
+  rank-2 reconstruction is `x·HalfWidth + BandCenter/HalfWidth` (section 4.2). It needs to be
+  recorded in AGENTS.md section 10, and G4c's curve comparison needs a decision.
+
+## 7. Smells (run 2)
+
+- **S1 (open, carried by Fable to stage 8): thread count and speed.** The time-evolution path
+  is 10 to 20 times slower at 16 threads than at 1 on loaded TCN. The cause is the
+  unconditional `#pragma omp parallel for` per SpMV in `sparse_matrix.cpp:126`. Run 2
+  figures:
+  - self-check: 34.5 s at 1 thread; still unfinished after 49 min at 16 threads;
+  - tutorial04: 14 s at 1 thread;
+  - stage-4 gate at 16 threads: G6 moments 3258 s at 16 threads vs 23 s at 1; G7 53, 52, 177 s at 16 vs 4, 3, 4 s at 1.
+
+  Results are unaffected.
+- **S2 (gone).** `TimeEvolutionStep` is renamed `AxisStep` in `plan.hpp`, `moment_engine.cpp`,
+  `bindings.cpp` and `_core.pyi`. The `plan.hpp` comments no longer say "time-evolution" or
+  "mean-square". The stage-4 grep is empty, and no lowercase physics word remains in the
+  excluded comment lines of `plan.hpp`.
+- **S3 (unchanged, fine):** GSL appears only in `compat/`.
+- **S4 (unchanged, minor):** forward accumulation, not Clenshaw. One unused recursion step
+  remains after the last coefficient of each series.
+- **S5 (gone; it was a non-finding):** scipy's `jv` is not on any gate path; the default
+  coefficients come from the GSL compat routine.
+- **S6 (gone).** `tutorial04 --operators` defaults to `goldens/stage0/chain1d_mag/operators`,
+  and no app reads `test/`.
+- **S7 (carried by Fable to AGENTS.md section 10):** the MSD velocity is rescaled like H.
+  This is harmless because every stage-4 window is centred.
+- **S8 (resolved as documentation):** the `stage4_time --batch` help now says it does not
+  apply to the time-axis path. The extra `.chebmom` output remains and is ignored by the gate.
+- **S9 (new): the legacy G4c window.** As asked for, `[-3.5, 2.5]` excludes the graphene
+  spectrum, so the moments diverge to about 1e138 (section 4.1). As a golden it is
+  arithmetic-only, and it amplifies any future reordering by a huge factor: a single ulp
+  change becomes a large absolute difference. `offcentre_enclosing/` is the physically
+  meaningful off-centre case.
+- **S10 (new): two legacy builds on TCN.** `~/lsquant/build` (`c1d9318`, June 2025) is not
+  the build behind the stage-0 goldens: it does not reproduce G5. Any instruction that points
+  at it for golden generation should point at a build of this repository's legacy tree
+  instead.
+- **No existing golden, seed or tolerance was touched.** The goldens added are G4c (two
+  directories) and a `PROVENANCE.md` section.
+
+## 8. Run 1 (`be54b79`) record
+
+The run-1 sections follow unchanged, apart from heading levels. Their logs and figure were
+renamed with the suffix `_run1_be54b79`: `build_run1_be54b79.log`, `stage_4_check_run1_be54b79.log`,
+`check_goldens_stage4_run1_be54b79.log`, `figure_run_run1_be54b79.log`,
+`fig_stage_4_run1_be54b79.{png,caption.txt,cmp.txt}`. The diagnostic files are
+`fig_stage_4_diag_alias_run1_be54b79.*`. Run 1's smells S1 to S8 are restated, with their
+current status, in section 7.
+
+### A.1 Build (fresh)
 
 ```
 $ rm -rf build
@@ -36,7 +304,7 @@ warnings are in the legacy tree, as in stages 1 to 3: 62 in `include/chebyshev_m
 32 in `include/units.hpp` and 7 in `src/chebyshev_momentsLocal.cpp`. `_core` links
 `GSL::gsl` (`lsquant/CMakeLists.txt:51`). `lsquant_core` links only Eigen and OpenMP.
 
-## 2. Developer self-check (`tests/dev/stage_4_check.py`, OMP_NUM_THREADS = 16)
+### A.2 Developer self-check (`tests/dev/stage_4_check.py`, OMP_NUM_THREADS = 16)
 
 ```
 $ PYTHONPATH=build/lsquant_core:python OMP_NUM_THREADS=16 python3 -u tests/dev/stage_4_check.py
@@ -58,7 +326,7 @@ exit: 0
 Log: `figures/out/stage_4/stage_4_check.log`. The lines match the developer's report, which
 ran at OMP_NUM_THREADS = 1. Item (d) ran the legacy binary from `build/` in this session.
 
-## 3. Gate (`scripts/check_goldens.sh 4 build`)
+### A.3 Gate (`scripts/check_goldens.sh 4 build`)
 
 Harness extension (this handoff): stage 4 runs stages 1, 2 and 3 in full, with their
 comparisons and greps. It then runs `python3 -m lsquant.apps.stage4_time` at
@@ -92,7 +360,7 @@ Command: `OMP_NUM_THREADS=16 bash scripts/check_goldens.sh 4 build`. Wall time: 
 `figures/out/stage_4/check_goldens_stage4.log`. The stage 1 to 3 part (41 files and three
 greps) is identical, line for line in its verdict lines, to the stage-3 final run.
 
-### 3.1 Stage-4 part, verbatim (the "printed:" lines are shortened here; the full text is in the log)
+#### A.3.1 Stage-4 part, verbatim (the "printed:" lines are shortened here; the full text is in the log)
 
 ```
 == stage 4: python3 -m lsquant.apps.stage4_time, PYTHONPATH=/home/ICN2/jgarcia/lsquant-unified/build/lsquant_core:python, vs goldens/stage0/{chain1d_ballistic,chain1d_mag}
@@ -141,7 +409,7 @@ empty; `delta|DOS|Kubo|basis|std::cout|getenv` (core, io, code lines) empty; `co
 (core, io) empty; stage-4 physics words (core, io, code lines) empty. No `DIFFERS`, so the
 localisation checklist of codex.md section 2 was not needed for the gate.
 
-## 4. Figure (`figures/stage_4.py`)
+### A.4 Figure (`figures/stage_4.py`)
 
 Command: `MPLBACKEND=Agg python3 figures/stage_4.py --build build --threads 16`.
 
@@ -166,7 +434,7 @@ Outputs:
 - `fig_stage_4.cmp.txt` (the per-file cmp list, 212 entries)
 - run log `figure_run.log` (exit 1)
 
-### 4.1 Production run (the deliverable)
+#### A.4.1 Production run (the deliverable)
 
 ```
 tutorial04: wall 217.9 s, 3 lines printed, 3 of 3 IDENTICAL (3 new captures)
@@ -186,7 +454,7 @@ Caption (verbatim, `fig_stage_4.caption.txt`):
 
 > FIG. 4. Stage 4 (handoff 0004): tutorials 04, 02 and 05 reproduced from Python by python3 -m lsquant.apps.tutorial04|tutorial02|tutorial05 (lsquant package over the pybind11 module lsquant._core, OMP_NUM_THREADS = 16), each run in a temporary directory; time evolution U(dt) = exp(-i H dt/hbar) by the Bessel-Chebyshev series (GSL J_n via lsquant._core.compat, |J_n| <= 1e-15 cut, hbar = 0.6582119624 eV fs), dt = tmax/(steps - 1). (a) Tutorial 04, Larmor precession on chain1d_mag (N = 128, t = -1, J_ex = 0.1 eV): m = 0 row of TimeProj{SX,SY,SZ}-PX (projector PX = (1 + S_x)/2, exact trace over the 128 site states, M = 32, 96 time steps, tmax = 95 fs, Gershgorin window [-2.31, 2.31] eV), normalised by <S_x(0)> as lsqspin.py does; new as filled markers, golden as open grey markers (every 4th step), cos(wt), -sin(wt), 0 with w = 2 J_ex/hbar as thin lines; residual new - analytic below (golden - analytic max 4.00e-15, round-off level); max |new - golden| = 0.0e+00. (b) Tutorial 02, localisation in the 1D Anderson chain (box disorder W = 1 eV, disorder seed and KPM_SEED = r for r = 1..16, one random-phase vector, window from BOUNDS, M = 256, 128 steps, tmax = 600 fs, MSD(E,t) at 10 meV): xi(E) = cal sqrt(<MSD>) over the last 30% of the time window, averaged over the 16 realisations, N = 256, 1024, 4096, E = 0, +-1, 1.9 eV, cal fixed once against the Born length 24(4 - E^2)/W^2 at N = 4096, E = 1 eV (lsqloc.py); new as lines, golden as open markers, Born dashed; residual new - golden below (max n/a (no new data) sites). (c) Tutorial 05, 2D square lattice L = 200 (N = 40000), disorder W = 0.5, 1, 2, 4 eV (seed 1, KPM_SEED = 1, one random-phase vector): D(E,t) = DeltaX^2/(2t) at E = 2 eV from the MSD (M = 256, 160 steps, tmax = 150 fs, 80 meV; the app also writes the DOS, M = 1024, 80 meV); new as lines, golden as open markers (every 8th step); residual new - golden below (max n/a (no new data)). Byte comparison with goldens/stage0/tutorials/0N (captured/NNNN_<name> against the capture with the same index and name, top-level .dat by name; cmp criterion): tutorial 04 3 of 3 IDENTICAL; tutorial 02 0 of 193 IDENTICAL (app failed: tutorial02 exited 1: tutorial02 error: module 'lsquant_tutorial02_make_disordered_chain' has no attribute 'build'); tutorial 05 0 of 16 IDENTICAL (app failed: tutorial05 exited 1: tutorial05 error: module 'lsquant_tutorial05_make_square' has no attribute 'build'). Wall times (TCN, load 60 to 100 on 64 cores): tutorial 04 217.9 s, tutorial 02 1.0 s (failed), tutorial 05 1.1 s (failed). AT LEAST ONE FILE DIFFERS OR IS NOT PRODUCED.
 
-### 4.2 Diagnostic run with the generator entry point aliased (localisation of D1; not a gate result)
+#### A.4.2 Diagnostic run with the generator entry point aliased (localisation of D1; not a gate result)
 
 Purpose: find out whether D1 is the only thing wrong with `tutorial02` and `tutorial05`.
 
@@ -228,7 +496,7 @@ script was run with `--threads 16`, but the reused tutorial 02 and 04 outputs ca
 
 All of it is byte-identical to the goldens.
 
-## 5. Defects found (localised; not fixed)
+### A.5 Defects found (localised; not fixed)
 
 - **D1 (blocking for the tutorial deliverable): `tutorial02.py` and `tutorial05.py` call a
   generator function that does not exist.**
@@ -247,77 +515,3 @@ All of it is byte-identical to the goldens.
   - The developer's report shows only a `tutorial04` smoke run, so tutorials 02 and 05 were
     apparently never executed.
 
-## 6. Smells
-
-- **S1. Thread count and speed.** At OMP_NUM_THREADS = 16 on the loaded TCN, the
-  time-evolution path is 6 to 25 times slower than at 1 thread:
-
-  | Run | 16 threads | 1 thread |
-  |---|---|---|
-  | G7, per tensor | 36 to 52 s | 4 s |
-  | G6 | 140 s | 23 s |
-  | tutorial04 | 108 to 324 s (four runs) | 9 s |
-  | tutorial02 (aliased) | under 3/192 per minute | 94.9 s total |
-
-  - Cause: `SparseMatrix` SpMV (`lsquant/core/algebra/sparse_matrix.cpp:126`, stage 1) opens
-    a `#pragma omp parallel for` on every product, with no minimum size. The time path
-    performs many SpMVs on vectors of 128 to 4096 entries (the series terms plus `M` moments
-    per step, per state).
-  - Results are unaffected (byte-identical at 1 and 16).
-  - The self-check took 655 s at 16 threads.
-  - This is not a correctness issue, but it will matter for stage 8, and it makes
-    "OMP_NUM_THREADS = 16" the slow setting for every small gate case.
-- **S2. Physics word in the engine.** The identifier `TimeEvolutionStep`
-  (`using TimeEvolutionStep = std::variant<EvolveRegister, EvolveDerived, CopyRegister>`,
-  `lsquant/core/chebyshev/plan.hpp:150`, used in `moment_engine.cpp:190` and `:388`) is not
-  in the allowed list (`TimeAxis`, `EvolveRegister`, `EvolveDerived`, `ApplyDerivedSeries`).
-  It passes the codex.md grep only because that grep matches lowercase whole words.
-  - The metadata fields `ChebyshevMoments::timeStep` and `numberOfTimeSteps` are named by
-    the brief (section 1) and are not counted here.
-  - Comment lines in `plan.hpp` speak of "time-evolution step descriptors" (line 7),
-    "recursions such as mean-square [displacement]" (line 26) and "Time-evolution step ..."
-    (lines 114, 125, 140).
-- **S3. GSL included from `core/`: no.** `grep -rni gsl lsquant/core lsquant/io` is empty.
-  `#include <gsl/gsl_sf_bessel.h>` appears only in `lsquant/compat/legacy_kernels.cpp`, and
-  only `_core` links `GSL::gsl`.
-- **S4. Clenshaw where forward accumulation was required: no.** `RunApplySeries` and
-  `RunApplyDerivedSeries` (`moment_engine.cpp:43` to `83`) accumulate forward,
-  `phi += c_n T_n` (`D_n`), with the recursion advancing, and apply the phase as a final
-  `scal`. The derived series zeroes the `n = 0` term and follows the `Conv_Evolve` order.
-  - Minor: both loops compute one recursion step after the last coefficient that is never
-    used. This is one wasted SpMV, or two for the derived series, per series application.
-- **S5. scipy Bessel on the gate path: no.** `time_evolution_series(..., use_legacy_bessel=True)`
-  is the default, and `stage4_time`, `tutorial02/04/05` and the self-check (a), (b) and (d)
-  all call it with the default. That routes through `legacy_bessel_coefficients`, which is
-  `_core.compat.bessel_series_coefficients` (GSL `gsl_sf_bessel_Jn`). scipy `jv` is used only
-  by the sympy `TimeEvolution` path and in self-check (c), where the max difference is
-  5.6e-16.
-- **S6. `tutorial04` depends on the legacy tree.** By default it reads
-  `test/models/chain1d_mag/operators` (the legacy `test/` tree, to be deleted in stage 7),
-  not `goldens/stage0/chain1d_mag/operators`. The five CSR files are byte-identical in both
-  places (md5 checked), so the result is the same. This is the same pattern that stage 3
-  review 2 removed from `tutorial03`.
-- **S7. The `MSD` commutator operator is rescaled like `H`** (`RescaledOperator(VX, window)`,
-  adding `ShiftFactor * I`). The developer records this as a reproduced legacy defect, and it
-  is harmless here because all stage-4 windows are symmetric (BandCenter 0). This note keeps
-  it visible for AGENTS.md section 10.
-- **S8. `stage4_time` writes a second file.** Next to every legacy `.chebmomTD` it also writes
-  the new-format `.chebmom`. The gate ignores it. `TimeAxis` ignores `--batch`: the time path
-  has no batching.
-- **No golden, seed or tolerance was touched.** `goldens/` is unchanged. The harness compares
-  only with `cmp`.
-
-## 7. Files committed on `handoff/0004-codex`
-
-- `scripts/check_goldens.sh`: stage 4, which is `run_s4`, `stage4` and `stage4_grep`, plus
-  the usage text.
-- `figures/stage_4.py`
-- `figures/out/stage_4/`:
-  - `build.log`
-  - `stage_4_check.log`
-  - `check_goldens_stage4.log`
-  - `figure_run.log`
-  - `fig_stage_4.{png,caption.txt,cmp.txt}`
-  - `fig_stage_4_diag_alias.{png,caption.txt,cmp.txt}`
-  - `fig_stage_4_diag_alias_run.log`
-- `handoff/0004-time-evolution/tests.md` (this file)
