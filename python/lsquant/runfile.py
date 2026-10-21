@@ -62,6 +62,8 @@ GENERATOR_CATALOGUE: dict[str, str] = {
     "make_haldane": "examples/03_haldane_hall/make_haldane.py",
     "make_chain_mag": "examples/04_spin_precession_magnetic_chain/lsqspin.py",
     "make_square": "examples/05_charge_transport_square/make_square.py",
+    "make_ey": "examples/06_spin_relaxation_square/make_ey.py",
+    "make_rashba": "examples/06_spin_relaxation_square/make_rashba.py",
     "gen_models": "python/lsquant/models/wannier.py",
 }
 
@@ -71,6 +73,8 @@ _GENERATOR_TO_TUTORIAL: dict[str, int] = {
     "make_haldane": 3,
     "make_chain_mag": 4,
     "make_square": 5,
+    "make_ey": 6,
+    "make_rashba": 6,
 }
 
 ALLOWED_GENERATOR_PARAMS: dict[str, frozenset[str]] = {
@@ -87,6 +91,50 @@ ALLOWED_GENERATOR_PARAMS: dict[str, frozenset[str]] = {
     "make_haldane": frozenset(),
     "make_chain_mag": frozenset(),
     "make_square": frozenset({"L", "W", "disorder_seed", "dos_moments"}),
+    "make_ey": frozenset(
+        {
+            "ey_l",
+            "ey_ds",
+            "dp_l",
+            "dp_lambda",
+            "dp_ws",
+            "dp_moments",
+            "dp_steps",
+            "dp_tmax",
+            "ratelaw_l",
+            "ratelaw_ds",
+            "ratelaw_nr",
+            "crosscheck_l",
+            "crosscheck_d",
+            "crosscheck_nr",
+            "crosscheck_moments",
+            "crosscheck_steps",
+            "crosscheck_tmax",
+            "disorder_seed",
+        }
+    ),
+    "make_rashba": frozenset(
+        {
+            "ey_l",
+            "ey_ds",
+            "dp_l",
+            "dp_lambda",
+            "dp_ws",
+            "dp_moments",
+            "dp_steps",
+            "dp_tmax",
+            "ratelaw_l",
+            "ratelaw_ds",
+            "ratelaw_nr",
+            "crosscheck_l",
+            "crosscheck_d",
+            "crosscheck_nr",
+            "crosscheck_moments",
+            "crosscheck_steps",
+            "crosscheck_tmax",
+            "disorder_seed",
+        }
+    ),
     "gen_models": frozenset(),
 }
 
@@ -958,6 +1006,52 @@ def _execute_generator_runfile(
             legacy_text_round_trip=bool(
                 _get_or(rf.reconstruction, "legacy_text_round_trip", True)
             ),
+        )
+    if tut == 6:
+        from .apps.tutorial06 import run_tutorial06
+
+        assert rf.time is not None
+        return run_tutorial06(
+            out_dir,
+            ey_l=int(_get_or(params, "ey_l", 20)),
+            ey_ds=_get_or(params, "ey_ds", (0.05, 0.07, 0.10)),
+            ey_moments=int(rf.expansion["moments"]),
+            ey_steps=int(rf.time["steps"]),
+            ey_tmax=float(_get_or(rf.time, "tmax", 260.0)),
+            dp_l=int(_get_or(params, "dp_l", 20)),
+            dp_lambda=float(_get_or(params, "dp_lambda", 0.2)),
+            dp_ws=_get_or(params, "dp_ws", (0.0, 6.0)),
+            dp_moments=int(_get_or(params, "dp_moments", 160)),
+            dp_steps=int(_get_or(params, "dp_steps", 120)),
+            dp_tmax=float(_get_or(params, "dp_tmax", 45.0)),
+            ratelaw_l=int(_get_or(params, "ratelaw_l", 50)),
+            ratelaw_ds=_get_or(
+                params, "ratelaw_ds", (0.04, 0.06, 0.08, 0.10, 0.14)
+            ),
+            ratelaw_nr=int(_get_or(params, "ratelaw_nr", 20)),
+            ratelaw_moments=int(rf.expansion["moments"]),
+            ratelaw_steps=int(rf.time["steps"]),
+            ratelaw_tmax=float(_get_or(rf.time, "tmax", 260.0)),
+            crosscheck_l=int(_get_or(params, "crosscheck_l", 8)),
+            crosscheck_d=float(_get_or(params, "crosscheck_d", 0.10)),
+            crosscheck_nr=int(_get_or(params, "crosscheck_nr", 20)),
+            crosscheck_moments=int(_get_or(params, "crosscheck_moments", 96)),
+            crosscheck_steps=int(_get_or(params, "crosscheck_steps", 60)),
+            crosscheck_tmax=float(_get_or(params, "crosscheck_tmax", 220.0)),
+            disorder_seed=int(_get_or(params, "disorder_seed", 1)),
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 140.0)
+            ),
+            fermi_energies=(
+                rf.reconstruction["fermi_energies"]
+                if rf.reconstruction.get("fermi_energies")
+                else (2.0,)
+            ),
+            bessel=str(_get_or(rf.time, "bessel", "legacy")),
+            legacy_text_round_trip=bool(
+                _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+            words=rf.words,
         )
     raise ValueError(f"Unsupported generator '{gen_name}' (tutorial={tut})")
 
