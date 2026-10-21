@@ -45,7 +45,9 @@ struct BlochTransform::FftwWorkspace {
       }
       throw std::bad_alloc();
     }
-    int dims[3] = {n1, n2, n3};
+    // wannier2sparse cell order has n1 fastest: iR = n1 + n1_ * n2 + n1_ * n2_ * n3,
+    // which corresponds to C row-major order on a 3D grid of shape {n3, n2, n1}.
+    int dims[3] = {n3, n2, n1};
     plan = fftw_plan_many_dft(3, dims, howmany, inBuffer, nullptr, howmany, 1,
                               outBuffer, nullptr, howmany, 1, sign, FFTW_ESTIMATE);
     if (plan == nullptr) {
@@ -96,22 +98,32 @@ BlochTransform::BlochTransform(Index n1, Index n2, Index n3, Index numOrbitals,
       throw std::invalid_argument(
           "BlochTransform: atomPhases length must equal n1 * n2 * n3 * numOrbitals");
     }
-    // Accept either unit-modulus phases exp(-i k . tau) or pre-normalised
-    // phases exp(-i k . tau) / sqrt(N_k).
-    const double firstNorm = std::norm(atomPhases[0]);
-    const bool alreadyScaled =
-        (numCells_ > 1) &&
-        (std::abs(firstNorm * static_cast<double>(numCells_) - 1.0) < 1e-6);
-    const double factor = alreadyScaled ? 1.0 : invSqrtNk;
     for (std::size_t i = 0; i < dim; ++i) {
-      scaled[i] = atomPhases[i] * factor;
+      scaled[i] = atomPhases[i] * invSqrtNk;
     }
   }
   scaledPhases_ = std::make_shared<const std::vector<Scalar>>(std::move(scaled));
   InitWorkspace();
 }
 
-BlochTransform::BlochTransform(Index n1, Index n2, Index n3, Index numOrbitals,
+BlochTransform BlochTransform::FromScaledPhases(
+    Index n1, Index n2, Index n3, Index numOrbitals,
+    std::shared_ptr<const std::vector<Scalar>> scaledPhases,
+    Direction direction) {
+  if (n1 <= 0 || n2 <= 0 || n3 <= 0 || numOrbitals <= 0) {
+    throw std::invalid_argument(
+        "BlochTransform::FromScaledPhases: grid dimensions and numOrbitals must be positive");
+  }
+  const std::size_t dim = static_cast<std::size_t>(n1 * n2 * n3 * numOrbitals);
+  if (!scaledPhases || scaledPhases->size() != dim) {
+    throw std::invalid_argument(
+        "BlochTransform::FromScaledPhases: scaledPhases length must equal n1 * n2 * n3 * numOrbitals");
+  }
+  return BlochTransform(ScaledPhasesTag{}, n1, n2, n3, numOrbitals, std::move(scaledPhases),
+                        direction);
+}
+
+BlochTransform::BlochTransform(ScaledPhasesTag, Index n1, Index n2, Index n3, Index numOrbitals,
                                std::shared_ptr<const std::vector<Scalar>> scaledPhases,
                                Direction direction)
     : n1_(n1),
@@ -199,7 +211,7 @@ BlochTransform BlochTransform::Adjoint() const {
   const Direction adjDir = (direction_ == Direction::RealToBloch)
                                ? Direction::BlochToReal
                                : Direction::RealToBloch;
-  return BlochTransform(n1_, n2_, n3_, numOrbitals_, scaledPhases_, adjDir);
+  return FromScaledPhases(n1_, n2_, n3_, numOrbitals_, scaledPhases_, adjDir);
 }
 
 }  // namespace lsquant

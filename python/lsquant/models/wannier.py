@@ -12,9 +12,9 @@ Angstrom), and constructs:
   ``v_d(k)_{a,b} = -i sum_R (R + tau_b - tau_a)_d exp(+i k . (R + tau_b - tau_a)) H_{a,b}(R)``;
 - the supercell k-mesh ``k = (m_1 / N_1) b_1 + (m_2 / N_2) b_2 + (m_3 / N_3) b_3``
   and atom-gauge Bloch phase table ``exp(-i k . tau_a)``;
-- real-space supercell CSR matrices ``HAM`` and ``VX``/``VY``/``VZ`` in C
-  row-major cell order ``iR = (i1 * N2 + i2) * N3 + i3`` matching
-  :class:`~lsquant._core.BlochTransform`.
+- real-space supercell CSR matrices ``HAM`` and ``VX``/``VY``/``VZ`` in
+  ``n_1``-fastest cell order ``iR = n_1 + N_1 * n_2 + N_1 * N_2 * n_3`` matching
+  ``wannier2sparse`` and :class:`~lsquant._core.BlochTransform`.
 """
 
 from __future__ import annotations
@@ -71,7 +71,14 @@ def _parse_wsvec(path: str) -> dict[tuple[int, int, int, int, int], list[tuple[i
 def read_hr(
     path: str, wsvec_path: str | None = None
 ) -> tuple[int, npt.NDArray[np.int64], npt.NDArray[np.complex128]]:
-    """Read a Wannier90 ``_hr.dat`` file and fold ``1 / ndegen`` into ``H(R)``.
+    """Read a Wannier90 ``_hr.dat`` file (sparse or dense) and fold ``1 / ndegen`` into ``H(R)``.
+
+    Parses ``R_1 R_2 R_3 i j re im`` records by content and assigns each unique
+    lattice vector ``R = (R_1, R_2, R_3)`` its degeneracy weight ``ndegen[r]``
+    by order of first appearance of ``R`` (matching Wannier90 and
+    ``hr_exactdiag.py``), supporting both sparse ``_hr.dat`` files (such as
+    ``gen_models.py`` that list only non-zero hoppings) and dense ``nrpts * W^2``
+    files as a special case.
 
     Parameters
     ----------
@@ -92,18 +99,31 @@ def read_hr(
         present).
     """
     with open(path, encoding="utf-8") as fh:
-        lines = [ln.strip() for ln in fh if ln.strip()]
-    if len(lines) < 3:
+        raw_lines = fh.read().splitlines()
+    if len(raw_lines) < 3:
         raise ValueError(f"read_hr: truncated _hr.dat file '{path}'")
 
-    num_wann = int(lines[1].split()[0])
-    nrpts = int(lines[2].split()[0])
+    # Line 0 is the Wannier90 comment/header line; collect remaining non-empty lines.
+    lines = [ln.strip() for ln in raw_lines[1:] if ln.strip()]
+    if len(lines) < 2:
+        raise ValueError(f"read_hr: truncated _hr.dat header in '{path}'")
+
+    num_wann = int(lines[0].split()[0])
+    nrpts = int(lines[1].split()[0])
+    if num_wann <= 0 or nrpts <= 0:
+        raise ValueError(
+            f"read_hr: invalid num_wann={num_wann} or nrpts={nrpts} in '{path}'"
+        )
 
     ndegen: list[int] = []
-    idx = 3
-    while len(ndegen) < nrpts:
+    idx = 2
+    while len(ndegen) < nrpts and idx < len(lines):
         ndegen.extend(int(x) for x in lines[idx].split())
         idx += 1
+    if len(ndegen) < nrpts:
+        raise ValueError(
+            f"read_hr: expected {nrpts} ndegen integers in '{path}', found {len(ndegen)}"
+        )
 
     if wsvec_path is None and path.endswith("_hr.dat"):
         candidate = path[: -len("_hr.dat")] + "_wsvec.dat"
@@ -112,43 +132,50 @@ def read_hr(
 
     ws_lut = _parse_wsvec(wsvec_path) if (wsvec_path and os.path.isfile(wsvec_path)) else None
 
-    block_size = num_wann * num_wann
-    total_lines = nrpts * block_size
-    if len(lines) - idx < total_lines:
-        raise ValueError(f"read_hr: expected {total_lines} hopping lines in '{path}'")
-
+    r_order: dict[tuple[int, int, int], int] = {}
     accum: dict[tuple[int, int, int], npt.NDArray[np.complex128]] = {}
-    for ir in range(nrpts):
-        deg = float(ndegen[ir]) if ndegen[ir] > 0 else 1.0
-        base = idx + ir * block_size
-        for m in range(block_size):
-            parts = lines[base + m].split()
-            r1 = int(parts[0])
-            r2 = int(parts[1])
-            r3 = int(parts[2])
-            a = int(parts[3]) - 1
-            b = int(parts[4]) - 1
-            val = complex(float(parts[5]), float(parts[6])) / deg
-            if abs(val) <= np.finfo(np.float64).eps:
+    for line in lines[idx:]:
+        parts = line.split()
+        if len(parts) < 7:
+            continue
+        r1 = int(parts[0])
+        r2 = int(parts[1])
+        r3 = int(parts[2])
+        a = int(parts[3]) - 1
+        b = int(parts[4]) - 1
+        if a < 0 or a >= num_wann or b < 0 or b >= num_wann:
+            raise ValueError(
+                f"read_hr: orbital index ({a + 1}, {b + 1}) out of range 1..{num_wann} in '{path}'"
+            )
+        raw_r = (r1, r2, r3)
+        if raw_r not in r_order:
+            r_order[raw_r] = len(r_order)
+        r_idx = r_order[raw_r]
+        deg = (
+            float(ndegen[r_idx])
+            if (r_idx < len(ndegen) and ndegen[r_idx] > 0)
+            else 1.0
+        )
+        val = complex(float(parts[5]), float(parts[6])) / deg
+        if abs(val) <= np.finfo(np.float64).eps:
+            continue
+        if ws_lut is not None:
+            shifts = ws_lut.get((r1, r2, r3, a, b))
+            if shifts:
+                sub_val = val / float(len(shifts))
+                for t1, t2, t3 in shifts:
+                    key = (r1 + t1, r2 + t2, r3 + t3)
+                    mat = accum.get(key)
+                    if mat is None:
+                        mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
+                        accum[key] = mat
+                    mat[a, b] += sub_val
                 continue
-            if ws_lut is not None:
-                shifts = ws_lut.get((r1, r2, r3, a, b))
-                if shifts:
-                    sub_val = val / float(len(shifts))
-                    for t1, t2, t3 in shifts:
-                        key = (r1 + t1, r2 + t2, r3 + t3)
-                        mat = accum.get(key)
-                        if mat is None:
-                            mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
-                            accum[key] = mat
-                        mat[a, b] += sub_val
-                    continue
-            key = (r1, r2, r3)
-            mat = accum.get(key)
-            if mat is None:
-                mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
-                accum[key] = mat
-            mat[a, b] += val
+        mat = accum.get(raw_r)
+        if mat is None:
+            mat = np.zeros((num_wann, num_wann), dtype=np.complex128)
+            accum[raw_r] = mat
+        mat[a, b] += val
 
     keys = sorted(accum.keys())
     if not keys:
@@ -179,25 +206,51 @@ def read_uc(path: str) -> npt.NDArray[np.float64]:
     return np.array(rows, dtype=np.float64)
 
 
+def _try_parse_xyz_coord(line: str) -> list[float] | None:
+    """Attempt to parse an orbital line ``<label> <x> <y> <z>``."""
+    parts = line.split()
+    if len(parts) < 4:
+        return None
+    try:
+        return [float(parts[1]), float(parts[2]), float(parts[3])]
+    except ValueError:
+        return None
+
+
 def read_xyz(path: str) -> npt.NDArray[np.float64]:
-    """Read the ``W`` orbital positions ``tau_alpha`` in Angstrom from ``<seed>.xyz``."""
+    """Read the ``W`` orbital positions ``tau_alpha`` in Angstrom from ``<seed>.xyz``.
+
+    Accepts both ``wannier2sparse``'s single-header layout (count line followed
+    directly by ``W`` ``<label> <x> <y> <z>`` lines with no comment line) and
+    the two-header XYZ layout (count line, comment line, then ``W`` orbital
+    lines).
+    """
     with open(path, encoding="utf-8") as fh:
-        raw_lines = [ln.rstrip("\n") for ln in fh]
-    if len(raw_lines) < 2:
+        raw_lines = [ln.strip() for ln in fh.read().splitlines()]
+    non_empty = [ln for ln in raw_lines if ln]
+    if len(non_empty) < 2:
         raise ValueError(f"read_xyz: truncated .xyz file '{path}'")
 
-    num_orbs = int(raw_lines[0].strip().split()[0])
+    num_orbs = int(non_empty[0].split()[0])
+    if num_orbs <= 0:
+        raise ValueError(f"read_xyz: invalid orbital count {num_orbs} in '{path}'")
+
+    rest = non_empty[1:]
+    if len(rest) == num_orbs:
+        orb_lines = rest
+    elif len(rest) >= num_orbs + 1 and (
+        _try_parse_xyz_coord(rest[0]) is None or len(rest) == num_orbs + 1
+    ):
+        orb_lines = rest[1 : 1 + num_orbs]
+    else:
+        orb_lines = rest[:num_orbs]
+
     coords: list[list[float]] = []
-    for line in raw_lines[2:]:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        parts = stripped.split()
-        if len(parts) < 4:
+    for line in orb_lines:
+        parsed = _try_parse_xyz_coord(line)
+        if parsed is None:
             raise ValueError(f"read_xyz: malformed orbital line '{line}' in '{path}'")
-        coords.append([float(parts[1]), float(parts[2]), float(parts[3])])
-        if len(coords) == num_orbs:
-            break
+        coords.append(parsed)
     if len(coords) != num_orbs:
         raise ValueError(
             f"read_xyz: expected {num_orbs} orbital lines in '{path}', found {len(coords)}"
@@ -213,10 +266,11 @@ def reciprocal_lattice(uc: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
 def k_mesh(
     uc: npt.NDArray[np.float64], supercell: Sequence[int]
 ) -> npt.NDArray[np.float64]:
-    """Build the ``N_k = N_1 * N_2 * N_3`` k-points in C row-major order ``(m_1, m_2, m_3)``.
+    """Build the ``N_k = N_1 * N_2 * N_3`` k-points in ``m_1``-fastest order ``(m_1, m_2, m_3)``.
 
     Each point is ``k = (m_1 / N_1) b_1 + (m_2 / N_2) b_2 + (m_3 / N_3) b_3`` in
-    inverse Angstrom, with flat index ``ik = (m_1 * N_2 + m_2) * N_3 + m_3``.
+    inverse Angstrom, with flat index ``ik = m_1 + N_1 * m_2 + N_1 * N_2 * m_3``
+    matching ``wannier2sparse``'s cell numbering.
     """
     if len(supercell) != 3:
         raise ValueError("k_mesh: supercell must have 3 integer dimensions (N1, N2, N3)")
@@ -228,7 +282,7 @@ def k_mesh(
     f1 = np.arange(n1, dtype=np.float64) / float(n1)
     f2 = np.arange(n2, dtype=np.float64) / float(n2)
     f3 = np.arange(n3, dtype=np.float64) / float(n3)
-    g1, g2, g3 = np.meshgrid(f1, f2, f3, indexing="ij")
+    g3, g2, g1 = np.meshgrid(f3, f2, f1, indexing="ij")
     frac = np.stack([g1.ravel(), g2.ravel(), g3.ravel()], axis=-1)
     return np.ascontiguousarray(frac @ b_mat, dtype=np.float64)
 
@@ -327,10 +381,11 @@ def _build_supercell_sparse_matrix(
     hop_blocks: npt.NDArray[np.complex128],
     supercell: Sequence[int],
 ) -> _core.SparseMatrix:
-    """Assemble a periodic supercell :class:`~lsquant._core.SparseMatrix` in C row-major cell order.
+    """Assemble a periodic supercell :class:`~lsquant._core.SparseMatrix` in ``n_1``-fastest cell order.
 
-    Enforces the minimum-image condition ``N_d >= 2 * max(|R_d|) + 1`` along
-    every axis ``d`` that carries non-zero ``R_d``, matching ``wannier2sparse``.
+    Uses the ``wannier2sparse`` cell index ``iR = n_1 + N_1 * n_2 + N_1 * N_2 * n_3``
+    and enforces the minimum-image condition ``N_d >= 2 * max(|R_d|) + 1`` along
+    every axis ``d`` that carries non-zero ``R_d``.
     """
     if len(supercell) != 3:
         raise ValueError("supercell must have 3 integer dimensions (N1, N2, N3)")
@@ -363,22 +418,22 @@ def _build_supercell_sparse_matrix(
     dr3 = r_int[nz_r, 2]
     vals_nz = hop_blocks[nz_r, nz_a, nz_b]
 
-    # Grid of source cells (c1, c2, c3) in C row-major order: iR = (c1 * N2 + c2) * N3 + c3
-    c1, c2, c3 = np.meshgrid(
-        np.arange(n1, dtype=np.int64),
-        np.arange(n2, dtype=np.int64),
+    # Grid of source cells (c1, c2, c3) in wannier2sparse order: iR = c1 + n1 * c2 + n1 * n2 * c3
+    c3, c2, c1 = np.meshgrid(
         np.arange(n3, dtype=np.int64),
+        np.arange(n2, dtype=np.int64),
+        np.arange(n1, dtype=np.int64),
         indexing="ij",
     )
     c1_flat = c1.ravel()[:, None]  # (N_k, 1)
     c2_flat = c2.ravel()[:, None]
     c3_flat = c3.ravel()[:, None]
-    ir_src = (c1_flat * n2 + c2_flat) * n3 + c3_flat  # (N_k, 1)
+    ir_src = c1_flat + n1 * (c2_flat + n2 * c3_flat)  # (N_k, 1)
 
     t1 = (c1_flat + dr1[None, :]) % n1
     t2 = (c2_flat + dr2[None, :]) % n2
     t3 = (c3_flat + dr3[None, :]) % n3
-    ir_dst = (t1 * n2 + t2) * n3 + t3  # (N_k, E)
+    ir_dst = t1 + n1 * (t2 + n2 * t3)  # (N_k, E)
 
     rows = (ir_src * num_wann + nz_a[None, :]).ravel()
     cols = (ir_dst * num_wann + nz_b[None, :]).ravel()
@@ -471,6 +526,7 @@ class WannierModel:
     r_cart: npt.NDArray[np.float64]
     hoppings: npt.NDArray[np.complex128]
     seed_name: str = "model"
+    model_dir: str | None = None
 
     def Hk(self, k_points: npt.NDArray[np.float64]) -> npt.NDArray[np.complex128]:
         """Evaluate ``H(k)`` blocks in the atom gauge for ``k_points``."""
@@ -573,4 +629,5 @@ def load_wannier_model(model_dir: str, seed: str | None = None) -> WannierModel:
         r_cart=r_cart,
         hoppings=hoppings,
         seed_name=seed_name,
+        model_dir=os.path.abspath(base_dir),
     )

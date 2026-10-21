@@ -324,7 +324,11 @@ PYBIND11_MODULE(_core, m) {
       .def(py::init<Index, std::vector<Index>>(), py::arg("dim"), py::arg("sites"));
 
   py::class_<BlockLocalStates, StateGenerator>(m, "BlockLocalStates")
-      .def(py::init<Index, Index>(), py::arg("num_blocks"), py::arg("block_size"));
+      .def(py::init<Index, Index>(), py::arg("num_blocks"), py::arg("block_size"))
+      .def(py::init<Index, Index, Index, Index>(), py::arg("n1"), py::arg("n2"), py::arg("n3"),
+           py::arg("block_size"))
+      .def_static("block_index", &BlockLocalStates::BlockIndex, py::arg("m1"), py::arg("m2"),
+                  py::arg("m3"), py::arg("n1"), py::arg("n2"));
 
   py::class_<TransformedStates, StateGenerator>(m, "TransformedStates")
       .def(py::init<const LinearOperator&, StateGenerator&>(), py::arg("transform"),

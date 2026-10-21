@@ -29,7 +29,11 @@
 #            files; G4 moments (graphene VX-VX, --window gershgorin, random phase
 #            seed 12345, 1 state, M = 64); G4 curves bastin at 64 meV, sea and surf
 #            at 10 meV (sea_surf/), greenwood_fft and bastin_fft at 10 meV
-#            (fft_grid/); grep -rn "compat/" lsquant/core lsquant/io must be empty.
+#            (fft_grid/); G4c (graphene VX-VY, window from goldens/stage0/graphene/
+#            offcentre_enclosing/BOUNDS = -8.5 7.5, exact trace, 256 states, M = 128)
+#            moments (legacy), and its Bastin curve at 10 meV from the golden and from
+#            the new moments vs the curve blessed from the new code (legacy defect D2) (a DIFFERS curve also gets an informational value/energy column
+#            note); grep -rn "compat/" lsquant/core lsquant/io must be empty.
 #   stage 4  time evolution (handoff 0004): stages 1 to 3 in full, then
 #            python3 -m lsquant.apps.stage4_time at OMP_NUM_THREADS = 16 and 1:
 #            G6 moments (chain1d_ballistic, --word msd --velocity VX, window [-2, 2],
@@ -40,20 +44,6 @@
 #            exact trace, 128 states, M = 32, 96 steps, tmax 95); grep -rnwE
 #            "time|velocity|spin|projector|bessel|gsl" (whole lowercase words) on code
 #            lines of lsquant/core and lsquant/io must be empty.
-#   stage 5  Bloch and eigen bases (handoff 0005): stages 1 to 4 in full, then
-#            python3 -m lsquant.apps.stage5_bases on graphene and Haldane
-#            (goldens/stage0/bases/<model>/model, wannier2sparse examples/gen_models.py),
-#            supercell 48 48 1, M = 256, window and broadening from G9_params.txt, at
-#            OMP_NUM_THREADS = 16 and 1: W = 0 real and Bloch (random phase, 32 states,
-#            seed 12345), Bloch and eigen (exact trace), DOS and kuboxx; W = 1 eV Anderson
-#            (disorder seed 7) real and Bloch; the FFTW convention of BlochTransform against
-#            the dense B and the wannier2sparse CSR (counted); the real-path files of
-#            T = 1 and 16 must be byte-identical (Bloch and eigen reported);
-#            figures/stage_5_table.py prints the codex.md tolerance rows (PASS/FAIL are
-#            counted, INFO is reported); grep -rni fftw lsquant/core/chebyshev lsquant/io
-#            must be empty. Needs ~/wannier2sparse/build/wannier2sparse (W2S_BIN) and
-#            ~/wannier2sparse/tools (W2S_TOOLS). S5_KEEP=<dir> keeps the stage-5 outputs
-#            (for figures/stage_5.py). Stage "5only" runs the stage-5 part alone.
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -284,6 +274,16 @@ run_s3() {   # <threads> <workdir> <tag> <args...>
 G5XY=NonEqOpVX-VYhaldaneKPM_M128x128_stateexact
 G5XX=NonEqOpVX-VXhaldaneKPM_M128x128_stateexact
 G4XX=NonEqOpVX-VXgraphene_goldenKPM_M64x64_statedefault
+G4CXY=NonEqOpVX-VYgraphene_goldenKPM_M128x128_stateexact
+
+# Informational, not a verdict: for a two-column curve that DIFFERS, say whether the value
+# column is byte-identical as text and what the energy-column offset (golden - new) is.
+columns_note() {   # <new> <golden>
+  [ -f "$1" ] && [ -f "$2" ] || return 0
+  cmp -s "$1" "$2" && return 0
+  local v; cmp -s <(awk '{print $2}' "$1") <(awk '{print $2}' "$2") && v="identical" || v="DIFFERS"
+  echo "          note: value column $v as text; energy column golden - new: $(paste "$1" "$2" | awk '{d=$3-$1; s+=d; if(NR==1||d<mn)mn=d; if(NR==1||d>mx)mx=d} END{printf "min %.6g max %.6g mean %.6g over %d lines", mn, mx, s/NR, NR}')"
+}
 
 stage3() {
   local T W G
@@ -331,6 +331,23 @@ stage3() {
             "[T=$T] graphene/fft_grid/KuboGreenWood_${G4XX}JACKSON_FFTgrid.dat (G4 curve, 10 meV)"
     compare "$W/KuboBastin_${G4XX}JACKSON_FFTgrid.dat" "$GOLD/graphene/fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat" \
             "[T=$T] graphene/fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat (G4 curve, 10 meV)"
+    # 5. G4c: graphene VX-VY, off-centre window from the BOUNDS file (-8.5 7.5), exact trace
+    #    256 states, M = 128: moments vs the legacy moments; Bastin at 10 meV, from the golden
+    #    and from the produced moments, vs the curve blessed from the new code (legacy defect
+    #    D2, goldens/stage0/legacy_defects/offcentre_axis/).
+    for G in offcentre_enclosing; do
+      W="$TMP/s3_T${T}_g4c_$G"
+      run_s3 $T "$W" "G4c $G VX-VY moments" --operators "$GOLD/graphene/operators" --label graphene_golden --left VX --right VY \
+        --window $(cat "$GOLD/graphene/$G/BOUNDS") --trace exact --states 256 --moments 128
+      compare "$W/$G4CXY.chebmom2D" "$GOLD/graphene/$G/$G4CXY.chebmom2D" "[T=$T] graphene/$G/$G4CXY.chebmom2D (G4c moments)"
+      run_s3 $T "$W/cg" "G4c $G bastin (golden moments)" --moments "$GOLD/graphene/$G/$G4CXY.chebmom2D" --formula bastin --broadening-meV 10
+      run_s3 $T "$W/cn" "G4c $G bastin (new moments)" --moments "$W/$G4CXY.chebmom2D" --formula bastin --broadening-meV 10
+      for c in cg cn; do
+        compare "$W/$c/KuboBastin_${G4CXY}JACKSON.dat" "$GOLD/graphene/$G/KuboBastin_${G4CXY}JACKSON.dat" \
+                "[T=$T] graphene/$G/KuboBastin_${G4CXY}JACKSON.dat (G4c curve, 10 meV, from $([ $c = cg ] && echo golden || echo new) moments)"
+        columns_note "$W/$c/KuboBastin_${G4CXY}JACKSON.dat" "$GOLD/graphene/$G/KuboBastin_${G4CXY}JACKSON.dat"
+      done
+    done
   done
 }
 
@@ -427,243 +444,12 @@ stage4_grep() {
   [ -z "$coms" ] || echo "$coms" | sed 's/^/          excluded comment line: /'
 }
 
-# ---------------------------------------------------------------- stage 5 (Bloch and eigen bases)
-# G9: graphene and Haldane (wannier2sparse examples/gen_models.py, committed under
-# goldens/stage0/bases/<model>/model/), supercell 48 x 48 x 1, M = 256, window and
-# broadening from goldens/stage0/bases/<model>/G9_params.txt (eigenvalue window of the
-# 48 x 48 Gamma mesh padded 10 %, broadening = Jackson resolution pi * a / M).
-S5N=48
-S5_W2S="${W2S_BIN:-$HOME/wannier2sparse/build/wannier2sparse}"
-
-# Python helpers of the stage-5 gate, written into $TMP (they never touch the repository).
-s5_helpers() {
-  mkdir -p "$TMP/s5py"
-  # 1. format adapter for the stage-5 reader (python/lsquant/models/wannier.py), which
-  #    requires (a) the dense Wannier90 _hr.dat layout (every R carries all W*W entries;
-  #    gen_models.py writes only the non-zero hoppings) and (b) a comment line after the
-  #    orbital count in .xyz (gen_models.py and wannier2sparse have none). Same model:
-  #    s5_conv.py checks the lsquant CSR built from the copy against the wannier2sparse CSR
-  #    built from the committed originals.
-  #    usage: s5_densify.py <src_hr> <dst_hr> <src_xyz> <dst_xyz>
-  cat >"$TMP/s5py/s5_densify.py" <<'PY'
-import sys, collections
-src, dst, sx, dx = sys.argv[1:5]
-X = open(sx).read().split('\n')
-open(dx, 'w').write('\n'.join([X[0], 'orbital positions (Angstrom), comment line added for the stage-5 gate'] + X[1:]))
-L = [l for l in open(src).read().split('\n')]
-nw = int(L[1]); nr = int(L[2]); i = 3; deg = []
-while len(deg) < nr:
-    deg += L[i].split(); i += 1
-acc = collections.OrderedDict()
-for l in L[i:]:
-    s = l.split()
-    if len(s) < 7: continue
-    R = (int(s[0]), int(s[1]), int(s[2]))
-    acc.setdefault(R, {})[(int(s[3]), int(s[4]))] = (s[5], s[6])
-assert all(d == '1' for d in deg), "densify: ndegen != 1 not supported"
-with open(dst, 'w') as f:
-    f.write(L[0] + ' (dense copy for the stage-5 gate)\n%d\n%d\n' % (nw, len(acc)))
-    f.write(' '.join('1' for _ in acc) + '\n')
-    for R, d in acc.items():
-        for b in range(1, nw + 1):
-            for a in range(1, nw + 1):
-                re, im = d.get((a, b), ('0.0000000000', '0.0000000000'))
-                f.write('%d %d %d  %d %d  %s %s\n' % (R[0], R[1], R[2], a, b, re, im))
-PY
-  # 2. stage5_bases with the Anderson disorder seed forced to 7 (the CLI draws the disorder
-  #    with the same --seed as the random-phase states; the brief's --disorder-seed is missing)
-  #    (the helper names start with s5_ so that none shadows a standard-library module)
-  cat >"$TMP/s5py/s5_dis.py" <<'PY'
-import sys
-import lsquant.bases as bases
-from lsquant.apps import stage5_bases
-_orig = bases.make_anderson_disorder
-def _seed7(dimension, disorder_w, seed=12345):
-    return _orig(dimension, disorder_w, 7)
-bases.make_anderson_disorder = _seed7
-sys.exit(stage5_bases.main(sys.argv[1:]))
-PY
-  # 3. FFTW convention of BlochTransform against the dense B (6 x 4 x 1, non-square on
-  #    purpose) and against the wannier2sparse supercell CSR at 6 x 4 x 1 and 48 x 48 x 1;
-  #    prints PASS/FAIL rows (counted by the gate) and INFO rows (localisation)
-  cat >"$TMP/s5py/s5_conv.py" <<'PY'
-import sys, numpy as np
-from lsquant import _core
-from lsquant.models.wannier import load_wannier_model, read_uc, read_xyz
-mdir, seed, w2s_dir, w2s_small = sys.argv[1:5]
-m = load_wannier_model(mdir, seed=seed)
-def gate(ok, text): print(("PASS  " if ok else "FAIL  ") + text)
-uc = read_uc(mdir + "/%s.uc" % seed); tau = read_xyz(mdir + "/%s.xyz" % seed)
-rng = np.random.default_rng(1)
-def rv(n): return rng.standard_normal(n) + 1j * rng.standard_normal(n)
-def rel(a, b): return np.max(np.abs(a - b)) / np.max(np.abs(b))
-# dense B on a 6 x 4 x 1 supercell, index (R, alpha) / (k, alpha) flat iR * W + alpha
-N = (6, 4, 1); W = m.num_wann; Nk = 24
-k = m.k_mesh(N); ph = m.bloch_phases(k)
-Bf = _core.BlochTransform(*N, W, ph.ravel(), _core.BlochDirection.RealToBloch)
-Bb = _core.BlochTransform(*N, W, ph.ravel(), _core.BlochDirection.BlochToReal)
-n = np.array([(a, b, c) for a in range(N[0]) for b in range(N[1]) for c in range(N[2])], float)
-Rc = n @ uc
-for sgn in (-1, +1):
-    Bd = np.zeros((Nk * W, Nk * W), complex)
-    for al in range(W):
-        Bd[al::W, al::W] = np.exp(sgn * 1j * (k @ (Rc + tau[al]).T)) / np.sqrt(Nk)
-    xs = [rv(Nk * W) for _ in range(4)]
-    e_f = max(rel(Bf.multiply(x), Bd @ x) for x in xs)
-    e_b = max(rel(Bb.multiply(x), Bd.conj().T @ x) for x in xs)
-    tag = "implemented sign, gated" if sgn < 0 else "brief.md sign, reported"
-    line = ("CONV %s 6x4x1 dense B = exp(%si k.(R+tau))/sqrt(Nk) (%s): RealToBloch vs B x %.3e, BlochToReal vs B^+ x %.3e"
-            % (seed, '+' if sgn > 0 else '-', tag, e_f, e_b))
-    if sgn < 0:
-        gate(max(e_f, e_b) <= 1e-12, line + " (tol 1e-12)")
-    else:
-        print("INFO  " + line)
-def csr_checks(N, d, Hk=None, Vk=None, Bf=None, Bb=None):
-    """lsquant supercell CSR vs the wannier2sparse CSR of the same model (brief: the real-space
-    basis IS the wannier2sparse CSR) and, at 48 x 48, B H_w2s B^+ = H_k, B VX_w2s B^+ = v_x."""
-    dim = N[0] * N[1] * N[2] * W
-    Hr = _core.SparseMatrixOperator(_core.ReadCsrText(d + "/%s.HAM.CSR" % seed))
-    Vr = _core.SparseMatrixOperator(_core.ReadCsrText(d + "/%s.VX.CSR" % seed))
-    Hp = _core.SparseMatrixOperator(m.hamiltonian_csr(N)); Vp = _core.SparseMatrixOperator(m.velocity_csr(N, "VX"))
-    xs = [rv(dim) for _ in range(4)]
-    s = "%dx%dx%d" % N
-    eh = max(rel(Hp.multiply(x), Hr.multiply(x)) for x in xs); ev = max(rel(Vp.multiply(x), Vr.multiply(x)) for x in xs)
-    gate(max(eh, ev) <= 1e-12, "CONV %s %s lsquant supercell CSR vs wannier2sparse CSR: H %.3e, VX %.3e (tol 1e-12)" % (seed, s, eh, ev))
-    # localisation: the same comparison with the lsquant cell index permuted to n1 fastest (iR = n1 + N1 n2)
-    perm = np.array([((n1 + N[0] * n2) * W + a) for n1 in range(N[0]) for n2 in range(N[1]) for a in range(W)])
-    def pm(op, x):            # P^T op P x with P mapping row-major (lsquant) to n1-fastest (wannier2sparse)
-        y = np.empty_like(x); xp = np.empty_like(x); xp[np.arange(dim)] = x[perm]
-        z = op.multiply(xp); y[perm] = z; return y
-    eh2 = max(rel(pm(Hp, x), Hr.multiply(x)) for x in xs); ev2 = max(rel(pm(Vp, x), Vr.multiply(x)) for x in xs)
-    print("INFO  CONV %s %s localisation: lsquant CSR with the cell index renumbered n1-fastest (n1 + N1 n2) vs wannier2sparse CSR: H %.3e, VX %.3e"
-          % (seed, s, eh2, ev2))
-    if Hk is not None:
-        e1 = max(rel(Bf.multiply(Hr.multiply(Bb.multiply(x))), Hk.multiply(x)) for x in xs)
-        e2 = max(rel(Bf.multiply(Vr.multiply(Bb.multiply(x))), Vk.multiply(x)) for x in xs)
-        gate(e1 <= 1e-10, "CONV %s %s B H_w2s B^+ x vs H_k x: %.3e (tol 1e-10)" % (seed, s, e1))
-        gate(e2 <= 1e-10, "CONV %s %s B VX_w2s B^+ x vs v_x(k) x: %.3e (tol 1e-10, brief.md section 3)" % (seed, s, e2))
-csr_checks((6, 4, 1), w2s_small)
-# 48 x 48: B^+ B = 1, B H_w2s B^+ = H_k, B VX_w2s B^+ = v_x with the wannier2sparse CSR
-N = (48, 48, 1); Nk = 48 * 48
-k = m.k_mesh(N); ph = m.bloch_phases(k)
-Bf = _core.BlochTransform(*N, W, ph.ravel(), _core.BlochDirection.RealToBloch)
-Bb = _core.BlochTransform(*N, W, ph.ravel(), _core.BlochDirection.BlochToReal)
-Hk = _core.BlockDiagonalOperator(m.Hk(k)); Vk = _core.BlockDiagonalOperator(m.dHk(k, "VX"))
-xs = [rv(Nk * W) for _ in range(4)]
-e = max(rel(Bb.multiply(Bf.multiply(x)), x) for x in xs)
-gate(e <= 1e-12, "CONV %s 48x48x1 max|B^+ B x - x|/max|x| = %.3e (tol 1e-12)" % (seed, e))
-csr_checks(N, w2s_dir, Hk, Vk, Bf, Bb)
-PY
-}
-
-# One stage5_bases run in its own directory (wall time printed)
-run_s5() {   # <threads> <workdir> <tag> <entry: cli|dis> <args...>
-  local T="$1" W="$2" tag="$3" entry="$4" rc s e; shift 4
-  mkdir -p "$W"; s=$(date +%s.%N)
-  if [ "$entry" = cli ]; then
-    ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR5:$REPO/python" python3 -m lsquant.apps.stage5_bases \
-        "$@" --out "$W" ) >"$W/run.log" 2>"$W/err.log"; rc=$?
-  else
-    ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR5:$REPO/python" python3 "$TMP/s5py/s5_dis.py" \
-        "$@" --out "$W" ) >"$W/run.log" 2>"$W/err.log"; rc=$?
-  fi
-  e=$(date +%s.%N)
-  [ $rc -eq 0 ] || { echo "          [T=$T] $tag exited $rc: $(tail -1 "$W/err.log")"; NFAIL=$((NFAIL + 1)); }
-  printf "          [T=%s] %-34s wall %7.2f s  -> %s\n" "$T" "$tag" "$(echo "$e - $s" | bc)" "$(ls "$W" | grep -v '\.log$' | tr '\n' ' ')"
-}
-
-stage5() {
-  local T m w W P LO HI A SIG BMEV LO1 HI1 B1 C rel f g
-  PYDIR5="$BUILD/lsquant_core"
-  ls "$PYDIR5"/_core*.so >/dev/null 2>&1 || PYDIR5="$BUILD/lsquant"
-  ls "$PYDIR5"/_core*.so >/dev/null 2>&1 || { echo "ERROR: _core*.so not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
-  [ -x "$S5_W2S" ] || { echo "ERROR: wannier2sparse binary $S5_W2S missing (set W2S_BIN)"; exit 2; }
-  echo "== stage 5: python3 -m lsquant.apps.stage5_bases, PYTHONPATH=$PYDIR5:python, vs goldens/stage0/bases (G9)"
-  s5_helpers
-  for m in graphene haldane; do
-    P="$GOLD/bases/$m/G9_params.txt"
-    LO=$(awk '$1=="window_lower"{print $2}' "$P"); HI=$(awk '$1=="window_upper"{print $2}' "$P")
-    A=$(awk '$1=="half_width"{print $2}' "$P");    SIG=$(awk '$1=="sigma_eV"{print $2}' "$P")
-    BMEV=$(python3 -c "print('%.7f' % ($SIG * 1000))")
-    # W = 1 eV: window half-width widened by W/2 before the 10 % pad, broadening = pi * a_W / M
-    read LO1 HI1 B1 <<<"$(python3 -c "import math; a=($A/1.10+0.5)*1.10; print('%.10f %.10f %.7f' % (-a, a, math.pi*a/256*1000))")"
-    mkdir -p "$TMP/s5models/$m" "$TMP/s5w2s/$m"
-    python3 "$TMP/s5py/s5_densify.py" "$GOLD/bases/$m/model/${m}_hr.dat" "$TMP/s5models/$m/${m}_hr.dat" \
-      "$GOLD/bases/$m/model/$m.xyz" "$TMP/s5models/$m/$m.xyz"
-    cp "$GOLD/bases/$m/model/$m.uc" "$TMP/s5models/$m/"
-    mkdir -p "$TMP/s5w2s/${m}_6x4"
-    ( cd "$GOLD/bases/$m/model" && "$S5_W2S" $m $S5N $S5N 1 VX -o "$TMP/s5w2s/$m" --quiet --no-log-file \
-      && "$S5_W2S" $m 6 4 1 VX -o "$TMP/s5w2s/${m}_6x4" --quiet --no-log-file ) >"$TMP/s5w2s/$m.log" 2>&1 \
-      || echo "          wannier2sparse $m VX failed: $(tail -1 "$TMP/s5w2s/$m.log")"
-    echo "   $m: window [$LO, $HI] (W=0), [$LO1, $HI1] (W=1); broadening $BMEV meV (W=0), $B1 meV (W=1); M=256, 32 random-phase states seed 12345, disorder seed 7"
-    # FFTW convention and the wannier2sparse CSR (brief.md section 3): PASS/FAIL rows are counted
-    ( cd "$REPO" && OMP_NUM_THREADS=16 PYTHONPATH="$PYDIR5:$REPO/python" python3 "$TMP/s5py/s5_conv.py" "$TMP/s5models/$m" $m \
-        "$TMP/s5w2s/$m" "$TMP/s5w2s/${m}_6x4" ) >"$TMP/s5_conv_$m.txt" 2>&1
-    sed 's/^/          /' "$TMP/s5_conv_$m.txt"
-    NCMP=$((NCMP + $(grep -c '^\(PASS\|FAIL\)' "$TMP/s5_conv_$m.txt")))
-    NFAIL=$((NFAIL + $(grep -c '^FAIL' "$TMP/s5_conv_$m.txt")))
-    grep -q '^\(PASS\|FAIL\)' "$TMP/s5_conv_$m.txt" || { echo "DIFFERS   $m: convention checks not produced"; NFAIL=$((NFAIL + 1)); }
-    for T in 16 1; do
-      for w in dos kuboxx; do
-        C="--model-dir $TMP/s5models/$m --seed $m --seed 12345 --supercell $S5N $S5N 1 --word $w --moments 256"
-        W="$TMP/s5/T$T/$m/W0"
-        run_s5 $T "$W/real/$w"   "$m W=0 real  $w (random 32)"  cli $C --basis real  --trace random --states 32 --window $LO $HI --broadening-meV $BMEV
-        run_s5 $T "$W/bloch/$w"  "$m W=0 bloch $w (random 32)"  cli $C --basis bloch --trace random --states 32 --window $LO $HI --broadening-meV $BMEV
-        run_s5 $T "$W/blochx/$w" "$m W=0 bloch $w (exact)"      cli $C --basis bloch --trace exact               --window $LO $HI --broadening-meV $BMEV
-        run_s5 $T "$W/eigen/$w"  "$m W=0 eigen $w (exact)"      cli $C --basis eigen --trace exact               --window $LO $HI --broadening-meV $BMEV
-        W="$TMP/s5/T$T/$m/W1"
-        run_s5 $T "$W/real/$w"   "$m W=1 real  $w (random 32)"  dis $C --basis real  --trace random --states 32 --disorder-w 1 --window $LO1 $HI1 --broadening-meV $B1
-        run_s5 $T "$W/bloch/$w"  "$m W=1 bloch $w (random 32)"  dis $C --basis bloch --trace random --states 32 --disorder-w 1 --window $LO1 $HI1 --broadening-meV $B1
-      done
-    done
-    # thread counts: the real path must be byte-identical between T = 1 and 16 (counted);
-    # the Bloch and eigen paths are reported (FFTW / block reduction order may differ)
-    for W in "$TMP/s5/T16/$m"/W*/*/*; do
-      rel="${W#$TMP/s5/T16/}"
-      for f in "$W"/*.chebmom "$W"/*.dat; do
-        [ -f "$f" ] || continue
-        g="$TMP/s5/T1/$rel/$(basename "$f")"
-        case "$rel" in
-          */real/*) compare "$g" "$f" "[T=1 vs T=16] $rel/$(basename "$f")" ;;
-          *) if cmp -s "$g" "$f"; then echo "INFO      [T=1 vs T=16] $rel/$(basename "$f") identical"
-             else echo "INFO      [T=1 vs T=16] $rel/$(basename "$f") differs: $(python3 "$REPO/scripts/golden_diff.py" "$g" "$f" 2>&1)"; fi ;;
-        esac
-      done
-    done
-  done
-  # the tolerance table of codex.md section 2, at T = 16 and T = 1
-  for T in 16 1; do
-    echo "   tolerance table, T=$T"
-    ( cd "$REPO" && PYTHONPATH="$PYDIR5:$REPO/python" python3 "$REPO/figures/stage_5_table.py" "$TMP/s5/T$T" "$GOLD/bases" ) >"$TMP/s5_table_T$T.txt" 2>&1
-    sed 's/^/          /' "$TMP/s5_table_T$T.txt"
-    NCMP=$((NCMP + $(grep -c '^\(PASS\|FAIL\)' "$TMP/s5_table_T$T.txt")))
-    NFAIL=$((NFAIL + $(grep -c '^FAIL' "$TMP/s5_table_T$T.txt")))
-    grep -q '^\(PASS\|FAIL\)' "$TMP/s5_table_T$T.txt" || { echo "DIFFERS   [T=$T] stage-5 table not produced"; NFAIL=$((NFAIL + 1)); }
-  done
-  [ -z "${S5_KEEP:-}" ] || { rm -rf "$S5_KEEP"; cp -r "$TMP/s5" "$S5_KEEP"; echo "   stage-5 outputs kept in $S5_KEEP"; }
-}
-
-# FFTW belongs to the algebra layer (BlochTransform) only; the Chebyshev engine and io never see it.
-stage5_grep() {
-  local hits
-  hits="$(cd "$REPO" && grep -rni "fftw" lsquant/core/chebyshev lsquant/io)"
-  if [ -z "$hits" ]; then
-    echo "GREP      grep -rni \"fftw\" lsquant/core/chebyshev lsquant/io: empty"
-  else
-    echo "GREP      grep -rni \"fftw\" lsquant/core/chebyshev lsquant/io: FOUND"
-    echo "$hits" | sed 's/^/          /'
-    NFAIL=$((NFAIL + 1))
-  fi
-}
-
 case "$STAGE" in
   0) stage0 ;;
   1) stage1; core_grep ;;
   2) stage1; core_grep; stage2; stage2_grep ;;
   3) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep ;;
   4) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep ;;
-  5) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep ;;
-  5only) stage5; stage5_grep ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
 

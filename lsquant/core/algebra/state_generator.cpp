@@ -102,6 +102,14 @@ BlockLocalStates::BlockLocalStates(Index numBlocks, Index blockSize)
   }
 }
 
+BlockLocalStates::BlockLocalStates(Index n1, Index n2, Index n3, Index blockSize)
+    : numBlocks_(n1 * n2 * n3), blockSize_(blockSize), current_(0) {
+  if (n1 <= 0 || n2 <= 0 || n3 <= 0 || blockSize <= 0) {
+    throw std::invalid_argument(
+        "BlockLocalStates: grid dimensions and blockSize must be positive");
+  }
+}
+
 Index BlockLocalStates::Dimension() const { return numBlocks_ * blockSize_; }
 
 Index BlockLocalStates::NumberOfStates() const { return blockSize_; }

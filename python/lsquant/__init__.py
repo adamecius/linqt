@@ -42,6 +42,7 @@ from .reconstruct import (
 )
 from .spectral_functions import (
     DeltaFunction,
+    GaussianDelta,
     GreenRetarded,
     GreenRetardedDerivative,
     SpectralFunction,
