@@ -3,7 +3,7 @@
 
 Performs three checks without a test framework:
   (a) Builds the stage-1 ``dos`` and ``kubo`` plans from ``lsquant.moments``,
-      runs them on ``test/golden/chain1d/operators`` through ``lsquant._core``,
+      runs them on ``goldens/stage0/chain1d/operators`` through ``lsquant._core``,
       and asserts bit-exact array equality (``numpy.array_equal``) with
       ``ReadChebmom`` of the committed legacy goldens.
   (b) Compares ``DeltaFunction.table`` against ``legacy_delta_table`` on the
@@ -32,7 +32,7 @@ from lsquant import (
 
 def main() -> int:
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    op_dir = os.path.join(repo_root, "test", "golden", "chain1d", "operators")
+    op_dir = os.path.join(repo_root, "goldens", "stage0", "chain1d", "operators")
     g1_path = os.path.join(
         repo_root,
         "goldens",

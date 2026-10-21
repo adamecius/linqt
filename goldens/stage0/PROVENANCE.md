@@ -16,6 +16,19 @@ as such.
 | Threads | `OMP_NUM_THREADS=16` for every generation command (tutorial 06 `rp_validate.py`: 64, as its README says; `rp_spin.py` sets 16 itself) |
 | Date | 2026-10-20 (UTC) |
 
+**Regenerating from `legacy-final`.** The legacy C++ tree (`src/`, `include/`, `test/`),
+`scripts/regenerate_goldens.sh`, and the legacy shell scripts were removed in Stage 7 once
+every golden was reproduced from observable words. The git tag `legacy-final` (`05e2f65`)
+marks the last commit containing the legacy tree and `scripts/regenerate_goldens.sh`. Any
+Stage-0 golden is regenerated from a worktree of the tag `legacy-final`:
+
+```bash
+git worktree add /tmp/lsquant-legacy legacy-final
+cmake -S /tmp/lsquant-legacy -B /tmp/lsquant-legacy/build -DLSQUANT_BUILD_NEW_CORE=OFF -DLSQUANT_BUILD_INPUT_TOOLS=ON
+cmake --build /tmp/lsquant-legacy/build -j 32
+cd /tmp/lsquant-legacy && KPM_SEED=12345 OMP_NUM_THREADS=16 bash scripts/regenerate_goldens.sh build
+```
+
 ## G1, G2, G3 — `chain1d/` (exact trace, `M = 64`, window `[-2, 2]`)
 
 Produced by `KPM_SEED=12345 OMP_NUM_THREADS=16 bash scripts/regenerate_goldens.sh build`
