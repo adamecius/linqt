@@ -12,7 +12,13 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from . import _core
-from .bases import BlochBasis, EigenBasis, RealBasis, make_basis
+from .bases import (
+    BlochBasis,
+    EigenBasis,
+    RealBasis,
+    make_basis,
+    validate_w2s_csr_dir,
+)
 from .models.wannier import WannierModel, load_wannier_model
 from .moments import run_plan, window_from_gershgorin
 from .reconstruct import (
@@ -465,9 +471,9 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
                 raise ValueError(
                     f"Unknown expansion.window '{win}'; expected 'eigen', 'gershgorin', or [lo, hi]"
                 )
-            if kind == "csr" and win == "eigen":
+            if kind in ("csr", "generator") and win == "eigen":
                 raise ValueError(
-                    "expansion.window='eigen' is not supported for model.kind='csr' "
+                    f"expansion.window='eigen' is not supported for model.kind='{kind}' "
                     "(no k blocks; use gershgorin or an explicit window)"
                 )
         elif (
@@ -1011,13 +1017,19 @@ def _execute_generator_runfile(
         from .apps.tutorial06 import run_tutorial06
 
         assert rf.time is not None
+        ey_steps_val = int(rf.time["steps"])
+        ey_tmax_raw = rf.time.get("tmax")
+        if ey_tmax_raw is None and rf.time.get("dt") is not None:
+            ey_tmax_val = float(rf.time["dt"]) * (ey_steps_val - 1)
+        else:
+            ey_tmax_val = float(_get_or(rf.time, "tmax", 260.0))
         return run_tutorial06(
             out_dir,
             ey_l=int(_get_or(params, "ey_l", 20)),
             ey_ds=_get_or(params, "ey_ds", (0.05, 0.07, 0.10)),
             ey_moments=int(rf.expansion["moments"]),
-            ey_steps=int(rf.time["steps"]),
-            ey_tmax=float(_get_or(rf.time, "tmax", 260.0)),
+            ey_steps=ey_steps_val,
+            ey_tmax=ey_tmax_val,
             dp_l=int(_get_or(params, "dp_l", 20)),
             dp_lambda=float(_get_or(params, "dp_lambda", 0.2)),
             dp_ws=_get_or(params, "dp_ws", (0.0, 6.0)),
@@ -1030,8 +1042,8 @@ def _execute_generator_runfile(
             ),
             ratelaw_nr=int(_get_or(params, "ratelaw_nr", 20)),
             ratelaw_moments=int(rf.expansion["moments"]),
-            ratelaw_steps=int(rf.time["steps"]),
-            ratelaw_tmax=float(_get_or(rf.time, "tmax", 260.0)),
+            ratelaw_steps=ey_steps_val,
+            ratelaw_tmax=ey_tmax_val,
             crosscheck_l=int(_get_or(params, "crosscheck_l", 8)),
             crosscheck_d=float(_get_or(params, "crosscheck_d", 0.10)),
             crosscheck_nr=int(_get_or(params, "crosscheck_nr", 20)),
@@ -1039,6 +1051,11 @@ def _execute_generator_runfile(
             crosscheck_steps=int(_get_or(params, "crosscheck_steps", 60)),
             crosscheck_tmax=float(_get_or(params, "crosscheck_tmax", 220.0)),
             disorder_seed=int(_get_or(params, "disorder_seed", 1)),
+            window=rf.expansion.get("window"),
+            trace=str(_get_or(rf.expansion, "trace", "exact")),
+            num_states=rf.expansion.get("states"),
+            kpm_seed=int(_get_or(rf.expansion, "seed", 12345)),
+            kernel=str(_get_or(rf.reconstruction, "kernel", "jackson")),
             broadening_meV=float(
                 _get_or(rf.reconstruction, "broadening_meV", 140.0)
             ),
@@ -1047,9 +1064,13 @@ def _execute_generator_runfile(
                 if rf.reconstruction.get("fermi_energies")
                 else (2.0,)
             ),
+            formulas=rf.reconstruction.get("formulas"),
             bessel=str(_get_or(rf.time, "bessel", "legacy")),
             legacy_text_round_trip=bool(
                 _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+            capture_tutorial=bool(
+                _get_or(rf.output, "capture_tutorial", True)
             ),
             words=rf.words,
         )
@@ -1073,6 +1094,33 @@ def execute_runfile(
     out_dir = os.path.abspath(
         out_dir_override if out_dir_override is not None else rf.output["dir"]
     )
+    kind = str(rf.model["kind"])
+    if kind == "wannier":
+        basis_name = str(rf.basis["name"])
+        csr_dir_val = rf.model.get("csr_dir")
+        if basis_name == "real" and csr_dir_val is not None:
+            validate_w2s_csr_dir(
+                str(csr_dir_val),
+                str(rf.model["seed"]),
+                tuple(int(x) for x in rf.basis["supercell"]),
+                model_dir=str(rf.model["dir"]),
+                operators=("VX",),
+            )
+    elif kind == "csr":
+        model_dir = str(rf.model["dir"])
+        label = str(rf.model["label"])
+        ham_path = os.path.join(model_dir, f"{label}.HAM.CSR")
+        if not os.path.isfile(ham_path):
+            raise FileNotFoundError(
+                f"Hamiltonian CSR file not found: {ham_path}"
+            )
+        if str(rf.metric["policy"]) != "orthogonal":
+            s_path = os.path.join(model_dir, f"{label}.S.CSR")
+            if not os.path.isfile(s_path):
+                raise FileNotFoundError(
+                    f"Overlap matrix file required for nonorthogonal metric not found: {s_path}"
+                )
+
     os.makedirs(out_dir, exist_ok=True)
 
     resolved_dict = rf.to_resolved_dict()
@@ -1082,7 +1130,6 @@ def execute_runfile(
         json.dump(resolved_dict, fh, indent=2)
         fh.write("\n")
 
-    kind = str(rf.model["kind"])
     if kind == "generator":
         written_files = _execute_generator_runfile(
             rf, out_dir, repo_root=repo_root

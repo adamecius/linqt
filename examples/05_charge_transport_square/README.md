@@ -75,16 +75,15 @@ energy:
 
 ```bash
 cat > run_msd.json <<'JSON'
-{ "mode": "msd", "label": "square_L200_W1", "operator": "VX",
-  "num_moments": 256, "num_times": 160, "tmax": 150 }
+{ "model": { "kind": "csr", "dir": "operators", "label": "square_L200_W1", "operators": ["VX"] },
+  "word": "Tr[[X, U(t)]^+ delta(E-H) [X, U(t)]]",
+  "expansion": { "moments": 256, "window": [-4.5, 4.5], "trace": "random_phase", "states": 1, "seed": 1 },
+  "time": { "steps": 160, "tmax": 150.0, "bessel": "legacy" },
+  "reconstruction": { "kernel": "jackson", "broadening_meV": 80.0, "fermi_energies": [2.0], "formulas": ["time_correlation"], "legacy_text_round_trip": true },
+  "output": { "dir": "." } }
 JSON
-lsquant compute --config run_msd.json
-inline_timeCorrelationsFromChebmom Correlation*square_L200_W1*chebmomTD 80 2   # (soon: a unified `lsquant reconstruct … msd` verb)
+python -m lsquant run run_msd.json
 ```
-
-> **Entry points.** Moments via the modern `lsquant compute`; the time-domain
-> reconstruction still uses `inline_timeCorrelationsFromChebmom`, which a unified
-> `lsquant reconstruct … ` time-domain verb is planned to replace.
 
 This evolves a wavepacket for 150 fs and writes $\Delta X^2(E=2,t)$. Forming
 $D(E,t) = \Delta X^2/2t$, the early-time rise (where $\Delta X^2\sim t^2$) is the

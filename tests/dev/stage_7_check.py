@@ -24,13 +24,25 @@ import sys
 import tempfile
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-for _p in (
+_RAW_BUILD_DIR = os.environ.get("LSQUANT_BUILD_DIR", "build")
+BUILD_DIR = (
+    os.path.abspath(_RAW_BUILD_DIR)
+    if os.path.isabs(_RAW_BUILD_DIR)
+    else os.path.abspath(os.path.join(REPO, _RAW_BUILD_DIR))
+)
+_PY_PATHS = [
     os.path.join(REPO, "python"),
-    os.path.join(REPO, "build", "lsquant_core"),
-    os.path.join(REPO, "build"),
-):
+    os.path.join(BUILD_DIR, "lsquant_core"),
+    BUILD_DIR,
+]
+for _p in _PY_PATHS:
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
+_existing_pypath = os.environ.get("PYTHONPATH", "")
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    [p for p in _PY_PATHS if os.path.isdir(p)]
+    + ([_existing_pypath] if _existing_pypath else [])
+)
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 from lsquant.runfile import RunFile  # noqa: E402
@@ -367,9 +379,9 @@ def check_c_cli_goldens(tmp_root: str) -> str:
         raise RuntimeError(
             f"CLI g10_chain1d_real_generalised.json failed ({r10.returncode}): {r10.stderr}"
         )
-    stage6_bin = os.path.join(REPO, "build", "stage6_nonorth")
+    stage6_bin = os.path.join(BUILD_DIR, "stage6_nonorth")
     if not os.path.isfile(stage6_bin):
-        stage6_bin = os.path.join(REPO, "build", "lsquant_core", "stage6_nonorth")
+        stage6_bin = os.path.join(BUILD_DIR, "lsquant_core", "stage6_nonorth")
     for w_tag in ("dos", "kubo"):
         subprocess.run(
             [

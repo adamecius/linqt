@@ -141,8 +141,8 @@ r|A|r\rangle$. The error falls as $\sim 1/\sqrt{N_r N}$, so a *larger* lattice n
 state file, averaged in `rp_spin.py`) replace the $N$-state loop.
 
 ```bash
-LSQUANT_BIN=../../build OMP_NUM_THREADS=64 python3 rp_validate.py   # rate law + exact check
-LSQUANT_BIN=../../build python3 plot_ratelaw.py                      # writes fig_ey_ratelaw
+OMP_NUM_THREADS=64 python3 rp_validate.py   # rate law + exact check
+python3 plot_ratelaw.py                     # writes fig_ey_ratelaw
 ```
 
 **Faithful to the exact trace.** At $L=20$ ($N=800$) the random-phase $T_1$ matches the
@@ -163,9 +163,10 @@ artifact, identical in both, not a stochastic-trace error). Recovering the clean
 exponent needs weaker disorder with finer time/energy resolution — now affordable
 because the trace is no longer $O(N)$.
 
-> **Entry point.** Projected real-time evolution has no `lsquant compute` mode yet, so
-> this uses the `inline_compute-kpm-TimeEvProjetedOp` driver via `rp_spin.py`; a unified
-> time-evolution verb is planned (soon) and will replace it.
+> **Entry point.** Projected real-time evolution runs through the unified run-file
+> engine (`python -m lsquant run ../../runs/goldens/tutorial06.json`, or `lsqrelax.py`
+> and `rp_spin.py` which invoke `lsquant.runfile.execute_runfile` on the words
+> `Tr[P:PZ U(t)^+ SZ U(t) delta(E-H) P:PZ]` and `Tr[P:PZ U(t)^+ 1 U(t) delta(E-H) P:PZ]`).
 
 ## References and links
 

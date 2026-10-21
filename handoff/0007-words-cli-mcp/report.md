@@ -1094,3 +1094,82 @@ IDENTICAL  runs/goldens/g10_haldane_real_lowdin.json -> NonEqOpVX-VYhaldaneKPM_M
 
 == TOTAL: 12 G9 + 11 G10 run files, 170 files compared with cmp: 0 failures ==
 ```
+
+---
+
+## Review 3 applied
+
+The four items of `handoff/0007-words-cli-mcp/review-3.md` were applied in order on `handoff/0007-agi` after `5e8186d`, one commit per item:
+
+1. **`1b91cd7` — Tutorial 06 honours the run file or refuses it (`python/lsquant/apps/tutorial06.py`, `python/lsquant/runfile.py`)**: `_eval_and_reconstruct_pair` now compiles the run file's `words` directly (`pz_words` and `px_words` partitioned from `rf.words`) and derives moment/curve filename stems from `compiled.reconstruction.legacy_moment_prefix`, while forwarding `expansion` (`moments`, `window`, `trace`, `states`, `seed`), `time` (`steps`, `tmax`/`dt`, `bessel`), `reconstruction` (`kernel`, `broadening_meV`, `fermi_energies`, `formulas`, `legacy_text_round_trip`), and `output.capture_tutorial` from the run file (and refusing `window: "eigen"` on `model.kind == "generator"`).
+2. **`bafbb84` — Remove `ensure_w2s_csr_dir` and refuse missing or mismatched `csr_dir` before any load (`python/lsquant/bases.py`, `python/lsquant/runfile.py`)**: deleted `find_w2s_binary` and `ensure_w2s_csr_dir` and replaced them with `validate_w2s_csr_dir` (called in `execute_runfile` before `os.makedirs(out_dir)` and before `load_wannier_model`, as well as in `RealBasis.__init__`), which refuses when `<seed>.HAM.CSR` or `<seed>.out` is missing or disagrees with the requested supercell/seed/operators with a message naming `csr_dir`, the mismatch, and the exact `wannier2sparse <seed> <N1> <N2> <N3> VX -p <model_dir> -o <csr_dir>` command.
+3. **`e281749` — Resolve `LSQUANT_BUILD_DIR` (default `build/`) in `tests/dev/stage_7_check.py`**: replaced all hard-coded `os.path.join(REPO, "build", ...)` paths (including `stage6_nonorth` lookup at lines 370–372 and `sys.path`/`PYTHONPATH` setup) with `BUILD_DIR` resolved from `LSQUANT_BUILD_DIR` (default `build/`).
+4. **`b84d763` — Remove `legacy/` and all `inline_*` driver references in `docs/` and `examples/`**: deleted `legacy/` (19 tracked legacy driver sources, preserved by the `legacy-final` tag), rewrote `examples/06_spin_relaxation_square/lsqrelax.py` and `examples/06_spin_relaxation_square/rp_spin.py` (along with the other tutorial scripts) to execute via `lsquant.runfile.execute_runfile` modelled on `runs/goldens/tutorial06.json`, and removed all `inline_*` driver mentions across `docs/` and `examples/` (`grep -rn "inline_" docs/ examples/` is empty).
+
+### `tests/dev/stage_7_check.py` output on TCN (`OMP_NUM_THREADS=16 LSQUANT_BUILD_DIR=build`)
+
+```text
+== (a) Catalogue canonical parse/print round-trip ==
+  PASS  Tr[delta(E-H)]                             -> shape=dos_identity         plan_builder=dos_plan
+  PASS  Tr[A delta(E-H)]                           -> shape=dos_operator         plan_builder=dos_plan
+  PASS  Tr[VX delta(E-H) VX delta(E-H)]            -> shape=kubo_greenwood       plan_builder=kubo_plan
+  PASS  Tr[VX delta(E-H) VY dG-(E)/dE]             -> shape=kubo_bastin          plan_builder=kubo_plan
+  PASS  Tr[[X,U(t)]^+ delta(E-H) [X,U(t)]]         -> shape=msd                  plan_builder=msd_plan
+  PASS  Tr[P U(t)^+ SX U(t) delta(E-H) P]          -> shape=projected_evolution  plan_builder=projected_evolution_plan
+  PASS  Tr[A delta(E-H) U(t)^+ B U(t)]             -> shape=time_correlation     plan_builder=time_correlation_plan
+  PASS  Tr[sea[VX delta(E-H) VY dG-(E)/dE]]        -> shape=kubo_bastin          plan_builder=kubo_plan
+  PASS  Tr[P:PX U(t)^+ SX U(t) delta(E-H) P:PX]    -> shape=projected_evolution  plan_builder=projected_evolution_plan
+  PASS  Tr[B^+ VX@bloch B delta(E-H)]              -> shape=dos_operator         plan_builder=dos_plan
+
+== (b) Refusal of 5 malformed / unsupported inputs ==
+  PASS  [unknown_operator] refused with: Unknown operator 'FOO' in word 'Tr[FOO delta(E-H)]' (registered operators: ['1', 'VX', 'VY'])
+  PASS  [rank_3] refused with: Unsupported word 'Tr[VX delta(E-H) VY delta(E-H) VZ delta(E-H)]' of rank 3 (3 expanded spectral slots): rank >= 3 moment tensors are out of scope; nearest recognised shape is 'Tr[VX delta(E-H) VX delta(E-H)]' (kubo_greenwood)
+  PASS  [mixed_basis_without_transform] refused with: Mixed basis without explicit transform: operator 'VX@bloch' is in 'bloch' basis while calculation/active basis is 'real' (insert explicit B^+ ... B or U^+ ... U transform)
+  PASS  [ut_without_time] refused with: Word 'Tr[A delta(E-H) U(t)^+ B U(t)]' contains time evolution U(t) without 'time' parameters (steps and tmax required)
+  PASS  [unknown_key_in_runfile] refused with: Unknown key 'unknown_extra_key' in run file (top-level); allowed keys are ['basis', 'expansion', 'metric', 'model', 'output', 'reconstruction', 'time', 'word', 'words']
+  PASS  [unsupported_green_word] refused with: Unrecognised word shape 'Tr[VX delta(E-H) VY G+(E)]'; nearest recognised shape is 'Tr[VX delta(E-H) VY dG-(E)/dE]' (kubo_bastin)
+  PASS  [eigen_window_on_csr] refused with: expansion.window='eigen' is not supported for model.kind='csr' (no k blocks; use gershgorin or an explicit window)
+  PASS  [unmatched_formula_for_word] refused with: Reconstruction formula 'greenwood' in reconstruction.formulas does not match any word in ['Tr[VX delta(E-H) VY dG-(E)/dE]'] (allowed formulas for given word(s): ['bastin', 'bastin_fft', 'kubo_bastin', 'kubo_bastin_fft', 'kubo_bastin_sea', 'kubo_bastin_surf', 'sea', 'surf'])
+  PASS  [unknown_generator_param] refused with: Unknown key 'bogus_param' in run file (model.params (make_chain)); allowed keys are ['hopping_t', 'sizes']
+  PASS  [unknown_generator] refused with: Unknown generator name 'evil_script' in run file (model.name); allowed generators are ['gen_models', 'make_chain', 'make_chain_mag', 'make_disordered_chain', 'make_ey', 'make_haldane', 'make_rashba', 'make_square']
+  PASS  [window_default_by_basis] real->gershgorin, bloch->eigen, eigen->eigen
+  PASS  [runfile_schema] all 40 files in runs/goldens/*.json validated
+
+== (c) CLI reproduction of G1, G5, G9 (g9_graphene_eigen.json), and G10 (g10_chain1d_real_generalised.json) ==
+  PASS  cmp IDENTICAL: G1 (SpectralOp1chain1dKPM_M64_stateexact.chebmom1D)
+  PASS  cmp IDENTICAL: G5 (NonEqOpVX-VYhaldaneKPM_M128x128_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G5 (NonEqOpVX-VXhaldaneKPM_M128x128_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G5 (KuboBastin_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G5 (KuboBastinSea_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G5 (KuboBastinSurf_NonEqOpVX-VYhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G5 (KuboGreenWood_NonEqOpVX-VXhaldaneKPM_M128x128_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (KuboGreenWood_NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.basis.json)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (NonEqOpVX-VXgraphene_eigen_KPM_M256x256_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (SpectralOp1graphene_eigen_KPM_M256_stateexact.basis.json)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (SpectralOp1graphene_eigen_KPM_M256_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (SpectralOp1graphene_eigen_KPM_M256_stateexact.chebmom1D)
+  PASS  cmp IDENTICAL: G9 g9_graphene_eigen (meanSpectralOp1graphene_eigen_KPM_M256_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (KuboGreenWood_NonEqOpVX-VXchain1dKPM_M64x64_stateexactJACKSON.dat)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (SpectralOp1chain1dKPM_M64_stateexact.chebmom)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (SpectralOp1chain1dKPM_M64_stateexact.chebmom1D)
+  PASS  cmp IDENTICAL: G10 g10_chain1d_real_generalised (meanSpectralOp1chain1dKPM_M64_stateexactJACKSON.dat)
+
+== (d) MCP server subprocess vs CLI JSON equivalence ==
+  MCP tools registered: ['words_describe', 'run', 'status', 'reconstruct', 'inspect']
+  PASS  MCP words_describe JSON == CLI words describe JSON
+  PASS  MCP inspect JSON == CLI inspect JSON
+  PASS  MCP error responses preserve reason: 'Error executing tool words_describe: Unrecognised word shape 'Tr[VX delta(E-H) VY G+(E)]'; nearest recognised shape is 'Tr[VX delta(E-H) VY dG-(E)/dE]' (kubo_bastin)'
+
+STAGE 7 SELF-CHECK PASS
+```
+
+### Tutorial 06 (`runs/goldens/tutorial06.json`) verification and `cmp` status
+
+- `git fetch origin handoff/0007-codex` was run: `origin/handoff/0007-codex` is at `22f92a8` (`handoff 0007 tester: closure run on 5e8186d (deleted legacy tree), FIG. 7 with tutorial 06`), and the tester has not yet committed/pushed the re-blessed `goldens/stage0/tutorials/06` commit to `origin/handoff/0007-codex`.
+- File counts produced by `runs/goldens/tutorial06.json`: **281** golden-compared files (**13** top-level `.dat` curves + **255** `captured/0000_*.dat`..`0254_*.dat` files + **1** `captured/index.tsv` + **12** `.chebmomTD` moment files, plus `run.resolved.json`).
+- After Item 1 (`1b91cd7`), executing `tutorial06` via `execute_runfile` produces `meanTimeProjSZ-PZey_L8_D0.1KPM_M96_statedefaultEF2.000000JACKSON.dat` and `meanTimeProj1-PZey_L8_D0.1KPM_M96_statedefaultEF2.000000JACKSON.dat` byte-identical (`cmp` PASS) to the tester's `~/s7keepc/T16/tutorial06` output on TCN; the full 281-file `cmp` against `goldens/stage0/tutorials/06` on `origin/handoff/0007-codex` is pending the tester's re-blessing commit.
+

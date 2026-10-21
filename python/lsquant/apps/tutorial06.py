@@ -84,46 +84,53 @@ def _fit_rate(
 def _eval_and_reconstruct_pair(
     stage_dir: str,
     label: str,
-    op_name: str,
-    proj_name: str,
+    stage_words: Sequence[str],
     num_moments: int,
     ntime: int,
     tmax: float,
     states: _core.StateGenerator,
     state_label: str,
     broadening_meV: float,
-    ef: float,
+    ef_list: Sequence[float],
     bessel: str,
     legacy_text_round_trip: bool,
     out_dir: str,
     captured_dir: str,
     cap_idx: int,
     *,
+    win_override: _core.SpectralWindow | None = None,
+    kernel: str = "jackson",
+    formulas: Sequence[str] | None = None,
+    capture_tutorial: bool = True,
     keep_top_level: bool = True,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64], list[str], int]:
-    """Run numerator (``op_name``) and denominator (``1``) projected words and reconstruct at ``ef``."""
+    """Run the projected evolution ``stage_words`` from the run file and reconstruct at ``ef_list``."""
     op_dir = os.path.join(stage_dir, "operators")
-    window = _read_bounds(os.path.join(stage_dir, "BOUNDS"))
+    window = (
+        win_override
+        if win_override is not None
+        else _read_bounds(os.path.join(stage_dir, "BOUNDS"))
+    )
     ham = _core.ReadCsrText(os.path.join(op_dir, f"{label}.HAM.CSR"))
     dim = int(ham.dimension)
 
-    proj_mat = _core.ReadCsrText(os.path.join(op_dir, f"{label}.{proj_name}.CSR"))
-    proj_op = _core.SparseMatrixOperator(proj_mat)
-    op_mat = _core.ReadCsrText(os.path.join(op_dir, f"{label}.{op_name}.CSR"))
-    op_lin = _core.SparseMatrixOperator(op_mat)
-    id_op = _core.IdentityOperator(dim)
-
-    concrete_ops = {
-        op_name: op_lin,
-        proj_name: proj_op,
-        "1": id_op,
+    concrete_ops: dict[str, _core.LinearOperator] = {
+        "1": _core.IdentityOperator(dim),
     }
+    prefix_dot = f"{label}."
+    suffix_csr = ".CSR"
+    for fname in sorted(os.listdir(op_dir)):
+        if fname.startswith(prefix_dot) and fname.endswith(suffix_csr):
+            op_key = fname[len(prefix_dot) : -len(suffix_csr)]
+            if op_key and op_key != "HAM":
+                mat = _core.ReadCsrText(os.path.join(op_dir, fname))
+                concrete_ops[op_key] = _core.SparseMatrixOperator(mat)
+
     num_states = int(states.number_of_states)
     written: list[str] = []
     pair_arrays: list[tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]] = []
 
-    for cur_op in (op_name, "1"):
-        w_str = f"Tr[P:{proj_name} U(t)^+ {cur_op} U(t) delta(E-H) P:{proj_name}]"
+    for w_str in stage_words:
         compiled = compile_word(
             w_str,
             basis={"name": "real", "operators": concrete_ops},
@@ -139,8 +146,14 @@ def _eval_and_reconstruct_pair(
                     "bessel": str(bessel),
                 },
                 "reconstruction": {
+                    "kernel": str(kernel),
                     "broadening_meV": float(broadening_meV),
-                    "fermi_energies": [float(ef)],
+                    "fermi_energies": [float(e) for e in ef_list],
+                    "formulas": (
+                        [str(f) for f in formulas]
+                        if formulas is not None
+                        else None
+                    ),
                     "legacy_text_round_trip": bool(legacy_text_round_trip),
                 },
             },
@@ -156,29 +169,37 @@ def _eval_and_reconstruct_pair(
             dt=compiled.dt,
         )
         mu.state_label = state_label
-        stem = f"TimeProj{cur_op}-{proj_name}{label}KPM_M{int(num_moments)}_state{state_label}"
+        prefix = compiled.reconstruction.legacy_moment_prefix
+        stem = f"{prefix}{label}KPM_M{int(num_moments)}_state{state_label}"
         mom_path = os.path.join(stage_dir, f"{stem}.chebmomTD")
         _core.WriteLegacyChebmomTD(mom_path, mu)
         mu_disk = _core.ReadChebmom(mom_path) if legacy_text_round_trip else mu
 
-        times, vals = time_correlation_curve(
-            mu_disk, float(broadening_meV), float(ef)
-        )
-        dat_name = f"mean{stem}EF{float(ef):.6f}JACKSON.dat"
-        dat_path = os.path.join(
-            out_dir if keep_top_level else stage_dir, dat_name
-        )
-        _core.WriteCurveText(dat_path, times, vals)
-        if keep_top_level:
-            written.append(dat_path)
+        first_loaded: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]] | None = None
+        for ef in ef_list:
+            times, vals = time_correlation_curve(
+                mu_disk, float(broadening_meV), float(ef)
+            )
+            dat_name = f"mean{stem}EF{float(ef):.6f}JACKSON.dat"
+            dat_path = os.path.join(
+                out_dir if keep_top_level else stage_dir, dat_name
+            )
+            _core.WriteCurveText(dat_path, times, vals)
+            if keep_top_level:
+                written.append(dat_path)
 
-        cap_path = os.path.join(captured_dir, f"{cap_idx:04d}_{dat_name}")
-        shutil.copyfile(dat_path, cap_path)
-        written.append(cap_path)
-        cap_idx += 1
+            if capture_tutorial:
+                cap_path = os.path.join(captured_dir, f"{cap_idx:04d}_{dat_name}")
+                shutil.copyfile(dat_path, cap_path)
+                written.append(cap_path)
+                cap_idx += 1
 
-        loaded_t, loaded_v = np.loadtxt(dat_path, unpack=True)
-        pair_arrays.append((loaded_t, loaded_v))
+            if first_loaded is None:
+                loaded_t, loaded_v = np.loadtxt(dat_path, unpack=True)
+                first_loaded = (loaded_t, loaded_v)
+
+        assert first_loaded is not None
+        pair_arrays.append(first_loaded)
 
     return (
         pair_arrays[0][0],
@@ -216,10 +237,17 @@ def run_tutorial06(
     crosscheck_steps: int = 60,
     crosscheck_tmax: float = 220.0,
     disorder_seed: int = 1,
+    window: tuple[float, float] | list[float] | _core.SpectralWindow | str | None = None,
+    trace: str = "exact",
+    num_states: int | None = None,
+    kpm_seed: int = 12345,
+    kernel: str = "jackson",
     broadening_meV: float = 140.0,
     fermi_energies: Sequence[float] = (2.0,),
+    formulas: Sequence[str] | None = None,
     bessel: str = "legacy",
     legacy_text_round_trip: bool = True,
+    capture_tutorial: bool = True,
     words: Sequence[str] = (
         "Tr[P:PZ U(t)^+ SZ U(t) delta(E-H) P:PZ]",
         "Tr[P:PZ U(t)^+ 1 U(t) delta(E-H) P:PZ]",
@@ -228,19 +256,96 @@ def run_tutorial06(
     ),
 ) -> list[str]:
     """Run Tutorial 06 and write all top-level and captured ``.dat`` files into ``out_dir``."""
+    if str(kernel).lower() != "jackson":
+        raise ValueError(
+            f"tutorial06: unsupported reconstruction.kernel '{kernel}' (expected 'jackson')"
+        )
+    trace_mode = str(trace).lower()
+    if trace_mode not in ("exact", "random"):
+        raise ValueError(
+            f"tutorial06: unsupported expansion.trace '{trace}' (expected 'exact' or 'random')"
+        )
+
+    win_override: _core.SpectralWindow | None = None
+    if isinstance(window, _core.SpectralWindow):
+        win_override = window
+    elif isinstance(window, (list, tuple)) and len(window) == 2:
+        win_override = _core.SpectralWindow(float(window[0]), float(window[1]))
+    elif window not in (None, "gershgorin"):
+        raise ValueError(
+            f"tutorial06: unsupported expansion.window '{window}' (expected 'gershgorin' or [lo, hi])"
+        )
+
+    pz_words: list[str] = []
+    px_words: list[str] = []
     for w_str in words:
-        compile_word(w_str, params={"steps": int(ey_steps), "tmax": float(ey_tmax)})
+        compiled_probe = compile_word(
+            w_str,
+            params={
+                "expansion": {"moments": int(ey_moments)},
+                "time": {
+                    "steps": int(ey_steps),
+                    "tmax": float(ey_tmax),
+                    "bessel": str(bessel),
+                },
+                "reconstruction": {
+                    "kernel": str(kernel),
+                    "broadening_meV": float(broadening_meV),
+                    "fermi_energies": [float(e) for e in fermi_energies],
+                    "formulas": (
+                        [str(f) for f in formulas]
+                        if formulas is not None
+                        else None
+                    ),
+                },
+            },
+        )
+        if compiled_probe.match.entry.shape_id != "projected_evolution":
+            raise ValueError(
+                f"tutorial06: word '{w_str}' has shape '{compiled_probe.match.entry.shape_id}'; "
+                "expected 'projected_evolution'"
+            )
+        proj_key = compiled_probe.match.operators[1].operator_key
+        if proj_key == "PZ":
+            pz_words.append(str(w_str))
+        elif proj_key == "PX":
+            px_words.append(str(w_str))
+        else:
+            raise ValueError(
+                f"tutorial06: unsupported projector '{proj_key}' in word '{w_str}' "
+                "(expected 'PZ' or 'PX')"
+            )
+
+    if len(pz_words) < 2:
+        raise ValueError(
+            "tutorial06: 'words' must include at least two PZ projected_evolution words "
+            "(numerator and denominator)"
+        )
+    if px_words and len(px_words) < 2:
+        raise ValueError(
+            "tutorial06: 'words' with PX projector must include at least two PX "
+            "projected_evolution words (numerator and denominator)"
+        )
 
     mod_ey, mod_rashba = _load_tutorial06_generators()
     os.makedirs(out_dir, exist_ok=True)
     captured_dir = os.path.join(out_dir, "captured")
-    os.makedirs(captured_dir, exist_ok=True)
+    if capture_tutorial:
+        os.makedirs(captured_dir, exist_ok=True)
 
-    ef = float(fermi_energies[0]) if fermi_energies else 2.0
+    ef_list = tuple(float(e) for e in fermi_energies) or (2.0,)
+    rp_vec_count = int(num_states) if (trace_mode == "random" and num_states is not None) else 1
     written: list[str] = []
     cap_idx = 0
 
-    # 1. Part A: Elliott-Yafet exact trace on L = 20, D in (0.05, 0.07, 0.10) (captures 0000..0005)
+    def _make_part_states(dim: int) -> tuple[_core.StateGenerator, str]:
+        if trace_mode == "exact":
+            n_st = dim if num_states is None else int(num_states)
+            return _core.LocalStates(dim, list(range(n_st))), "exact"
+        st = _core.RandomPhaseStates(dim, rp_vec_count, int(kpm_seed))
+        return st, st.label
+
+    # 1. Part A: Elliott-Yafet on L = 20, D in (0.05, 0.07, 0.10) (captures 0000..0005)
     for d_val in ey_ds:
         with tempfile.TemporaryDirectory() as stage_dir:
             label = str(
@@ -249,28 +354,31 @@ def run_tutorial06(
                 )
             )
             dim = 2 * int(ey_l) * int(ey_l)
-            states = _core.LocalStates(dim, list(range(dim)))
+            states, st_label = _make_part_states(dim)
             _, _, _, w_paths, cap_idx = _eval_and_reconstruct_pair(
                 stage_dir,
                 label,
-                "SZ",
-                "PZ",
+                pz_words,
                 int(ey_moments),
                 int(ey_steps),
                 float(ey_tmax),
                 states,
-                "exact",
+                st_label,
                 float(broadening_meV),
-                ef,
+                ef_list,
                 bessel,
                 legacy_text_round_trip,
                 out_dir,
                 captured_dir,
                 cap_idx,
+                win_override=win_override,
+                kernel=kernel,
+                formulas=formulas,
+                capture_tutorial=capture_tutorial,
             )
             written.extend(w_paths)
 
-    # 2. Part B: Dyakonov-Perel exact trace on L = 20, lambda = 0.2, W in (0.0, 6.0) (captures 0006..0011)
+    # 2. Part B: Dyakonov-Perel on L = 20, lambda = 0.2, W in (0.0, 6.0) (captures 0006..0011)
     for w_val in dp_ws:
         with tempfile.TemporaryDirectory() as stage_dir:
             label = str(
@@ -283,44 +391,50 @@ def run_tutorial06(
                 )
             )
             dim = 2 * int(dp_l) * int(dp_l)
-            states = _core.LocalStates(dim, list(range(dim)))
+            states, st_label = _make_part_states(dim)
             _, _, _, w_paths, cap_idx = _eval_and_reconstruct_pair(
                 stage_dir,
                 label,
-                "SZ",
-                "PZ",
+                pz_words,
                 int(dp_moments),
                 int(dp_steps),
                 float(dp_tmax),
                 states,
-                "exact",
+                st_label,
                 float(broadening_meV),
-                ef,
+                ef_list,
                 bessel,
                 legacy_text_round_trip,
                 out_dir,
                 captured_dir,
                 cap_idx,
+                win_override=win_override,
+                kernel=kernel,
+                formulas=formulas,
+                capture_tutorial=capture_tutorial,
             )
             written.extend(w_paths)
-            if float(w_val) == float(dp_ws[-1]):
+            if px_words and float(w_val) == float(dp_ws[-1]):
                 _, _, _, w_paths_x, cap_idx = _eval_and_reconstruct_pair(
                     stage_dir,
                     label,
-                    "SX",
-                    "PX",
+                    px_words,
                     int(dp_moments),
                     int(dp_steps),
                     float(dp_tmax),
                     states,
-                    "exact",
+                    st_label,
                     float(broadening_meV),
-                    ef,
+                    ef_list,
                     bessel,
                     legacy_text_round_trip,
                     out_dir,
                     captured_dir,
                     cap_idx,
+                    win_override=win_override,
+                    kernel=kernel,
+                    formulas=formulas,
+                    capture_tutorial=capture_tutorial,
                 )
                 written.extend(w_paths_x)
 
@@ -342,24 +456,27 @@ def run_tutorial06(
             den_acc: npt.NDArray[np.float64] | None = None
             t_arr: npt.NDArray[np.float64] | None = None
             for r_idx in range(1, int(ratelaw_nr) + 1):
-                states = _core.RandomPhaseStates(dim, 1, r_idx)
+                states = _core.RandomPhaseStates(dim, rp_vec_count, r_idx)
                 tt, num_v, den_v, w_paths, cap_idx = _eval_and_reconstruct_pair(
                     stage_dir,
                     label,
-                    "SZ",
-                    "PZ",
+                    pz_words,
                     int(ratelaw_moments),
                     int(ratelaw_steps),
                     float(ratelaw_tmax),
                     states,
                     states.label,
                     float(broadening_meV),
-                    ef,
+                    ef_list,
                     bessel,
                     legacy_text_round_trip,
                     out_dir,
                     captured_dir,
                     cap_idx,
+                    win_override=win_override,
+                    kernel=kernel,
+                    formulas=formulas,
+                    capture_tutorial=capture_tutorial,
                 )
                 written.extend(w_paths)
                 num_acc = num_v if num_acc is None else num_acc + num_v
@@ -388,42 +505,48 @@ def run_tutorial06(
         _, _, _, w_paths_ex, cap_idx = _eval_and_reconstruct_pair(
             stage_dir,
             label_sm,
-            "SZ",
-            "PZ",
+            pz_words,
             int(crosscheck_moments),
             int(crosscheck_steps),
             float(crosscheck_tmax),
             states_ex,
             f"exact_{dim_sm}",
             float(broadening_meV),
-            ef,
+            ef_list,
             bessel,
             legacy_text_round_trip,
             out_dir,
             captured_dir,
             cap_idx,
+            win_override=win_override,
+            kernel=kernel,
+            formulas=formulas,
+            capture_tutorial=capture_tutorial,
             keep_top_level=False,
         )
         written.extend(w_paths_ex)
         for r_idx in range(1, int(crosscheck_nr) + 1):
-            states_rp = _core.RandomPhaseStates(dim_sm, 1, r_idx)
+            states_rp = _core.RandomPhaseStates(dim_sm, rp_vec_count, r_idx)
             _, _, _, w_paths_rp, cap_idx = _eval_and_reconstruct_pair(
                 stage_dir,
                 label_sm,
-                "SZ",
-                "PZ",
+                pz_words,
                 int(crosscheck_moments),
                 int(crosscheck_steps),
                 float(crosscheck_tmax),
                 states_rp,
                 states_rp.label,
                 float(broadening_meV),
-                ef,
+                ef_list,
                 bessel,
                 legacy_text_round_trip,
                 out_dir,
                 captured_dir,
                 cap_idx,
+                win_override=win_override,
+                kernel=kernel,
+                formulas=formulas,
+                capture_tutorial=capture_tutorial,
             )
             written.extend(w_paths_rp)
 
@@ -438,9 +561,10 @@ def run_tutorial06(
         header=f"Dsf  1/T1  (p={float(p_fit):.3f})",
     )
     written.append(ratelaw_path)
-    ratelaw_cap = os.path.join(captured_dir, f"{cap_idx:04d}_ey_ratelaw.dat")
-    shutil.copyfile(ratelaw_path, ratelaw_cap)
-    written.append(ratelaw_cap)
+    if capture_tutorial:
+        ratelaw_cap = os.path.join(captured_dir, f"{cap_idx:04d}_ey_ratelaw.dat")
+        shutil.copyfile(ratelaw_path, ratelaw_cap)
+        written.append(ratelaw_cap)
 
     return written
 
