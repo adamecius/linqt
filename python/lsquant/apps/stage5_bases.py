@@ -33,6 +33,10 @@ In all three bases, ``stage5_bases`` runs the identical :class:`~lsquant._core.P
 file (``.chebmom1D`` or ``.chebmom2D``), the new ``.chebmom`` file, the curve
 with the legacy filename (``mean<stem>JACKSON.dat`` or
 ``KuboGreenWood_<stem>JACKSON.dat``), and ``<stem>.basis.json`` to ``--out``.
+Output filenames use ``<seed>_<basis>`` as the label part of the legacy stem
+(e.g. ``SpectralOp1graphene_bloch_KPM_M256_stateexact.chebmom1D``) so that the
+three bases written to one directory do not overwrite each other; the legacy
+stem is kept otherwise.
 """
 
 from __future__ import annotations
@@ -304,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
                 mu.number_of_states = basis.dimension
             energies, values = dos_curve(mu, float(args.broadening_meV))
             stem = (
-                f"SpectralOp1{model.seed_name}KPM_M{num_moments}"
+                f"SpectralOp1{model.seed_name}_{args.basis}_KPM_M{num_moments}"
                 f"_state{mu.state_label}"
             )
             legacy_cheb_path = os.path.join(args.out, f"{stem}.chebmom1D")
@@ -345,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
                 mu.number_of_states = basis.dimension
             energies, values = kubo_greenwood(mu, float(args.broadening_meV))
             stem = (
-                f"NonEqOp{op_tag}{model.seed_name}KPM_M"
+                f"NonEqOp{op_tag}{model.seed_name}_{args.basis}_KPM_M"
                 f"{num_moments}x{num_moments}_state{mu.state_label}"
             )
             legacy_cheb_path = os.path.join(args.out, f"{stem}.chebmom2D")
