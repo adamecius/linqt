@@ -146,6 +146,8 @@ public:
   std::string word;
   bool kpmWeighted = false;
   bool symmetrised = false;
+  double timeStep = 0.0;
+  int numberOfTimeSteps = 0;
 
 private:
   std::size_t FlatIndex(const std::vector<int>& index) const;

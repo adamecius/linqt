@@ -87,6 +87,11 @@ class RescaledOperator(LinearOperator):
     @property
     def window(self) -> SpectralWindow: ...
 
+class Register:
+    Ket: Register
+    Bra: Register
+    Aux: Register
+
 class ApplyOperator:
     operator_index: int
     def __init__(self, operator_index: int) -> None: ...
@@ -97,12 +102,66 @@ class Expand:
 
 class ApplySeries:
     coeffs: list[complex]
+    scale: complex
     def __init__(
-        self, coeffs: Union[npt.NDArray[np.complex128], Sequence[complex]]
+        self,
+        coeffs: Union[npt.NDArray[np.complex128], Sequence[complex]],
+        scale: complex = 1.0 + 0.0j,
+    ) -> None: ...
+
+class ApplyDerivedSeries:
+    coeffs: list[complex]
+    operator_index: int
+    scale: complex
+    def __init__(
+        self,
+        coeffs: Union[npt.NDArray[np.complex128], Sequence[complex]],
+        operator_index: int,
+        scale: complex = 1.0 + 0.0j,
     ) -> None: ...
 
 class MirrorToBra:
     def __init__(self) -> None: ...
+
+class EvolveRegister:
+    target: Register
+    coeffs: list[complex]
+    scale: complex
+    def __init__(
+        self,
+        target: Register,
+        coeffs: Union[npt.NDArray[np.complex128], Sequence[complex]],
+        scale: complex = 1.0 + 0.0j,
+    ) -> None: ...
+
+class EvolveDerived:
+    target: Register
+    source: Register
+    coeffs: list[complex]
+    operator_index: int
+    scale: complex
+    def __init__(
+        self,
+        target: Register,
+        source: Register,
+        coeffs: Union[npt.NDArray[np.complex128], Sequence[complex]],
+        operator_index: int,
+        scale: complex = 1.0 + 0.0j,
+    ) -> None: ...
+
+class CopyRegister:
+    from_reg: Register
+    to_reg: Register
+    def __init__(self, from_reg: Register, to_reg: Register) -> None: ...
+
+AxisStep = Union[EvolveRegister, EvolveDerived, CopyRegister]
+
+class TimeAxis:
+    num_steps: int
+    evolve: list[AxisStep]
+    def __init__(
+        self, num_steps: int, evolve: Sequence[AxisStep] = ...
+    ) -> None: ...
 
 class Trace:
     weights: list[complex]
@@ -110,7 +169,15 @@ class Trace:
         self, weights: Union[npt.NDArray[np.complex128], Sequence[complex]]
     ) -> None: ...
 
-Instruction = Union[ApplyOperator, Expand, ApplySeries, MirrorToBra, Trace]
+Instruction = Union[
+    ApplyOperator,
+    Expand,
+    ApplySeries,
+    ApplyDerivedSeries,
+    MirrorToBra,
+    TimeAxis,
+    Trace,
+]
 
 class Plan:
     code: list[Instruction]
@@ -125,6 +192,8 @@ class ChebyshevMoments:
     word: str
     kpm_weighted: bool
     symmetrised: bool
+    time_step: float
+    number_of_time_steps: int
     def __init__(self, dims: Sequence[int] = ...) -> None: ...
     @property
     def rank(self) -> int: ...
@@ -151,6 +220,7 @@ def ReadChebmom(path: str) -> ChebyshevMoments: ...
 def WriteChebmom(path: str, moments: ChebyshevMoments) -> None: ...
 def WriteLegacyChebmom1D(path: str, moments: ChebyshevMoments) -> None: ...
 def WriteLegacyChebmom2D(path: str, moments: ChebyshevMoments) -> None: ...
+def WriteLegacyChebmomTD(path: str, moments: ChebyshevMoments) -> None: ...
 
 @overload
 def ContractRank1(
@@ -211,3 +281,7 @@ class compat:
         num_moments_0: int,
         num_moments_1: int | None = None,
     ) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.complex128]]: ...
+    @staticmethod
+    def bessel_series_coefficients(
+        x: float, tol: float = 1e-15
+    ) -> npt.NDArray[np.complex128]: ...

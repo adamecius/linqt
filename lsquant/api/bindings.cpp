@@ -9,6 +9,7 @@
  * (`ContractRank1`, `ContractRank2Imag`, `ContractRank2Real`, `ContractRank2RealReal`,
  * `WriteCurveText`), and the gate-only `_core.compat` submodule.
  */
+#include <pybind11/complex.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -231,6 +232,11 @@ PYBIND11_MODULE(_core, m) {
            py::arg("window"), py::keep_alive<1, 2>())
       .def_property_readonly("window", &RescaledOperator::Window);
 
+  py::enum_<Register>(m, "Register")
+      .value("Ket", Register::Ket)
+      .value("Bra", Register::Bra)
+      .value("Aux", Register::Aux);
+
   py::class_<ApplyOperator>(m, "ApplyOperator")
       .def(py::init<int>(), py::arg("operator_index"))
       .def_readwrite("operator_index", &ApplyOperator::operatorIndex);
@@ -240,17 +246,88 @@ PYBIND11_MODULE(_core, m) {
       .def_readwrite("num_moments", &Expand::numMoments);
 
   py::class_<ApplySeries>(m, "ApplySeries")
-      .def(py::init([](const py::array_t<Scalar, py::array::c_style>& coeffs) {
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style>& coeffs, Scalar scale) {
              if (coeffs.ndim() != 1) {
                throw std::invalid_argument("ApplySeries: coeffs must be a 1D complex128 array");
              }
-             return ApplySeries{std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size())};
+             return ApplySeries{
+                 std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), scale};
            }),
-           py::arg("coeffs"))
-      .def(py::init<std::vector<Scalar>>(), py::arg("coeffs"))
-      .def_readwrite("coeffs", &ApplySeries::coeffs);
+           py::arg("coeffs"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<std::vector<Scalar>, Scalar>(), py::arg("coeffs"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("coeffs", &ApplySeries::coeffs)
+      .def_readwrite("scale", &ApplySeries::scale);
+
+  py::class_<ApplyDerivedSeries>(m, "ApplyDerivedSeries")
+      .def(py::init([](const py::array_t<Scalar, py::array::c_style>& coeffs, int operatorIndex,
+                       Scalar scale) {
+             if (coeffs.ndim() != 1) {
+               throw std::invalid_argument(
+                   "ApplyDerivedSeries: coeffs must be a 1D complex128 array");
+             }
+             return ApplyDerivedSeries{
+                 std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), operatorIndex,
+                 scale};
+           }),
+           py::arg("coeffs"), py::arg("operator_index"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<std::vector<Scalar>, int, Scalar>(), py::arg("coeffs"),
+           py::arg("operator_index"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("coeffs", &ApplyDerivedSeries::coeffs)
+      .def_readwrite("operator_index", &ApplyDerivedSeries::operatorIndex)
+      .def_readwrite("scale", &ApplyDerivedSeries::scale);
 
   py::class_<MirrorToBra>(m, "MirrorToBra").def(py::init<>());
+
+  py::class_<EvolveRegister>(m, "EvolveRegister")
+      .def(py::init([](Register target, const py::array_t<Scalar, py::array::c_style>& coeffs,
+                       Scalar scale) {
+             if (coeffs.ndim() != 1) {
+               throw std::invalid_argument("EvolveRegister: coeffs must be a 1D complex128 array");
+             }
+             return EvolveRegister{
+                 target, std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), scale};
+           }),
+           py::arg("target"), py::arg("coeffs"), py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<Register, std::vector<Scalar>, Scalar>(), py::arg("target"), py::arg("coeffs"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("target", &EvolveRegister::target)
+      .def_readwrite("coeffs", &EvolveRegister::coeffs)
+      .def_readwrite("scale", &EvolveRegister::scale);
+
+  py::class_<EvolveDerived>(m, "EvolveDerived")
+      .def(py::init([](Register target, Register source,
+                       const py::array_t<Scalar, py::array::c_style>& coeffs, int operatorIndex,
+                       Scalar scale) {
+             if (coeffs.ndim() != 1) {
+               throw std::invalid_argument("EvolveDerived: coeffs must be a 1D complex128 array");
+             }
+             return EvolveDerived{
+                 target, source,
+                 std::vector<Scalar>(coeffs.data(), coeffs.data() + coeffs.size()), operatorIndex,
+                 scale};
+           }),
+           py::arg("target"), py::arg("source"), py::arg("coeffs"), py::arg("operator_index"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def(py::init<Register, Register, std::vector<Scalar>, int, Scalar>(), py::arg("target"),
+           py::arg("source"), py::arg("coeffs"), py::arg("operator_index"),
+           py::arg("scale") = Scalar(1.0, 0.0))
+      .def_readwrite("target", &EvolveDerived::target)
+      .def_readwrite("source", &EvolveDerived::source)
+      .def_readwrite("coeffs", &EvolveDerived::coeffs)
+      .def_readwrite("operator_index", &EvolveDerived::operatorIndex)
+      .def_readwrite("scale", &EvolveDerived::scale);
+
+  py::class_<CopyRegister>(m, "CopyRegister")
+      .def(py::init<Register, Register>(), py::arg("from_reg"), py::arg("to_reg"))
+      .def_readwrite("from_reg", &CopyRegister::from)
+      .def_readwrite("to_reg", &CopyRegister::to);
+
+  py::class_<TimeAxis>(m, "TimeAxis")
+      .def(py::init<int, std::vector<AxisStep>>(), py::arg("num_steps"),
+           py::arg("evolve") = std::vector<AxisStep>{})
+      .def_readwrite("num_steps", &TimeAxis::numSteps)
+      .def_readwrite("evolve", &TimeAxis::evolve);
 
   py::class_<Trace>(m, "Trace")
       .def(py::init([](const py::array_t<Scalar, py::array::c_style>& weights) {
@@ -304,7 +381,9 @@ PYBIND11_MODULE(_core, m) {
       .def_readwrite("state_label", &ChebyshevMoments::stateLabel)
       .def_readwrite("word", &ChebyshevMoments::word)
       .def_readwrite("kpm_weighted", &ChebyshevMoments::kpmWeighted)
-      .def_readwrite("symmetrised", &ChebyshevMoments::symmetrised);
+      .def_readwrite("symmetrised", &ChebyshevMoments::symmetrised)
+      .def_readwrite("time_step", &ChebyshevMoments::timeStep)
+      .def_readwrite("number_of_time_steps", &ChebyshevMoments::numberOfTimeSteps);
 
   m.def("ApplyKpmWeights", &ApplyKpmWeights, py::arg("moments"), py::arg("num_states"),
         py::arg("symmetrise"));
@@ -314,6 +393,7 @@ PYBIND11_MODULE(_core, m) {
   m.def("WriteChebmom", &WriteChebmom, py::arg("path"), py::arg("moments"));
   m.def("WriteLegacyChebmom1D", &WriteLegacyChebmom1D, py::arg("path"), py::arg("moments"));
   m.def("WriteLegacyChebmom2D", &WriteLegacyChebmom2D, py::arg("path"), py::arg("moments"));
+  m.def("WriteLegacyChebmomTD", &WriteLegacyChebmomTD, py::arg("path"), py::arg("moments"));
 
   m.def(
       "ContractRank1",
@@ -498,4 +578,15 @@ PYBIND11_MODULE(_core, m) {
         return std::make_pair(std::move(greenR), std::move(dgreenR));
       },
       py::arg("x_grid"), py::arg("num_moments_0"), py::arg("num_moments_1") = py::none());
+  compatMod.def(
+      "bessel_series_coefficients",
+      [](double x, double tol) {
+        std::vector<Scalar> coeffs = compat::ComputeLegacyBesselCoefficients(x, tol);
+        py::array_t<Scalar> out(static_cast<py::ssize_t>(coeffs.size()));
+        if (!coeffs.empty()) {
+          std::copy(coeffs.begin(), coeffs.end(), out.mutable_data());
+        }
+        return out;
+      },
+      py::arg("x"), py::arg("tol") = 1e-15);
 }

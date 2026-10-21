@@ -48,5 +48,5 @@ if(LSQUANT_BUILD_PYTHON)
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     )
     target_compile_options(_core PRIVATE -Wall -Wextra)
-    target_link_libraries(_core PRIVATE lsquant_core)
+    target_link_libraries(_core PRIVATE lsquant_core GSL::gsl)
 endif()

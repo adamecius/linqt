@@ -39,7 +39,7 @@ def dos_curve(
        ``x_i = -alpha + i * (2 * alpha) / (num_div - 1)``.
     4. Contract ``rho_i = sum_{m=0}^{M_eff-1} delta_chebF(x_i, m) * mu_real[m]``
        sequentially in ``m`` via :func:`lsquant._core.ContractRank1`.
-    5. Map to physical energy ``E_i = x_i / Scale + Shift`` and extensive value
+    5. Map to physical energy ``E_i = (x_i - Shift) / Scale`` and extensive value
        ``value_i = rho_i * (SystemSize * Scale)``.
 
     Complexity is ``O(M_eff * num_div) = O(30 * M_eff^2)`` time and memory.
@@ -112,7 +112,7 @@ def dos_curve(
     energies = np.empty(num_div, dtype=np.float64)
     values = np.empty(num_div, dtype=np.float64)
     for i in range(num_div):
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
         values[i] = float(rho[i]) * prefactor
 
     return energies, values
@@ -172,7 +172,7 @@ def kubo_greenwood(
     3. Contract ``out_i = sum_{m0, m1} delta(x_i, m0) * imag(greenR(x_i, m1) * mu[m0, m1])``
        via :func:`~lsquant._core.ContractRank2Imag`.
     4. Scale ``kernel_i = -1.0 * out_i * (N * scale * scale)`` and report the
-       first ``num_div - 1`` points at ``E_i = x_i / scale + shift``.
+       first ``num_div - 1`` points at ``E_i = (x_i - shift) / scale``.
 
     Parameters
     ----------
@@ -223,7 +223,7 @@ def kubo_greenwood(
     for i in range(n_out):
         kernel_i = -1.0 * float(out[i]) * pref_ext
         values[i] = kernel_i
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -300,7 +300,7 @@ def kubo_bastin(
     for i in range(n_out):
         acc += kernel[i] * (x_grid[i + 1] - x_grid[i])
         values[i] = acc
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -391,7 +391,7 @@ def kubo_bastin_sea(
         denerg = x_grid[i + 1] - x_grid[i]
         acc += 0.5 * (kernel[i] + kernel[i + 1]) * denerg
         values[i] = acc
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -465,7 +465,7 @@ def kubo_bastin_surf(
     values = np.empty(n_out, dtype=np.float64)
     for i in range(n_out):
         values[i] = (kernel[i + 1] + kernel[i]) / 2.0
-        energies[i] = x_grid[i] / scale + shift
+        energies[i] = (x_grid[i] - shift) / scale
 
     return energies, values
 
@@ -576,3 +576,69 @@ def kubo_fft_grid(
         energies[i] = x_grid[i] * hw + bc
 
     return energies, values
+
+
+def time_correlation_curve(
+    moments: _core.ChebyshevMoments,
+    broadening_meV: float,
+    fermi_energy: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Reconstruct a time-dependent correlation curve at fixed ``fermi_energy``.
+
+    Reproduces the operation order of legacy ``timeCorrelationsFromChebmom``
+    byte for byte:
+
+    1. ``eta = 2.0 * broadening_meV / 1000 / BandWidth``,
+       ``M_eff = min(ceil(pi / eta), M)``.
+    2. Multiply ``mu[m, n]`` by the 1D Jackson kernel ``g(m, M_eff)`` along
+       ``m = 0 .. M_eff - 1``.
+    3. Rescale ``x_F = (fermi_energy - BandCenter) / HalfWidth`` and evaluate
+       ``delta_chebF(x_F, m)`` for ``m = 0 .. M_eff - 1``.
+    4. For each time step ``n = 0 .. N_t - 1``, accumulate
+       ``val_n = (sum_{m=0}^{M_eff-1} delta_chebF(x_F, m) * mu[m, n].real) * ScaleFactor``
+       at ``t_n = n * dt``.
+    """
+    if moments.rank != 2:
+        raise ValueError("time_correlation_curve: moments must have rank 2 (M, N_t)")
+    if broadening_meV <= 0.0:
+        raise ValueError("time_correlation_curve: broadening_meV must be positive")
+
+    band_width = (moments.window.upper - moments.window.lower) * 1.0
+    if band_width <= 0.0:
+        raise ValueError(
+            "time_correlation_curve: spectral window must have positive width"
+        )
+    half_width = band_width / 2.0
+    band_center = (moments.window.upper + moments.window.lower) * 0.5
+    scale_factor = 1.0 / half_width
+
+    eta = 2.0 * float(broadening_meV) / 1000.0 / band_width
+    max_mom = int(math.ceil(math.pi / eta))
+    num_moms = int(moments.dims[0])
+    num_times = int(moments.dims[1])
+    if max_mom > num_moms:
+        max_mom = num_moms
+
+    g = jackson_damping(max_mom)
+    raw = moments.data
+    damped = np.empty((max_mom, num_times), dtype=np.complex128)
+    for m_idx in range(max_mom):
+        g_m = float(g[m_idx])
+        for n_idx in range(num_times):
+            damped[m_idx, n_idx] = raw[m_idx, n_idx] * g_m
+
+    x_fermi = (float(fermi_energy) - band_center) / half_width
+    delta_col = legacy_delta_table([x_fermi], max_mom)[:, 0]
+
+    dt = float(moments.time_step)
+    times = np.empty(num_times, dtype=np.float64)
+    values = np.empty(num_times, dtype=np.float64)
+    for n_idx in range(num_times):
+        out_val = 0.0
+        for m_idx in range(max_mom):
+            out_val += float(delta_col[m_idx]) * float(damped[m_idx, n_idx].real)
+        out_val *= scale_factor
+        times[n_idx] = float(n_idx) * dt
+        values[n_idx] = out_val
+
+    return times, values
