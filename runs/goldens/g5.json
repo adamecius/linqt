@@ -12,6 +12,10 @@
     "policy": "orthogonal"
   },
   "word": "Tr[VX delta(E-H) VY dG-(E)/dE]",
+  "words": [
+    "Tr[VX delta(E-H) VY dG-(E)/dE]",
+    "Tr[VX delta(E-H) VX delta(E-H)]"
+  ],
   "expansion": {
     "moments": 128,
     "window": [-4.5, 4.5],

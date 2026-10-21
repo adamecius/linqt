@@ -1,16 +1,12 @@
 # LSQUANT — Linear Quantum Transport (KPM core)
 #
-# Reflects the build as it actually is: a single Eigen numeric backend plus
-# FFTW3, GSL and OpenMP. The former INTEL_MKL / EIGEN / BLAS_LIB switches and the
-# (nonexistent) icc+mkl toolchain are gone; dependencies are resolved with
-# find_package and consumed as imported targets, so no hand-passed toolchain file
-# is required:  cmake -B build && cmake --build build -j
+# Unified C++17 core + pybind11 bindings, with Eigen3, FFTW3, GSL and OpenMP.
 cmake_minimum_required(VERSION 3.16)
 
 project(LSQUANT VERSION 2.0.0 LANGUAGES CXX)
 
 # --- Language / build type ---------------------------------------------------
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -24,11 +20,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # --- Options -----------------------------------------------------------------
-option(LSQUANT_BUILD_UTILITIES   "Build the Python helper utilities" OFF)
-option(LSQUANT_BUILD_NEW_CORE    "" ON)
-option(LSQUANT_BUILD_INPUT_TOOLS "Fetch + build the external wannier2sparse for tests" ON)
-# OFF by default: normal builds and the test suite never touch Doxygen/Graphviz.
-option(BUILD_DOCS                "Build the Doxygen documentation (needs doxygen + graphviz)" OFF)
+option(LSQUANT_BUILD_NEW_CORE    "Build the LSQUANT C++ core, stage apps, and Python bindings" ON)
+option(LSQUANT_BUILD_INPUT_TOOLS "Fetch + build the external wannier2sparse for tests" OFF)
 
 # --- Dependencies ------------------------------------------------------------
 # Eigen3: prefer a real config-package (Eigen3::Eigen); fall back to a header dir.
@@ -62,33 +55,11 @@ if(NOT FFTW3_OMP_LIBRARY)
     set(FFTW3_OMP_LIBRARY "")
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
 # --- Targets -----------------------------------------------------------------
-add_subdirectory(src)
-
 if(LSQUANT_BUILD_NEW_CORE)
     add_subdirectory(lsquant lsquant_core)
 endif()
 
-if(LSQUANT_BUILD_UTILITIES)
-    add_subdirectory(utilities)
-endif()
-
-# Golden-input generation depends on the external wannier2sparse, which is NOT
-# vendored or distributed. It is fetched + built only on demand for tests.
-# (cmake/FetchWannier2Sparse.cmake wraps scripts/fetch_wannier2sparse.sh, pinned
-#  to a commit of github.com/adamecius/wannier2sparse.)
 if(LSQUANT_BUILD_INPUT_TOOLS)
     include(cmake/FetchWannier2Sparse.cmake OPTIONAL)
-endif()
-
-include(CTest)
-if(BUILD_TESTING AND EXISTS "${PROJECT_SOURCE_DIR}/test/CMakeLists.txt")
-    add_subdirectory(test)
-endif()
-
-# Documentation (opt-in; OFF by default so it never affects normal builds/tests).
-if(BUILD_DOCS)
-    add_subdirectory(docs)
 endif()

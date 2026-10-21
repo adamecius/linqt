@@ -20,6 +20,8 @@ import json
 import math
 import os
 import shlex
+import shutil
+import subprocess
 from typing import Sequence
 import numpy as np
 import numpy.typing as npt
@@ -195,6 +197,55 @@ def _parse_w2s_command_line(
     return cmd_label, explicit_seed, cmd_sc, cmd_ops, None
 
 
+def find_w2s_binary() -> str | None:
+    """Locate the ``wannier2sparse`` executable on disk or in ``PATH``."""
+    candidates = [
+        os.environ.get("W2S_BIN", ""),
+        os.path.expanduser("~/wannier2sparse/build/wannier2sparse"),
+        shutil.which("wannier2sparse") or "",
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
+
+def ensure_w2s_csr_dir(
+    model_dir: str,
+    seed_name: str,
+    supercell: Sequence[int],
+    csr_dir: str,
+    operators: Sequence[str] = ("VX",),
+) -> None:
+    """Populate ``csr_dir`` with ``wannier2sparse`` CSR and receipt files when not yet generated."""
+    ham_path = os.path.join(csr_dir, f"{seed_name}.HAM.CSR")
+    out_path = os.path.join(csr_dir, f"{seed_name}.out")
+    if os.path.isfile(ham_path) and os.path.isfile(out_path):
+        return
+    if os.path.isdir(csr_dir) and os.listdir(csr_dir):
+        # Directory already exists and is non-empty; do not overwrite existing test fixtures.
+        return
+    w2s_bin = find_w2s_binary()
+    if w2s_bin is None:
+        return
+    os.makedirs(csr_dir, exist_ok=True)
+    cmd = [
+        w2s_bin,
+        str(seed_name),
+        str(int(supercell[0])),
+        str(int(supercell[1])),
+        str(int(supercell[2])),
+        *[str(op) for op in operators],
+        "-p",
+        os.path.abspath(model_dir),
+        "-o",
+        os.path.abspath(csr_dir),
+        "--quiet",
+        "--no-log-file",
+    ]
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
+
+
 def make_anderson_disorder(
     dimension: int, disorder_w: float, seed: int = 12345
 ) -> npt.NDArray[np.complex128]:
@@ -268,6 +319,13 @@ class RealBasis:
         if self._use_w2s_csr:
             seed_name = self.model.seed_name
             if self._csr_dir is not None:
+                if self.model.model_dir is not None:
+                    ensure_w2s_csr_dir(
+                        self.model.model_dir,
+                        seed_name,
+                        self.supercell,
+                        self._csr_dir,
+                    )
                 ham_candidate = os.path.join(self._csr_dir, f"{seed_name}.HAM.CSR")
                 if not os.path.isfile(ham_candidate):
                     raise FileNotFoundError(

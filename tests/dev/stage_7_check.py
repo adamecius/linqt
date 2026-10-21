@@ -24,8 +24,14 @@ import sys
 import tempfile
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if os.path.join(REPO, "python") not in sys.path:
-    sys.path.insert(0, os.path.join(REPO, "python"))
+for _p in (
+    os.path.join(REPO, "python"),
+    os.path.join(REPO, "build", "lsquant_core"),
+    os.path.join(REPO, "build"),
+):
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 from lsquant.runfile import RunFile  # noqa: E402
 from lsquant.words import CATALOGUE, compile as compile_word, describe, parse  # noqa: E402
@@ -109,6 +115,68 @@ def check_b_refusals() -> None:
                 repo_root=REPO,
             ),
             "Unknown key 'unknown_extra_key' in run file",
+        ),
+        (
+            "unsupported_green_word",
+            lambda: compile_word(
+                "Tr[VX delta(E-H) VY G+(E)]",
+                basis="real",
+                params={"moments": 64, "states": 1},
+            ),
+            "kubo_bastin",
+        ),
+        (
+            "eigen_window_on_csr",
+            lambda: RunFile.from_dict(
+                {
+                    "model": {
+                        "kind": "csr",
+                        "dir": "goldens/stage0/chain1d/operators",
+                        "label": "chain1d",
+                    },
+                    "word": "Tr[delta(E-H)]",
+                    "expansion": {"moments": 64, "window": "eigen"},
+                },
+                repo_root=REPO,
+            ),
+            "expansion.window='eigen' is not supported for model.kind='csr'",
+        ),
+        (
+            "unmatched_formula_for_word",
+            lambda: RunFile.from_dict(
+                {
+                    "model": {
+                        "kind": "csr",
+                        "dir": "goldens/stage0/haldane/operators",
+                        "label": "haldane",
+                        "operators": ["VX", "VY"],
+                    },
+                    "word": "Tr[VX delta(E-H) VY dG-(E)/dE]",
+                    "expansion": {"moments": 128, "window": [-4.5, 4.5]},
+                    "reconstruction": {
+                        "broadening_meV": 10.0,
+                        "formulas": ["bastin", "greenwood"],
+                    },
+                },
+                repo_root=REPO,
+            ),
+            "does not match any word",
+        ),
+        (
+            "unknown_generator_param",
+            lambda: RunFile.from_dict(
+                {
+                    "model": {
+                        "kind": "generator",
+                        "name": "make_chain",
+                        "params": {"bogus_param": 1},
+                    },
+                    "word": "Tr[delta(E-H)]",
+                    "expansion": {"moments": 64},
+                },
+                repo_root=REPO,
+            ),
+            "Unknown key 'bogus_param'",
         ),
     ]
 
@@ -195,7 +263,9 @@ def _cmp_file(new_path: str, gold_path: str, tag: str) -> None:
 
 
 def check_c_cli_goldens(tmp_root: str) -> str:
-    print("\n== (c) CLI reproduction of G1 (runs/goldens/g1.json) and G5 (runs/goldens/g5.json) ==")
+    print(
+        "\n== (c) CLI reproduction of G1, G5, G9 (g9_graphene_eigen.json), and G10 (g10_chain1d_real_generalised.json) =="
+    )
     out_g1 = os.path.join(tmp_root, "g1")
     r1 = _run_cli(["run", "runs/goldens/g1.json", "--out", out_g1])
     if r1.returncode != 0:
@@ -225,6 +295,158 @@ def check_c_cli_goldens(tmp_root: str) -> str:
             os.path.join(REPO, "goldens", "stage0", "haldane", fname),
             f"G5 ({fname})",
         )
+
+    # Exact-trace G9 run file: runs/goldens/g9_graphene_eigen.json vs stage5_bases
+    out_g9 = os.path.join(tmp_root, "g9_graphene_eigen")
+    ref_g9 = os.path.join(tmp_root, "ref_g9_graphene_eigen")
+    os.makedirs(ref_g9, exist_ok=True)
+    r9 = _run_cli(
+        ["run", "runs/goldens/g9_graphene_eigen.json", "--out", out_g9]
+    )
+    if r9.returncode != 0:
+        raise RuntimeError(
+            f"CLI g9_graphene_eigen.json failed ({r9.returncode}): {r9.stderr}"
+        )
+    for w_tag in ("dos", "kuboxx"):
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "lsquant.apps.stage5_bases",
+                "--model",
+                os.path.join(REPO, "goldens", "stage0", "bases", "graphene", "model"),
+                "--seed",
+                "graphene",
+                "--basis",
+                "eigen",
+                "--supercell",
+                "48",
+                "48",
+                "1",
+                "--disorder",
+                "0.0",
+                "--disorder-seed",
+                "7",
+                "--moments",
+                "256",
+                "--trace",
+                "exact",
+                "--window",
+                "eigen",
+                "--broadening-meV",
+                "40.0",
+                "--word",
+                w_tag,
+                "--out",
+                ref_g9,
+            ],
+            cwd=REPO,
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+    for ref_f in sorted(os.listdir(ref_g9)):
+        _cmp_file(
+            os.path.join(out_g9, ref_f),
+            os.path.join(ref_g9, ref_f),
+            f"G9 g9_graphene_eigen ({ref_f})",
+        )
+
+    # G10 run file: runs/goldens/g10_chain1d_real_generalised.json vs stage6_nonorth
+    out_g10 = os.path.join(tmp_root, "g10_chain1d_real_generalised")
+    ref_g10 = os.path.join(tmp_root, "ref_g10_chain1d_real_generalised")
+    os.makedirs(ref_g10, exist_ok=True)
+    r10 = _run_cli(
+        [
+            "run",
+            "runs/goldens/g10_chain1d_real_generalised.json",
+            "--out",
+            out_g10,
+        ]
+    )
+    if r10.returncode != 0:
+        raise RuntimeError(
+            f"CLI g10_chain1d_real_generalised.json failed ({r10.returncode}): {r10.stderr}"
+        )
+    stage6_bin = os.path.join(REPO, "build", "stage6_nonorth")
+    if not os.path.isfile(stage6_bin):
+        stage6_bin = os.path.join(REPO, "build", "lsquant_core", "stage6_nonorth")
+    for w_tag in ("dos", "kubo"):
+        subprocess.run(
+            [
+                stage6_bin,
+                "--fixture",
+                os.path.join(REPO, "goldens", "stage0", "nonorth", "chain1d", "real"),
+                "--label",
+                "chain1d",
+                "--route",
+                "generalised",
+                "--applier",
+                "exact",
+                "--order",
+                "60",
+                "--tol",
+                "1e-13",
+                "--window",
+                "-2.0",
+                "2.0",
+                "--trace",
+                "exact",
+                "--states",
+                "2048",
+                "--moments",
+                "64",
+                "--word",
+                w_tag,
+                "--out",
+                ref_g10,
+            ],
+            cwd=REPO,
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "lsquant.apps.stage2_dos",
+            "--moments",
+            os.path.join(ref_g10, "SpectralOp1chain1dKPM_M64_stateexact.chebmom1D"),
+            "--broadening-meV",
+            "120.0",
+            "--out",
+            ref_g10,
+        ],
+        cwd=REPO,
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "lsquant.apps.stage3_kubo",
+            "--moments",
+            os.path.join(
+                ref_g10, "NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D"
+            ),
+            "--formula",
+            "greenwood",
+            "--broadening-meV",
+            "120.0",
+            "--out",
+            ref_g10,
+        ],
+        cwd=REPO,
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+    for ref_f in sorted(os.listdir(ref_g10)):
+        _cmp_file(
+            os.path.join(out_g10, ref_f),
+            os.path.join(ref_g10, ref_f),
+            f"G10 g10_chain1d_real_generalised ({ref_f})",
+        )
+
     return g1_new
 
 
@@ -287,6 +509,31 @@ async def _run_mcp_check_async(g1_gold_path: str) -> None:
                     "MCP inspect JSON differs from CLI inspect JSON"
                 )
             print("  PASS  MCP inspect JSON == CLI inspect JSON")
+
+            # 3. Verify MCP error responses carry their reason in content[0].text
+            res_err_word = await session.call_tool(
+                "words_describe", {"word": "Tr[VX delta(E-H) VY G+(E)]"}
+            )
+            is_err_word = bool(
+                getattr(res_err_word, "isError", getattr(res_err_word, "is_error", False))
+            )
+            assert is_err_word, "Expected isError=True for unsupported G+(E) word"
+            assert "kubo_bastin" in res_err_word.content[0].text, (
+                f"Expected error reason in MCP response, got: {res_err_word.content[0].text}"
+            )
+            res_err_root = await session.call_tool(
+                "inspect", {"path": "/etc/passwd"}
+            )
+            is_err_root = bool(
+                getattr(res_err_root, "isError", getattr(res_err_root, "is_error", False))
+            )
+            assert is_err_root, "Expected isError=True for path outside root"
+            assert "outside configured root" in res_err_root.content[0].text, (
+                f"Expected confinement error reason in MCP response, got: {res_err_root.content[0].text}"
+            )
+            print(
+                f"  PASS  MCP error responses preserve reason: '{res_err_word.content[0].text}'"
+            )
 
 
 def check_d_mcp_subprocess() -> None:

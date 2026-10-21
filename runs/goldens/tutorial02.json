@@ -14,11 +14,7 @@
     }
   },
   "basis": {
-    "name": "real",
-    "disorder": {
-      "W": 1.0,
-      "seed": 1
-    }
+    "name": "real"
   },
   "metric": {
     "policy": "orthogonal"
@@ -26,10 +22,7 @@
   "word": "Tr[[X,U(t)]^+ delta(E-H) [X,U(t)]]",
   "expansion": {
     "moments": 256,
-    "window": [
-      -2.5,
-      2.5
-    ],
+    "window": "gershgorin",
     "trace": "random",
     "states": 1,
     "seed": 12345

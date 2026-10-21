@@ -25,6 +25,7 @@ from .reconstruct import (
     time_correlation_curve,
 )
 from .words import compile as compile_word, parse as parse_word
+from .words.catalogue import SHAPE_ALLOWED_FORMULAS
 
 
 ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
@@ -61,6 +62,8 @@ GENERATOR_CATALOGUE: dict[str, str] = {
     "make_haldane": "examples/03_haldane_hall/make_haldane.py",
     "make_chain_mag": "examples/04_spin_precession_magnetic_chain/lsqspin.py",
     "make_square": "examples/05_charge_transport_square/make_square.py",
+    "make_ey": "examples/06_spin_relaxation_square/make_ey.py",
+    "make_rashba": "examples/06_spin_relaxation_square/make_rashba.py",
     "gen_models": "python/lsquant/models/wannier.py",
 }
 
@@ -70,6 +73,69 @@ _GENERATOR_TO_TUTORIAL: dict[str, int] = {
     "make_haldane": 3,
     "make_chain_mag": 4,
     "make_square": 5,
+    "make_ey": 6,
+    "make_rashba": 6,
+}
+
+ALLOWED_GENERATOR_PARAMS: dict[str, frozenset[str]] = {
+    "make_chain": frozenset({"sizes", "hopping_t"}),
+    "make_disordered_chain": frozenset(
+        {
+            "sizes",
+            "W",
+            "realisations",
+            "readme_size",
+            "readme_disorder_seed",
+        }
+    ),
+    "make_haldane": frozenset(),
+    "make_chain_mag": frozenset(),
+    "make_square": frozenset({"L", "W", "disorder_seed", "dos_moments"}),
+    "make_ey": frozenset(
+        {
+            "ey_l",
+            "ey_ds",
+            "dp_l",
+            "dp_lambda",
+            "dp_ws",
+            "dp_moments",
+            "dp_steps",
+            "dp_tmax",
+            "ratelaw_l",
+            "ratelaw_ds",
+            "ratelaw_nr",
+            "crosscheck_l",
+            "crosscheck_d",
+            "crosscheck_nr",
+            "crosscheck_moments",
+            "crosscheck_steps",
+            "crosscheck_tmax",
+            "disorder_seed",
+        }
+    ),
+    "make_rashba": frozenset(
+        {
+            "ey_l",
+            "ey_ds",
+            "dp_l",
+            "dp_lambda",
+            "dp_ws",
+            "dp_moments",
+            "dp_steps",
+            "dp_tmax",
+            "ratelaw_l",
+            "ratelaw_ds",
+            "ratelaw_nr",
+            "crosscheck_l",
+            "crosscheck_d",
+            "crosscheck_nr",
+            "crosscheck_moments",
+            "crosscheck_steps",
+            "crosscheck_tmax",
+            "disorder_seed",
+        }
+    ),
+    "gen_models": frozenset(),
 }
 
 
@@ -241,6 +307,12 @@ def defaults_for_basis(basis_name: str = "real") -> dict[str, Any]:
     return out
 
 
+def _get_or(mapping: Mapping[str, Any], key: str, default: Any = None) -> Any:
+    """Return ``mapping[key]`` when present and not ``None``, otherwise ``default``."""
+    val = mapping.get(key)
+    return default if val is None else val
+
+
 def _check_keys(
     section_name: str, data: Mapping[str, Any], allowed: frozenset[str]
 ) -> None:
@@ -268,7 +340,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     if not isinstance(model, Mapping):
         raise ValueError("Run file 'model' must be a JSON object")
     _check_keys("model", model, ALLOWED_MODEL_KEYS)
-    kind = str(model.get("kind", "csr"))
+    kind = str(_get_or(model, "kind", "csr"))
     if kind not in ("csr", "wannier", "generator"):
         raise ValueError(
             f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', or 'generator'"
@@ -295,13 +367,39 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
                 f"Unknown generator name '{gen_name}' in run file (model.name); "
                 f"allowed generators are {sorted(GENERATOR_CATALOGUE)}"
             )
+        raw_params = model.get("params")
+        if raw_params is not None:
+            if not isinstance(raw_params, Mapping):
+                raise ValueError("model.params must be a JSON object")
+            _check_keys(
+                f"model.params ({gen_name})",
+                raw_params,
+                ALLOWED_GENERATOR_PARAMS.get(gen_name, frozenset()),
+            )
+        if "basis" in raw and isinstance(raw["basis"], Mapping):
+            gen_bname = str(_get_or(raw["basis"], "name", "real"))
+            if gen_bname != "real":
+                raise ValueError(
+                    f"model.kind='generator' only supports basis.name='real' (got '{gen_bname}')"
+                )
+            if "disorder" in raw["basis"] and raw["basis"]["disorder"] is not None:
+                raise ValueError(
+                    "basis.disorder is not supported for model.kind='generator' "
+                    "(pass disorder parameters in model.params)"
+                )
+        if "metric" in raw and isinstance(raw["metric"], Mapping):
+            gen_pol = str(_get_or(raw["metric"], "policy", "orthogonal"))
+            if gen_pol != "orthogonal":
+                raise ValueError(
+                    f"model.kind='generator' only supports metric.policy='orthogonal' (got '{gen_pol}')"
+                )
 
     if "basis" in raw and raw["basis"] is not None:
         basis = raw["basis"]
         if not isinstance(basis, Mapping):
             raise ValueError("Run file 'basis' must be a JSON object")
         _check_keys("basis", basis, ALLOWED_BASIS_KEYS)
-        bname = str(basis.get("name", "real"))
+        bname = str(_get_or(basis, "name", "real"))
         if bname not in ("real", "bloch", "eigen"):
             raise ValueError(
                 f"Unknown basis.name '{bname}'; expected 'real', 'bloch', or 'eigen'"
@@ -321,7 +419,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             if not isinstance(dis, Mapping):
                 raise ValueError("basis.disorder must be a JSON object")
             _check_keys("basis.disorder", dis, ALLOWED_DISORDER_KEYS)
-            if float(dis.get("W", 0.0)) < 0.0:
+            if float(_get_or(dis, "W", 0.0)) < 0.0:
                 raise ValueError("basis.disorder.W must be non-negative")
 
     if "metric" in raw and raw["metric"] is not None:
@@ -329,17 +427,17 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if not isinstance(metric, Mapping):
             raise ValueError("Run file 'metric' must be a JSON object")
         _check_keys("metric", metric, ALLOWED_METRIC_KEYS)
-        pol = str(metric.get("policy", "orthogonal"))
+        pol = str(_get_or(metric, "policy", "orthogonal"))
         if pol not in ("orthogonal", "nonorthogonal"):
             raise ValueError(
                 f"Unknown metric.policy '{pol}'; expected 'orthogonal' or 'nonorthogonal'"
             )
-        rte = str(metric.get("route", "lowdin"))
+        rte = str(_get_or(metric, "route", "lowdin"))
         if rte not in ("lowdin", "generalised"):
             raise ValueError(
                 f"Unknown metric.route '{rte}'; expected 'lowdin' or 'generalised'"
             )
-        app = str(metric.get("applier", "exact"))
+        app = str(_get_or(metric, "applier", "exact"))
         if app not in ("exact", "chebyshev", "ischo"):
             raise ValueError(
                 f"Unknown metric.applier '{app}'; expected 'exact', 'chebyshev', or 'ischo'"
@@ -353,9 +451,9 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     if not isinstance(exp, Mapping):
         raise ValueError("Run file 'expansion' must be a JSON object")
     _check_keys("expansion", exp, ALLOWED_EXPANSION_KEYS)
-    if "moments" not in exp or int(exp["moments"]) <= 0:
+    if _get_or(exp, "moments") is None or int(exp["moments"]) <= 0:
         raise ValueError("expansion.moments must be a positive integer")
-    tr = str(exp.get("trace", "exact"))
+    tr = str(_get_or(exp, "trace", "exact"))
     if tr not in ("exact", "random"):
         raise ValueError(
             f"Unknown expansion.trace '{tr}'; expected 'exact' or 'random'"
@@ -366,6 +464,11 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             if win not in ("eigen", "gershgorin"):
                 raise ValueError(
                     f"Unknown expansion.window '{win}'; expected 'eigen', 'gershgorin', or [lo, hi]"
+                )
+            if kind == "csr" and win == "eigen":
+                raise ValueError(
+                    "expansion.window='eigen' is not supported for model.kind='csr' "
+                    "(no k blocks; use gershgorin or an explicit window)"
                 )
         elif (
             isinstance(win, (list, tuple))
@@ -386,9 +489,9 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if not isinstance(tm, Mapping):
             raise ValueError("Run file 'time' must be a JSON object")
         _check_keys("time", tm, ALLOWED_TIME_KEYS)
-        if "steps" not in tm or int(tm["steps"]) <= 1:
+        if _get_or(tm, "steps") is None or int(tm["steps"]) <= 1:
             raise ValueError("time.steps must be an integer > 1")
-        if "tmax" not in tm and "dt" not in tm:
+        if _get_or(tm, "tmax") is None and _get_or(tm, "dt") is None:
             raise ValueError("time requires 'tmax' or 'dt'")
 
     if "reconstruction" in raw and raw["reconstruction"] is not None:
@@ -419,7 +522,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             raise ValueError("Run file 'words' must be a non-empty list of strings")
         words_list = [str(w) for w in raw["words"]]
 
-    basis_name = str((raw.get("basis") or {}).get("name", "real"))
+    basis_name = str(_get_or(raw.get("basis") or {}, "name", "real"))
     model_ops = model.get("operators")
     basis_spec: dict[str, Any] = {"name": basis_name}
     if model_ops is not None:
@@ -427,22 +530,62 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     if "metric" in raw and raw["metric"] is not None:
         basis_spec["metric"] = dict(raw["metric"])
 
+    raw_rec_obj = (
+        dict(raw["reconstruction"])
+        if isinstance(raw.get("reconstruction"), Mapping)
+        else None
+    )
+    req_formulas_raw = (
+        raw_rec_obj.get("formulas") if raw_rec_obj is not None else None
+    )
+    if req_formulas_raw is not None and not isinstance(
+        req_formulas_raw, (list, tuple)
+    ):
+        raise ValueError("reconstruction.formulas must be a list of strings")
+
+    union_allowed_formulas: set[str] = set()
     for w in words_list:
         parsed_w = parse_word(w)
-        compile_word(
+        comp_base = compile_word(
             parsed_w,
             basis=basis_spec,
             params={
                 "expansion": dict(exp),
                 "time": dict(raw["time"]) if raw.get("time") else None,
                 "metric": dict(raw["metric"]) if raw.get("metric") else None,
-                "reconstruction": (
-                    dict(raw["reconstruction"])
-                    if raw.get("reconstruction")
-                    else None
-                ),
             },
         )
+        w_allowed = SHAPE_ALLOWED_FORMULAS.get(
+            comp_base.match.entry.shape_id, frozenset()
+        )
+        union_allowed_formulas.update(w_allowed)
+        if raw_rec_obj is not None:
+            rec_for_w = dict(raw_rec_obj)
+            if req_formulas_raw is not None:
+                rec_for_w["formulas"] = [
+                    str(f)
+                    for f in req_formulas_raw
+                    if str(f).lower() in w_allowed
+                ]
+            compile_word(
+                parsed_w,
+                basis=basis_spec,
+                params={
+                    "expansion": dict(exp),
+                    "time": dict(raw["time"]) if raw.get("time") else None,
+                    "metric": dict(raw["metric"]) if raw.get("metric") else None,
+                    "reconstruction": rec_for_w,
+                },
+            )
+
+    if req_formulas_raw is not None:
+        for f in req_formulas_raw:
+            if str(f).lower() not in union_allowed_formulas:
+                raise ValueError(
+                    f"Reconstruction formula '{f}' in reconstruction.formulas "
+                    f"does not match any word in {words_list} "
+                    f"(allowed formulas for given word(s): {sorted(union_allowed_formulas)})"
+                )
 
 
 @dataclass
@@ -496,7 +639,7 @@ class RunFile:
             return cand
 
         raw_model = dict(raw["model"])
-        kind = str(raw_model.get("kind", "csr"))
+        kind = str(_get_or(raw_model, "kind", "csr"))
         gen_name = raw_model.get("name")
         if gen_name is not None:
             _ = resolve_generator_path(str(gen_name), root)
@@ -519,26 +662,26 @@ class RunFile:
         raw_basis = dict(raw.get("basis") or {})
         raw_dis = dict(raw_basis.get("disorder") or {})
         basis_cfg: dict[str, Any] = {
-            "name": str(raw_basis.get("name", "real")),
+            "name": str(_get_or(raw_basis, "name", "real")),
             "supercell": [
-                int(x) for x in raw_basis.get("supercell", [1, 1, 1])
+                int(x) for x in _get_or(raw_basis, "supercell", [1, 1, 1])
             ],
             "disorder": {
-                "W": float(raw_dis.get("W", 0.0)),
-                "seed": int(raw_dis.get("seed", 7)),
+                "W": float(_get_or(raw_dis, "W", 0.0)),
+                "seed": int(_get_or(raw_dis, "seed", 7)),
             },
         }
 
         raw_metric = dict(raw.get("metric") or {})
         metric_cfg: dict[str, Any] = {
-            "policy": str(raw_metric.get("policy", "orthogonal")),
-            "route": str(raw_metric.get("route", "lowdin")),
-            "applier": str(raw_metric.get("applier", "exact")),
-            "order": int(raw_metric.get("order", 60)),
-            "coeff_tol": float(raw_metric.get("coeff_tol", 1e-12)),
-            "tol": float(raw_metric.get("tol", 1e-13)),
-            "max_iter": int(raw_metric.get("max_iter", 200)),
-            "max_dim": int(raw_metric.get("max_dim", 4096)),
+            "policy": str(_get_or(raw_metric, "policy", "orthogonal")),
+            "route": str(_get_or(raw_metric, "route", "lowdin")),
+            "applier": str(_get_or(raw_metric, "applier", "exact")),
+            "order": int(_get_or(raw_metric, "order", 60)),
+            "coeff_tol": float(_get_or(raw_metric, "coeff_tol", 1e-12)),
+            "tol": float(_get_or(raw_metric, "tol", 1e-13)),
+            "max_iter": int(_get_or(raw_metric, "max_iter", 200)),
+            "max_dim": int(_get_or(raw_metric, "max_dim", 4096)),
         }
 
         raw_exp = dict(raw["expansion"])
@@ -552,13 +695,13 @@ class RunFile:
         expansion_cfg: dict[str, Any] = {
             "moments": moments_val,
             "window": win_val,
-            "trace": str(raw_exp.get("trace", "exact")),
+            "trace": str(_get_or(raw_exp, "trace", "exact")),
             "states": (
                 int(raw_exp["states"])
                 if raw_exp.get("states") is not None
                 else None
             ),
-            "seed": int(raw_exp.get("seed", 12345)),
+            "seed": int(_get_or(raw_exp, "seed", 12345)),
             "batch": (
                 int(raw_exp["batch"])
                 if raw_exp.get("batch") is not None
@@ -574,12 +717,12 @@ class RunFile:
                 "steps": int(rt["steps"]),
                 "tmax": float(rt["tmax"]) if rt.get("tmax") is not None else None,
                 "dt": float(rt["dt"]) if rt.get("dt") is not None else None,
-                "bessel": str(rt.get("bessel", "scipy")),
+                "bessel": str(_get_or(rt, "bessel", "scipy")),
             }
 
         raw_rec = dict(raw.get("reconstruction") or {})
         recon_cfg: dict[str, Any] = {
-            "kernel": str(raw_rec.get("kernel", "jackson")).lower(),
+            "kernel": str(_get_or(raw_rec, "kernel", "jackson")).lower(),
             "broadening_meV": (
                 float(raw_rec["broadening_meV"])
                 if raw_rec.get("broadening_meV") is not None
@@ -598,11 +741,11 @@ class RunFile:
                 if raw_rec.get("num_points") is not None
                 else None
             ),
-            "fft_grid": bool(raw_rec.get("fft_grid", False)),
+            "fft_grid": bool(_get_or(raw_rec, "fft_grid", False)),
             "legacy_text_round_trip": bool(
-                raw_rec.get("legacy_text_round_trip", False)
+                _get_or(raw_rec, "legacy_text_round_trip", False)
             ),
-            "per_site_dos": bool(raw_rec.get("per_site_dos", False)),
+            "per_site_dos": bool(_get_or(raw_rec, "per_site_dos", False)),
             "targets": [dict(t) for t in (raw_rec.get("targets") or [])],
         }
 
@@ -610,19 +753,19 @@ class RunFile:
         default_write_cheb = (
             kind == "wannier"
             or metric_cfg["policy"] == "nonorthogonal"
-            or not bool(raw_out.get("legacy_layout", True))
+            or not bool(_get_or(raw_out, "legacy_layout", True))
         )
         output_cfg: dict[str, Any] = {
-            "dir": str(raw_out.get("dir", ".")),
-            "legacy_names": bool(raw_out.get("legacy_names", True)),
-            "legacy_layout": bool(raw_out.get("legacy_layout", True)),
+            "dir": str(_get_or(raw_out, "dir", ".")),
+            "legacy_names": bool(_get_or(raw_out, "legacy_names", True)),
+            "legacy_layout": bool(_get_or(raw_out, "legacy_layout", True)),
             "write_chebmom": bool(
-                raw_out.get("write_chebmom", default_write_cheb)
+                _get_or(raw_out, "write_chebmom", default_write_cheb)
             ),
             "write_basis_json": bool(
-                raw_out.get("write_basis_json", kind == "wannier")
+                _get_or(raw_out, "write_basis_json", kind == "wannier")
             ),
-            "capture_tutorial": bool(raw_out.get("capture_tutorial", False)),
+            "capture_tutorial": bool(_get_or(raw_out, "capture_tutorial", False)),
         }
 
         word_canonical = parse_word(str(raw["word"])).canonical()
@@ -761,14 +904,54 @@ def _execute_generator_runfile(
         rf.model.get("tutorial")
         or _GENERATOR_TO_TUTORIAL.get(gen_name, 0)
     )
+    params = dict(rf.model.get("params") or {})
     if tut == 1:
         from .apps.tutorial01 import run_tutorial01
 
-        return run_tutorial01(out_dir)
+        return run_tutorial01(
+            out_dir,
+            sizes=params.get("sizes", (256, 1024, 4096)),
+            hopping_t=float(_get_or(params, "hopping_t", -1.0)),
+            num_moments=int(rf.expansion["moments"]),
+            window=rf.expansion.get("window"),
+            word=rf.word,
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 20.0)
+            ),
+        )
     if tut == 2:
         from .apps.tutorial02 import run_tutorial02
 
-        return run_tutorial02(out_dir)
+        assert rf.time is not None
+        return run_tutorial02(
+            out_dir,
+            sizes=params.get("sizes", (256, 1024, 4096)),
+            w_disorder=float(_get_or(params, "W", 1.0)),
+            realisations=int(_get_or(params, "realisations", 16)),
+            readme_size=int(_get_or(params, "readme_size", 512)),
+            readme_disorder_seed=int(
+                _get_or(params, "readme_disorder_seed", 1)
+            ),
+            kpm_seed=int(_get_or(rf.expansion, "seed", 12345)),
+            num_moments=int(rf.expansion["moments"]),
+            num_states=int(_get_or(rf.expansion, "states", 1)),
+            window=rf.expansion.get("window"),
+            ntime=int(rf.time["steps"]),
+            tmax=float(_get_or(rf.time, "tmax", 600.0)),
+            bessel=str(_get_or(rf.time, "bessel", "legacy")),
+            word=rf.word,
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 10.0)
+            ),
+            energies=(
+                rf.reconstruction["fermi_energies"]
+                if rf.reconstruction.get("fermi_energies")
+                else (0.0, 1.0, -1.0, 1.9)
+            ),
+            legacy_text_round_trip=bool(
+                _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+        )
     if tut == 3:
         from .apps.tutorial03 import run_tutorial03
 
@@ -776,7 +959,9 @@ def _execute_generator_runfile(
             out_dir,
             operators_dir=rf.model.get("dir"),
             num_moments=int(rf.expansion["moments"]),
-            broadening_meV=float(rf.reconstruction.get("broadening_meV") or 10.0),
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 10.0)
+            ),
         )
         return paths
     if tut == 4:
@@ -789,7 +974,85 @@ def _execute_generator_runfile(
     if tut == 5:
         from .apps.tutorial05 import run_tutorial05
 
-        return run_tutorial05(out_dir)
+        assert rf.time is not None
+        raw_w = _get_or(params, "W", (0.5, 1.0, 2.0, 4.0))
+        w_list = (
+            [float(x) for x in raw_w]
+            if isinstance(raw_w, (list, tuple))
+            else [float(raw_w)]
+        )
+        return run_tutorial05(
+            out_dir,
+            l_side=int(_get_or(params, "L", 200)),
+            w_list=w_list,
+            disorder_seed=int(_get_or(params, "disorder_seed", 1)),
+            dos_moments=int(_get_or(params, "dos_moments", 1024)),
+            kpm_seed=int(_get_or(rf.expansion, "seed", 1)),
+            num_moments=int(rf.expansion["moments"]),
+            num_states=int(_get_or(rf.expansion, "states", 1)),
+            window=rf.expansion.get("window"),
+            ntime=int(rf.time["steps"]),
+            tmax=float(_get_or(rf.time, "tmax", 150.0)),
+            bessel=str(_get_or(rf.time, "bessel", "legacy")),
+            words=rf.words,
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 80.0)
+            ),
+            fermi_energies=(
+                rf.reconstruction["fermi_energies"]
+                if rf.reconstruction.get("fermi_energies")
+                else (2.0,)
+            ),
+            legacy_text_round_trip=bool(
+                _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+        )
+    if tut == 6:
+        from .apps.tutorial06 import run_tutorial06
+
+        assert rf.time is not None
+        return run_tutorial06(
+            out_dir,
+            ey_l=int(_get_or(params, "ey_l", 20)),
+            ey_ds=_get_or(params, "ey_ds", (0.05, 0.07, 0.10)),
+            ey_moments=int(rf.expansion["moments"]),
+            ey_steps=int(rf.time["steps"]),
+            ey_tmax=float(_get_or(rf.time, "tmax", 260.0)),
+            dp_l=int(_get_or(params, "dp_l", 20)),
+            dp_lambda=float(_get_or(params, "dp_lambda", 0.2)),
+            dp_ws=_get_or(params, "dp_ws", (0.0, 6.0)),
+            dp_moments=int(_get_or(params, "dp_moments", 160)),
+            dp_steps=int(_get_or(params, "dp_steps", 120)),
+            dp_tmax=float(_get_or(params, "dp_tmax", 45.0)),
+            ratelaw_l=int(_get_or(params, "ratelaw_l", 50)),
+            ratelaw_ds=_get_or(
+                params, "ratelaw_ds", (0.04, 0.06, 0.08, 0.10, 0.14)
+            ),
+            ratelaw_nr=int(_get_or(params, "ratelaw_nr", 20)),
+            ratelaw_moments=int(rf.expansion["moments"]),
+            ratelaw_steps=int(rf.time["steps"]),
+            ratelaw_tmax=float(_get_or(rf.time, "tmax", 260.0)),
+            crosscheck_l=int(_get_or(params, "crosscheck_l", 8)),
+            crosscheck_d=float(_get_or(params, "crosscheck_d", 0.10)),
+            crosscheck_nr=int(_get_or(params, "crosscheck_nr", 20)),
+            crosscheck_moments=int(_get_or(params, "crosscheck_moments", 96)),
+            crosscheck_steps=int(_get_or(params, "crosscheck_steps", 60)),
+            crosscheck_tmax=float(_get_or(params, "crosscheck_tmax", 220.0)),
+            disorder_seed=int(_get_or(params, "disorder_seed", 1)),
+            broadening_meV=float(
+                _get_or(rf.reconstruction, "broadening_meV", 140.0)
+            ),
+            fermi_energies=(
+                rf.reconstruction["fermi_energies"]
+                if rf.reconstruction.get("fermi_energies")
+                else (2.0,)
+            ),
+            bessel=str(_get_or(rf.time, "bessel", "legacy")),
+            legacy_text_round_trip=bool(
+                _get_or(rf.reconstruction, "legacy_text_round_trip", True)
+            ),
+            words=rf.words,
+        )
     raise ValueError(f"Unsupported generator '{gen_name}' (tutorial={tut})")
 
 
@@ -836,8 +1099,7 @@ def execute_runfile(
             "written_files": written_files,
         }
 
-    # Build list of words to run. If word is VX-VY Kubo-Bastin and "greenwood" is also in
-    # reconstruction.formulas, append the companion longitudinal word Tr[VX delta(E-H) VX delta(E-H)].
+    # Build list of words to run from rf.words (no implicit companion words).
     words_to_run: list[tuple[str, list[str] | None]] = []
     req_formulas = rf.reconstruction.get("formulas")
     for w_str in rf.words:
@@ -849,27 +1111,17 @@ def execute_runfile(
                 "expansion": rf.expansion,
                 "time": rf.time,
                 "metric": rf.metric,
-                "reconstruction": rf.reconstruction,
             },
         )
-        if (
-            comp_preview.match.entry.shape_id == "kubo_bastin"
-            and req_formulas
-            and "greenwood" in [f.lower() for f in req_formulas]
-            and len(comp_preview.match.operators) == 2
-            and comp_preview.match.operators[0].operator_key
-            != comp_preview.match.operators[1].operator_key
-        ):
-            bastin_f = [
-                f for f in req_formulas if f.lower() != "greenwood"
-            ]
-            op_a = comp_preview.match.operators[0].canonical()
-            words_to_run.append((w_str, bastin_f))
-            words_to_run.append(
-                (f"Tr[{op_a} delta(E-H) {op_a} delta(E-H)]", ["greenwood"])
-            )
-        else:
-            words_to_run.append((w_str, req_formulas))
+        allowed_f = SHAPE_ALLOWED_FORMULAS.get(
+            comp_preview.match.entry.shape_id, frozenset()
+        )
+        w_formulas = (
+            [f for f in req_formulas if f.lower() in allowed_f]
+            if req_formulas is not None
+            else None
+        )
+        words_to_run.append((w_str, w_formulas))
 
     moment_files: list[str] = []
     curve_files: list[str] = []
@@ -1084,7 +1336,12 @@ def execute_runfile(
         dim = int(ham.dimension)
 
         win_spec = rf.expansion["window"]
-        if win_spec == "gershgorin":
+        if win_spec == "eigen":
+            raise ValueError(
+                "expansion.window='eigen' is not supported for model.kind='csr' "
+                "(no k blocks; use gershgorin or an explicit window)"
+            )
+        elif win_spec == "gershgorin":
             window = window_from_gershgorin(ham)
         elif isinstance(win_spec, (list, tuple)):
             window = _core.SpectralWindow(float(win_spec[0]), float(win_spec[1]))
@@ -1155,7 +1412,7 @@ def execute_runfile(
                 )
                 ham_op = _core.SparseMatrixOperator(ham)
                 lowdin_h = _core.LowdinOperator(
-                    metric_obj.inverse_sqrt_overlap(), ham_op
+                    metric_obj.inverse_sqrt_overlap, ham_op
                 )
                 rescaled_h = _core.RescaledOperator(lowdin_h, window)
             else:
@@ -1173,7 +1430,7 @@ def execute_runfile(
                     s_mat, inv_app, inv_sqrt_app
                 )
                 rescaled_h = _core.GeneralisedRescaledOperator(
-                    ham, s_mat, metric_obj.inverse_overlap(), window
+                    ham, s_mat, metric_obj.inverse_overlap, window
                 )
 
         discovered_ops = (
@@ -1378,7 +1635,8 @@ def execute_runfile(
                     float(e) for e in (tgt.get("fermi_energies") or ())
                 ]
                 t_rt = bool(
-                    tgt.get(
+                    _get_or(
+                        tgt,
                         "legacy_text_round_trip",
                         compiled.reconstruction.legacy_text_round_trip,
                     )
@@ -1393,7 +1651,7 @@ def execute_runfile(
                     os.path.join(out_dir, str(sub)) if sub else out_dir
                 )
                 os.makedirs(dest_d, exist_ok=True)
-                also_top = bool(tgt.get("also_top_dir", False))
+                also_top = bool(_get_or(tgt, "also_top_dir", False))
                 for form in t_formulas:
                     for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
                         form,
@@ -1545,7 +1803,7 @@ def inspect_target(path: str) -> dict[str, Any]:
             inspect_target(mp) for mp in mom_files if os.path.isfile(mp)
         ]
         dir_basis = str(
-            ((resolved_data or {}).get("basis") or {}).get("name", "real")
+            _get_or((resolved_data or {}).get("basis") or {}, "name", "real")
         )
         return {
             "kind": "directory",

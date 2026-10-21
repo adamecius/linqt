@@ -126,6 +126,33 @@ CATALOGUE_BY_ID: dict[str, CatalogueEntry] = {
     entry.shape_id: entry for entry in CATALOGUE
 }
 
+SHAPE_ALLOWED_FORMULAS: dict[str, frozenset[str]] = {
+    "dos_identity": frozenset({"dos", "dos_curve"}),
+    "dos_operator": frozenset({"dos", "dos_curve"}),
+    "kubo_greenwood": frozenset(
+        {"greenwood", "kubo_greenwood", "greenwood_fft", "kubo_greenwood_fft"}
+    ),
+    "kubo_bastin": frozenset(
+        {
+            "bastin",
+            "kubo_bastin",
+            "sea",
+            "kubo_bastin_sea",
+            "surf",
+            "kubo_bastin_surf",
+            "bastin_fft",
+            "kubo_bastin_fft",
+        }
+    ),
+    "msd": frozenset({"time_correlation", "time_correlation_curve"}),
+    "projected_evolution": frozenset(
+        {"row_m0", "row0", "time_correlation", "time_correlation_curve"}
+    ),
+    "time_correlation": frozenset(
+        {"time_correlation", "time_correlation_curve"}
+    ),
+}
+
 
 @dataclass(frozen=True)
 class CatalogueMatch:
@@ -326,9 +353,7 @@ def match_catalogue(word: Word) -> CatalogueMatch:
                 legacy_moment_ext=".chebmom2D",
                 default_formulas=("greenwood",),
             )
-        if spec_2.kind in ("dG-/dE", "dG+/dE", "G-", "G+") or (
-            spec_2.kind == "delta" and word.sea
-        ):
+        if spec_2.kind == "dG-/dE":
             entry = CATALOGUE_BY_ID["kubo_bastin"]
             default_f = ("sea",) if word.sea else ("bastin",)
             return CatalogueMatch(

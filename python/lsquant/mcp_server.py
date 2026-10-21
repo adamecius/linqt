@@ -216,8 +216,10 @@ def create_mcp_server(root_dir: str | None = None) -> Any:
     """Create and configure the FastMCP / MCPServer instance."""
     try:
         from mcp.server.mcpserver import MCPServer as _ServerClass
+        from mcp.server.mcpserver.exceptions import ToolError as _ToolError
     except ImportError:
         from mcp.server.fastmcp import FastMCP as _ServerClass
+        from mcp.server.fastmcp.exceptions import ToolError as _ToolError
 
     if root_dir is not None:
         set_configured_root(root_dir)
@@ -227,17 +229,26 @@ def create_mcp_server(root_dir: str | None = None) -> Any:
     @mcp.tool(name="words_describe")
     def words_describe(word: str) -> str:
         """Parse and compile an observable word, returning its AST, bytecode plan, operators, and reconstruction spec as JSON."""
-        return tool_words_describe(word)
+        try:
+            return tool_words_describe(word)
+        except Exception as exc:  # noqa: BLE001
+            raise _ToolError(str(exc)) from exc
 
     @mcp.tool(name="run")
     def run(runfile_json: str) -> str:
         """Validate a run file JSON string or path and launch the calculation in a background subprocess."""
-        return tool_run(runfile_json)
+        try:
+            return tool_run(runfile_json)
+        except Exception as exc:  # noqa: BLE001
+            raise _ToolError(str(exc)) from exc
 
     @mcp.tool(name="status")
     def status(run_id: str) -> str:
         """Check the execution status of a background calculation started by ``run``."""
-        return tool_status(run_id)
+        try:
+            return tool_status(run_id)
+        except Exception as exc:  # noqa: BLE001
+            raise _ToolError(str(exc)) from exc
 
     @mcp.tool(name="reconstruct")
     def reconstruct(
@@ -247,17 +258,23 @@ def create_mcp_server(root_dir: str | None = None) -> Any:
         fermi_energies: list[float] | None = None,
     ) -> str:
         """Reconstruct spectral or transport curves from moments in ``output_dir``."""
-        return tool_reconstruct(
-            output_dir=output_dir,
-            formula=formula,
-            broadening_meV=broadening_meV,
-            fermi_energies=fermi_energies,
-        )
+        try:
+            return tool_reconstruct(
+                output_dir=output_dir,
+                formula=formula,
+                broadening_meV=broadening_meV,
+                fermi_energies=fermi_energies,
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise _ToolError(str(exc)) from exc
 
     @mcp.tool(name="inspect")
     def inspect(path: str) -> str:
         """Inspect a Chebyshev moment file, run file, or output directory."""
-        return tool_inspect(path)
+        try:
+            return tool_inspect(path)
+        except Exception as exc:  # noqa: BLE001
+            raise _ToolError(str(exc)) from exc
 
     return mcp
 

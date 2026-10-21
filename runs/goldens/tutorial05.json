@@ -11,7 +11,8 @@
         2.0,
         4.0
       ],
-      "disorder_seed": 1
+      "disorder_seed": 1,
+      "dos_moments": 1024
     }
   },
   "basis": {
@@ -27,10 +28,7 @@
   ],
   "expansion": {
     "moments": 256,
-    "window": [
-      -6.0,
-      6.0
-    ],
+    "window": "gershgorin",
     "trace": "random",
     "states": 1,
     "seed": 1
@@ -47,7 +45,8 @@
       2.0
     ],
     "formulas": [
-      "time_correlation"
+      "time_correlation",
+      "dos"
     ],
     "legacy_text_round_trip": true
   },

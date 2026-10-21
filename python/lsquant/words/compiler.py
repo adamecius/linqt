@@ -19,6 +19,7 @@ from ..moments import (
 from .catalogue import (
     CATALOGUE,
     CatalogueMatch,
+    SHAPE_ALLOWED_FORMULAS,
     match_catalogue,
     validate_word_bases,
 )
@@ -257,6 +258,12 @@ def _build_generalised_kubo_plan(
     return _core.Plan(code, word)
 
 
+def _get_or(mapping: Mapping[str, Any], key: str, default: Any = None) -> Any:
+    """Return ``mapping[key]`` when present and not ``None``, otherwise ``default``."""
+    val = mapping.get(key)
+    return default if val is None else val
+
+
 def _extract_basis_info(
     basis: Any,
 ) -> tuple[
@@ -272,7 +279,7 @@ def _extract_basis_info(
     if isinstance(basis, str):
         return (basis, None, {}, {}, {"policy": "orthogonal", "route": "lowdin"})
     if isinstance(basis, Mapping):
-        bname = str(basis.get("name", "real"))
+        bname = str(_get_or(basis, "name", "real"))
         op_map: dict[str, _core.LinearOperator] = {}
         allowed: set[str] | None = None
         raw_ops = basis.get("operators")
@@ -397,14 +404,14 @@ def compile(
                     f"Operator '{resolved_key}' in word '{parsed.canonical()}' is not Hermitian"
                 )
 
-    num_moments = int(exp_cfg.get("moments", cfg.get("moments", 64)))
-    num_states = int(exp_cfg.get("states", cfg.get("states", 1)))
+    num_moments = int(_get_or(exp_cfg, "moments", _get_or(cfg, "moments", 64)))
+    num_states = int(_get_or(exp_cfg, "states", _get_or(cfg, "states", 1)))
     if num_moments <= 0:
         raise ValueError("compile: moments must be positive")
     if num_states <= 0:
         raise ValueError("compile: states must be positive")
 
-    win_raw = exp_cfg.get("window", cfg.get("window"))
+    win_raw = _get_or(exp_cfg, "window", cfg.get("window"))
     if isinstance(win_raw, _core.SpectralWindow):
         window = win_raw
     elif (
@@ -430,7 +437,7 @@ def compile(
             num_steps = 2
             dt = 1.0
         else:
-            if "steps" not in time_cfg:
+            if _get_or(time_cfg, "steps") is None:
                 raise ValueError(
                     f"Word '{parsed.canonical()}' requires 'steps' in 'time' parameters"
                 )
@@ -443,15 +450,15 @@ def compile(
                 raise ValueError(
                     f"Word '{parsed.canonical()}' requires 'tmax' or 'dt' in 'time' parameters"
                 )
-            bessel_mode = str(time_cfg.get("bessel", "scipy"))
+            bessel_mode = str(_get_or(time_cfg, "bessel", "scipy"))
             if bessel_mode not in ("scipy", "legacy"):
                 raise ValueError(
                     f"Unknown time.bessel mode '{bessel_mode}'; expected 'scipy' or 'legacy'"
                 )
             use_legacy_bessel = bessel_mode == "legacy"
 
-    policy = str(metric_cfg.get("policy", "orthogonal"))
-    route = str(metric_cfg.get("route", "lowdin"))
+    policy = str(_get_or(metric_cfg, "policy", "orthogonal"))
+    route = str(_get_or(metric_cfg, "route", "lowdin"))
     metric_policy_obj = metric_cfg.get("metric_object")
 
     shape_id = match.entry.shape_id
@@ -481,13 +488,13 @@ def compile(
                     if route == "lowdin":
                         op_objs.append(
                             _core.LowdinOperator(
-                                metric_policy_obj.inverse_sqrt_overlap(), raw_a
+                                metric_policy_obj.inverse_sqrt_overlap, raw_a
                             )
                         )
                     else:
                         op_objs.append(
                             _core.MetricInverseProduct(
-                                metric_policy_obj.inverse_overlap(), raw_a
+                                metric_policy_obj.inverse_overlap, raw_a
                             )
                         )
                 else:
@@ -516,12 +523,12 @@ def compile(
                     and not metric_policy_obj.is_orthogonal
                 ):
                     sinv_a = _core.MetricInverseProduct(
-                        metric_policy_obj.inverse_overlap(), concrete_ops[key_a]
+                        metric_policy_obj.inverse_overlap, concrete_ops[key_a]
                     )
                     op_objs = [
                         sinv_a,
-                        metric_policy_obj.inverse_overlap(),
-                        metric_policy_obj.overlap(),
+                        metric_policy_obj.inverse_overlap,
+                        metric_policy_obj.overlap,
                     ]
             else:
                 op_names = [f"S^-1*{key_a}", f"S^-1*{key_b}", "S^-1", "S"]
@@ -536,16 +543,16 @@ def compile(
                     and not metric_policy_obj.is_orthogonal
                 ):
                     sinv_a = _core.MetricInverseProduct(
-                        metric_policy_obj.inverse_overlap(), concrete_ops[key_a]
+                        metric_policy_obj.inverse_overlap, concrete_ops[key_a]
                     )
                     sinv_b = _core.MetricInverseProduct(
-                        metric_policy_obj.inverse_overlap(), concrete_ops[key_b]
+                        metric_policy_obj.inverse_overlap, concrete_ops[key_b]
                     )
                     op_objs = [
                         sinv_a,
                         sinv_b,
-                        metric_policy_obj.inverse_overlap(),
-                        metric_policy_obj.overlap(),
+                        metric_policy_obj.inverse_overlap,
+                        metric_policy_obj.overlap,
                     ]
             plan = _build_generalised_kubo_plan(
                 num_moments,
@@ -576,14 +583,14 @@ def compile(
                         if route == "lowdin":
                             op_objs.append(
                                 _core.LowdinOperator(
-                                    metric_policy_obj.inverse_sqrt_overlap(),
+                                    metric_policy_obj.inverse_sqrt_overlap,
                                     raw_op,
                                 )
                             )
                         else:
                             op_objs.append(
                                 _core.MetricInverseProduct(
-                                    metric_policy_obj.inverse_overlap(), raw_op
+                                    metric_policy_obj.inverse_overlap, raw_op
                                 )
                             )
                     else:
@@ -678,10 +685,18 @@ def compile(
     raw_formulas = recon_cfg.get("formulas")
     if raw_formulas is not None:
         formulas = tuple(str(f) for f in raw_formulas)
+        allowed_f = SHAPE_ALLOWED_FORMULAS.get(shape_id, frozenset())
+        for f in formulas:
+            if f.lower() not in allowed_f:
+                raise ValueError(
+                    f"Reconstruction formula '{f}' does not match word "
+                    f"'{parsed.canonical()}' (shape '{shape_id}'; allowed formulas: "
+                    f"{sorted(allowed_f)})"
+                )
     else:
         formulas = match.default_formulas
 
-    kernel = str(recon_cfg.get("kernel", "jackson")).lower()
+    kernel = str(_get_or(recon_cfg, "kernel", "jackson")).lower()
     broadening = (
         float(recon_cfg["broadening_meV"])
         if recon_cfg.get("broadening_meV") is not None
@@ -695,8 +710,8 @@ def compile(
         if recon_cfg.get("num_points") is not None
         else None
     )
-    use_fft_grid = bool(recon_cfg.get("fft_grid", False))
-    legacy_rt = bool(recon_cfg.get("legacy_text_round_trip", False))
+    use_fft_grid = bool(_get_or(recon_cfg, "fft_grid", False))
+    legacy_rt = bool(_get_or(recon_cfg, "legacy_text_round_trip", False))
 
     recon = ReconstructionSpec(
         shape_id=shape_id,
