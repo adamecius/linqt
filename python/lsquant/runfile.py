@@ -1,0 +1,1501 @@
+"""Run-file schema, strict validation, execution, reconstruction, and inspection."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import glob
+import json
+import os
+import shutil
+from typing import Any, Mapping, Sequence
+
+import numpy as np
+
+from . import _core
+from .bases import BlochBasis, EigenBasis, RealBasis, make_basis
+from .models.wannier import WannierModel, load_wannier_model
+from .moments import run_plan, window_from_gershgorin
+from .reconstruct import (
+    dos_curve,
+    kubo_bastin,
+    kubo_bastin_fft,
+    kubo_bastin_sea,
+    kubo_bastin_surf,
+    kubo_greenwood,
+    kubo_greenwood_fft,
+    time_correlation_curve,
+)
+from .words import compile as compile_word, parse as parse_word
+
+
+ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
+    {
+        "model",
+        "basis",
+        "metric",
+        "word",
+        "words",
+        "expansion",
+        "time",
+        "reconstruction",
+        "output",
+    }
+)
+
+ALLOWED_MODEL_KEYS: frozenset[str] = frozenset(
+    {
+        "kind",
+        "dir",
+        "label",
+        "seed",
+        "operators",
+        "csr_dir",
+        "tutorial",
+        "script",
+        "params",
+    }
+)
+
+ALLOWED_BASIS_KEYS: frozenset[str] = frozenset(
+    {"name", "supercell", "disorder"}
+)
+
+ALLOWED_DISORDER_KEYS: frozenset[str] = frozenset({"W", "seed"})
+
+ALLOWED_METRIC_KEYS: frozenset[str] = frozenset(
+    {
+        "policy",
+        "route",
+        "applier",
+        "order",
+        "coeff_tol",
+        "tol",
+        "max_iter",
+        "max_dim",
+    }
+)
+
+ALLOWED_EXPANSION_KEYS: frozenset[str] = frozenset(
+    {
+        "moments",
+        "window",
+        "trace",
+        "states",
+        "seed",
+        "batch",
+        "state_label",
+    }
+)
+
+ALLOWED_TIME_KEYS: frozenset[str] = frozenset(
+    {"steps", "tmax", "dt", "bessel"}
+)
+
+ALLOWED_RECONSTRUCTION_KEYS: frozenset[str] = frozenset(
+    {
+        "kernel",
+        "broadening_meV",
+        "fermi_energies",
+        "formulas",
+        "num_points",
+        "fft_grid",
+        "legacy_text_round_trip",
+        "per_site_dos",
+        "targets",
+    }
+)
+
+ALLOWED_RECON_TARGET_KEYS: frozenset[str] = frozenset(
+    {
+        "formulas",
+        "broadening_meV",
+        "fermi_energies",
+        "subdir",
+        "also_top_dir",
+        "legacy_text_round_trip",
+    }
+)
+
+ALLOWED_OUTPUT_KEYS: frozenset[str] = frozenset(
+    {
+        "dir",
+        "legacy_names",
+        "legacy_layout",
+        "write_chebmom",
+        "write_basis_json",
+        "capture_tutorial",
+    }
+)
+
+DEFAULT_RUNFILE_DEFAULTS: dict[str, Any] = {
+    "model": {
+        "kind": "csr",
+        "operators": [],
+        "csr_dir": None,
+    },
+    "basis": {
+        "name": "real",
+        "supercell": [1, 1, 1],
+        "disorder": {"W": 0.0, "seed": 7},
+    },
+    "metric": {
+        "policy": "orthogonal",
+        "route": "lowdin",
+        "applier": "exact",
+        "order": 60,
+        "coeff_tol": 1e-12,
+        "tol": 1e-13,
+        "max_iter": 200,
+        "max_dim": 4096,
+    },
+    "expansion": {
+        "moments": 64,
+        "window": "gershgorin",
+        "trace": "exact",
+        "states": None,
+        "seed": 12345,
+        "batch": None,
+        "state_label": None,
+    },
+    "time": None,
+    "reconstruction": {
+        "kernel": "jackson",
+        "broadening_meV": None,
+        "fermi_energies": [],
+        "formulas": None,
+        "num_points": None,
+        "fft_grid": False,
+        "legacy_text_round_trip": False,
+        "per_site_dos": False,
+        "targets": [],
+    },
+    "output": {
+        "dir": ".",
+        "legacy_names": True,
+        "legacy_layout": True,
+        "write_chebmom": False,
+        "write_basis_json": False,
+        "capture_tutorial": False,
+    },
+}
+
+
+def _check_keys(
+    section_name: str, data: Mapping[str, Any], allowed: frozenset[str]
+) -> None:
+    """Refuse any unknown key in ``data`` with a descriptive ``ValueError``."""
+    for key in data.keys():
+        if key not in allowed:
+            raise ValueError(
+                f"Unknown key '{key}' in run file ({section_name}); "
+                f"allowed keys are {sorted(allowed)}"
+            )
+
+
+def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
+    """Strictly validate a raw run-file dictionary before any file or model is loaded."""
+    if not isinstance(raw, Mapping):
+        raise ValueError("Run file must be a JSON object")
+
+    _check_keys("top-level", raw, ALLOWED_TOP_KEYS)
+
+    for req in ("model", "word", "expansion"):
+        if req not in raw:
+            raise ValueError(f"Missing required top-level key '{req}' in run file")
+
+    model = raw["model"]
+    if not isinstance(model, Mapping):
+        raise ValueError("Run file 'model' must be a JSON object")
+    _check_keys("model", model, ALLOWED_MODEL_KEYS)
+    kind = str(model.get("kind", "csr"))
+    if kind not in ("csr", "wannier", "generator"):
+        raise ValueError(
+            f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', or 'generator'"
+        )
+    if kind == "csr":
+        if not model.get("dir") or not model.get("label"):
+            raise ValueError(
+                "Run file with model.kind='csr' requires 'dir' and 'label'"
+            )
+    elif kind == "wannier":
+        if not model.get("dir") or not model.get("seed"):
+            raise ValueError(
+                "Run file with model.kind='wannier' requires 'dir' and 'seed'"
+            )
+    elif kind == "generator":
+        if not model.get("tutorial") and not model.get("script"):
+            raise ValueError(
+                "Run file with model.kind='generator' requires 'tutorial' or 'script'"
+            )
+
+    if "basis" in raw and raw["basis"] is not None:
+        basis = raw["basis"]
+        if not isinstance(basis, Mapping):
+            raise ValueError("Run file 'basis' must be a JSON object")
+        _check_keys("basis", basis, ALLOWED_BASIS_KEYS)
+        bname = str(basis.get("name", "real"))
+        if bname not in ("real", "bloch", "eigen"):
+            raise ValueError(
+                f"Unknown basis.name '{bname}'; expected 'real', 'bloch', or 'eigen'"
+            )
+        if "supercell" in basis and basis["supercell"] is not None:
+            sc = basis["supercell"]
+            if (
+                not isinstance(sc, (list, tuple))
+                or len(sc) != 3
+                or not all(isinstance(x, int) and x > 0 for x in sc)
+            ):
+                raise ValueError(
+                    "basis.supercell must be a list of 3 positive integers [N1, N2, N3]"
+                )
+        if "disorder" in basis and basis["disorder"] is not None:
+            dis = basis["disorder"]
+            if not isinstance(dis, Mapping):
+                raise ValueError("basis.disorder must be a JSON object")
+            _check_keys("basis.disorder", dis, ALLOWED_DISORDER_KEYS)
+            if float(dis.get("W", 0.0)) < 0.0:
+                raise ValueError("basis.disorder.W must be non-negative")
+
+    if "metric" in raw and raw["metric"] is not None:
+        metric = raw["metric"]
+        if not isinstance(metric, Mapping):
+            raise ValueError("Run file 'metric' must be a JSON object")
+        _check_keys("metric", metric, ALLOWED_METRIC_KEYS)
+        pol = str(metric.get("policy", "orthogonal"))
+        if pol not in ("orthogonal", "nonorthogonal"):
+            raise ValueError(
+                f"Unknown metric.policy '{pol}'; expected 'orthogonal' or 'nonorthogonal'"
+            )
+        rte = str(metric.get("route", "lowdin"))
+        if rte not in ("lowdin", "generalised"):
+            raise ValueError(
+                f"Unknown metric.route '{rte}'; expected 'lowdin' or 'generalised'"
+            )
+        app = str(metric.get("applier", "exact"))
+        if app not in ("exact", "chebyshev", "ischo"):
+            raise ValueError(
+                f"Unknown metric.applier '{app}'; expected 'exact', 'chebyshev', or 'ischo'"
+            )
+        if pol == "nonorthogonal" and rte == "lowdin" and app == "ischo":
+            raise ValueError(
+                "metric.applier='ischo' provides S^-1 only and cannot be used with route='lowdin'"
+            )
+
+    exp = raw["expansion"]
+    if not isinstance(exp, Mapping):
+        raise ValueError("Run file 'expansion' must be a JSON object")
+    _check_keys("expansion", exp, ALLOWED_EXPANSION_KEYS)
+    if "moments" not in exp or int(exp["moments"]) <= 0:
+        raise ValueError("expansion.moments must be a positive integer")
+    tr = str(exp.get("trace", "exact"))
+    if tr not in ("exact", "random"):
+        raise ValueError(
+            f"Unknown expansion.trace '{tr}'; expected 'exact' or 'random'"
+        )
+    if "window" in exp and exp["window"] is not None:
+        win = exp["window"]
+        if isinstance(win, str):
+            if win not in ("eigen", "gershgorin"):
+                raise ValueError(
+                    f"Unknown expansion.window '{win}'; expected 'eigen', 'gershgorin', or [lo, hi]"
+                )
+        elif (
+            isinstance(win, (list, tuple))
+            and len(win) == 2
+            and all(isinstance(v, (int, float)) for v in win)
+        ):
+            if not (float(win[1]) > float(win[0])):
+                raise ValueError(
+                    "expansion.window [lo, hi] requires hi > lo"
+                )
+        else:
+            raise ValueError(
+                "expansion.window must be 'eigen', 'gershgorin', or [lo, hi]"
+            )
+
+    if "time" in raw and raw["time"] is not None:
+        tm = raw["time"]
+        if not isinstance(tm, Mapping):
+            raise ValueError("Run file 'time' must be a JSON object")
+        _check_keys("time", tm, ALLOWED_TIME_KEYS)
+        if "steps" not in tm or int(tm["steps"]) <= 1:
+            raise ValueError("time.steps must be an integer > 1")
+        if "tmax" not in tm and "dt" not in tm:
+            raise ValueError("time requires 'tmax' or 'dt'")
+
+    if "reconstruction" in raw and raw["reconstruction"] is not None:
+        rec = raw["reconstruction"]
+        if not isinstance(rec, Mapping):
+            raise ValueError("Run file 'reconstruction' must be a JSON object")
+        _check_keys("reconstruction", rec, ALLOWED_RECONSTRUCTION_KEYS)
+        for tgt in rec.get("targets") or ():
+            if not isinstance(tgt, Mapping):
+                raise ValueError(
+                    "Each entry in reconstruction.targets must be a JSON object"
+                )
+            _check_keys("reconstruction.targets", tgt, ALLOWED_RECON_TARGET_KEYS)
+
+    if "output" in raw and raw["output"] is not None:
+        out = raw["output"]
+        if not isinstance(out, Mapping):
+            raise ValueError("Run file 'output' must be a JSON object")
+        _check_keys("output", out, ALLOWED_OUTPUT_KEYS)
+
+    # Validate word(s) syntax, catalogue membership, basis consistency, and time requirements
+    word_str = raw["word"]
+    if not isinstance(word_str, str) or not word_str.strip():
+        raise ValueError("Run file 'word' must be a non-empty string")
+    words_list = [word_str]
+    if "words" in raw and raw["words"] is not None:
+        if not isinstance(raw["words"], (list, tuple)) or not raw["words"]:
+            raise ValueError("Run file 'words' must be a non-empty list of strings")
+        words_list = [str(w) for w in raw["words"]]
+
+    basis_name = str((raw.get("basis") or {}).get("name", "real"))
+    model_ops = model.get("operators")
+    basis_spec: dict[str, Any] = {"name": basis_name}
+    if model_ops is not None:
+        basis_spec["operators"] = list(model_ops)
+    if "metric" in raw and raw["metric"] is not None:
+        basis_spec["metric"] = dict(raw["metric"])
+
+    for w in words_list:
+        parsed_w = parse_word(w)
+        compile_word(
+            parsed_w,
+            basis=basis_spec,
+            params={
+                "expansion": dict(exp),
+                "time": dict(raw["time"]) if raw.get("time") else None,
+                "metric": dict(raw["metric"]) if raw.get("metric") else None,
+                "reconstruction": (
+                    dict(raw["reconstruction"])
+                    if raw.get("reconstruction")
+                    else None
+                ),
+            },
+        )
+
+
+@dataclass
+class RunFile:
+    """Validated and defaults-resolved Stage-7 run configuration."""
+
+    model: dict[str, Any]
+    basis: dict[str, Any]
+    metric: dict[str, Any]
+    word: str
+    words: list[str]
+    expansion: dict[str, Any]
+    time: dict[str, Any] | None
+    reconstruction: dict[str, Any]
+    output: dict[str, Any]
+    source_path: str | None = field(default=None, repr=False)
+
+    @classmethod
+    def from_dict(
+        cls,
+        raw: Mapping[str, Any],
+        *,
+        source_path: str | None = None,
+        repo_root: str | None = None,
+    ) -> RunFile:
+        """Validate ``raw`` and populate defaults to construct a :class:`RunFile`."""
+        validate_runfile_dict(raw)
+
+        root = (
+            os.path.abspath(repo_root)
+            if repo_root is not None
+            else os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..", "..")
+            )
+        )
+
+        def _resolve_path(p: str | None) -> str | None:
+            if p is None:
+                return None
+            if os.path.isabs(p):
+                return p
+            cand = os.path.abspath(os.path.join(root, p))
+            if os.path.exists(cand):
+                return cand
+            if source_path is not None:
+                rel_src = os.path.abspath(
+                    os.path.join(os.path.dirname(source_path), p)
+                )
+                if os.path.exists(rel_src):
+                    return rel_src
+            return cand
+
+        raw_model = dict(raw["model"])
+        kind = str(raw_model.get("kind", "csr"))
+        model_cfg: dict[str, Any] = {
+            "kind": kind,
+            "dir": _resolve_path(raw_model.get("dir")),
+            "label": raw_model.get("label"),
+            "seed": raw_model.get("seed"),
+            "operators": (
+                list(raw_model["operators"])
+                if raw_model.get("operators") is not None
+                else None
+            ),
+            "csr_dir": _resolve_path(raw_model.get("csr_dir")),
+            "tutorial": raw_model.get("tutorial"),
+            "script": _resolve_path(raw_model.get("script")),
+            "params": dict(raw_model.get("params") or {}),
+        }
+
+        raw_basis = dict(raw.get("basis") or {})
+        raw_dis = dict(raw_basis.get("disorder") or {})
+        basis_cfg: dict[str, Any] = {
+            "name": str(raw_basis.get("name", "real")),
+            "supercell": [
+                int(x) for x in raw_basis.get("supercell", [1, 1, 1])
+            ],
+            "disorder": {
+                "W": float(raw_dis.get("W", 0.0)),
+                "seed": int(raw_dis.get("seed", 7)),
+            },
+        }
+
+        raw_metric = dict(raw.get("metric") or {})
+        metric_cfg: dict[str, Any] = {
+            "policy": str(raw_metric.get("policy", "orthogonal")),
+            "route": str(raw_metric.get("route", "lowdin")),
+            "applier": str(raw_metric.get("applier", "exact")),
+            "order": int(raw_metric.get("order", 60)),
+            "coeff_tol": float(raw_metric.get("coeff_tol", 1e-12)),
+            "tol": float(raw_metric.get("tol", 1e-13)),
+            "max_iter": int(raw_metric.get("max_iter", 200)),
+            "max_dim": int(raw_metric.get("max_dim", 4096)),
+        }
+
+        raw_exp = dict(raw["expansion"])
+        default_win = "eigen" if kind == "wannier" else "gershgorin"
+        win_val = raw_exp.get("window", default_win)
+        if isinstance(win_val, (list, tuple)):
+            win_val = [float(win_val[0]), float(win_val[1])]
+        moments_val = int(raw_exp["moments"])
+        expansion_cfg: dict[str, Any] = {
+            "moments": moments_val,
+            "window": win_val,
+            "trace": str(raw_exp.get("trace", "exact")),
+            "states": (
+                int(raw_exp["states"])
+                if raw_exp.get("states") is not None
+                else None
+            ),
+            "seed": int(raw_exp.get("seed", 12345)),
+            "batch": (
+                int(raw_exp["batch"])
+                if raw_exp.get("batch") is not None
+                else moments_val
+            ),
+            "state_label": raw_exp.get("state_label"),
+        }
+
+        time_cfg: dict[str, Any] | None = None
+        if raw.get("time") is not None:
+            rt = dict(raw["time"])
+            time_cfg = {
+                "steps": int(rt["steps"]),
+                "tmax": float(rt["tmax"]) if rt.get("tmax") is not None else None,
+                "dt": float(rt["dt"]) if rt.get("dt") is not None else None,
+                "bessel": str(rt.get("bessel", "scipy")),
+            }
+
+        raw_rec = dict(raw.get("reconstruction") or {})
+        recon_cfg: dict[str, Any] = {
+            "kernel": str(raw_rec.get("kernel", "jackson")).lower(),
+            "broadening_meV": (
+                float(raw_rec["broadening_meV"])
+                if raw_rec.get("broadening_meV") is not None
+                else None
+            ),
+            "fermi_energies": [
+                float(e) for e in (raw_rec.get("fermi_energies") or [])
+            ],
+            "formulas": (
+                [str(f) for f in raw_rec["formulas"]]
+                if raw_rec.get("formulas") is not None
+                else None
+            ),
+            "num_points": (
+                int(raw_rec["num_points"])
+                if raw_rec.get("num_points") is not None
+                else None
+            ),
+            "fft_grid": bool(raw_rec.get("fft_grid", False)),
+            "legacy_text_round_trip": bool(
+                raw_rec.get("legacy_text_round_trip", False)
+            ),
+            "per_site_dos": bool(raw_rec.get("per_site_dos", False)),
+            "targets": [dict(t) for t in (raw_rec.get("targets") or [])],
+        }
+
+        raw_out = dict(raw.get("output") or {})
+        default_write_cheb = (
+            kind == "wannier"
+            or metric_cfg["policy"] == "nonorthogonal"
+            or not bool(raw_out.get("legacy_layout", True))
+        )
+        output_cfg: dict[str, Any] = {
+            "dir": str(raw_out.get("dir", ".")),
+            "legacy_names": bool(raw_out.get("legacy_names", True)),
+            "legacy_layout": bool(raw_out.get("legacy_layout", True)),
+            "write_chebmom": bool(
+                raw_out.get("write_chebmom", default_write_cheb)
+            ),
+            "write_basis_json": bool(
+                raw_out.get("write_basis_json", kind == "wannier")
+            ),
+            "capture_tutorial": bool(raw_out.get("capture_tutorial", False)),
+        }
+
+        word_canonical = parse_word(str(raw["word"])).canonical()
+        if raw.get("words") is not None:
+            words_canonical = [
+                parse_word(str(w)).canonical() for w in raw["words"]
+            ]
+        else:
+            words_canonical = [word_canonical]
+
+        return cls(
+            model=model_cfg,
+            basis=basis_cfg,
+            metric=metric_cfg,
+            word=word_canonical,
+            words=words_canonical,
+            expansion=expansion_cfg,
+            time=time_cfg,
+            reconstruction=recon_cfg,
+            output=output_cfg,
+            source_path=source_path,
+        )
+
+    @classmethod
+    def from_file(
+        cls, path: str, *, repo_root: str | None = None
+    ) -> RunFile:
+        """Load and validate a :class:`RunFile` from a JSON file on disk."""
+        with open(path, encoding="utf-8") as fh:
+            raw = json.load(fh)
+        return cls.from_dict(
+            raw, source_path=os.path.abspath(path), repo_root=repo_root
+        )
+
+    def to_resolved_dict(self) -> dict[str, Any]:
+        """Return the fully resolved run-file dictionary written to ``run.resolved.json``."""
+        out: dict[str, Any] = {
+            "model": dict(self.model),
+            "basis": dict(self.basis),
+            "metric": dict(self.metric),
+            "word": self.word,
+            "expansion": dict(self.expansion),
+            "time": dict(self.time) if self.time is not None else None,
+            "reconstruction": dict(self.reconstruction),
+            "output": dict(self.output),
+        }
+        if len(self.words) > 1 or self.words != [self.word]:
+            out["words"] = list(self.words)
+        return out
+
+
+def _compute_padded_overlap_bounds(
+    s_op: _core.LinearOperator,
+) -> _core.SpectralBounds:
+    """Compute Lanczos bounds on overlap ``S`` with the 5% safety pad of ``stage6_nonorth``."""
+    ritz = _core.LanczosBounds(s_op, 80, 12345)
+    span = max(1e-6, float(ritz.upper - ritz.lower))
+    lower = max(0.5 * float(ritz.lower), float(ritz.lower) - 0.05 * span)
+    upper = float(ritz.upper) + 0.05 * span
+    return _core.SpectralBounds(lower, upper)
+
+
+def _discover_csr_operators(model_dir: str, label: str) -> list[str]:
+    """List available static operator names ``<label>.<OP>.CSR`` in ``model_dir``."""
+    prefix = os.path.join(model_dir, f"{label}.")
+    suffix = ".CSR"
+    ops: list[str] = []
+    for path in sorted(glob.glob(f"{prefix}*{suffix}")):
+        base = os.path.basename(path)
+        op_name = base[len(label) + 1 : -len(suffix)]
+        if op_name and op_name not in ("HAM", "S"):
+            ops.append(op_name)
+    return ops
+
+
+def _reconstruct_single_formula(
+    formula: str,
+    mu: _core.ChebyshevMoments,
+    broadening_meV: float,
+    *,
+    fermi_energies: Sequence[float] = (),
+    num_points: int | None = None,
+) -> list[tuple[str, str, np.ndarray, np.ndarray]]:
+    """Run one named reconstruction formula on ``mu``.
+
+    Returns a list of ``(legacy_prefix, legacy_suffix, x_grid, values)`` tuples.
+    """
+    f = formula.lower()
+    if f in ("dos", "dos_curve"):
+        energies, values = dos_curve(
+            mu, broadening_meV, num_points=num_points
+        )
+        return [("mean", "JACKSON.dat", energies, values)]
+    if f in ("greenwood", "kubo_greenwood"):
+        energies, values = kubo_greenwood(
+            mu, broadening_meV, num_points=num_points
+        )
+        return [("KuboGreenWood_", "JACKSON.dat", energies, values)]
+    if f in ("bastin", "kubo_bastin"):
+        energies, values = kubo_bastin(
+            mu, broadening_meV, num_points=num_points
+        )
+        return [("KuboBastin_", "JACKSON.dat", energies, values)]
+    if f in ("sea", "kubo_bastin_sea"):
+        energies, values = kubo_bastin_sea(
+            mu, broadening_meV, num_points=num_points
+        )
+        return [("KuboBastinSea_", "JACKSON.dat", energies, values)]
+    if f in ("surf", "kubo_bastin_surf"):
+        energies, values = kubo_bastin_surf(
+            mu, broadening_meV, num_points=num_points
+        )
+        return [("KuboBastinSurf_", "JACKSON.dat", energies, values)]
+    if f in ("greenwood_fft", "kubo_greenwood_fft"):
+        energies, values = kubo_greenwood_fft(mu, broadening_meV)
+        return [("KuboGreenWood_", "JACKSON_FFTgrid.dat", energies, values)]
+    if f in ("bastin_fft", "kubo_bastin_fft"):
+        energies, values = kubo_bastin_fft(mu, broadening_meV)
+        return [("KuboBastin_", "JACKSON_FFTgrid.dat", energies, values)]
+    if f in ("time_correlation", "time_correlation_curve"):
+        out: list[tuple[str, str, np.ndarray, np.ndarray]] = []
+        for ef in fermi_energies:
+            times, values = time_correlation_curve(
+                mu, broadening_meV, float(ef)
+            )
+            out.append(
+                ("mean", f"EF{float(ef):.6f}JACKSON.dat", times, values)
+            )
+        return out
+    if f in ("row_m0", "row0"):
+        return []
+    raise ValueError(f"Unknown reconstruction formula '{formula}'")
+
+
+def _execute_generator_runfile(
+    rf: RunFile, out_dir: str
+) -> list[str]:
+    """Execute a tutorial generator run file while writing ``run.resolved.json``."""
+    tut = int(rf.model.get("tutorial") or 0)
+    if tut == 1:
+        from .apps.tutorial01 import run_tutorial01
+
+        return run_tutorial01(out_dir)
+    if tut == 2:
+        from .apps.tutorial02 import run_tutorial02
+
+        return run_tutorial02(out_dir)
+    if tut == 3:
+        from .apps.tutorial03 import run_tutorial03
+
+        paths, _ = run_tutorial03(
+            out_dir,
+            operators_dir=rf.model.get("dir"),
+            num_moments=int(rf.expansion["moments"]),
+            broadening_meV=float(rf.reconstruction.get("broadening_meV") or 10.0),
+        )
+        return paths
+    if tut == 4:
+        from .apps.tutorial04 import run_tutorial04
+
+        paths, _ = run_tutorial04(
+            out_dir, operators_dir=rf.model.get("dir")
+        )
+        return paths
+    if tut == 5:
+        from .apps.tutorial05 import run_tutorial05
+
+        return run_tutorial05(out_dir)
+    raise ValueError(f"Unsupported generator tutorial number '{tut}'")
+
+
+def execute_runfile(
+    runfile: RunFile | Mapping[str, Any] | str,
+    *,
+    out_dir_override: str | None = None,
+    repo_root: str | None = None,
+) -> dict[str, Any]:
+    """Execute a :class:`RunFile` and write moments, curves, and ``run.resolved.json``."""
+    if isinstance(runfile, str):
+        rf = RunFile.from_file(runfile, repo_root=repo_root)
+    elif isinstance(runfile, Mapping):
+        rf = RunFile.from_dict(runfile, repo_root=repo_root)
+    else:
+        rf = runfile
+
+    out_dir = os.path.abspath(
+        out_dir_override if out_dir_override is not None else rf.output["dir"]
+    )
+    os.makedirs(out_dir, exist_ok=True)
+
+    resolved_dict = rf.to_resolved_dict()
+    resolved_dict["output"] = dict(resolved_dict["output"], dir=out_dir)
+    resolved_path = os.path.join(out_dir, "run.resolved.json")
+    with open(resolved_path, "w", encoding="utf-8") as fh:
+        json.dump(resolved_dict, fh, indent=2)
+        fh.write("\n")
+
+    kind = str(rf.model["kind"])
+    if kind == "generator":
+        written_files = _execute_generator_runfile(rf, out_dir)
+        return {
+            "output_dir": out_dir,
+            "resolved_runfile": resolved_path,
+            "moment_files": [
+                p
+                for p in written_files
+                if p.endswith((".chebmom", ".chebmom1D", ".chebmom2D", ".chebmomTD"))
+            ],
+            "curve_files": [p for p in written_files if p.endswith(".dat")],
+            "written_files": written_files,
+        }
+
+    # Build list of words to run. If word is VX-VY Kubo-Bastin and "greenwood" is also in
+    # reconstruction.formulas, append the companion longitudinal word Tr[VX delta(E-H) VX delta(E-H)].
+    words_to_run: list[tuple[str, list[str] | None]] = []
+    req_formulas = rf.reconstruction.get("formulas")
+    for w_str in rf.words:
+        parsed_w = parse_word(w_str)
+        comp_preview = compile_word(
+            parsed_w,
+            basis={"name": rf.basis["name"]},
+            params={
+                "expansion": rf.expansion,
+                "time": rf.time,
+                "metric": rf.metric,
+                "reconstruction": rf.reconstruction,
+            },
+        )
+        if (
+            comp_preview.match.entry.shape_id == "kubo_bastin"
+            and req_formulas
+            and "greenwood" in [f.lower() for f in req_formulas]
+            and len(comp_preview.match.operators) == 2
+            and comp_preview.match.operators[0].operator_key
+            != comp_preview.match.operators[1].operator_key
+        ):
+            bastin_f = [
+                f for f in req_formulas if f.lower() != "greenwood"
+            ]
+            op_a = comp_preview.match.operators[0].canonical()
+            words_to_run.append((w_str, bastin_f))
+            words_to_run.append(
+                (f"Tr[{op_a} delta(E-H) {op_a} delta(E-H)]", ["greenwood"])
+            )
+        else:
+            words_to_run.append((w_str, req_formulas))
+
+    moment_files: list[str] = []
+    curve_files: list[str] = []
+    written_files: list[str] = []
+    curves_json_payload: dict[str, Any] = {}
+
+    if kind == "wannier":
+        model_dir = str(rf.model["dir"])
+        seed_name = str(rf.model["seed"])
+        supercell = tuple(int(x) for x in rf.basis["supercell"])
+        disorder_w = float(rf.basis["disorder"]["W"])
+        disorder_seed = int(rf.basis["disorder"]["seed"])
+        rng_seed = int(rf.expansion["seed"])
+        basis_name = str(rf.basis["name"])
+
+        wmodel = load_wannier_model(model_dir, seed=seed_name)
+        basis_obj = make_basis(
+            basis_name,
+            wmodel,
+            supercell,
+            disorder_w=disorder_w,
+            seed=rng_seed,
+            disorder_seed=disorder_seed,
+            csr_dir=rf.model.get("csr_dir"),
+        )
+        win_spec = rf.expansion["window"]
+        if win_spec == "eigen":
+            if isinstance(basis_obj, (BlochBasis, EigenBasis)):
+                window = basis_obj.window()
+            else:
+                clean_win = EigenBasis(wmodel, supercell).window(pad=0.0)
+                emin = float(clean_win.lower) - 0.5 * disorder_w
+                emax = float(clean_win.upper) + 0.5 * disorder_w
+                width = emax - emin
+                if width <= 0.0:
+                    emin -= 1.0
+                    emax += 1.0
+                    width = 2.0
+                margin = 0.10 * width
+                window = _core.SpectralWindow(emin - margin, emax + margin)
+            window_source = "eigen"
+        elif win_spec == "gershgorin":
+            if isinstance(basis_obj, RealBasis):
+                window = basis_obj.window()
+            else:
+                window = RealBasis(
+                    wmodel,
+                    supercell,
+                    disorder_w=disorder_w,
+                    seed=rng_seed,
+                    disorder_seed=disorder_seed,
+                ).window()
+            window_source = "gershgorin"
+        else:
+            window = _core.SpectralWindow(float(win_spec[0]), float(win_spec[1]))
+            window_source = "explicit"
+
+        trace_mode = str(rf.expansion["trace"])
+        state_gen = basis_obj.states(
+            trace_mode=trace_mode,
+            num_states=rf.expansion.get("states"),
+            seed=rng_seed,
+        )
+        num_states = int(state_gen.number_of_states)
+        num_moments = int(rf.expansion["moments"])
+        batch_size = int(rf.expansion["batch"] or num_moments)
+
+        concrete_ops: dict[str, _core.LinearOperator] = {}
+        for op_name in ("VX", "VY", "VZ"):
+            try:
+                concrete_ops[op_name] = basis_obj.operator(op_name)
+            except Exception:  # noqa: BLE001
+                pass
+
+        for w_str, w_formulas in words_to_run:
+            compiled = compile_word(
+                w_str,
+                basis={
+                    "name": basis_name,
+                    "operators": concrete_ops,
+                    "metric": rf.metric,
+                },
+                params={
+                    "expansion": dict(
+                        rf.expansion,
+                        states=num_states,
+                        window=window,
+                    ),
+                    "time": rf.time,
+                    "metric": rf.metric,
+                    "reconstruction": dict(
+                        rf.reconstruction, formulas=w_formulas
+                    ),
+                },
+            )
+            symmetrise = (
+                compiled.match.entry.shape_id == "kubo_greenwood"
+                and len(compiled.operator_names) == 1
+            )
+            mu = run_plan(
+                compiled.plan,
+                basis_obj.hamiltonian(),
+                window,
+                state_gen,
+                operators=compiled.operators,
+                batch_size=batch_size,
+                symmetrise=symmetrise,
+                dt=compiled.dt,
+            )
+            if trace_mode == "exact":
+                mu.number_of_states = basis_obj.dimension
+
+            label_tag = f"{wmodel.seed_name}_{basis_name}_"
+            prefix = compiled.reconstruction.legacy_moment_prefix
+            ext = compiled.reconstruction.legacy_moment_ext
+            if mu.rank == 2:
+                stem = (
+                    f"{prefix}{label_tag}KPM_M{num_moments}x{num_moments}"
+                    f"_state{mu.state_label}"
+                )
+            else:
+                stem = f"{prefix}{label_tag}KPM_M{num_moments}_state{mu.state_label}"
+
+            if rf.output["legacy_layout"]:
+                leg_path = os.path.join(out_dir, f"{stem}{ext}")
+                if ext == ".chebmom1D":
+                    _core.WriteLegacyChebmom1D(leg_path, mu)
+                elif ext == ".chebmom2D":
+                    _core.WriteLegacyChebmom2D(leg_path, mu)
+                else:
+                    _core.WriteLegacyChebmomTD(leg_path, mu)
+                moment_files.append(leg_path)
+                written_files.append(leg_path)
+
+            if rf.output["write_chebmom"] or not rf.output["legacy_layout"]:
+                cheb_path = os.path.join(out_dir, f"{stem}.chebmom")
+                _core.WriteChebmom(cheb_path, mu)
+                moment_files.append(cheb_path)
+                written_files.append(cheb_path)
+
+            broad = compiled.reconstruction.broadening_meV
+            if broad is not None:
+                for form in compiled.reconstruction.formulas:
+                    for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
+                        form,
+                        mu,
+                        broad,
+                        fermi_energies=compiled.reconstruction.fermi_energies,
+                        num_points=compiled.reconstruction.num_points,
+                    ):
+                        if rf.output["legacy_names"]:
+                            c_path = os.path.join(
+                                out_dir, f"{c_pref}{stem}{c_suf}"
+                            )
+                            _core.WriteCurveText(c_path, x_arr, y_arr)
+                            curve_files.append(c_path)
+                            written_files.append(c_path)
+                        else:
+                            curves_json_payload[f"{stem}:{form}"] = {
+                                "grid": [float(v) for v in x_arr],
+                                "values": [float(v) for v in y_arr],
+                            }
+
+            if rf.output["write_basis_json"]:
+                used_ops = ["HAM"] + list(compiled.operator_names)
+                word_tag = (
+                    "dos"
+                    if compiled.match.entry.shape_id.startswith("dos")
+                    else (
+                        "kuboxx"
+                        if len(compiled.operator_names) == 1
+                        else "kuboxy"
+                    )
+                )
+                basis_meta = {
+                    "basis": basis_name,
+                    "seed": wmodel.seed_name,
+                    "supercell": list(basis_obj.supercell),
+                    "mesh": list(basis_obj.supercell),
+                    "dimension": int(basis_obj.dimension),
+                    "trace": trace_mode,
+                    "states": int(mu.number_of_states),
+                    "state_seed": int(rng_seed),
+                    "window_source": window_source,
+                    "window": [float(window.lower), float(window.upper)],
+                    "disorder_w": float(disorder_w),
+                    "disorder_seed": (
+                        int(disorder_seed) if disorder_w > 0.0 else None
+                    ),
+                    "moments": int(num_moments),
+                    "broadening_meV": float(broad) if broad is not None else None,
+                    "word": word_tag,
+                    "operators": {
+                        op_n: {"source": basis_obj.operator_source(op_n)}
+                        for op_n in used_ops
+                    },
+                }
+                bjson_path = os.path.join(out_dir, f"{stem}.basis.json")
+                with open(bjson_path, "w", encoding="utf-8") as fh:
+                    json.dump(basis_meta, fh, indent=2)
+                    fh.write("\n")
+                written_files.append(bjson_path)
+
+    else:
+        # kind == "csr"
+        model_dir = str(rf.model["dir"])
+        label = str(rf.model["label"])
+        ham_path = os.path.join(model_dir, f"{label}.HAM.CSR")
+        if not os.path.isfile(ham_path):
+            raise FileNotFoundError(f"Hamiltonian CSR file not found: {ham_path}")
+        ham = _core.ReadCsrText(ham_path)
+        dim = int(ham.dimension)
+
+        win_spec = rf.expansion["window"]
+        if win_spec == "gershgorin":
+            window = window_from_gershgorin(ham)
+        elif isinstance(win_spec, (list, tuple)):
+            window = _core.SpectralWindow(float(win_spec[0]), float(win_spec[1]))
+        else:
+            window = window_from_gershgorin(ham)
+
+        trace_mode = str(rf.expansion["trace"])
+        rng_seed = int(rf.expansion["seed"])
+        req_states = rf.expansion.get("states")
+        num_states = (
+            int(req_states)
+            if req_states is not None
+            else (dim if trace_mode == "exact" else 1)
+        )
+        if trace_mode == "exact":
+            if num_states > dim:
+                raise ValueError(
+                    f"expansion.states ({num_states}) exceeds Hamiltonian dimension ({dim})"
+                )
+            state_gen: _core.StateGenerator = _core.LocalStates(
+                dim, list(range(num_states))
+            )
+            state_label = str(rf.expansion.get("state_label") or "exact")
+        else:
+            state_gen = _core.RandomPhaseStates(dim, num_states, rng_seed)
+            state_label = str(
+                rf.expansion.get("state_label") or state_gen.label
+            )
+
+        # Metric policy setup (orthogonal or nonorthogonal)
+        policy_name = str(rf.metric["policy"])
+        route_name = str(rf.metric["route"])
+        applier_name = str(rf.metric["applier"])
+        metric_obj: _core.MetricPolicy
+        s_mat: _core.SparseMatrix | None = None
+        if policy_name == "orthogonal":
+            metric_obj = _core.OrthogonalMetric(dim)
+            rescaled_h: _core.LinearOperator = _core.RescaledOperator(
+                ham, window
+            )
+        else:
+            s_path = os.path.join(model_dir, f"{label}.S.CSR")
+            if not os.path.isfile(s_path):
+                raise FileNotFoundError(
+                    f"Overlap matrix file required for nonorthogonal metric not found: {s_path}"
+                )
+            s_mat = _core.ReadCsrText(s_path)
+            s_op = _core.SparseMatrixOperator(s_mat)
+            order = int(rf.metric["order"])
+            coeff_tol = float(rf.metric["coeff_tol"])
+            tol = float(rf.metric["tol"])
+            max_iter = int(rf.metric["max_iter"])
+            max_dim = int(rf.metric["max_dim"])
+
+            if route_name == "lowdin":
+                inv_app: _core.LinearOperator = _core.IdentityOperator(dim)
+                if applier_name == "exact":
+                    inv_sqrt_app: _core.LinearOperator = (
+                        _core.ExactInverseSqrtOverlap(s_mat, max_dim)
+                    )
+                else:
+                    bounds_s = _compute_padded_overlap_bounds(s_op)
+                    inv_sqrt_app = _core.ChebyshevInverseSqrtOverlap(
+                        s_mat, bounds_s, order, coeff_tol
+                    )
+                metric_obj = _core.NonOrthogonalMetric(
+                    s_mat, inv_app, inv_sqrt_app
+                )
+                ham_op = _core.SparseMatrixOperator(ham)
+                lowdin_h = _core.LowdinOperator(
+                    metric_obj.inverse_sqrt_overlap(), ham_op
+                )
+                rescaled_h = _core.RescaledOperator(lowdin_h, window)
+            else:
+                if applier_name == "exact":
+                    inv_app = _core.ExactInverseOverlap(s_mat, max_dim)
+                elif applier_name == "ischo":
+                    inv_app = _core.IschoInverseOverlap(s_mat, tol, max_iter)
+                else:
+                    bounds_s = _compute_padded_overlap_bounds(s_op)
+                    inv_app = _core.ChebyshevInverseOverlap(
+                        s_mat, bounds_s, order, coeff_tol
+                    )
+                inv_sqrt_app = _core.IdentityOperator(dim)
+                metric_obj = _core.NonOrthogonalMetric(
+                    s_mat, inv_app, inv_sqrt_app
+                )
+                rescaled_h = _core.GeneralisedRescaledOperator(
+                    ham, s_mat, metric_obj.inverse_overlap(), window
+                )
+
+        discovered_ops = (
+            list(rf.model["operators"])
+            if rf.model.get("operators") is not None
+            else _discover_csr_operators(model_dir, label)
+        )
+        raw_csr_mats: dict[str, _core.SparseMatrix] = {}
+        for op_n in discovered_ops:
+            op_p = os.path.join(model_dir, f"{label}.{op_n}.CSR")
+            if os.path.isfile(op_p):
+                raw_csr_mats[op_n] = _core.ReadCsrText(op_p)
+
+        num_moments = int(rf.expansion["moments"])
+        batch_size = int(rf.expansion["batch"] or num_moments)
+        captured_idx = 0
+
+        for w_str, w_formulas in words_to_run:
+            parsed_w = parse_word(w_str)
+            # For MSD, the velocity operator passed to the engine is RescaledOperator(V, window)
+            concrete_ops = {}
+            for op_n, mat in raw_csr_mats.items():
+                if any(
+                    getattr(s, "velocity_operator", None) == op_n
+                    for s in parsed_w.slots
+                ):
+                    concrete_ops[op_n] = _core.RescaledOperator(mat, window)
+                else:
+                    concrete_ops[op_n] = _core.SparseMatrixOperator(mat)
+            concrete_ops["1"] = _core.IdentityOperator(dim)
+
+            metric_with_obj = dict(rf.metric, metric_object=metric_obj)
+            compiled = compile_word(
+                parsed_w,
+                basis={
+                    "name": rf.basis["name"],
+                    "operators": concrete_ops,
+                    "metric": metric_with_obj,
+                },
+                params={
+                    "expansion": dict(
+                        rf.expansion,
+                        states=num_states,
+                        window=window,
+                    ),
+                    "time": rf.time,
+                    "metric": metric_with_obj,
+                    "reconstruction": dict(
+                        rf.reconstruction, formulas=w_formulas
+                    ),
+                },
+            )
+
+            engine = _core.MomentEngine(
+                rescaled_h, compiled.operators, state_gen, batch_size
+            )
+            mu = engine.run(compiled.plan)
+            mu.window = window
+            mu.system_size = dim
+            mu.number_of_states = num_states
+            mu.state_label = state_label
+            mu.word = compiled.plan.word
+            if compiled.dt is not None:
+                mu.time_step = float(compiled.dt)
+            if mu.rank == 1 or mu.number_of_time_steps > 0:
+                mu.kpm_weighted = True
+                mu.symmetrised = False
+            elif mu.rank == 2 and not mu.kpm_weighted:
+                _core.ApplyKpmWeights(mu, num_states, True)
+
+            prefix = compiled.reconstruction.legacy_moment_prefix
+            ext = compiled.reconstruction.legacy_moment_ext
+            if mu.rank == 2:
+                stem = (
+                    f"{prefix}{label}KPM_M{num_moments}x{num_moments}"
+                    f"_state{state_label}"
+                )
+            elif mu.number_of_time_steps > 0 and compiled.match.entry.shape_id in (
+                "msd",
+                "time_correlation",
+            ):
+                assert rf.time is not None
+                tmax_val = rf.time.get("tmax")
+                if tmax_val is None and compiled.dt is not None:
+                    tmax_val = compiled.dt * (int(rf.time["steps"]) - 1)
+                tmax_str = f"{float(tmax_val):g}"
+                stem = (
+                    f"{prefix}{label}KPM_M{num_moments}"
+                    f"_state{tmax_str}{state_label}"
+                )
+            else:
+                stem = f"{prefix}{label}KPM_M{num_moments}_state{state_label}"
+
+            leg_path: str | None = None
+            if (
+                rf.output["legacy_layout"]
+                or compiled.reconstruction.legacy_text_round_trip
+            ):
+                leg_path = os.path.join(out_dir, f"{stem}{ext}")
+                if ext == ".chebmom1D":
+                    _core.WriteLegacyChebmom1D(leg_path, mu)
+                elif ext == ".chebmom2D":
+                    _core.WriteLegacyChebmom2D(leg_path, mu)
+                else:
+                    _core.WriteLegacyChebmomTD(leg_path, mu)
+                moment_files.append(leg_path)
+                written_files.append(leg_path)
+
+                if (
+                    rf.output["capture_tutorial"]
+                    and ext == ".chebmomTD"
+                    and compiled.match.entry.shape_id == "projected_evolution"
+                ):
+                    cap_dir = os.path.join(out_dir, "captured")
+                    os.makedirs(cap_dir, exist_ok=True)
+                    cap_p = os.path.join(
+                        cap_dir,
+                        f"{captured_idx:04d}_{os.path.basename(leg_path)}",
+                    )
+                    shutil.copyfile(leg_path, cap_p)
+                    written_files.append(cap_p)
+                    captured_idx += 1
+
+            if rf.output["write_chebmom"] or not rf.output["legacy_layout"]:
+                cheb_path = os.path.join(out_dir, f"{stem}.chebmom")
+                _core.WriteChebmom(cheb_path, mu)
+                moment_files.append(cheb_path)
+                written_files.append(cheb_path)
+
+            mu_for_recon = (
+                _core.ReadChebmom(leg_path)
+                if (
+                    compiled.reconstruction.legacy_text_round_trip
+                    and leg_path is not None
+                )
+                else mu
+            )
+
+            broad = compiled.reconstruction.broadening_meV
+            if broad is not None:
+                for form in compiled.reconstruction.formulas:
+                    for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
+                        form,
+                        mu_for_recon,
+                        broad,
+                        fermi_energies=compiled.reconstruction.fermi_energies,
+                        num_points=compiled.reconstruction.num_points,
+                    ):
+                        if rf.output["legacy_names"]:
+                            c_path = os.path.join(
+                                out_dir, f"{c_pref}{stem}{c_suf}"
+                            )
+                            _core.WriteCurveText(c_path, x_arr, y_arr)
+                            curve_files.append(c_path)
+                            written_files.append(c_path)
+                            if rf.output["capture_tutorial"]:
+                                cap_dir = os.path.join(out_dir, "captured")
+                                os.makedirs(cap_dir, exist_ok=True)
+                                cap_p = os.path.join(
+                                    cap_dir,
+                                    f"{captured_idx:04d}_{os.path.basename(c_path)}",
+                                )
+                                shutil.copyfile(c_path, cap_p)
+                                written_files.append(cap_p)
+                                captured_idx += 1
+                        else:
+                            curves_json_payload[f"{stem}:{form}"] = {
+                                "grid": [float(v) for v in x_arr],
+                                "values": [float(v) for v in y_arr],
+                            }
+
+            if rf.reconstruction.get("per_site_dos") and mu.rank == 1:
+                # Reconstruct per-site DOS on 30 * M points with full M moments (broadening = 1/M)
+                full_m_meV = 1.0e-6
+                e_ps, v_ps = dos_curve(
+                    mu_for_recon, full_m_meV, num_points=30 * num_moments
+                )
+                ps_path = os.path.join(out_dir, "DOS_reconstructed.dat")
+                with open(ps_path, "w", encoding="utf-8") as fh:
+                    for ex, vx in zip(e_ps, v_ps):
+                        val_per_site = float(vx) / float(dim)
+                        if np.isfinite(val_per_site):
+                            fh.write(f"{float(ex):.10g} {val_per_site:.10g}\n")
+                curve_files.append(ps_path)
+                written_files.append(ps_path)
+
+            for tgt in rf.reconstruction.get("targets") or ():
+                t_broad = float(tgt["broadening_meV"])
+                t_formulas = [str(f) for f in tgt["formulas"]]
+                t_fermi = [
+                    float(e) for e in (tgt.get("fermi_energies") or ())
+                ]
+                t_rt = bool(
+                    tgt.get(
+                        "legacy_text_round_trip",
+                        compiled.reconstruction.legacy_text_round_trip,
+                    )
+                )
+                mu_tgt = (
+                    _core.ReadChebmom(leg_path)
+                    if (t_rt and leg_path is not None)
+                    else mu
+                )
+                sub = tgt.get("subdir")
+                dest_d = (
+                    os.path.join(out_dir, str(sub)) if sub else out_dir
+                )
+                os.makedirs(dest_d, exist_ok=True)
+                also_top = bool(tgt.get("also_top_dir", False))
+                for form in t_formulas:
+                    for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
+                        form,
+                        mu_tgt,
+                        t_broad,
+                        fermi_energies=t_fermi,
+                    ):
+                        fname = f"{c_pref}{stem}{c_suf}"
+                        c_path = os.path.join(dest_d, fname)
+                        _core.WriteCurveText(c_path, x_arr, y_arr)
+                        curve_files.append(c_path)
+                        written_files.append(c_path)
+                        if also_top and dest_d != out_dir:
+                            top_p = os.path.join(out_dir, fname)
+                            if not os.path.exists(top_p):
+                                shutil.copyfile(c_path, top_p)
+                                written_files.append(top_p)
+
+    if not rf.output["legacy_names"] and curves_json_payload:
+        cjson_path = os.path.join(out_dir, "curves.json")
+        with open(cjson_path, "w", encoding="utf-8") as fh:
+            json.dump(curves_json_payload, fh, indent=2)
+            fh.write("\n")
+        curve_files.append(cjson_path)
+        written_files.append(cjson_path)
+
+    return {
+        "output_dir": out_dir,
+        "resolved_runfile": resolved_path,
+        "moment_files": moment_files,
+        "curve_files": curve_files,
+        "written_files": written_files,
+    }
+
+
+def reconstruct_target(
+    target_path: str,
+    *,
+    formula: str | None = None,
+    broadening_meV: float | None = None,
+    fermi_energies: Sequence[float] | None = None,
+    out_dir: str | None = None,
+) -> dict[str, Any]:
+    """Reconstruct curve(s) from a moment file or an output directory containing moment files."""
+    abs_target = os.path.abspath(target_path)
+    if os.path.isdir(abs_target):
+        dest_dir = os.path.abspath(out_dir) if out_dir else abs_target
+        mom_candidates = sorted(
+            glob.glob(os.path.join(abs_target, "*.chebmom1D"))
+            + glob.glob(os.path.join(abs_target, "*.chebmom2D"))
+            + glob.glob(os.path.join(abs_target, "*.chebmomTD"))
+        )
+        if not mom_candidates:
+            mom_candidates = sorted(
+                glob.glob(os.path.join(abs_target, "*.chebmom"))
+            )
+        if not mom_candidates:
+            raise FileNotFoundError(
+                f"No moment files found in directory '{abs_target}'"
+            )
+        resolved_json = os.path.join(abs_target, "run.resolved.json")
+        rf_rec: dict[str, Any] = {}
+        if os.path.isfile(resolved_json):
+            with open(resolved_json, encoding="utf-8") as fh:
+                rf_rec = (json.load(fh).get("reconstruction") or {})
+        eff_broad = (
+            float(broadening_meV)
+            if broadening_meV is not None
+            else float(rf_rec.get("broadening_meV") or 10.0)
+        )
+        eff_fermi = (
+            list(fermi_energies)
+            if fermi_energies is not None
+            else list(rf_rec.get("fermi_energies") or [0.0])
+        )
+        written: list[str] = []
+        for mp in mom_candidates:
+            res = reconstruct_target(
+                mp,
+                formula=formula,
+                broadening_meV=eff_broad,
+                fermi_energies=eff_fermi,
+                out_dir=dest_dir,
+            )
+            written.extend(res["curve_files"])
+        return {"output_dir": dest_dir, "curve_files": written}
+
+    if not os.path.isfile(abs_target):
+        raise FileNotFoundError(f"Moment file not found: '{abs_target}'")
+
+    dest_dir = (
+        os.path.abspath(out_dir)
+        if out_dir is not None
+        else os.path.dirname(abs_target)
+    )
+    os.makedirs(dest_dir, exist_ok=True)
+    mu = _core.ReadChebmom(abs_target)
+    base = os.path.basename(abs_target)
+    stem, _ = os.path.splitext(base)
+
+    eff_broad = float(broadening_meV) if broadening_meV is not None else 10.0
+    eff_fermi = (
+        [float(x) for x in fermi_energies]
+        if fermi_energies is not None
+        else [0.0]
+    )
+    if formula is None:
+        if mu.number_of_time_steps > 0:
+            formula = "time_correlation"
+        elif mu.rank == 2:
+            formula = "bastin"
+        else:
+            formula = "dos"
+
+    written_curves: list[str] = []
+    for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
+        formula, mu, eff_broad, fermi_energies=eff_fermi
+    ):
+        c_path = os.path.join(dest_dir, f"{c_pref}{stem}{c_suf}")
+        _core.WriteCurveText(c_path, x_arr, y_arr)
+        written_curves.append(c_path)
+
+    return {
+        "moment_file": abs_target,
+        "output_dir": dest_dir,
+        "formula": formula,
+        "broadening_meV": eff_broad,
+        "fermi_energies": eff_fermi,
+        "curve_files": written_curves,
+    }
+
+
+def inspect_target(path: str) -> dict[str, Any]:
+    """Inspect a moment file, a run-file JSON, or a run output directory."""
+    abs_path = os.path.abspath(path)
+    if not os.path.exists(abs_path):
+        raise FileNotFoundError(f"Path not found: '{path}'")
+
+    if os.path.isdir(abs_path):
+        resolved_path = os.path.join(abs_path, "run.resolved.json")
+        resolved_data = None
+        if os.path.isfile(resolved_path):
+            with open(resolved_path, encoding="utf-8") as fh:
+                resolved_data = json.load(fh)
+        mom_files = sorted(
+            glob.glob(os.path.join(abs_path, "*.chebmom*"))
+        )
+        moments_info = [
+            inspect_target(mp) for mp in mom_files if os.path.isfile(mp)
+        ]
+        return {
+            "kind": "directory",
+            "path": abs_path,
+            "resolved_runfile": resolved_data,
+            "defaults": DEFAULT_RUNFILE_DEFAULTS,
+            "moment_files": moments_info,
+        }
+
+    if abs_path.endswith(".json"):
+        with open(abs_path, encoding="utf-8") as fh:
+            raw = json.load(fh)
+        rf = RunFile.from_dict(raw, source_path=abs_path)
+        return {
+            "kind": "runfile",
+            "path": abs_path,
+            "resolved_runfile": rf.to_resolved_dict(),
+            "defaults": DEFAULT_RUNFILE_DEFAULTS,
+        }
+
+    mu = _core.ReadChebmom(abs_path)
+    half_width = 0.5 * float(mu.window.upper - mu.window.lower)
+    band_center = 0.5 * float(mu.window.upper + mu.window.lower)
+    return {
+        "kind": "moments",
+        "path": abs_path,
+        "rank": int(mu.rank),
+        "dims": [int(d) for d in mu.dims],
+        "system_size": int(mu.system_size),
+        "number_of_states": int(mu.number_of_states),
+        "state_label": str(mu.state_label),
+        "word": str(mu.word),
+        "window": [float(mu.window.lower), float(mu.window.upper)],
+        "band_width": float(mu.window.upper - mu.window.lower),
+        "half_width": half_width,
+        "band_center": band_center,
+        "kpm_weighted": bool(mu.kpm_weighted),
+        "symmetrised": bool(mu.symmetrised),
+        "number_of_time_steps": int(mu.number_of_time_steps),
+        "time_step": float(mu.time_step),
+    }

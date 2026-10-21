@@ -15,6 +15,7 @@ import argparse
 import importlib.util
 import math
 import os
+import shutil
 import sys
 import tempfile
 from types import ModuleType
@@ -248,6 +249,8 @@ def run_tutorial03(
     mu_xx_disk = _core.ReadChebmom(xx_mom_path)
 
     written: list[str] = []
+    captured_dir = os.path.join(out_dir, "captured")
+    os.makedirs(captured_dir, exist_ok=True)
 
     e_bastin, s_bastin = kubo_bastin(mu_xy_disk, broadening_meV)
     bastin_path = os.path.join(out_dir, f"KuboBastin_{stem_xy}JACKSON.dat")
@@ -268,6 +271,12 @@ def run_tutorial03(
     gw_path = os.path.join(out_dir, f"KuboGreenWood_{stem_xx}JACKSON.dat")
     _core.WriteCurveText(gw_path, e_gw, s_gw)
     written.append(gw_path)
+
+    for cap_idx, src_path in enumerate((bastin_path, sea_path, surf_path, gw_path)):
+        shutil.copyfile(
+            src_path,
+            os.path.join(captured_dir, f"{cap_idx:04d}_{os.path.basename(src_path)}"),
+        )
 
     loaded_bastin = np.loadtxt(bastin_path)
     c_val = chern_from_plateau(dim, loaded_bastin[:, 0], loaded_bastin[:, 1])
