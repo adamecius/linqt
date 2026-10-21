@@ -163,6 +163,41 @@ Parameters a README does not fix, and deviations:
 - 06: `rp_validate.py` with `OMP_NUM_THREADS=64` (README); `rp_spin.py` sets `KPM_SEED=1..20`
   and `OMP_NUM_THREADS=16` per random vector itself.
 
+**Tutorial 06 denominators: re-blessed from the new code because of legacy defect D5**
+(Fable's decision, handoff 0007 closure, as for G4c / D2). 142 files of `tutorials/06` were
+replaced; the legacy versions are kept as evidence in
+`legacy_defects/tutorial06_identity_operator/` with the same relative layout (see its
+`README.md`):
+
+- the 139 curves `meanTimeProj1-P*` (top level and `captured/`);
+- `ey_ratelaw.dat` and `captured/0254_ey_ratelaw.dat`;
+- `captured/index.tsv`.
+
+What the files hold:
+
+- The replaced curves are the denominator word `Tr[P U(t)^+ 1 U(t) delta(E-H) P]` of
+  `lsqrelax.py` and `rp_spin.py`.
+- The legacy pipeline ran `inline_compute-kpm-TimeEvProjetedOp <label> 1 <proj> ...`, which reads
+  `operators/<label>.1.CSR` (`legacy-final:src/inline_compute-kpm-TimeEvProjetedOp.cpp:53-62`).
+  `make_ey.py` and `make_rashba.py` never write that file.
+- `SparseMatrixBuilder::BuildOPFromCSRFile` returns silently when the file cannot be read
+  (`legacy-final:include/sparse_matrix.hpp:132-133`). The operator `1` was therefore never built,
+  and the legacy denominators are about 1e-6 noise.
+- The new code applies the identity: the curve is constant in t and equal to `Tr[P delta P]`.
+- The tutorials normalise by `mean(den)` and then by `s[0]`, so the scale cancels. The stage-0
+  figures were right, and the new `ey_ratelaw.dat` agrees with the legacy one to 1.8e-16 relative.
+- The 139 numerator curves (`TimeProjSZ-*`, `TimeProjSX-*`) were byte-identical between legacy and
+  new code and are unchanged.
+
+How the new files were produced:
+
+- Command: `KPM_SEED=12345 OMP_NUM_THREADS=16 PYTHONPATH=<build>/lsquant_core:python python3 -m
+  lsquant run runs/goldens/tutorial06.json --out <dir>`, at `5e8186d` (tester merge `9cdbe0f`),
+  build `~/lsquant-unified-build7c` on TCN, 2026-10-21. The log is the stage-7 closure gate
+  `~/s7logs/gate7c.log`.
+- `captured/index.tsv` keeps the stage-0 names and source column; its SHA-1 column is recomputed
+  from the new captures (128 of 255 entries change).
+
 ## G9 — `bases/graphene/`, `bases/haldane/` (stage 5; independent oracle, not the legacy build)
 
 G9 is the only golden not produced by the legacy LSQUANT build: AGENTS.md section 8 names
@@ -246,3 +281,8 @@ evidence and **are not references**: no harness reads them.
   the legacy Bastin curve of G4c (`BOUNDS` `-8.5 7.5`), whose energy column carries legacy defect
   D2 (uniform-grid axis `x*HalfWidth + BandCenter/HalfWidth`, shifted by +0.4375 eV here); see
   its `README.md`. The G4c curve golden was blessed from the new code instead.
+- `legacy_defects/tutorial06_identity_operator/` (142 files): the legacy tutorial-06 denominator
+  curves `meanTimeProj1-P*`, `ey_ratelaw.dat` and `captured/index.tsv`. They were computed by the
+  legacy `inline_compute-kpm-TimeEvProjetedOp` with an operator `1` that was never built, because
+  `operators/<label>.1.CSR` was missing and `BuildOPFromCSRFile` returned silently (legacy defect
+  D5). See its `README.md`; the tutorial-06 goldens were re-blessed from the new code instead.
