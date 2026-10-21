@@ -2,7 +2,8 @@
   "model": {
     "kind": "wannier",
     "dir": "goldens/stage0/bases/graphene/model",
-    "seed": "graphene"
+    "seed": "graphene",
+    "csr_dir": "build/w2s_csr/graphene"
   },
   "basis": {
     "name": "real",

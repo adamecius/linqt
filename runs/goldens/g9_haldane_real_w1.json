@@ -2,7 +2,8 @@
   "model": {
     "kind": "wannier",
     "dir": "goldens/stage0/bases/haldane/model",
-    "seed": "haldane"
+    "seed": "haldane",
+    "csr_dir": "build/w2s_csr/haldane"
   },
   "basis": {
     "name": "real",
