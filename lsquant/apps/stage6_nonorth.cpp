@@ -7,16 +7,21 @@
  * non-orthogonal route (`lowdin`, `generalised`, or `naive`), overlap applier (`exact`,
  * `ischo`, or `chebyshev`), Chebyshev applier order, PCG tolerance, trace generator (`exact`
  * or `random`), moment count `M`, observable word (`dos`, `kubo`, or `kuboxy`), and output
- * directory. Executes the corresponding bytecode `Plan` with `MomentEngine` without modifying
- * the engine or plan instruction set, and writes both the legacy `.chebmom1D`/`.chebmom2D`
- * file and the unified `.chebmom` file. Also supports `--check-appliers` to benchmark the
- * C++ overlap appliers against `ExactInverseOverlap` and `ExactInverseSqrtOverlap` on
- * deterministic random vectors.
+ * directory. Note that `--route naive` implements the legacy non-orthogonal estimator
+ * (`theory.md` section 4.1): recursion on `S^-1 H~` (`GeneralisedRescaledOperator`) with
+ * `S^-1 V'` (`MetricInverseProduct(S^-1, V')`) on both sides and no `S` on the bra; it
+ * reproduces the DOS (where no velocity enters) but is wrong for Kubo moments when `S != I`
+ * because the symmetric trace estimator is not metric-covariant. Executes the corresponding
+ * bytecode `Plan` with `MomentEngine` without modifying the engine or plan instruction set,
+ * and writes both the legacy `.chebmom1D`/`.chebmom2D` file and the unified `.chebmom` file.
+ * Also supports `--check-appliers` to benchmark the C++ overlap appliers against
+ * `ExactInverseOverlap` and `ExactInverseSqrtOverlap` on deterministic random vectors.
  */
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <exception>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -61,13 +66,37 @@ struct CliOptions {
   int batchSize = -1;
   std::string outDir = ".";
   bool checkAppliers = false;
+  bool showHelp = false;
 };
+
+void PrintUsage(std::ostream& os) {
+  os << "Usage: stage6_nonorth --fixture <dir> --label <model> --window <lower> <upper>\n"
+     << "                      [--route lowdin|generalised|naive]\n"
+     << "                      [--applier exact|ischo|chebyshev]\n"
+     << "                      [--order <P>] [--tol <t>] [--max-iter <n>]\n"
+     << "                      [--trace exact|random] [--seed <s>] [--states <R>]\n"
+     << "                      [--moments <M>] [--batch <B>] --word dos|kubo|kuboxy\n"
+     << "                      [--out <dir>] [--check-appliers]\n\n"
+     << "Routes:\n"
+     << "  lowdin       Symmetric Lowdin sandwich H_L = S^-1/2 H' S^-1/2, V_L = S^-1/2 V' S^-1/2.\n"
+     << "  generalised  Recursion on S^-1 (a H' + b S') with S^-1 V' on ket and adjoint\n"
+     << "               bra S T_m(S^-1 H~) S^-1 V' S^-1 |r> (theory.md Eqs. 2a-2c).\n"
+     << "  naive        Legacy estimator (wrong for Kubo when S != I, theory.md section 4.1):\n"
+     << "               recursion on S^-1 (a H' + b S') (GeneralisedRescaledOperator) with\n"
+     << "               S^-1 V' (MetricInverseProduct(S^-1, V')) on both sides and no S on\n"
+     << "               the bra (the symmetric stage-1 plan); passes on dos and fails on\n"
+     << "               kubo/kuboxy by O(1) because the trace estimator is not covariant.\n";
+}
 
 CliOptions ParseArgs(int argc, char* argv[]) {
   CliOptions opts;
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
+    if (arg == "--help" || arg == "-h") {
+      opts.showHelp = true;
+      return opts;
+    }
     auto requireNext = [&](const char* flag) -> std::string {
       if (i + 1 >= argc) {
         throw std::invalid_argument(std::string("stage6_nonorth: missing argument for ") + flag);
@@ -311,6 +340,10 @@ lsquant::Plan BuildGeneralisedKuboPlan(const std::string& wordName, int sinvBraO
 int main(int argc, char* argv[]) {
   try {
     const CliOptions opts = ParseArgs(argc, argv);
+    if (opts.showHelp) {
+      PrintUsage(std::cout);
+      return 0;
+    }
     if (opts.checkAppliers) {
       return RunApplierChecks(opts);
     }
@@ -348,10 +381,12 @@ int main(int argc, char* argv[]) {
     const lsquant::IschoInverseOverlap* ischoPtr = nullptr;
     int effectiveOrder = -1;
 
-    if (opts.route == "naive") {
+    const std::string sPath = opts.fixtureDir + "/" + opts.label + ".S.CSR";
+    const bool hasOverlapFile = std::ifstream(sPath).good();
+
+    if (opts.route == "naive" && !hasOverlapFile) {
       metric = std::make_unique<lsquant::OrthogonalMetric>(dim);
     } else {
-      const std::string sPath = opts.fixtureDir + "/" + opts.label + ".S.CSR";
       sMat = lsquant::ReadCsrText(sPath);
       const lsquant::SparseMatrixOperator sOp(*sMat);
 
@@ -391,7 +426,7 @@ int main(int argc, char* argv[]) {
 
     std::unique_ptr<lsquant::LowdinOperator> lowdinH;
     std::unique_ptr<lsquant::LinearOperator> rescaledH;
-    if (opts.route == "naive") {
+    if (metric->IsOrthogonal()) {
       rescaledH = std::make_unique<lsquant::RescaledOperator>(ham, window);
     } else if (opts.route == "lowdin") {
       lowdinH = std::make_unique<lsquant::LowdinOperator>(metric->InverseSqrtOverlap(), hamOp);
@@ -429,11 +464,20 @@ int main(int argc, char* argv[]) {
       const lsquant::SparseMatrixOperator vxOp(vxMat);
 
       if (opts.route == "naive") {
-        lsquant::MomentEngine engine(*rescaledH, {&vxOp}, *stateGen, opts.batchSize);
-        const lsquant::Plan plan =
-            BuildHermitianKuboPlan("VX delta VX delta", 0, 0, opts.numMoments);
-        mu = engine.Run(plan);
-        mu.word = plan.word;
+        if (metric->IsOrthogonal()) {
+          lsquant::MomentEngine engine(*rescaledH, {&vxOp}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VX delta", 0, 0, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        } else {
+          const lsquant::MetricInverseProduct sinvVx(metric->InverseOverlap(), vxOp);
+          lsquant::MomentEngine engine(*rescaledH, {&sinvVx}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VX delta", 0, 0, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        }
       } else if (opts.route == "lowdin") {
         const lsquant::LowdinOperator lowdinVx(metric->InverseSqrtOverlap(), vxOp);
         lsquant::MomentEngine engine(*rescaledH, {&lowdinVx}, *stateGen, opts.batchSize);
@@ -474,11 +518,21 @@ int main(int argc, char* argv[]) {
       const lsquant::SparseMatrixOperator vyOp(vyMat);
 
       if (opts.route == "naive") {
-        lsquant::MomentEngine engine(*rescaledH, {&vxOp, &vyOp}, *stateGen, opts.batchSize);
-        const lsquant::Plan plan =
-            BuildHermitianKuboPlan("VX delta VY delta", 0, 1, opts.numMoments);
-        mu = engine.Run(plan);
-        mu.word = plan.word;
+        if (metric->IsOrthogonal()) {
+          lsquant::MomentEngine engine(*rescaledH, {&vxOp, &vyOp}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VY delta", 0, 1, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        } else {
+          const lsquant::MetricInverseProduct sinvVx(metric->InverseOverlap(), vxOp);
+          const lsquant::MetricInverseProduct sinvVy(metric->InverseOverlap(), vyOp);
+          lsquant::MomentEngine engine(*rescaledH, {&sinvVx, &sinvVy}, *stateGen, opts.batchSize);
+          const lsquant::Plan plan =
+              BuildHermitianKuboPlan("VX delta VY delta", 0, 1, opts.numMoments);
+          mu = engine.Run(plan);
+          mu.word = plan.word;
+        }
       } else if (opts.route == "lowdin") {
         const lsquant::LowdinOperator lowdinVx(metric->InverseSqrtOverlap(), vxOp);
         const lsquant::LowdinOperator lowdinVy(metric->InverseSqrtOverlap(), vyOp);
