@@ -373,6 +373,11 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
                 raise ValueError(
                     f"Unknown expansion.window '{win}'; expected 'eigen', 'gershgorin', or [lo, hi]"
                 )
+            if kind == "csr" and win == "eigen":
+                raise ValueError(
+                    "expansion.window='eigen' is not supported for model.kind='csr' "
+                    "(no k blocks; use gershgorin or an explicit window)"
+                )
         elif (
             isinstance(win, (list, tuple))
             and len(win) == 2
@@ -1090,7 +1095,12 @@ def execute_runfile(
         dim = int(ham.dimension)
 
         win_spec = rf.expansion["window"]
-        if win_spec == "gershgorin":
+        if win_spec == "eigen":
+            raise ValueError(
+                "expansion.window='eigen' is not supported for model.kind='csr' "
+                "(no k blocks; use gershgorin or an explicit window)"
+            )
+        elif win_spec == "gershgorin":
             window = window_from_gershgorin(ham)
         elif isinstance(win_spec, (list, tuple)):
             window = _core.SpectralWindow(float(win_spec[0]), float(win_spec[1]))

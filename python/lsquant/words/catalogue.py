@@ -326,9 +326,7 @@ def match_catalogue(word: Word) -> CatalogueMatch:
                 legacy_moment_ext=".chebmom2D",
                 default_formulas=("greenwood",),
             )
-        if spec_2.kind in ("dG-/dE", "dG+/dE", "G-", "G+") or (
-            spec_2.kind == "delta" and word.sea
-        ):
+        if spec_2.kind == "dG-/dE":
             entry = CATALOGUE_BY_ID["kubo_bastin"]
             default_f = ("sea",) if word.sea else ("bastin",)
             return CatalogueMatch(
