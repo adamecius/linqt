@@ -15,6 +15,8 @@ objects and is completely agnostic of which basis adapter produced them.
 
 from __future__ import annotations
 
+import json
+import os
 from typing import Sequence
 import numpy as np
 import numpy.typing as npt
@@ -56,10 +58,13 @@ def make_anderson_disorder(
 class RealBasis:
     """Real-space supercell basis adapter.
 
-    Builds ``H`` and velocity operators ``VX, VY, VZ`` as sparse CSR matrices
-    of dimension ``N_1 * N_2 * N_3 * W``. When ``disorder_w > 0`` (or an
-    explicit ``disorder`` vector is given), ``H`` is the matrix-free composition
-    ``OperatorSum(SparseMatrixOperator(H_csr), DiagonalOperator(v_real))``.
+    Reads ``<seed>.HAM.CSR`` and ``<seed>.VX.CSR`` (and ``VY``, ``VZ``) written
+    by ``wannier2sparse`` when they exist in ``csr_dir`` or ``model.model_dir``
+    for the requested supercell ``N_1 * N_2 * N_3 * W``, and builds them
+    identically in the ``wannier2sparse`` cell numbering
+    ``iR = n_1 + N_1 * n_2 + N_1 * N_2 * n_3`` otherwise. When ``disorder_w > 0``
+    (or an explicit ``disorder`` vector is given), ``H`` is the matrix-free
+    composition ``OperatorSum(SparseMatrixOperator(H_csr), DiagonalOperator(v_real))``.
     """
 
     def __init__(
@@ -70,6 +75,8 @@ class RealBasis:
         disorder_w: float = 0.0,
         seed: int = 12345,
         disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
+        csr_dir: str | None = None,
+        use_w2s_csr: bool = True,
     ) -> None:
         if len(supercell) != 3:
             raise ValueError("RealBasis: supercell must have 3 dimensions (N1, N2, N3)")
@@ -80,8 +87,15 @@ class RealBasis:
         self.dimension = self.num_cells * self.num_wann
         self.disorder_w = float(disorder_w)
         self.seed = int(seed)
+        self._csr_dir = csr_dir
+        self._use_w2s_csr = bool(use_w2s_csr)
 
-        self._h_csr: _core.SparseMatrix = model.hamiltonian_csr(self.supercell)
+        loaded_ham = self._try_load_w2s_csr("HAM")
+        self._h_csr: _core.SparseMatrix = (
+            loaded_ham
+            if loaded_ham is not None
+            else model.hamiltonian_csr(self.supercell)
+        )
         self._h_op_clean = _core.SparseMatrixOperator(self._h_csr)
 
         if disorder is not None:
@@ -106,6 +120,43 @@ class RealBasis:
         self._vel_csr_cache: dict[str, _core.SparseMatrix] = {}
         self._op_cache: dict[str, _core.LinearOperator] = {}
 
+    def _try_load_w2s_csr(self, op_name: str) -> _core.SparseMatrix | None:
+        """Load ``<seed>.<op_name>.CSR`` written by ``wannier2sparse`` if present and matching ``self.supercell``."""
+        if not self._use_w2s_csr:
+            return None
+        seed = self.model.seed_name
+        search_dirs: list[str] = []
+        if self._csr_dir is not None:
+            search_dirs.append(self._csr_dir)
+        if self.model.model_dir is not None and self.model.model_dir not in search_dirs:
+            search_dirs.append(self.model.model_dir)
+            ops_sub = os.path.join(self.model.model_dir, "operators")
+            if os.path.isdir(ops_sub) and ops_sub not in search_dirs:
+                search_dirs.append(ops_sub)
+
+        for d in search_dirs:
+            csr_path = os.path.join(d, f"{seed}.{op_name}.CSR")
+            if not os.path.isfile(csr_path):
+                continue
+            out_path = os.path.join(d, f"{seed}.out")
+            if os.path.isfile(out_path):
+                try:
+                    with open(out_path, encoding="utf-8") as fh:
+                        meta = json.load(fh)
+                    sc = meta.get("supercell")
+                    if isinstance(sc, list) and len(sc) == 3:
+                        if (int(sc[0]), int(sc[1]), int(sc[2])) != self.supercell:
+                            continue
+                except Exception:  # noqa: BLE001
+                    pass
+            try:
+                mat = _core.ReadCsrText(csr_path)
+            except Exception:  # noqa: BLE001
+                continue
+            if int(mat.dimension) == self.dimension:
+                return mat
+        return None
+
     @property
     def hamiltonian_csr(self) -> _core.SparseMatrix:
         """Return the clean real-space supercell Hamiltonian :class:`~lsquant._core.SparseMatrix`."""
@@ -126,7 +177,12 @@ class RealBasis:
         if key not in ("VX", "VY", "VZ"):
             raise ValueError(f"RealBasis.velocity_csr: unsupported velocity '{name}'")
         if key not in self._vel_csr_cache:
-            self._vel_csr_cache[key] = self.model.velocity_csr(self.supercell, key)
+            loaded_vel = self._try_load_w2s_csr(key)
+            self._vel_csr_cache[key] = (
+                loaded_vel
+                if loaded_vel is not None
+                else self.model.velocity_csr(self.supercell, key)
+            )
         return self._vel_csr_cache[key]
 
     def operator(self, name: str) -> _core.LinearOperator:

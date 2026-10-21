@@ -129,10 +129,10 @@ Full `git diff --stat main...handoff/0005-agi`:
 
 ## 2. Verified FFTW Sign, Normalisation, and Atom-Gauge Velocity Conventions
 
-1. **Real-space hopping convention (`wannier2sparse`)**:
+1. **Real-space hopping and cell-numbering convention (`wannier2sparse`)**:
    In `wannier2sparse` (`src/hopping_list.cpp`), a primitive hopping entry $(dR, H_{\alpha\beta}(dR))$ in `<seed>_hr.dat` connects source cell $R_1$ orbital $\alpha$ (row index $(i_{R_1} W) + \alpha$) to target cell $R_2 = (R_1 + dR) \bmod N$ orbital $\beta$ (column index $(i_{R_2} W) + \beta$):
    $$(H_{\text{CSR}})_{(R_1, \alpha), (R_1 + dR, \beta)} = H_{\alpha\beta}(dR),$$
-   with C row-major cell index $i_R = (n_1 N_2 + n_2) N_3 + n_3$.
+   with $n_1$-fastest cell index $i_R = n_1 + N_1 n_2 + N_1 N_2 n_3$ (`index_aliasing` in `wannier2sparse`).
 
 2. **Atom-gauge Bloch Hamiltonian (`brief.md` Section 3)**:
    $$H(k)_{\alpha\beta} = \sum_{dR} \exp\!\big(+i \mathbf{k} \cdot (\mathbf{dR} + \boldsymbol{\tau}_\beta - \boldsymbol{\tau}_\alpha)\big) H_{\alpha\beta}(dR).$$
@@ -141,7 +141,7 @@ Full `git diff --stat main...handoff/0005-agi`:
    uniquely fixes:
    - **`RealToBloch` ($B$: real $\to$ Bloch)**:
      $$B_{(k,\alpha),(R,\beta)} = \delta_{\alpha\beta} \frac{1}{\sqrt{N_k}} \exp\!\big(-i \mathbf{k} \cdot (\mathbf{R} + \boldsymbol{\tau}_\alpha)\big),$$
-     evaluated via `fftw_plan_many_dft` on `(N_1, N_2, N_3)` with `howmany = W`, `istride = ostride = W`, `idist = odist = 1`, and `FFTW_FORWARD` ($\sum_R e^{-i \mathbf{k} \cdot \mathbf{R}}$), followed by pointwise multiplication by the precomputed phase table $\exp(-i \mathbf{k} \cdot \boldsymbol{\tau}_\alpha) / \sqrt{N_k}$.
+     evaluated via `fftw_plan_many_dft` on `{N_3, N_2, N_1}` ($n_1$ fastest) with `howmany = W`, `istride = ostride = W`, `idist = odist = 1`, and `FFTW_FORWARD` ($\sum_R e^{-i \mathbf{k} \cdot \mathbf{R}}$), followed by pointwise multiplication by the precomputed phase table $\exp(-i \mathbf{k} \cdot \boldsymbol{\tau}_\alpha) / \sqrt{N_k}$.
    - **`BlochToReal` ($B^\dagger$: Bloch $\to$ real)**:
      $$(B^\dagger)_{(R,\beta),(k,\alpha)} = \delta_{\alpha\beta} \frac{1}{\sqrt{N_k}} \exp\!\big(+i \mathbf{k} \cdot (\mathbf{R} + \boldsymbol{\tau}_\alpha)\big),$$
      evaluated by pointwise multiplication by the conjugate phase $\exp(+i \mathbf{k} \cdot \boldsymbol{\tau}_\alpha) / \sqrt{N_k}$ followed by `FFTW_BACKWARD` ($\sum_k e^{+i \mathbf{k} \cdot \mathbf{R}}$).

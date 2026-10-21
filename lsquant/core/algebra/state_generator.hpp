@@ -224,11 +224,13 @@ private:
  * @brief Deterministic generator yielding `W` block-uniform orbital states for exact block traces.
  *
  * Solves the problem of computing the exact trace `(1 / N_k) sum_k Tr_W[...]` of any
- * block-diagonal operator in `W` state evaluations instead of `N_k * W`. For each
- * orbital index `r in 0..W-1`, yields a unit-norm vector of length `N_k * W` with
- * `1 / sqrt(N_k)` at `ik * W + r` for every `ik in 0..N_k-1` and `0` elsewhere.
- * Because `NumberOfStates() == W`, dividing the accumulated trace by `NumberOfStates()`
- * produces `(1 / (N_k * W)) Tr[...]`, identical to a full `N_k * W` coordinate trace.
+ * block-diagonal operator in `W` state evaluations instead of `N_k * W`. Blocks `ik`
+ * are ordered with `m_1` fastest (`ik = m_1 + N_1 * m_2 + N_1 * N_2 * m_3`), matching
+ * `wannier2sparse` and `BlochTransform`. For each orbital index `r in 0..W-1`, yields
+ * a unit-norm vector of length `N_k * W` with `1 / sqrt(N_k)` at `ik * W + r` for every
+ * `ik in 0..N_k-1` and `0` elsewhere. Because `NumberOfStates() == W`, dividing the
+ * accumulated trace by `NumberOfStates()` produces `(1 / (N_k * W)) Tr[...]`, identical
+ * to a full `N_k * W` coordinate trace.
  *
  * @warning Valid as an exact trace only when all operators in the evaluated word are
  *          block-diagonal with block size `W` (no inter-block mixing).
@@ -238,6 +240,13 @@ private:
  */
 class BlockLocalStates : public StateGenerator {
 public:
+  /**
+   * @brief Compute the `n_1`-fastest flat block/cell index `m_1 + N_1 * m_2 + N_1 * N_2 * m_3`.
+   */
+  static Index BlockIndex(Index m1, Index m2, Index m3, Index n1, Index n2) {
+    return m1 + n1 * (m2 + n2 * m3);
+  }
+
   /**
    * @brief Construct a block-uniform state generator for `numBlocks` blocks of size `blockSize`.
    *
@@ -249,6 +258,16 @@ public:
    *      Reports `NumberOfStates() == blockSize` (`W`) and `Dimension() == numBlocks * blockSize`.
    */
   BlockLocalStates(Index numBlocks, Index blockSize);
+
+  /**
+   * @brief Construct a block-uniform state generator for an `(n1, n2, n3)` grid with `blockSize` orbitals.
+   *
+   * @param n1        Grid count `N_1 > 0` (fastest axis).
+   * @param n2        Grid count `N_2 > 0` (middle axis).
+   * @param n3        Grid count `N_3 > 0` (slowest axis).
+   * @param blockSize Block dimension (orbital count) `W > 0`.
+   */
+  BlockLocalStates(Index n1, Index n2, Index n3, Index blockSize);
 
   /**
    * @brief Return the total vector dimension `N_k * W`.

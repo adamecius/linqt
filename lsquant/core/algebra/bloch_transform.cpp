@@ -45,7 +45,9 @@ struct BlochTransform::FftwWorkspace {
       }
       throw std::bad_alloc();
     }
-    int dims[3] = {n1, n2, n3};
+    // wannier2sparse cell order has n1 fastest: iR = n1 + n1_ * n2 + n1_ * n2_ * n3,
+    // which corresponds to C row-major order on a 3D grid of shape {n3, n2, n1}.
+    int dims[3] = {n3, n2, n1};
     plan = fftw_plan_many_dft(3, dims, howmany, inBuffer, nullptr, howmany, 1,
                               outBuffer, nullptr, howmany, 1, sign, FFTW_ESTIMATE);
     if (plan == nullptr) {

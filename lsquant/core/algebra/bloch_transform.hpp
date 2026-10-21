@@ -32,12 +32,13 @@ enum class BlochDirection {
  * Solves the problem of mapping state vectors between real-space supercell
  * coordinates and Bloch k-space coordinates in `O(N_k * W * log N_k)` time
  * without assembling dense `N x N` Fourier matrices. Assumes cell-major vector
- * layout `x[(iR * W) + alpha]` with `iR = (i1 * N2 + i2) * N3 + i3` on the real
- * side and `ik = (k1 * N2 + k2) * N3 + k3` on the Bloch side.
+ * layout `x[(iR * W) + alpha]` with `n_1`-fastest flat cell index
+ * `iR = n_1 + N_1 * n_2 + N_1 * N_2 * n_3` (matching `wannier2sparse`) on the
+ * real side and `ik = m_1 + N_1 * m_2 + N_1 * N_2 * m_3` on the Bloch side.
  *
- * For `RealToBloch`, executes `FFTW_FORWARD` (`sum_R exp(-i k . R)`) on
- * `(N1, N2, N3)` with `howmany = W`, stride `W`, and multiplies each `(ik, alpha)`
- * component by `exp(-i k . tau_alpha) / sqrt(N_k)`.
+ * For `RealToBloch`, executes `FFTW_FORWARD` (`sum_R exp(-i k . R)`) on the
+ * `{N_3, N_2, N_1}` FFTW grid (`n_1` fastest) with `howmany = W`, stride `W`,
+ * and multiplies each `(ik, alpha)` component by `exp(-i k . tau_alpha) / sqrt(N_k)`.
  * For `BlochToReal`, multiplies each `(ik, alpha)` component by the conjugate
  * factor `exp(+i k . tau_alpha) / sqrt(N_k)` and executes `FFTW_BACKWARD`
  * (`sum_k exp(+i k . R)`).
@@ -52,8 +53,8 @@ enum class BlochDirection {
  *          `N_1 * N_2 * N_3 * W`.
  * @par Pitfall
  *      Both the real-space CSR indexing and the k-mesh indexing must follow
- *      the C row-major cell order `((i1 * N2 + i2) * N3 + i3) * W + alpha`
- *      used by `fftw_plan_many_dft`.
+ *      the `n_1`-fastest cell order `(n_1 + N_1 * n_2 + N_1 * N_2 * n_3) * W + alpha`
+ *      matching `wannier2sparse` and FFTW dimension array `{N_3, N_2, N_1}`.
  */
 class BlochTransform : public LinearOperator {
 public:

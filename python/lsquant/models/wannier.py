@@ -12,9 +12,9 @@ Angstrom), and constructs:
   ``v_d(k)_{a,b} = -i sum_R (R + tau_b - tau_a)_d exp(+i k . (R + tau_b - tau_a)) H_{a,b}(R)``;
 - the supercell k-mesh ``k = (m_1 / N_1) b_1 + (m_2 / N_2) b_2 + (m_3 / N_3) b_3``
   and atom-gauge Bloch phase table ``exp(-i k . tau_a)``;
-- real-space supercell CSR matrices ``HAM`` and ``VX``/``VY``/``VZ`` in C
-  row-major cell order ``iR = (i1 * N2 + i2) * N3 + i3`` matching
-  :class:`~lsquant._core.BlochTransform`.
+- real-space supercell CSR matrices ``HAM`` and ``VX``/``VY``/``VZ`` in
+  ``n_1``-fastest cell order ``iR = n_1 + N_1 * n_2 + N_1 * N_2 * n_3`` matching
+  ``wannier2sparse`` and :class:`~lsquant._core.BlochTransform`.
 """
 
 from __future__ import annotations
@@ -213,10 +213,11 @@ def reciprocal_lattice(uc: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
 def k_mesh(
     uc: npt.NDArray[np.float64], supercell: Sequence[int]
 ) -> npt.NDArray[np.float64]:
-    """Build the ``N_k = N_1 * N_2 * N_3`` k-points in C row-major order ``(m_1, m_2, m_3)``.
+    """Build the ``N_k = N_1 * N_2 * N_3`` k-points in ``m_1``-fastest order ``(m_1, m_2, m_3)``.
 
     Each point is ``k = (m_1 / N_1) b_1 + (m_2 / N_2) b_2 + (m_3 / N_3) b_3`` in
-    inverse Angstrom, with flat index ``ik = (m_1 * N_2 + m_2) * N_3 + m_3``.
+    inverse Angstrom, with flat index ``ik = m_1 + N_1 * m_2 + N_1 * N_2 * m_3``
+    matching ``wannier2sparse``'s cell numbering.
     """
     if len(supercell) != 3:
         raise ValueError("k_mesh: supercell must have 3 integer dimensions (N1, N2, N3)")
@@ -228,7 +229,7 @@ def k_mesh(
     f1 = np.arange(n1, dtype=np.float64) / float(n1)
     f2 = np.arange(n2, dtype=np.float64) / float(n2)
     f3 = np.arange(n3, dtype=np.float64) / float(n3)
-    g1, g2, g3 = np.meshgrid(f1, f2, f3, indexing="ij")
+    g3, g2, g1 = np.meshgrid(f3, f2, f1, indexing="ij")
     frac = np.stack([g1.ravel(), g2.ravel(), g3.ravel()], axis=-1)
     return np.ascontiguousarray(frac @ b_mat, dtype=np.float64)
 
@@ -327,10 +328,11 @@ def _build_supercell_sparse_matrix(
     hop_blocks: npt.NDArray[np.complex128],
     supercell: Sequence[int],
 ) -> _core.SparseMatrix:
-    """Assemble a periodic supercell :class:`~lsquant._core.SparseMatrix` in C row-major cell order.
+    """Assemble a periodic supercell :class:`~lsquant._core.SparseMatrix` in ``n_1``-fastest cell order.
 
-    Enforces the minimum-image condition ``N_d >= 2 * max(|R_d|) + 1`` along
-    every axis ``d`` that carries non-zero ``R_d``, matching ``wannier2sparse``.
+    Uses the ``wannier2sparse`` cell index ``iR = n_1 + N_1 * n_2 + N_1 * N_2 * n_3``
+    and enforces the minimum-image condition ``N_d >= 2 * max(|R_d|) + 1`` along
+    every axis ``d`` that carries non-zero ``R_d``.
     """
     if len(supercell) != 3:
         raise ValueError("supercell must have 3 integer dimensions (N1, N2, N3)")
@@ -363,22 +365,22 @@ def _build_supercell_sparse_matrix(
     dr3 = r_int[nz_r, 2]
     vals_nz = hop_blocks[nz_r, nz_a, nz_b]
 
-    # Grid of source cells (c1, c2, c3) in C row-major order: iR = (c1 * N2 + c2) * N3 + c3
-    c1, c2, c3 = np.meshgrid(
-        np.arange(n1, dtype=np.int64),
-        np.arange(n2, dtype=np.int64),
+    # Grid of source cells (c1, c2, c3) in wannier2sparse order: iR = c1 + n1 * c2 + n1 * n2 * c3
+    c3, c2, c1 = np.meshgrid(
         np.arange(n3, dtype=np.int64),
+        np.arange(n2, dtype=np.int64),
+        np.arange(n1, dtype=np.int64),
         indexing="ij",
     )
     c1_flat = c1.ravel()[:, None]  # (N_k, 1)
     c2_flat = c2.ravel()[:, None]
     c3_flat = c3.ravel()[:, None]
-    ir_src = (c1_flat * n2 + c2_flat) * n3 + c3_flat  # (N_k, 1)
+    ir_src = c1_flat + n1 * (c2_flat + n2 * c3_flat)  # (N_k, 1)
 
     t1 = (c1_flat + dr1[None, :]) % n1
     t2 = (c2_flat + dr2[None, :]) % n2
     t3 = (c3_flat + dr3[None, :]) % n3
-    ir_dst = (t1 * n2 + t2) * n3 + t3  # (N_k, E)
+    ir_dst = t1 + n1 * (t2 + n2 * t3)  # (N_k, E)
 
     rows = (ir_src * num_wann + nz_a[None, :]).ravel()
     cols = (ir_dst * num_wann + nz_b[None, :]).ravel()
@@ -471,6 +473,7 @@ class WannierModel:
     r_cart: npt.NDArray[np.float64]
     hoppings: npt.NDArray[np.complex128]
     seed_name: str = "model"
+    model_dir: str | None = None
 
     def Hk(self, k_points: npt.NDArray[np.float64]) -> npt.NDArray[np.complex128]:
         """Evaluate ``H(k)`` blocks in the atom gauge for ``k_points``."""
@@ -573,4 +576,5 @@ def load_wannier_model(model_dir: str, seed: str | None = None) -> WannierModel:
         r_cart=r_cart,
         hoppings=hoppings,
         seed_name=seed_name,
+        model_dir=os.path.abspath(base_dir),
     )

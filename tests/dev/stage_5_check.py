@@ -31,6 +31,8 @@ from __future__ import annotations
 
 import math
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import numpy as np
@@ -184,6 +186,31 @@ def _exact_eigen_dos_and_kubo(
     return dos_ext, kubo_ext
 
 
+def _dense_from_operator(op: _core.LinearOperator) -> np.ndarray:
+    """Materialise a small ``LinearOperator`` as a dense ``(dim, dim)`` matrix."""
+    dim = int(op.dimension)
+    mat = np.empty((dim, dim), dtype=np.complex128)
+    e_vec = np.zeros(dim, dtype=np.complex128)
+    for col in range(dim):
+        e_vec[col] = 1.0
+        mat[:, col] = op.multiply(e_vec)
+        e_vec[col] = 0.0
+    return mat
+
+
+def _find_w2s_binary() -> str | None:
+    """Locate the ``wannier2sparse`` executable on TCN if available."""
+    candidates = [
+        os.environ.get("W2S_BIN", ""),
+        os.path.expanduser("~/wannier2sparse/build/wannier2sparse"),
+        shutil.which("wannier2sparse") or "",
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="lsquant_stage5_") as tmp_dir:
         g_dir, h_dir = _generate_graphene_and_haldane(tmp_dir)
@@ -191,8 +218,58 @@ def main() -> int:
         haldane = load_wannier_model(h_dir, "haldane")
 
         # ------------------------------------------------------------------
-        # Check (a): Unitarity of BlochTransform on (8, 8, 1) graphene
+        # Check (a): BlochTransform vs dense B on (6, 4, 1) and unitarity
         # ------------------------------------------------------------------
+        sc64 = (6, 4, 1)
+        bloch64 = BlochBasis(graphene, sc64)
+        b_op64 = bloch64.transform
+        b_adj64 = b_op64.adjoint()
+        dim64 = bloch64.dimension
+        nk64 = bloch64.num_cells
+        nw = graphene.num_wann
+
+        # Build dense B with n1-fastest cell index iR = n1 + N1 * n2 + N1 * N2 * n3
+        n_cells = np.array(
+            [
+                (n1, n2, n3)
+                for n3 in range(sc64[2])
+                for n2 in range(sc64[1])
+                for n1 in range(sc64[0])
+            ],
+            dtype=np.float64,
+        )
+        r_cells = n_cells @ graphene.uc
+        k_pts64 = graphene.k_mesh(sc64)
+        b_dense = np.zeros((dim64, dim64), dtype=np.complex128)
+        for al in range(nw):
+            b_dense[al::nw, al::nw] = np.exp(
+                -1j * (k_pts64 @ (r_cells + graphene.tau[al]).T)
+            ) / math.sqrt(float(nk64))
+
+        rng = np.random.default_rng(202605)
+        max_rel_dense_f = 0.0
+        max_rel_dense_b = 0.0
+        for _ in range(5):
+            x = rng.standard_normal(dim64) + 1j * rng.standard_normal(dim64)
+            x /= np.linalg.norm(x)
+            yf = b_op64.multiply(x)
+            yf_ref = b_dense @ x
+            yb = b_adj64.multiply(x)
+            yb_ref = b_dense.conj().T @ x
+            max_rel_dense_f = max(
+                max_rel_dense_f,
+                float(np.max(np.abs(yf - yf_ref)) / np.max(np.abs(yf_ref))),
+            )
+            max_rel_dense_b = max(
+                max_rel_dense_b,
+                float(np.max(np.abs(yb - yb_ref)) / np.max(np.abs(yb_ref))),
+            )
+        print(
+            f"[check a] BlochTransform vs dense B (6,4,1) graphene: "
+            f"rel(B x) = {max_rel_dense_f:.3e}, rel(B^+ x) = {max_rel_dense_b:.3e}"
+        )
+        assert max_rel_dense_f < 1e-13 and max_rel_dense_b < 1e-13
+
         sc8 = (8, 8, 1)
         bloch8 = BlochBasis(graphene, sc8)
         b_op = bloch8.transform
@@ -200,7 +277,6 @@ def main() -> int:
         dim8 = bloch8.dimension
         assert dim8 == 128, f"Expected dim=128, got {dim8}"
 
-        rng = np.random.default_rng(202605)
         max_err_bbh = 0.0
         max_err_bhb = 0.0
         for _ in range(5):
@@ -218,11 +294,15 @@ def main() -> int:
         assert max_err_bbh < 1e-14 and max_err_bhb < 1e-14
 
         # ------------------------------------------------------------------
-        # Check (b) & (c): H_k == B H_csr B^+ and v_x == B VX_csr B^+
+        # Check (b) & (c): wannier2sparse CSR identity on (6,4,1) and Haldane 48x48
         # ------------------------------------------------------------------
-        for name, mdl in (("graphene", graphene), ("haldane", haldane)):
-            real_b = RealBasis(mdl, sc8)
-            bloch_b = BlochBasis(mdl, sc8)
+        w2s_bin = _find_w2s_binary()
+        for name, mdl, mdir in (
+            ("graphene", graphene, g_dir),
+            ("haldane", haldane, h_dir),
+        ):
+            real_b = RealBasis(mdl, sc64, use_w2s_csr=False)
+            bloch_b = BlochBasis(mdl, sc64)
             h_csr_op = real_b.hamiltonian()
             hk_op = bloch_b.hamiltonian()
             vx_csr_op = real_b.operator("VX")
@@ -230,10 +310,40 @@ def main() -> int:
             b_tr = bloch_b.transform
             b_tr_adj = b_tr.adjoint()
 
+            if w2s_bin is not None:
+                w2s_out64 = os.path.join(tmp_dir, f"w2s_{name}_6x4")
+                subprocess.run(
+                    [
+                        w2s_bin,
+                        name,
+                        "6",
+                        "4",
+                        "1",
+                        "VX",
+                        "-p",
+                        mdir,
+                        "-o",
+                        w2s_out64,
+                        "--quiet",
+                        "--no-log-file",
+                    ],
+                    check=True,
+                )
+                real_w2s = RealBasis(mdl, sc64, csr_dir=w2s_out64)
+                h_built_dense = _dense_from_operator(h_csr_op)
+                h_w2s_dense = _dense_from_operator(real_w2s.hamiltonian())
+                max_h_csr_diff = float(np.max(np.abs(h_built_dense - h_w2s_dense)))
+                print(
+                    f"[check b] ({name} 6x4x1) max|H_real_basis - H_w2s_csr| = {max_h_csr_diff:.3e}"
+                )
+                assert max_h_csr_diff == 0.0, (
+                    f"Non-zero |H_real_basis - H_w2s_csr| on {name} 6x4x1: {max_h_csr_diff}"
+                )
+
             max_h_diff = 0.0
             max_vx_diff = 0.0
             for _ in range(5):
-                x = rng.standard_normal(dim8) + 1j * rng.standard_normal(dim8)
+                x = rng.standard_normal(dim64) + 1j * rng.standard_normal(dim64)
                 x /= np.linalg.norm(x)
                 lhs_h = hk_op.multiply(x)
                 rhs_h = b_tr.multiply(h_csr_op.multiply(b_tr_adj.multiply(x)))
@@ -244,13 +354,54 @@ def main() -> int:
                 max_vx_diff = max(max_vx_diff, float(np.max(np.abs(lhs_v - rhs_v))))
 
             print(
-                f"[check b] ({name} 8x8x1) max_x ||H_k x - B H_csr B^+ x||_inf = {max_h_diff:.3e}"
+                f"[check b] ({name} 6x4x1) max_x ||H_k x - B H_csr B^+ x||_inf = {max_h_diff:.3e}"
             )
             print(
-                f"[check c] ({name} 8x8x1) max_x ||v_x x - B VX_csr B^+ x||_inf = {max_vx_diff:.3e}"
+                f"[check c] ({name} 6x4x1) max_x ||v_x x - B VX_csr B^+ x||_inf = {max_vx_diff:.3e}"
             )
             assert max_h_diff < 1e-13, f"H_k mismatch on {name}: {max_h_diff}"
             assert max_vx_diff < 1e-13, f"v_x mismatch on {name}: {max_vx_diff}"
+
+        if w2s_bin is not None:
+            sc48 = (48, 48, 1)
+            w2s_hal48 = os.path.join(tmp_dir, "w2s_haldane_48x48")
+            subprocess.run(
+                [
+                    w2s_bin,
+                    "haldane",
+                    "48",
+                    "48",
+                    "1",
+                    "VX",
+                    "-p",
+                    h_dir,
+                    "-o",
+                    w2s_hal48,
+                    "--quiet",
+                    "--no-log-file",
+                ],
+                check=True,
+            )
+            real_hal48 = RealBasis(haldane, sc48, csr_dir=w2s_hal48)
+            bloch_hal48 = BlochBasis(haldane, sc48)
+            vx_w2s_op = real_hal48.operator("VX")
+            vx_k48_op = bloch_hal48.operator("VX")
+            b48 = bloch_hal48.transform
+            b48_adj = b48.adjoint()
+            dim48 = bloch_hal48.dimension
+            max_rel_vx48 = 0.0
+            for _ in range(4):
+                x48 = rng.standard_normal(dim48) + 1j * rng.standard_normal(dim48)
+                lhs48 = vx_k48_op.multiply(x48)
+                rhs48 = b48.multiply(vx_w2s_op.multiply(b48_adj.multiply(x48)))
+                rel48 = float(np.max(np.abs(lhs48 - rhs48)) / np.max(np.abs(lhs48)))
+                max_rel_vx48 = max(max_rel_vx48, rel48)
+            print(
+                f"[check c] (haldane 48x48x1) rel ||v_x x - B VX_w2s B^+ x||_inf = {max_rel_vx48:.3e}"
+            )
+            assert max_rel_vx48 < 1e-10, (
+                f"Haldane 48x48 B VX_w2s B^+ mismatch: {max_rel_vx48}"
+            )
 
         # ------------------------------------------------------------------
         # Check (d): Disordered RealBasis vs BlochBasis (W = 1.0, seed = 12345)
