@@ -58,6 +58,22 @@
 #            lsquant/core/chebyshev lsquant/io must be empty. Needs W2S_BIN and W2S_TOOLS
 #            (default ~/wannier2sparse). S5_KEEP=<dir> keeps the outputs for figures/stage_5.py.
 #            Stage "5only" runs the stage-5 part alone.
+#   stage 7  words, run files, CLI and MCP (handoff 0007): for every run file under
+#            runs/goldens/, `python3 -m lsquant run <file> --out <tmp>` at OMP_NUM_THREADS =
+#            16 and 1 (S7_THREADS), then cmp of every produced file against its golden: G1, G2,
+#            G3, G4, G4c, G5, G6, G7 (goldens/stage0), tutorials 01 to 05 (every non-PNG file
+#            of goldens/stage0/tutorials/0N, same relative path); G9 run files against
+#            stage5_bases run with the run file's arguments (byte) plus figures/stage_5_table.py
+#            on the run-file outputs; G10 run files against stage6_nonorth with the run file's
+#            arguments (byte) plus max relative difference vs G1/G2/G5 <= 1e-10 (stage-6 brief
+#            section 6, exact applier). Then the MCP server (g1.json, g5.json through the `run`
+#            and `status` tools, outputs cmp'd; a model dir outside --root must be refused), the
+#            CLI refusals (non-zero exit, stderr, no output dir), the greps of stages 1 to 5 and
+#            the stage-7 greps. Totals per golden and thread count at the end. S7_KEEP=<dir>
+#            keeps the run-file outputs (figures/stage_7.py). Stage "7aux" runs only the MCP
+#            and refusal parts. S7_SET=quick runs only the closure subset of handoff 0007
+#            (g1 g2 g3 g4 g4c g5 g7_s{x,y,z} g9_graphene_{real,eigen} g10_haldane_real_generalised
+#            tutorial01 tutorial03 tutorial04) at 16 threads; S7_SET=all (default) runs every run file.
 #
 # Output: one line per compared file, IDENTICAL or DIFFERS; for DIFFERS the first
 # differing bytes (cmp -l | head -5) and the numeric localisation of
@@ -625,6 +641,386 @@ stage5_grep() {
   fi
 }
 
+# ---------------------------------------------------------------- stage 7 (words, run files, CLI, MCP)
+# Every golden from words: `python -m lsquant run runs/goldens/<name>.json --out <tmp>` and a
+# cmp of each produced file with its golden. The old per-stage sections (stage1..stage5) are
+# not run at stage 7; the mapping from their compared files to the run files is:
+#   stage 1 G1, G2 (stage1_moments)          -> g1.json, g2.json
+#   stage 2 G3 (+ G1 via --operators)        -> g3.json (G3 curve, DOS_reconstructed.dat, G1)
+#   stage 3 G5 moments + 4 curves            -> g5.json;  G4 moments + 5 curves -> g4.json;
+#           G4c moments + Bastin curve       -> g4c.json
+#   stage 4 G6 moments + 4 curves            -> g6.json;  G7 3 moments -> g7.json (and g7_s{x,y,z}.json)
+#   stage 5 G9 (stage5_bases, no byte golden)-> g9_<model>_<cfg>.json, cmp'd against stage5_bases run
+#           with the run file's own arguments, and figures/stage_5_table.py on the run-file outputs
+#   stage 6 G10 (stage6_nonorth, exact)      -> g10_<model>_<variant>_<route>.json, cmp'd against
+#           stage6_nonorth with the run file's arguments, and vs G1/G2/G5 at 1e-10 (stage-6 brief s. 6)
+#   tutorials 01..05 (stage-0 captures)      -> tutorial0N.json, every non-PNG file under
+#           goldens/stage0/tutorials/0N at the same relative path
+# Not compared from the old sections: stage-1 batch-16 and random-phase determinism, stage-2
+# form (a), the stage-3/4 "curves from the golden moment file" rows (no run file reconstructs
+# from a golden file; `lsquant reconstruct` is not part of the gate), the stage-5 convention
+# rows (s5_conv.py). Totals are printed per golden and per thread count.
+S7_THREADS="${S7_THREADS:-16 1}"
+S7_RUNS="$REPO/runs/goldens"
+G1F2=NonEqOpVX-VXchain1dKPM_M64x64_stateexact.chebmom2D
+declare -A S7I S7D S7ORDER
+# S7_SET=all (default): every run file. S7_SET=quick: the closure subset of handoff 0007 (16 threads
+# by default; g6, g7, the other g9 and g10 files, tutorial02 and tutorial05 deferred to the final run).
+S7_SET="${S7_SET:-all}"
+S7_QUICK="g1 g2 g3 g4 g4c g5 g7_sx g7_sy g7_sz g9_graphene_real g9_graphene_eigen g10_haldane_real_generalised tutorial01 tutorial03 tutorial04"
+[ "$S7_SET" = quick ] && S7_THREADS="${S7_THREADS_QUICK:-16}"
+s7want() { [ "$S7_SET" = all ] && return 0; case " $S7_QUICK " in *" $1 "*) return 0 ;; esac; return 1; }
+
+# captured/index.tsv: every line "<NNNN_name> <sha1> <source>" must name a produced capture with that sha1
+s7idx() {   # <group> <produced captured dir> <golden index.tsv> <tag>
+  local g="$1" d="$2" idx="$3" tag="$4" bad=0 n=0 name sha
+  [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
+  NCMP=$((NCMP + 1))
+  while IFS=$'\t' read -r name sha _; do
+    n=$((n + 1))
+    [ -f "$d/$name" ] && [ "$(sha1sum "$d/$name" | cut -d' ' -f1)" = "$sha" ] || { bad=$((bad + 1)); echo "          index.tsv line $n: $name sha1 $sha not matched by $d/$name"; }
+  done <"$idx"
+  if [ $bad -eq 0 ] && [ $n -gt 0 ]; then echo "IDENTICAL $tag ($n entries, every sha1 matches)"; S7I[$g]=$(( ${S7I[$g]:-0} + 1 ))
+  else echo "DIFFERS   $tag ($bad of $n entries do not match)"; NFAIL=$((NFAIL + 1)); S7D[$g]=$(( ${S7D[$g]:-0} + 1 )); fi
+}
+S7GROUPS=()
+
+s7cmp() {   # <group> <new> <golden> <tag>   (compare(), plus a per-group tally)
+  local g="$1" before=$NFAIL
+  [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
+  compare "$2" "$3" "$4"
+  if [ "$NFAIL" -eq "$before" ]; then S7I[$g]=$(( ${S7I[$g]:-0} + 1 )); else S7D[$g]=$(( ${S7D[$g]:-0} + 1 )); fi
+}
+
+# max relative difference (scripts/golden_diff.py definition), 0 when cmp-identical
+s7relval() { cmp -s "$1" "$2" && { echo 0; return; }; python3 "$REPO/scripts/golden_diff.py" "$1" "$2" 2>&1 | grep -o 'max rel diff [^ ]*' | awk '{print $4}'; }
+
+s7rel() {   # <group> <new> <golden> <tol|INFO> <tag>
+  local g="$1" new="$2" gold="$3" tol="$4" tag="$5" r
+  [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
+  if [ ! -f "$new" ]; then
+    [ "$tol" = INFO ] && { echo "INFO      $tag  (not produced)"; return; }
+    echo "FAIL      $tag  (not produced)"; NFAIL=$((NFAIL + 1)); NCMP=$((NCMP + 1)); S7D[$g]=$(( ${S7D[$g]:-0} + 1 )); return
+  fi
+  r="$(s7relval "$new" "$gold")"; [ -n "$r" ] || r=inf
+  if [ "$tol" = INFO ]; then echo "INFO      $tag  max rel diff $r"; return; fi
+  NCMP=$((NCMP + 1))
+  if awk -v r="$r" -v t="$tol" 'BEGIN{exit !(r <= t)}'; then
+    echo "PASS      $tag  max rel diff $r <= $tol"; S7I[$g]=$(( ${S7I[$g]:-0} + 1 ))
+  else
+    echo "FAIL      $tag  max rel diff $r > $tol"; NFAIL=$((NFAIL + 1)); S7D[$g]=$(( ${S7D[$g]:-0} + 1 ))
+  fi
+}
+
+run_s7() {   # <threads> <run file name> <outdir>
+  local T="$1" n="$2" W="$3" rc s e
+  rm -rf "$W"; mkdir -p "$(dirname "$W")"; s=$(date +%s.%N)
+  ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR7:$REPO/python" python3 -m lsquant run "runs/goldens/$n.json" --out "$W" ) \
+    >"$W.out" 2>"$W.err"; rc=$?
+  e=$(date +%s.%N)
+  [ $rc -eq 0 ] || { echo "          [T=$T] lsquant run runs/goldens/$n.json exited $rc: $(tail -1 "$W.err")"; NFAIL=$((NFAIL + 1)); }
+  printf "          [T=%s] python -m lsquant run runs/goldens/%-36s wall %8.2f s, %4d files written\n" "$T" "$n.json" "$(echo "$e - $s" | bc)" "$(find "$W" -type f 2>/dev/null | wc -l)"
+}
+
+s7_ref5() {   # <threads> <model> <cfg> <outdir>: stage5_bases with the run file's arguments
+  local T="$1" m="$2" c="$3" O="$4" w a
+  case "$c" in
+    real) a="--basis real --trace random --states 32" ;;
+    bloch) a="--basis bloch --trace random --states 32" ;;
+    bloch_exact) a="--basis bloch --trace exact" ;;
+    eigen) a="--basis eigen --trace exact" ;;
+    real_w1) a="--basis real --trace random --states 32 --disorder 1 --disorder-seed 7" ;;
+    bloch_w1) a="--basis bloch --trace random --states 32 --disorder 1 --disorder-seed 7" ;;
+  esac
+  for w in dos kuboxx; do
+    mkdir -p "$O/$w"
+    ( cd "$REPO" && OMP_NUM_THREADS=$T PYTHONPATH="$PYDIR7:$REPO/python" python3 -m lsquant.apps.stage5_bases \
+        --model "$GOLD/bases/$m/model" --seed $m --seed 12345 --supercell 48 48 1 --word $w --moments 256 \
+        --broadening-meV 40 $a --out "$O/$w" ) >"$O/$w.log" 2>&1 || echo "          [T=$T] stage5_bases $m $c $w failed: $(tail -1 "$O/$w.log")"
+  done
+}
+
+s7_ref6() {   # <threads> <model> <variant> <route> <outdir>: stage6_nonorth with the run file's arguments
+  local T="$1" m="$2" v="$3" r="$4" O="$5" w win st M
+  if [ "$m" = chain1d ]; then win="-2 2"; st=2048; M=64; set -- dos kubo; else win="-4.5 4.5"; st=512; M=128; set -- kuboxy kubo; fi
+  mkdir -p "$O"
+  for w in "$@"; do
+    OMP_NUM_THREADS=$T "$EXE6" --fixture "$GOLD/nonorth/$m/$v" --label $m --window $win --route $r --applier exact \
+      --order 60 --tol 1e-13 --trace exact --states $st --moments $M --word $w --out "$O" >>"$O.log" 2>&1 \
+      || echo "          [T=$T] stage6_nonorth $m $v $r $w failed: $(tail -1 "$O.log")"
+  done
+}
+
+s7_goldens() {   # <threads>: every run file, every golden
+  local T="$1" B="$TMP/s7/T$1" n f g m c v r W R
+  for f in "$S7_RUNS"/*.json; do n="$(basename "$f" .json)"; s7want $n && run_s7 $T $n "$B/$n"; done
+  echo "   [T=$T] per-golden comparison"
+  s7want g1 && s7cmp "T$T G1" "$B/g1/$G1F" "$GOLD/chain1d/$G1F" "[T=$T] g1.json -> chain1d/$G1F (G1)"
+  s7want g2 && s7cmp "T$T G2" "$B/g2/$G1F2" "$GOLD/chain1d/$G1F2" "[T=$T] g2.json -> chain1d/$G1F2 (G2)"
+  for g in $G3F DOS_reconstructed.dat $G1F; do
+    s7want g3 && s7cmp "T$T G3" "$B/g3/$g" "$GOLD/chain1d/$g" "[T=$T] g3.json -> chain1d/$g (G3)"
+  done
+  if s7want g4; then
+    s7cmp "T$T G4" "$B/g4/$G4XX.chebmom2D" "$GOLD/graphene/$G4XX.chebmom2D" "[T=$T] g4.json -> graphene/$G4XX.chebmom2D (G4)"
+    s7cmp "T$T G4" "$B/g4/KuboBastin_${G4XX}JACKSON.dat" "$GOLD/graphene/KuboBastin_${G4XX}JACKSON.dat" "[T=$T] g4.json -> graphene/KuboBastin_${G4XX}JACKSON.dat (G4, 64 meV)"
+    for g in sea_surf/KuboBastinSea_${G4XX}JACKSON.dat sea_surf/KuboBastinSurf_${G4XX}JACKSON.dat \
+             fft_grid/KuboGreenWood_${G4XX}JACKSON_FFTgrid.dat fft_grid/KuboBastin_${G4XX}JACKSON_FFTgrid.dat; do
+      s7cmp "T$T G4" "$B/g4/$g" "$GOLD/graphene/$g" "[T=$T] g4.json -> graphene/$g (G4, 10 meV)"
+    done
+  fi
+  if s7want g4c; then
+    s7cmp "T$T G4c" "$B/g4c/$G4CXY.chebmom2D" "$GOLD/graphene/offcentre_enclosing/$G4CXY.chebmom2D" "[T=$T] g4c.json -> graphene/offcentre_enclosing/$G4CXY.chebmom2D (G4c)"
+    s7cmp "T$T G4c" "$B/g4c/KuboBastin_${G4CXY}JACKSON.dat" "$GOLD/graphene/offcentre_enclosing/KuboBastin_${G4CXY}JACKSON.dat" "[T=$T] g4c.json -> graphene/offcentre_enclosing/KuboBastin_${G4CXY}JACKSON.dat (G4c)"
+  fi
+  for g in $G5XY.chebmom2D $G5XX.chebmom2D KuboBastin_${G5XY}JACKSON.dat KuboBastinSea_${G5XY}JACKSON.dat \
+           KuboBastinSurf_${G5XY}JACKSON.dat KuboGreenWood_${G5XX}JACKSON.dat; do
+    s7want g5 && s7cmp "T$T G5" "$B/g5/$g" "$GOLD/haldane/$g" "[T=$T] g5.json -> haldane/$g (G5)"
+  done
+  if s7want g6; then
+    s7cmp "T$T G6" "$B/g6/$G6M.chebmomTD" "$GOLD/chain1d_ballistic/$G6M.chebmomTD" "[T=$T] g6.json -> chain1d_ballistic/$G6M.chebmomTD (G6)"
+    for g in $G6EF; do
+      s7cmp "T$T G6" "$B/g6/mean${G6M}EF${g}JACKSON.dat" "$GOLD/chain1d_ballistic/mean${G6M}EF${g}JACKSON.dat" "[T=$T] g6.json -> chain1d_ballistic/mean${G6M}EF${g}JACKSON.dat (G6)"
+    done
+  fi
+  for g in SX SY SZ; do
+    f=TimeProj$g-PXchain1d_magKPM_M32_stateexact.chebmomTD
+    s7want g7 && s7cmp "T$T G7" "$B/g7/$f" "$GOLD/chain1d_mag/$f" "[T=$T] g7.json -> chain1d_mag/$f (G7)"
+    n=g7_$(echo $g | tr 'A-Z' 'a-z')
+    s7want $n && s7cmp "T$T G7" "$B/$n/$f" "$GOLD/chain1d_mag/$f" "[T=$T] $n.json -> chain1d_mag/$f (G7)"
+  done
+  # tutorials: every non-PNG file of the stage-0 tutorial golden, at the same relative path; the
+  # capture index captured/index.tsv of the stage-0 shim (name, sha1, source path in the legacy
+  # pipeline's temporary directory) is metadata, checked by sha1 against the produced captures
+  for n in 01 02 03 04 05; do
+    s7want tutorial$n || continue
+    W="$B/tutorial$n"
+    while IFS= read -r f; do
+      case "$f" in
+        captured/index.tsv) s7idx "T$T Tut$n" "$W/captured" "$GOLD/tutorials/$n/$f" "[T=$T] tutorial$n.json -> tutorials/$n/$f (Tut $n, sha1 column vs the produced captures)" ;;
+        *) s7cmp "T$T Tut$n" "$W/$f" "$GOLD/tutorials/$n/$f" "[T=$T] tutorial$n.json -> tutorials/$n/$f (Tut $n)" ;;
+      esac
+    done < <(cd "$GOLD/tutorials/$n" && find . -type f ! -name '*.png' | sed 's|^\./||' | sort)
+    while IFS= read -r f; do
+      [ -f "$GOLD/tutorials/$n/$f" ] || echo "INFO      [T=$T] tutorial$n.json wrote $f (no golden at that path)"
+    done < <(cd "$W" 2>/dev/null && find . -type f | sed 's|^\./||' | sort)
+  done
+  # G9: run files vs stage5_bases with the same arguments (byte), then the stage-5 table on the run files
+  for m in graphene haldane; do
+    for c in real bloch bloch_exact eigen real_w1 bloch_w1; do
+      s7want g9_${m}_$c || continue
+      R="$TMP/s7ref5/T$T/$m/$c"; s7_ref5 $T $m $c "$R"
+      for f in "$R"/dos/* "$R"/kuboxx/*; do
+        [ -f "$f" ] || continue
+        s7cmp "T$T G9" "$B/g9_${m}_$c/$(basename "$f")" "$f" "[T=$T] g9_${m}_$c.json -> stage5_bases $c $(basename "$(dirname "$f")")/$(basename "$f") (G9)"
+      done
+    done
+    for c in real:W0/real bloch:W0/bloch bloch_exact:W0/blochx eigen:W0/eigen real_w1:W1/real bloch_w1:W1/bloch; do
+      R="$TMP/s7tab/T$T/$m/${c#*:}"; mkdir -p "$R/dos" "$R/kuboxx"
+      for f in "$B/g9_${m}_${c%%:*}"/*; do
+        case "$(basename "$f")" in
+          *SpectralOp1*) ln -sf "$f" "$R/dos/" ;;
+          *NonEqOp*) ln -sf "$f" "$R/kuboxx/" ;;
+        esac
+      done
+    done
+  done
+  if [ "$S7_SET" = all ]; then
+  echo "   [T=$T] figures/stage_5_table.py on the run-file outputs"
+  ( cd "$REPO" && OMP_NUM_THREADS=16 PYTHONPATH="$PYDIR7:$REPO/python" python3 "$REPO/figures/stage_5_table.py" "$TMP/s7tab/T$T" "$GOLD/bases" ) >"$TMP/s7_table_T$T.txt" 2>&1
+  sed 's/^/          /' "$TMP/s7_table_T$T.txt"
+  g="T$T G9 table"; [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
+  S7I[$g]=$(grep -c '^PASS' "$TMP/s7_table_T$T.txt"); S7D[$g]=$(grep -c '^FAIL' "$TMP/s7_table_T$T.txt")
+  NCMP=$((NCMP + S7I[$g] + S7D[$g])); NFAIL=$((NFAIL + S7D[$g]))
+  [ $((S7I[$g] + S7D[$g])) -gt 0 ] || { echo "DIFFERS   [T=$T] stage-5 table not produced"; NFAIL=$((NFAIL + 1)); }
+  else
+    echo "INFO      [T=$T] figures/stage_5_table.py skipped (S7_SET=$S7_SET: the table needs all six G9 configurations of both models)"
+  fi
+  # G10: run files vs stage6_nonorth with the same arguments (byte), then vs the orthogonal goldens
+  for m in chain1d haldane; do
+    for v in real complex; do
+      for r in lowdin generalised; do
+        s7want g10_${m}_${v}_$r || continue
+        # stage6_nonorth (dense exact S^-1/2 on 2048 sites: ~45 min per word on a loaded TCN) is run
+        # once, at the first thread count, and only when the run file produced its moment files
+        n=g10_${m}_${v}_$r; R="$TMP/s7ref6/$n"
+        if ! ls "$B/$n"/*.chebmom* >/dev/null 2>&1; then
+          g="T$T G10"; [ -n "${S7ORDER[$g]:-}" ] || { S7ORDER[$g]=1; S7GROUPS+=("$g"); }
+          echo "DIFFERS   [T=$T] $n.json produced no moment file ($(tail -1 "$B/$n.err")); stage6_nonorth reference not run"
+          NFAIL=$((NFAIL + 1)); NCMP=$((NCMP + 1)); S7D[$g]=$(( ${S7D[$g]:-0} + 1 ))
+        else
+          [ -d "$R" ] || s7_ref6 $T $m $v $r "$R"
+        fi
+        for f in "$R"/*; do
+          [ -f "$f" ] && ls "$B/$n"/*.chebmom* >/dev/null 2>&1 || continue
+          s7cmp "T$T G10" "$B/$n/$(basename "$f")" "$f" "[T=$T] $n.json -> stage6_nonorth $(basename "$f") (G10)"
+        done
+        if [ $m = chain1d ]; then
+          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G1F" "$GOLD/chain1d/$G1F" 1e-10 "[T=$T] $n.json $G1F vs G1"
+          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G1F2" "$GOLD/chain1d/$G1F2" 1e-10 "[T=$T] $n.json $G1F2 vs G2"
+          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G3F" "$GOLD/chain1d/$G3F" INFO "[T=$T] $n.json $G3F vs G3 (curve, 6 digits)"
+        else
+          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G5XY.chebmom2D" "$GOLD/haldane/$G5XY.chebmom2D" 1e-10 "[T=$T] $n.json $G5XY.chebmom2D vs G5"
+          s7rel "T$T G10 vs G1/G2/G5" "$B/$n/$G5XX.chebmom2D" "$GOLD/haldane/$G5XX.chebmom2D" 1e-10 "[T=$T] $n.json $G5XX.chebmom2D vs G5"
+          for g in KuboBastin_${G5XY} KuboBastinSea_${G5XY} KuboBastinSurf_${G5XY} KuboGreenWood_${G5XX}; do
+            s7rel "T$T G10 vs G1/G2/G5" "$B/$n/${g}JACKSON.dat" "$GOLD/haldane/${g}JACKSON.dat" INFO "[T=$T] $n.json ${g}JACKSON.dat vs G5 (curve, 6 digits)"
+          done
+        fi
+      done
+    done
+  done
+}
+
+# the MCP server: run g1.json and g5.json through `run`, poll `status`, cmp the outputs
+s7_mcp() {
+  local R="$TMP/s7mcp" g
+  mkdir -p "$R/goldens/stage0/chain1d" "$R/goldens/stage0/haldane"
+  cp -r "$GOLD/chain1d/operators" "$R/goldens/stage0/chain1d/"
+  cp -r "$GOLD/haldane/operators" "$R/goldens/stage0/haldane/"
+  cat >"$TMP/s7_mcp_client.py" <<'PY'
+import asyncio, json, os, sys, time
+def show(prefix, obj):
+    print(prefix + " " + json.dumps(obj, separators=(", ", ": "))); sys.stdout.flush()
+async def main(root, runfiles):
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+    params = StdioServerParameters(command=sys.executable, args=["-m", "lsquant.mcp_server", "--root", root], env=dict(os.environ))
+    async with stdio_client(params) as (rd, wr):
+        async with ClientSession(rd, wr) as s:
+            await s.initialize()
+            show("MCP <- list_tools:", [t.name for t in (await s.list_tools()).tools])
+            async def call(name, args):
+                show("MCP -> call_tool:", {"tool": name, "arguments": args})
+                t0 = time.time(); res = await s.call_tool(name, args); dt = time.time() - t0
+                text = res.content[0].text if res.content else ""
+                try: body = json.loads(text)
+                except ValueError: body = text
+                err = bool(getattr(res, "isError", False) or getattr(res, "is_error", False))
+                show("MCP <- %s (isError=%s, returned in %.3f s):" % (name, err, dt), body)
+                return body, err
+            for rfp in runfiles:
+                name = os.path.splitext(os.path.basename(rfp))[0]
+                raw = json.load(open(rfp, encoding="utf-8"))
+                raw.setdefault("output", {})["dir"] = "out/" + name
+                body, err = await call("run", {"runfile_json": json.dumps(raw)})
+                if err or not isinstance(body, dict):
+                    print("MCP RESULT %s: run refused" % name); continue
+                st, _ = await call("status", {"run_id": body["run_id"]}); n = 1
+                while st["status"] == "running":
+                    await asyncio.sleep(2.0)
+                    st = json.loads((await s.call_tool("status", {"run_id": body["run_id"]})).content[0].text); n += 1
+                show("MCP <- status poll %d (final):" % n, st)
+                print("MCP RESULT %s: %s" % (name, st["status"]))
+            raw = json.load(open(runfiles[0], encoding="utf-8"))
+            raw["model"]["dir"] = "/etc"; raw["output"]["dir"] = "out/outside"
+            body, err = await call("run", {"runfile_json": json.dumps(raw)})
+            refused = err or (isinstance(body, str) and "error" in body.lower())
+            print("MCP RESULT confinement (model.dir=/etc): %s (isError=%s)" % ("refused" if refused else "NOT refused", err))
+            print("MCP RESULT out dir created: %s" % os.path.exists(os.path.join(root, "out", "outside")))
+asyncio.run(main(os.path.realpath(sys.argv[1]), sys.argv[2:]))
+PY
+  echo "== stage 7 MCP: python -m lsquant.mcp_server --root $R (copies of the chain1d and haldane golden operators), OMP_NUM_THREADS=16"
+  ( cd "$R" && OMP_NUM_THREADS=16 PYTHONPATH="$PYDIR7:$REPO/python" python3 "$TMP/s7_mcp_client.py" "$R" "$S7_RUNS/g1.json" "$S7_RUNS/g5.json" ) >"$TMP/s7_mcp.txt" 2>"$TMP/s7_mcp.err"
+  echo "          (server stderr: $(wc -l <"$TMP/s7_mcp.err") lines; first error line: $(grep -m1 -E "Error|ValueError" "$TMP/s7_mcp.err" | sed "s/  */ /g"))"
+  sed "s|$TMP|\$TMP|g; s/^/          /" "$TMP/s7_mcp.txt"
+  { grep -q "MCP RESULT confinement (model.dir=/etc): refused" "$TMP/s7_mcp.txt" && grep -q "MCP RESULT out dir created: False" "$TMP/s7_mcp.txt"; } || { echo "FAIL      MCP confinement"; NFAIL=$((NFAIL + 1)); }
+  NCMP=$((NCMP + 1))
+  s7cmp "MCP" "$R/out/g1/$G1F" "$GOLD/chain1d/$G1F" "[MCP] g1.json -> chain1d/$G1F (G1)"
+  for g in $G5XY.chebmom2D $G5XX.chebmom2D KuboBastin_${G5XY}JACKSON.dat KuboBastinSea_${G5XY}JACKSON.dat \
+           KuboBastinSurf_${G5XY}JACKSON.dat KuboGreenWood_${G5XX}JACKSON.dat; do
+    s7cmp "MCP" "$R/out/g5/$g" "$GOLD/haldane/$g" "[MCP] g5.json -> haldane/$g (G5)"
+  done
+}
+
+# refusals through the CLI: non-zero exit, message on stderr, nothing written
+s7_refuse() {   # <tag> <args...>
+  local tag="$1" rc O="$TMP/s7ref/out_$1"; shift
+  ( cd "$REPO" && PYTHONPATH="$PYDIR7:$REPO/python" python3 -m lsquant "$@" ) >"$TMP/s7ref/$tag.out" 2>"$TMP/s7ref/$tag.err"; rc=$?
+  NCMP=$((NCMP + 1))
+  if [ $rc -ne 0 ] && [ -s "$TMP/s7ref/$tag.err" ] && [ ! -e "$O" ]; then
+    echo "REFUSED   [$tag] exit $rc, stderr: $(cat "$TMP/s7ref/$tag.err")"
+  else
+    echo "FAIL      [$tag] exit $rc, stdout: $(head -c 300 "$TMP/s7ref/$tag.out" | tr '\n' ' ') stderr: $(cat "$TMP/s7ref/$tag.err"); output dir exists: $([ -e "$O" ] && echo yes || echo no)"
+    NFAIL=$((NFAIL + 1))
+  fi
+}
+
+s7_refusals() {
+  local R="$TMP/s7ref" f
+  mkdir -p "$R"
+  echo "== stage 7 refusals through the CLI (python -m lsquant run <bad>.json --out <dir>; the dir must not appear)"
+  # a run file built from g1.json / g2.json / g6.json with one change; jq-free, by python
+  mk() {   # <name> <base> <python expression on d>
+    python3 - "$S7_RUNS/$2.json" "$R/$1.json" "$3" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for stmt in sys.argv[3].split(";"):
+    k, v = stmt.split("=", 1); keys = k.strip().split("."); t = d
+    for kk in keys[:-1]: t = t[kk]
+    if v.strip() == "DEL": t.pop(keys[-1], None)
+    else: t[keys[-1]] = json.loads(v)
+json.dump(d, open(sys.argv[2], "w"), indent=1)
+PY
+  }
+  mk unknown_operator g1 'word="Tr[FOO delta(E-H)]"'
+  mk rank_3 g2 'model.operators=["VX","VY","VZ"]; word="Tr[VX delta(E-H) VY delta(E-H) VZ delta(E-H)]"'
+  mk mixed_basis g1 'model.operators=["VX"]; word="Tr[VX@bloch delta(E-H)]"'
+  mk ut_without_time g6 'time=DEL; reconstruction=DEL; word="Tr[VX delta(E-H) U(t)^+ VX U(t)]"'
+  mk unknown_key_top g1 'unknown_extra_key=1; model.dir="does/not/exist"'
+  mk unknown_key_nested g1 'expansion.windw=[-2,2]; model.dir="does/not/exist"'
+  for f in unknown_operator rank_3 mixed_basis ut_without_time unknown_key_top unknown_key_nested; do
+    s7_refuse $f run "$R/$f.json" --out "$R/out_$f"
+  done
+  # the same words through `words describe` (no run file): reported
+  for f in "Tr[FOO delta(E-H)]" "Tr[VX delta(E-H) VY delta(E-H) VZ delta(E-H)]" "Tr[VX@bloch delta(E-H)]" \
+           "Tr[VX delta(E-H) U(t)^+ VX U(t)]" "Tr[VX delta(E-H) VY G+(E)]" "Tr[VX delta(E-H) VY dG+(E)/dE]" \
+           "Tr[VX delta(E-H) VY G-(E)]" "Tr[VX G+(E) VY delta(E-H)]"; do
+    ( cd "$REPO" && PYTHONPATH="$PYDIR7:$REPO/python" python3 -m lsquant words describe "$f" ) >"$R/d.out" 2>"$R/d.err"
+    echo "INFO      words describe \"$f\": exit $?, $( [ -s "$R/d.err" ] && cat "$R/d.err" || python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); c=d.get("catalogue",{}); print("ACCEPTED as", c.get("shape_id"), "formulas", c.get("default_formulas"), "engine word", repr(c.get("engine_word")))' "$R/d.out")"
+  done
+}
+
+stage7_setup() {
+  PYDIR7="$BUILD/lsquant_core"
+  ls "$PYDIR7"/_core*.so >/dev/null 2>&1 || PYDIR7="$BUILD/lsquant"
+  ls "$PYDIR7"/_core*.so >/dev/null 2>&1 || { echo "ERROR: _core*.so not found under $BUILD/lsquant_core or $BUILD/lsquant"; exit 2; }
+  EXE6="$BUILD/lsquant_core/stage6_nonorth"
+  [ -x "$EXE6" ] || { echo "ERROR: $EXE6 missing"; exit 2; }
+}
+
+s7_totals() {
+  local g
+  echo "== stage 7 totals per golden (IDENTICAL or PASS / DIFFERS or FAIL)"
+  for g in "${S7GROUPS[@]}"; do printf "   %-26s %4d identical  %4d differ\n" "$g" "${S7I[$g]:-0}" "${S7D[$g]:-0}"; done
+}
+
+stage7() {
+  local T
+  stage7_setup
+  echo "== stage 7: python3 -m lsquant run runs/goldens/*.json ($(ls "$S7_RUNS"/*.json | wc -l) run files, S7_SET=$S7_SET), PYTHONPATH=$PYDIR7:python, threads: $S7_THREADS"
+  [ "$S7_SET" = all ] || echo "   deferred (not run in this set): $(for f in "$S7_RUNS"/*.json; do n=$(basename "$f" .json); s7want $n || printf "%s " $n; done)"
+  for T in $S7_THREADS; do s7_goldens $T; done
+  s7_mcp
+  s7_refusals
+  s7_totals
+  [ -z "${S7_KEEP:-}" ] || { rm -rf "$S7_KEEP"; cp -r "$TMP/s7" "$S7_KEEP"; echo "   stage-7 outputs kept in $S7_KEEP"; }
+}
+
+# words and run files live in python/lsquant; the engine knows none of it, and nothing evaluates text
+stage7_grep() {
+  local all hits coms pat='catalogue|runfile|grammar|Tr\[|mcp'
+  local com='^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)'
+  all="$(cd "$REPO" && grep -rnE "$pat" lsquant/core lsquant/io)"
+  hits="$(printf '%s\n' "$all" | grep -Ev "$com" | grep -v '^$')"
+  coms="$(printf '%s\n' "$all" | grep -E "$com")"
+  if [ -z "$hits" ]; then echo "GREP      grep -rnE \"$pat\" lsquant/core lsquant/io, code lines: empty"
+  else echo "GREP      grep -rnE \"$pat\" lsquant/core lsquant/io, code lines: FOUND"; echo "$hits" | sed 's/^/          /'; NFAIL=$((NFAIL + 1)); fi
+  [ -z "$coms" ] || echo "$coms" | sed 's/^/          excluded comment line: /'
+  hits="$(cd "$REPO" && grep -rnE --include='*.py' "\b(eval|exec)\(|literal_eval|exec_module" python/lsquant/words python/lsquant/runfile.py python/lsquant/cli.py python/lsquant/mcp_server.py)"
+  if [ -z "$hits" ]; then echo "GREP      grep -rnE \"eval(|exec(|literal_eval|exec_module\" python/lsquant/{words,runfile.py,cli.py,mcp_server.py}: empty"
+  else echo "GREP      eval/exec in the word language or run file: FOUND"; echo "$hits" | sed 's/^/          /'; NFAIL=$((NFAIL + 1)); fi
+  hits="$(cd "$REPO" && grep -rnE --include='*.py' "\bexec_module\b" python/lsquant)"
+  [ -z "$hits" ] || { echo "INFO      exec_module elsewhere in python/lsquant (tutorial generators imported by path):"; echo "$hits" | sed 's/^/          /'; }
+}
 case "$STAGE" in
   0) stage0 ;;
   1) stage1; core_grep ;;
@@ -633,6 +1029,8 @@ case "$STAGE" in
   4) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep ;;
   5) stage1; core_grep; stage2; stage2_grep; stage3; stage3_grep; stage4; stage4_grep; stage5; stage5_grep ;;
   5only) stage5; stage5_grep ;;
+  7) stage7; core_grep; stage2_grep; stage3_grep; stage4_grep; stage5_grep; stage7_grep ;;
+  7aux) stage7_setup; s7_mcp; s7_refusals; s7_totals ;;
   *) echo "ERROR: stage $STAGE has no gate defined yet"; exit 2 ;;
 esac
 
