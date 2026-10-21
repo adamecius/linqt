@@ -161,6 +161,17 @@ ALLOWED_OUTPUT_KEYS: frozenset[str] = frozenset(
     }
 )
 
+def default_window_for_basis(basis_name: str) -> str:
+    """Return the default spectral window mode for ``basis_name``.
+
+    Defaults to ``"eigen"`` on ``"bloch"`` and ``"eigen"`` bases (Stage 5,
+    review 1) and to ``"gershgorin"`` only on ``"real"``.
+    """
+    if basis_name in ("bloch", "eigen"):
+        return "eigen"
+    return "gershgorin"
+
+
 DEFAULT_RUNFILE_DEFAULTS: dict[str, Any] = {
     "model": {
         "kind": "csr",
@@ -187,7 +198,7 @@ DEFAULT_RUNFILE_DEFAULTS: dict[str, Any] = {
     },
     "expansion": {
         "moments": 64,
-        "window": "gershgorin",
+        "window": {"real": "gershgorin", "bloch": "eigen", "eigen": "eigen"},
         "trace": "exact",
         "states": None,
         "seed": 12345,
@@ -215,6 +226,19 @@ DEFAULT_RUNFILE_DEFAULTS: dict[str, Any] = {
         "capture_tutorial": False,
     },
 }
+
+
+def defaults_for_basis(basis_name: str = "real") -> dict[str, Any]:
+    """Return a copy of ``DEFAULT_RUNFILE_DEFAULTS`` with ``expansion.window`` resolved for ``basis_name``."""
+    out = {
+        k: (dict(v) if isinstance(v, Mapping) else v)
+        for k, v in DEFAULT_RUNFILE_DEFAULTS.items()
+    }
+    out["expansion"] = dict(
+        DEFAULT_RUNFILE_DEFAULTS["expansion"],
+        window=default_window_for_basis(basis_name),
+    )
+    return out
 
 
 def _check_keys(
@@ -518,9 +542,11 @@ class RunFile:
         }
 
         raw_exp = dict(raw["expansion"])
-        default_win = "eigen" if kind == "wannier" else "gershgorin"
-        win_val = raw_exp.get("window", default_win)
-        if isinstance(win_val, (list, tuple)):
+        default_win = default_window_for_basis(basis_cfg["name"])
+        win_val = raw_exp.get("window")
+        if win_val is None:
+            win_val = default_win
+        elif isinstance(win_val, (list, tuple)):
             win_val = [float(win_val[0]), float(win_val[1])]
         moments_val = int(raw_exp["moments"])
         expansion_cfg: dict[str, Any] = {
@@ -1518,11 +1544,14 @@ def inspect_target(path: str) -> dict[str, Any]:
         moments_info = [
             inspect_target(mp) for mp in mom_files if os.path.isfile(mp)
         ]
+        dir_basis = str(
+            ((resolved_data or {}).get("basis") or {}).get("name", "real")
+        )
         return {
             "kind": "directory",
             "path": abs_path,
             "resolved_runfile": resolved_data,
-            "defaults": DEFAULT_RUNFILE_DEFAULTS,
+            "defaults": defaults_for_basis(dir_basis),
             "moment_files": moments_info,
         }
 
@@ -1534,7 +1563,7 @@ def inspect_target(path: str) -> dict[str, Any]:
             "kind": "runfile",
             "path": abs_path,
             "resolved_runfile": rf.to_resolved_dict(),
-            "defaults": DEFAULT_RUNFILE_DEFAULTS,
+            "defaults": defaults_for_basis(rf.basis["name"]),
         }
 
     mu = _core.ReadChebmom(abs_path)
