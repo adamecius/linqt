@@ -1,6 +1,6 @@
 /**
  * @file metric_policy.hpp
- * @brief Basis overlap metric policy interface and orthogonal/non-orthogonal implementations.
+ * @brief Overlap metric policy interface and orthogonal/non-orthogonal implementations.
  *
  * Encapsulates the overlap matrix `S` and its inverse appliers (`S^-1` and `S^-1/2`) as
  * `LinearOperator` instances so that non-orthogonal tight-binding models (`H c = E S c`)
@@ -20,7 +20,7 @@ namespace lsquant {
 /**
  * @brief Abstract policy providing the overlap operator `S`, `S^-1`, and `S^-1/2`.
  *
- * Solves the problem of decoupling basis non-orthogonality from the Chebyshev moment
+ * Solves the problem of decoupling a non-trivial overlap `S` from the Chebyshev moment
  * engine. Callers query `Overlap()`, `InverseOverlap()`, and `InverseSqrtOverlap()` to
  * assemble either Löwdin-orthogonalised operators (`S^-1/2 O S^-1/2`) or generalised
  * coefficient-representation operators (`S^-1 O`, `S^-1 (a H + b S)`, and the adjoint
@@ -32,7 +32,7 @@ namespace lsquant {
  * @par Pitfall
  *      In the generalised (one-sided) route, `InverseOverlap()` and `Overlap()` must
  *      both be applied on the bra side of rank-2 Kubo words (`S T_m(S^-1 H~) S^-1 V S^-1 |r>`)
- *      to preserve basis covariance of the trace estimator.
+ *      to preserve metric covariance of the trace estimator.
  */
 class MetricPolicy {
 public:
@@ -42,10 +42,10 @@ public:
   virtual ~MetricPolicy() = default;
 
   /**
-   * @brief Report whether the basis metric is trivial (`S == I`).
+   * @brief Report whether the overlap metric is trivial (`S == I`).
    *
-   * Allows plan builders to elide redundant metric factors when the basis is already
-   * orthonormal. Runs in `O(1)` time.
+   * Allows plan builders to elide redundant metric factors when the representation is
+   * already an orthonormal set. Runs in `O(1)` time.
    *
    * @return `true` if `S`, `S^-1`, and `S^-1/2` are all identity operators, `false` otherwise.
    *
@@ -96,7 +96,7 @@ public:
 };
 
 /**
- * @brief Trivial metric policy `S = S^-1 = S^-1/2 = I` for an orthonormal basis.
+ * @brief Trivial metric policy `S = S^-1 = S^-1/2 = I` for an orthonormal set.
  *
  * Holds a single `IdentityOperator` of dimension `N` and returns it from `Overlap()`,
  * `InverseOverlap()`, and `InverseSqrtOverlap()`. Because `IdentityOperator::IsIdentity()`
@@ -154,7 +154,8 @@ private:
 };
 
 /**
- * @brief Metric policy for a non-orthogonal basis with Hermitian positive-definite overlap `S`.
+ * @brief Metric policy for a non-orthogonal coefficient representation with Hermitian
+ *        positive-definite overlap `S`.
  *
  * Wraps the sparse overlap matrix `S` in a `SparseMatrixOperator` and binds caller-supplied
  * `LinearOperator` appliers for `S^-1` and `S^-1/2`. Construction takes `O(dim + nnz(S))`
@@ -184,7 +185,7 @@ public:
                       const LinearOperator& inverseSqrt);
 
   /**
-   * @brief Return `false` because the basis carries a non-trivial overlap matrix.
+   * @brief Return `false` because the metric carries a non-trivial overlap `S`.
    *
    * @return Always `false`.
    */
