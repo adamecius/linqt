@@ -1,0 +1,480 @@
+"""Basis adapters (RealBasis, BlochBasis, EigenBasis) for the Chebyshev engine.
+
+All three bases expose the same interface over a :class:`~lsquant.models.wannier.WannierModel`
+and supercell ``(N_1, N_2, N_3)``:
+
+- ``.hamiltonian() -> LinearOperator``
+- ``.operator(name) -> LinearOperator``
+- ``.states(trace_mode, num_states=None, seed=12345) -> StateGenerator``
+- ``.window(pad=0.10) -> SpectralWindow``
+
+The C++ Chebyshev engine (:class:`~lsquant._core.MomentEngine`) receives only
+:class:`~lsquant._core.LinearOperator` and :class:`~lsquant._core.StateGenerator`
+objects and is completely agnostic of which basis adapter produced them.
+"""
+
+from __future__ import annotations
+
+from typing import Sequence
+import numpy as np
+import numpy.typing as npt
+
+from . import _core
+from .models.wannier import WannierModel
+from .moments import window_from_gershgorin
+
+
+def make_anderson_disorder(
+    dimension: int, disorder_w: float, seed: int = 12345
+) -> npt.NDArray[np.complex128]:
+    """Generate deterministic real-space box disorder in ``[-W/2, +W/2]``.
+
+    Parameters
+    ----------
+    dimension : int
+        Total Hilbert-space dimension ``N_k * W``.
+    disorder_w : float
+        Box disorder width ``W >= 0`` in eV.
+    seed : int, optional
+        Deterministic PRNG seed (default ``12345``).
+
+    Returns
+    -------
+    numpy.ndarray
+        1D ``complex128`` array of length ``dimension`` with real entries drawn
+        uniformly from ``[-W/2, +W/2]``.
+    """
+    if disorder_w < 0.0:
+        raise ValueError("make_anderson_disorder: disorder_w must be non-negative")
+    if disorder_w == 0.0:
+        return np.zeros(dimension, dtype=np.complex128)
+    rng = np.random.default_rng(int(seed))
+    vals = rng.uniform(-0.5 * float(disorder_w), 0.5 * float(disorder_w), size=dimension)
+    return np.ascontiguousarray(vals, dtype=np.complex128)
+
+
+class RealBasis:
+    """Real-space supercell basis adapter.
+
+    Builds ``H`` and velocity operators ``VX, VY, VZ`` as sparse CSR matrices
+    of dimension ``N_1 * N_2 * N_3 * W``. When ``disorder_w > 0`` (or an
+    explicit ``disorder`` vector is given), ``H`` is the matrix-free composition
+    ``OperatorSum(SparseMatrixOperator(H_csr), DiagonalOperator(v_real))``.
+    """
+
+    def __init__(
+        self,
+        model: WannierModel,
+        supercell: Sequence[int],
+        *,
+        disorder_w: float = 0.0,
+        seed: int = 12345,
+        disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
+    ) -> None:
+        if len(supercell) != 3:
+            raise ValueError("RealBasis: supercell must have 3 dimensions (N1, N2, N3)")
+        self.model = model
+        self.supercell = (int(supercell[0]), int(supercell[1]), int(supercell[2]))
+        self.num_cells = self.supercell[0] * self.supercell[1] * self.supercell[2]
+        self.num_wann = model.num_wann
+        self.dimension = self.num_cells * self.num_wann
+        self.disorder_w = float(disorder_w)
+        self.seed = int(seed)
+
+        self._h_csr: _core.SparseMatrix = model.hamiltonian_csr(self.supercell)
+        self._h_op_clean = _core.SparseMatrixOperator(self._h_csr)
+
+        if disorder is not None:
+            v_arr = np.ascontiguousarray(disorder, dtype=np.complex128).ravel()
+            if v_arr.size != self.dimension:
+                raise ValueError("RealBasis: disorder array length must equal dimension")
+            self._disorder_vec: npt.NDArray[np.complex128] | None = v_arr
+            self._v_op: _core.DiagonalOperator | None = _core.DiagonalOperator(v_arr)
+            self._h_op: _core.LinearOperator = _core.OperatorSum(
+                self._h_op_clean, self._v_op
+            )
+        elif self.disorder_w > 0.0:
+            v_arr = make_anderson_disorder(self.dimension, self.disorder_w, self.seed)
+            self._disorder_vec = v_arr
+            self._v_op = _core.DiagonalOperator(v_arr)
+            self._h_op = _core.OperatorSum(self._h_op_clean, self._v_op)
+        else:
+            self._disorder_vec = None
+            self._v_op = None
+            self._h_op = self._h_op_clean
+
+        self._vel_csr_cache: dict[str, _core.SparseMatrix] = {}
+        self._op_cache: dict[str, _core.LinearOperator] = {}
+
+    @property
+    def hamiltonian_csr(self) -> _core.SparseMatrix:
+        """Return the clean real-space supercell Hamiltonian :class:`~lsquant._core.SparseMatrix`."""
+        return self._h_csr
+
+    @property
+    def disorder_values(self) -> npt.NDArray[np.complex128] | None:
+        """Return the real-space diagonal disorder array if present."""
+        return self._disorder_vec
+
+    def hamiltonian(self) -> _core.LinearOperator:
+        """Return the Hamiltonian :class:`~lsquant._core.LinearOperator` in real space."""
+        return self._h_op
+
+    def velocity_csr(self, name: str) -> _core.SparseMatrix:
+        """Return the real-space supercell velocity :class:`~lsquant._core.SparseMatrix`."""
+        key = name.strip().upper()
+        if key not in ("VX", "VY", "VZ"):
+            raise ValueError(f"RealBasis.velocity_csr: unsupported velocity '{name}'")
+        if key not in self._vel_csr_cache:
+            self._vel_csr_cache[key] = self.model.velocity_csr(self.supercell, key)
+        return self._vel_csr_cache[key]
+
+    def operator(self, name: str) -> _core.LinearOperator:
+        """Return the named static operator as a :class:`~lsquant._core.LinearOperator`."""
+        key = name.strip().upper()
+        if key in ("1", "I", "ID", "IDENTITY"):
+            if "1" not in self._op_cache:
+                self._op_cache["1"] = _core.IdentityOperator(self.dimension)
+            return self._op_cache["1"]
+        if key in ("H", "HAM"):
+            return self._h_op
+        if key in ("VX", "VY", "VZ"):
+            if key not in self._op_cache:
+                mat = self.velocity_csr(key)
+                self._op_cache[key] = _core.SparseMatrixOperator(mat)
+            return self._op_cache[key]
+        raise ValueError(f"RealBasis.operator: unknown operator '{name}'")
+
+    def states(
+        self,
+        trace_mode: str = "exact",
+        num_states: int | None = None,
+        seed: int | None = None,
+    ) -> _core.StateGenerator:
+        """Return a :class:`~lsquant._core.StateGenerator` for ``trace_mode``."""
+        mode = trace_mode.strip().lower()
+        rng_seed = self.seed if seed is None else int(seed)
+        if mode == "exact":
+            n_st = self.dimension if num_states is None else int(num_states)
+            if n_st <= 0 or n_st > self.dimension:
+                raise ValueError(
+                    "RealBasis.states: num_states must lie in 1..dimension for exact trace"
+                )
+            return _core.LocalStates(self.dimension, list(range(n_st)))
+        if mode == "random":
+            n_st = 1 if num_states is None else int(num_states)
+            if n_st <= 0:
+                raise ValueError("RealBasis.states: num_states must be positive")
+            return _core.RandomPhaseStates(self.dimension, n_st, rng_seed)
+        raise ValueError(
+            f"RealBasis.states: unsupported trace_mode '{trace_mode}' (expected 'exact' or 'random')"
+        )
+
+    def window(self, pad: float = 0.10) -> _core.SpectralWindow:
+        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` for this Hamiltonian."""
+        win = window_from_gershgorin(self._h_csr, pad=float(pad))
+        if self.disorder_w > 0.0:
+            extra = 0.5 * self.disorder_w * (1.0 + float(pad))
+            return _core.SpectralWindow(win.lower - extra, win.upper + extra)
+        return win
+
+
+class BlochBasis:
+    """Bloch k-space basis adapter with optional FFT-sandwiched real-space disorder.
+
+    Builds ``H_k = BlockDiagonalOperator(H(k))`` and ``v_a(k) = BlockDiagonalOperator(dH_a(k))``
+    over the ``N_k = N_1 * N_2 * N_3`` supercell k-points, and owns the batched
+    FFTW :class:`~lsquant._core.BlochTransform` ``B`` (`real -> Bloch`). When
+    ``disorder_w > 0`` (or ``disorder`` is supplied), ``H`` is the composite
+    ``OperatorSum(H_k, SandwichOperator(B, DiagonalOperator(v_real)))``.
+    """
+
+    def __init__(
+        self,
+        model: WannierModel,
+        supercell: Sequence[int],
+        *,
+        disorder_w: float = 0.0,
+        seed: int = 12345,
+        disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
+    ) -> None:
+        if len(supercell) != 3:
+            raise ValueError("BlochBasis: supercell must have 3 dimensions (N1, N2, N3)")
+        self.model = model
+        self.supercell = (int(supercell[0]), int(supercell[1]), int(supercell[2]))
+        self.num_cells = self.supercell[0] * self.supercell[1] * self.supercell[2]
+        self.num_wann = model.num_wann
+        self.dimension = self.num_cells * self.num_wann
+        self.disorder_w = float(disorder_w)
+        self.seed = int(seed)
+
+        self.k_points = model.k_mesh(self.supercell)
+        self.phases = model.bloch_phases(self.k_points)
+        self.transform = _core.BlochTransform(
+            self.supercell[0],
+            self.supercell[1],
+            self.supercell[2],
+            self.num_wann,
+            self.phases.ravel(),
+            _core.BlochDirection.RealToBloch,
+        )
+
+        self.hk_array = model.Hk(self.k_points)
+        self._hk_op = _core.BlockDiagonalOperator(self.hk_array)
+
+        if disorder is not None:
+            v_arr = np.ascontiguousarray(disorder, dtype=np.complex128).ravel()
+            if v_arr.size != self.dimension:
+                raise ValueError("BlochBasis: disorder array length must equal dimension")
+            self._disorder_vec: npt.NDArray[np.complex128] | None = v_arr
+            self._v_op: _core.DiagonalOperator | None = _core.DiagonalOperator(v_arr)
+            self._sandwich_v: _core.SandwichOperator | None = _core.SandwichOperator(
+                self.transform, self._v_op
+            )
+            self._h_op: _core.LinearOperator = _core.OperatorSum(
+                self._hk_op, self._sandwich_v
+            )
+        elif self.disorder_w > 0.0:
+            v_arr = make_anderson_disorder(self.dimension, self.disorder_w, self.seed)
+            self._disorder_vec = v_arr
+            self._v_op = _core.DiagonalOperator(v_arr)
+            self._sandwich_v = _core.SandwichOperator(self.transform, self._v_op)
+            self._h_op = _core.OperatorSum(self._hk_op, self._sandwich_v)
+        else:
+            self._disorder_vec = None
+            self._v_op = None
+            self._sandwich_v = None
+            self._h_op = self._hk_op
+
+        self._op_cache: dict[str, _core.LinearOperator] = {}
+
+    @property
+    def disorder_values(self) -> npt.NDArray[np.complex128] | None:
+        """Return the real-space diagonal disorder array if present."""
+        return self._disorder_vec
+
+    def hamiltonian(self) -> _core.LinearOperator:
+        """Return the Hamiltonian :class:`~lsquant._core.LinearOperator` in Bloch space."""
+        return self._h_op
+
+    def operator(self, name: str) -> _core.LinearOperator:
+        """Return the named static operator in Bloch space."""
+        key = name.strip().upper()
+        if key in ("1", "I", "ID", "IDENTITY"):
+            if "1" not in self._op_cache:
+                self._op_cache["1"] = _core.IdentityOperator(self.dimension)
+            return self._op_cache["1"]
+        if key in ("H", "HAM"):
+            return self._h_op
+        if key in ("VX", "VY", "VZ"):
+            if key not in self._op_cache:
+                vel_blocks = self.model.dHk(self.k_points, key)
+                self._op_cache[key] = _core.BlockDiagonalOperator(vel_blocks)
+            return self._op_cache[key]
+        raise ValueError(f"BlochBasis.operator: unknown operator '{name}'")
+
+    def states(
+        self,
+        trace_mode: str = "exact",
+        num_states: int | None = None,
+        seed: int | None = None,
+    ) -> _core.StateGenerator:
+        """Return a :class:`~lsquant._core.StateGenerator` for ``trace_mode``.
+
+        For ``trace_mode == "exact"`` at ``disorder_w == 0``, returns
+        :class:`~lsquant._core.BlockLocalStates` ``(N_k, W)``, which evaluates
+        the exact full-mesh trace of any block-diagonal word in ``W`` states.
+        For ``trace_mode == "random"``, applies ``B`` to
+        :class:`~lsquant._core.RandomPhaseStates` via
+        :class:`~lsquant._core.TransformedStates` so that real-space and
+        Bloch-space stochastic traces use the exact same physical state vectors.
+        """
+        mode = trace_mode.strip().lower()
+        rng_seed = self.seed if seed is None else int(seed)
+        if mode == "exact":
+            if self._disorder_vec is None and (
+                num_states is None or int(num_states) == self.num_wann
+            ):
+                return _core.BlockLocalStates(self.num_cells, self.num_wann)
+            n_st = self.dimension if num_states is None else int(num_states)
+            if n_st <= 0 or n_st > self.dimension:
+                raise ValueError(
+                    "BlochBasis.states: num_states must lie in 1..dimension for full exact trace"
+                )
+            return _core.LocalStates(self.dimension, list(range(n_st)))
+        if mode == "random":
+            n_st = 1 if num_states is None else int(num_states)
+            if n_st <= 0:
+                raise ValueError("BlochBasis.states: num_states must be positive")
+            inner = _core.RandomPhaseStates(self.dimension, n_st, rng_seed)
+            return _core.TransformedStates(self.transform, inner)
+        raise ValueError(
+            f"BlochBasis.states: unsupported trace_mode '{trace_mode}' (expected 'exact' or 'random')"
+        )
+
+    def window(self, pad: float = 0.10) -> _core.SpectralWindow:
+        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` matching :class:`RealBasis`."""
+        h_csr = self.model.hamiltonian_csr(self.supercell)
+        win = window_from_gershgorin(h_csr, pad=float(pad))
+        if self.disorder_w > 0.0:
+            extra = 0.5 * self.disorder_w * (1.0 + float(pad))
+            return _core.SpectralWindow(win.lower - extra, win.upper + extra)
+        return win
+
+
+class EigenBasis:
+    """Per-k exact eigenbasis adapter (clean systems, ``W = 0``).
+
+    Diagonalises each ``W x W`` block ``H(k) = U(k) diag(eps(k)) U(k)^+`` via
+    :func:`numpy.linalg.eigh`, builds ``H = DiagonalOperator(eps)`` and rotated
+    operators ``O_eig(k) = U(k)^+ O(k) U(k)`` as
+    :class:`~lsquant._core.BlockDiagonalOperator`, and uses
+    :class:`~lsquant._core.BlockLocalStates` ``(N_k, W)`` so the standard
+    :class:`~lsquant._core.MomentEngine` evaluates exact full-mesh moments in
+    ``W`` state evaluations.
+    """
+
+    def __init__(
+        self,
+        model: WannierModel,
+        supercell: Sequence[int],
+        *,
+        disorder_w: float = 0.0,
+        seed: int = 12345,
+    ) -> None:
+        if float(disorder_w) != 0.0:
+            raise ValueError(
+                "EigenBasis: non-zero disorder_w is not supported in the per-k eigenbasis"
+            )
+        if len(supercell) != 3:
+            raise ValueError("EigenBasis: supercell must have 3 dimensions (N1, N2, N3)")
+        self.model = model
+        self.supercell = (int(supercell[0]), int(supercell[1]), int(supercell[2]))
+        self.num_cells = self.supercell[0] * self.supercell[1] * self.supercell[2]
+        self.num_wann = model.num_wann
+        self.dimension = self.num_cells * self.num_wann
+        self.disorder_w = 0.0
+        self.seed = int(seed)
+
+        self.k_points = model.k_mesh(self.supercell)
+        self.hk_array = model.Hk(self.k_points)
+
+        # Batched eigh over all N_k blocks of shape (N_k, W, W)
+        eigvals, eigvecs = np.linalg.eigh(self.hk_array)
+        self.eigenvalues: npt.NDArray[np.float64] = np.ascontiguousarray(
+            eigvals, dtype=np.float64
+        )
+        self.eigenvectors: npt.NDArray[np.complex128] = np.ascontiguousarray(
+            eigvecs, dtype=np.complex128
+        )
+        self.eigenvectors_dagger: npt.NDArray[np.complex128] = np.ascontiguousarray(
+            np.conj(np.swapaxes(self.eigenvectors, -1, -2)), dtype=np.complex128
+        )
+
+        self._h_op = _core.DiagonalOperator(
+            np.ascontiguousarray(self.eigenvalues.ravel(), dtype=np.complex128)
+        )
+        self.u_op = _core.BlockDiagonalOperator(self.eigenvectors)
+        self.u_dagger_op = _core.BlockDiagonalOperator(self.eigenvectors_dagger)
+        self._op_cache: dict[str, _core.LinearOperator] = {}
+
+    def hamiltonian(self) -> _core.LinearOperator:
+        """Return ``DiagonalOperator(eps)``."""
+        return self._h_op
+
+    def rotate_blocks(
+        self, bloch_blocks: npt.NDArray[np.complex128]
+    ) -> npt.NDArray[np.complex128]:
+        """Rotate ``(N_k, W, W)`` Bloch blocks into the eigenbasis: ``U(k)^+ O(k) U(k)``."""
+        rotated = self.eigenvectors_dagger @ bloch_blocks @ self.eigenvectors
+        return np.ascontiguousarray(rotated, dtype=np.complex128)
+
+    def operator(self, name: str) -> _core.LinearOperator:
+        """Return the named static operator rotated into the eigenbasis."""
+        key = name.strip().upper()
+        if key in ("1", "I", "ID", "IDENTITY"):
+            if "1" not in self._op_cache:
+                self._op_cache["1"] = _core.IdentityOperator(self.dimension)
+            return self._op_cache["1"]
+        if key in ("H", "HAM"):
+            return self._h_op
+        if key in ("VX", "VY", "VZ"):
+            if key not in self._op_cache:
+                vel_bloch = self.model.dHk(self.k_points, key)
+                vel_eig = self.rotate_blocks(vel_bloch)
+                self._op_cache[key] = _core.BlockDiagonalOperator(vel_eig)
+            return self._op_cache[key]
+        raise ValueError(f"EigenBasis.operator: unknown operator '{name}'")
+
+    def states(
+        self,
+        trace_mode: str = "exact",
+        num_states: int | None = None,
+        seed: int | None = None,
+    ) -> _core.StateGenerator:
+        """Return a :class:`~lsquant._core.StateGenerator` for ``trace_mode``.
+
+        Defaults to :class:`~lsquant._core.BlockLocalStates` ``(N_k, W)``, which
+        evaluates the exact eigenbasis trace in ``W`` states.
+        """
+        mode = trace_mode.strip().lower()
+        rng_seed = self.seed if seed is None else int(seed)
+        if mode == "exact":
+            if num_states is None or int(num_states) == self.num_wann:
+                return _core.BlockLocalStates(self.num_cells, self.num_wann)
+            n_st = int(num_states)
+            if n_st <= 0 or n_st > self.dimension:
+                raise ValueError(
+                    "EigenBasis.states: num_states must lie in 1..dimension"
+                )
+            return _core.LocalStates(self.dimension, list(range(n_st)))
+        if mode == "random":
+            n_st = 1 if num_states is None else int(num_states)
+            if n_st <= 0:
+                raise ValueError("EigenBasis.states: num_states must be positive")
+            phases = self.model.bloch_phases(self.k_points)
+            b_op = _core.BlochTransform(
+                self.supercell[0],
+                self.supercell[1],
+                self.supercell[2],
+                self.num_wann,
+                phases.ravel(),
+                _core.BlochDirection.RealToBloch,
+            )
+            u_dag_b = _core.OperatorProduct(self.u_dagger_op, b_op)
+            inner = _core.RandomPhaseStates(self.dimension, n_st, rng_seed)
+            return _core.TransformedStates(u_dag_b, inner)
+        raise ValueError(
+            f"EigenBasis.states: unsupported trace_mode '{trace_mode}' (expected 'exact' or 'random')"
+        )
+
+    def window(self, pad: float = 0.10) -> _core.SpectralWindow:
+        """Return the Gershgorin :class:`~lsquant._core.SpectralWindow` matching :class:`RealBasis`."""
+        h_csr = self.model.hamiltonian_csr(self.supercell)
+        return window_from_gershgorin(h_csr, pad=float(pad))
+
+
+def make_basis(
+    basis_name: str,
+    model: WannierModel,
+    supercell: Sequence[int],
+    *,
+    disorder_w: float = 0.0,
+    seed: int = 12345,
+    disorder: npt.NDArray[np.complex128] | npt.NDArray[np.float64] | None = None,
+) -> RealBasis | BlochBasis | EigenBasis:
+    """Construct one of :class:`RealBasis`, :class:`BlochBasis`, or :class:`EigenBasis` by name."""
+    key = basis_name.strip().lower()
+    if key == "real":
+        return RealBasis(
+            model, supercell, disorder_w=disorder_w, seed=seed, disorder=disorder
+        )
+    if key == "bloch":
+        return BlochBasis(
+            model, supercell, disorder_w=disorder_w, seed=seed, disorder=disorder
+        )
+    if key == "eigen":
+        return EigenBasis(model, supercell, disorder_w=disorder_w, seed=seed)
+    raise ValueError(
+        f"make_basis: unknown basis '{basis_name}' (expected 'real', 'bloch', or 'eigen')"
+    )
