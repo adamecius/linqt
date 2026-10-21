@@ -539,4 +539,4 @@ process by program name or pattern (`pkill -f stage6_nonorth`, `pkill -f check_g
 every launcher records the PIDs it starts (`nohup ... & echo $! > <stage>.pid`) and stops
 only those. Each session uses its own worktree and build directory. A session that stops
 another session's run has broken the gate of that session and says so in its report.
-(Introduced after the stage-6 tester killed the stage-7 gate by name on 2026-10-21.)
+(Introduced after one tester session killed another session's gate by name on 2026-10-21.)
