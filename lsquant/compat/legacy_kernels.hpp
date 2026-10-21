@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <complex>
+#include <vector>
 
 #include "core/algebra/types.hpp"
 
@@ -88,6 +89,25 @@ inline std::complex<double> DgreenR_chebF(double x, const double m) {
  */
 void ComputeLegacyGreenTables(const double* xGrid, Index numPoints, Index numMoments0,
                               Index numMoments1, Scalar* greenR, Scalar* dgreenR);
+
+/**
+ * @brief Compute the Chebyshev Bessel series coefficients `c_n` of `exp(-i x y)` using GSL.
+ *
+ * Reproduces the coefficient sequence of legacy `MomentsTD::Evolve`:
+ * `c_0 = J_0(x)`, `c_n = (-i)^n * 2 * J_n(x)` for `n >= 1`, stopping at the first
+ * `n >= 1` where `|J_n(x)| <= tol` (that term excluded), using `gsl_sf_bessel_Jn(n, x)`
+ * and the exact complex multiplication order `nIp * Scalar(2.0, 0.0) * Jn`.
+ *
+ * @param x   Dimensionless time-frequency product `dt * HalfWidth / hbar`.
+ * @param tol Cutoff tolerance on `|J_n(x)|` (default `1e-15`).
+ * @return    Vector of complex Chebyshev series coefficients `[c_0, c_1, ..., c_{L-1}]`.
+ *
+ * @warning Throws `std::invalid_argument` if `tol <= 0.0`.
+ * @par Pitfall
+ *      Does not include the band-center phase `exp(-i BandCenter dt / hbar)`, which is
+ *      applied after the Chebyshev recursion via `linalg::scal`.
+ */
+std::vector<Scalar> ComputeLegacyBesselCoefficients(double x, double tol = 1e-15);
 
 }  // namespace compat
 }  // namespace lsquant

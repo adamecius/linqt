@@ -14,6 +14,7 @@ import math
 from typing import Sequence
 import numpy as np
 import numpy.typing as npt
+from scipy.special import jv
 import sympy as sp
 
 from . import _core
@@ -107,9 +108,29 @@ class SpectralFunction:
         broadcasted = np.broadcast_to(evaluated, (num_moments, x_arr.shape[1]))
         return np.ascontiguousarray(broadcasted, dtype=out_dtype)
 
+    def evaluate(
+        self,
+        x_values: Sequence[float] | npt.NDArray[np.float64] | float,
+        param: Sequence[float] | npt.NDArray[np.float64] | float,
+    ) -> npt.NDArray[np.float64] | npt.NDArray[np.complex128]:
+        """Evaluate the lambdified SymPy expression at ``(param, x_values)``."""
+        x_arr = np.asarray(x_values, dtype=np.float64)
+        p_arr = np.asarray(param, dtype=np.float64)
+        evaluated = self._fn(p_arr, x_arr)
+        out_dtype = np.complex128 if np.iscomplexobj(evaluated) else np.float64
+        return np.ascontiguousarray(evaluated, dtype=out_dtype)
+
 
 _x_sym = sp.Symbol("x", real=True)
 _m_sym = sp.Symbol("m", integer=True, nonnegative=True)
+_t_sym = sp.Symbol("t", real=True)
+_eta_sym = sp.Symbol("eta", real=True, positive=True)
+
+GaussianDelta = SpectralFunction(
+    sp.exp(-(_x_sym**2) / (2 * _eta_sym**2)) / (sp.sqrt(2 * sp.pi) * _eta_sym),
+    x=_x_sym,
+    m=_eta_sym,
+)
 
 DeltaFunction = SpectralFunction(
     sp.cos(_m_sym * sp.acos(_x_sym)) / (sp.pi * sp.sqrt(1 - _x_sym**2)),
@@ -128,6 +149,85 @@ GreenRetardedDerivative = SpectralFunction(
     x=_x_sym,
     m=_m_sym,
 )
+
+
+class TimeEvolutionFunction(SpectralFunction):
+    """Symbolic time-evolution operator ``exp(-I * x * t)`` and Bessel expansion.
+
+    Solves the problem of representing the unitary time-evolution propagator
+    ``U(t) = exp(-i H~ t)`` on the rescaled Chebyshev domain ``x in [-1, 1]``
+    together with its Jacobi-Anger Bessel series coefficients
+    ``c_0 = J_0(t)``, ``c_n = 2 (-i)^n J_n(t)`` evaluated via
+    :func:`scipy.special.jv`.
+    """
+
+    def __init__(self) -> None:
+        self.t: sp.Symbol = _t_sym
+        self.kernel_expr: sp.Expr = sp.exp(-sp.I * _x_sym * _t_sym)
+        coeff_expr = sp.Piecewise(
+            (sp.besselj(_m_sym, _x_sym), sp.Eq(_m_sym, 0)),
+            (2 * (-sp.I) ** _m_sym * sp.besselj(_m_sym, _x_sym), True),
+        )
+        super().__init__(coeff_expr, x=_x_sym, m=_m_sym)
+        self.expr = self.kernel_expr
+
+    def table(
+        self, x_grid: Sequence[float] | npt.NDArray[np.float64], num_moments: int
+    ) -> npt.NDArray[np.complex128]:
+        """Evaluate the ``(num_moments, len(x_grid))`` Jacobi-Anger Bessel table."""
+        if num_moments <= 0:
+            raise ValueError("TimeEvolution.table: num_moments must be positive")
+        x_arr = np.asarray(x_grid, dtype=np.float64)[np.newaxis, :]
+        m_arr = np.arange(num_moments, dtype=np.float64)[:, np.newaxis]
+        j_vals = jv(m_arr, x_arr)
+        weights = np.where(m_arr == 0.0, 1.0, 2.0) * ((-1j) ** m_arr)
+        return np.ascontiguousarray(weights * j_vals, dtype=np.complex128)
+
+    def series_coefficients(
+        self, x: float, tol: float = 1e-15
+    ) -> npt.NDArray[np.complex128]:
+        """Compute Bessel series coefficients ``c_n(x)`` via :func:`scipy.special.jv`.
+
+        Evaluates ``c_0 = J_0(x)`` and ``c_n = (-i)^n * 2 * J_n(x)`` for ``n >= 1``,
+        stopping at the first ``n >= 1`` where ``|J_n(x)| <= tol`` (that term
+        excluded).
+        """
+        if tol <= 0.0:
+            raise ValueError("series_coefficients: tol must be positive")
+        x_val = float(x)
+        tol_val = float(tol)
+        mom_cutoff = 2.0 * tol_val
+        n = 0
+        n_ip = complex(1.0, 0.0)
+        minus_i = complex(0.0, -1.0)
+        jn = 0.5 * float(jv(0, x_val))
+        coeffs: list[complex] = []
+        while mom_cutoff > tol_val:
+            coeffs.append(n_ip * complex(2.0, 0.0) * jn)
+            n_ip *= minus_i
+            n += 1
+            jn = float(jv(n, x_val))
+            mom_cutoff = abs(jn)
+        return np.asarray(coeffs, dtype=np.complex128)
+
+
+TimeEvolution = TimeEvolutionFunction()
+
+
+def bessel_series_coefficients(
+    x: float, tol: float = 1e-15
+) -> npt.NDArray[np.complex128]:
+    """Compute Jacobi-Anger Bessel coefficients ``c_n(x)`` via SciPy ``jv``."""
+    return TimeEvolution.series_coefficients(x, tol=tol)
+
+
+def legacy_bessel_coefficients(
+    x: float, tol: float = 1e-15
+) -> npt.NDArray[np.complex128]:
+    """Compute Jacobi-Anger Bessel coefficients ``c_n(x)`` via GSL in ``_core.compat``."""
+    if tol <= 0.0:
+        raise ValueError("legacy_bessel_coefficients: tol must be positive")
+    return _core.compat.bessel_series_coefficients(float(x), float(tol))
 
 
 def legacy_delta_table(

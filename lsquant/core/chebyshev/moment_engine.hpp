@@ -65,8 +65,8 @@ public:
    * @return     Accumulated `ChebyshevMoments` tensor of rank equal to the number of `Expand`
    *             instructions in `plan`.
    *
-   * @warning Throws `std::runtime_error` if `ApplySeries` is present or if rank > 2 (a second
-   *          `Expand` on the same side), and `std::invalid_argument` if `plan` is malformed.
+   * @warning Throws `std::runtime_error` if rank > 2 (a second `Expand` on the same side),
+   *          and `std::invalid_argument` if `plan` is malformed.
    * @par Pitfall
    *      Rank-2 plans with `Trace(1)` return raw state sums; call `ApplyKpmWeights` afterwards
    *      when reproducing legacy `CorrelationExpansionMoments`.

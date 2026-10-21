@@ -17,8 +17,10 @@ namespace lsquant {
 
 namespace {
 
+using SeedOp = std::variant<ApplyOperator, ApplySeries, ApplyDerivedSeries>;
+
 struct SideProgram {
-  std::vector<int> preOperators;
+  std::vector<SeedOp> preOps;
   bool hasExpand = false;
   int numMoments = 0;
   std::vector<int> postOperators;
@@ -38,6 +40,72 @@ void ApplySingleVectorOperators(const std::vector<const LinearOperator*>& operat
   }
 }
 
+void RunApplySeries(const LinearOperator& rescaledH, const std::vector<Scalar>& coeffs,
+                    Scalar scale, Vector& phi, Vector& cheb0, Vector& cheb1) {
+  if (coeffs.empty()) {
+    linalg::scal(Scalar(0.0, 0.0), phi);
+    return;
+  }
+  linalg::copy(phi, cheb0);
+  rescaledH.Multiply(Scalar(1.0, 0.0), cheb0, Scalar(0.0, 0.0), cheb1);
+  linalg::scal(Scalar(0.0, 0.0), phi);
+  for (std::size_t n = 0; n < coeffs.size(); ++n) {
+    linalg::axpy(coeffs[n], cheb0, phi);
+    rescaledH.Multiply(Scalar(2.0, 0.0), cheb1, Scalar(-1.0, 0.0), cheb0);
+    cheb0.swap(cheb1);
+  }
+  linalg::scal(scale, phi);
+}
+
+void RunApplyDerivedSeries(const LinearOperator& rescaledH, const LinearOperator& commOp,
+                           const std::vector<Scalar>& coeffs, Scalar scale, Vector& phi,
+                           Vector& cheb0, Vector& cheb1, Vector& chebx0, Vector& chebx1) {
+  if (coeffs.empty()) {
+    linalg::scal(Scalar(0.0, 0.0), phi);
+    return;
+  }
+  linalg::copy(phi, cheb0);
+  linalg::copy(phi, chebx0);
+  linalg::scal(Scalar(0.0, 0.0), chebx0);
+  rescaledH.Multiply(Scalar(1.0, 0.0), cheb0, Scalar(0.0, 0.0), cheb1);
+  commOp.Multiply(Scalar(1.0, 0.0), cheb0, Scalar(0.0, 0.0), chebx1);
+  linalg::scal(Scalar(0.0, 0.0), phi);
+  for (std::size_t n = 0; n < coeffs.size(); ++n) {
+    const Scalar cn = (n == 0) ? Scalar(0.0, 0.0) : coeffs[n];
+    linalg::axpy(cn, chebx0, phi);
+    rescaledH.Multiply(Scalar(2.0, 0.0), cheb1, Scalar(-1.0, 0.0), cheb0);
+    rescaledH.Multiply(Scalar(2.0, 0.0), chebx1, Scalar(-1.0, 0.0), chebx0);
+    commOp.Multiply(Scalar(2.0, 0.0), cheb1, Scalar(1.0, 0.0), chebx0);
+    cheb0.swap(cheb1);
+    chebx0.swap(chebx1);
+  }
+  linalg::scal(scale, phi);
+}
+
+void ApplySeedOps(const LinearOperator& rescaledH,
+                  const std::vector<const LinearOperator*>& operators,
+                  const std::vector<SeedOp>& ops, const Vector& init, Vector& out,
+                  Vector& scratch, Vector& cheb0, Vector& cheb1, Vector& chebx0,
+                  Vector& chebx1) {
+  linalg::copy(init, out);
+  for (const SeedOp& op : ops) {
+    if (const auto* app = std::get_if<ApplyOperator>(&op)) {
+      const LinearOperator& linOp = *operators[static_cast<std::size_t>(app->operatorIndex)];
+      if (linOp.IsIdentity()) {
+        continue;
+      }
+      linalg::copy(out, scratch);
+      linOp.Multiply(Scalar(1.0, 0.0), scratch, Scalar(0.0, 0.0), out);
+    } else if (const auto* ser = std::get_if<ApplySeries>(&op)) {
+      RunApplySeries(rescaledH, ser->coeffs, ser->scale, out, cheb0, cheb1);
+    } else if (const auto* dser = std::get_if<ApplyDerivedSeries>(&op)) {
+      const LinearOperator& commOp = *operators[static_cast<std::size_t>(dser->operatorIndex)];
+      RunApplyDerivedSeries(rescaledH, commOp, dser->coeffs, dser->scale, out, cheb0, cheb1,
+                            chebx0, chebx1);
+    }
+  }
+}
+
 void AccumulateWeightedDot(Scalar& target, const Scalar& weight, const Vector& bra,
                            const Vector& ket) {
   const Scalar d = linalg::dot(bra, ket);
@@ -50,6 +118,18 @@ void AccumulateWeightedDot(Scalar& target, const Scalar& weight, const Vector& b
 
 int PaddedMoments(int numMoments, int batchSize) {
   return ((numMoments + batchSize - 1) / batchSize) * batchSize;
+}
+
+Vector& SelectRegister(Register reg, Vector& ket, Vector& bra, Vector& aux) {
+  switch (reg) {
+    case Register::Ket:
+      return ket;
+    case Register::Bra:
+      return bra;
+    case Register::Aux:
+      return aux;
+  }
+  return ket;
 }
 
 }  // namespace
@@ -85,6 +165,70 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
     throw std::invalid_argument("MomentEngine::Run: plan code must not be empty");
   }
 
+  std::size_t timeAxisPos = plan.code.size();
+  for (std::size_t pc = 0; pc < plan.code.size(); ++pc) {
+    if (std::holds_alternative<TimeAxis>(plan.code[pc])) {
+      if (timeAxisPos != plan.code.size()) {
+        throw std::invalid_argument("MomentEngine::Run: TimeAxis may appear at most once");
+      }
+      timeAxisPos = pc;
+    }
+  }
+
+  const bool hasTimeAxis = (timeAxisPos != plan.code.size());
+
+  std::vector<SeedOp> seedKetOps;
+  std::vector<SeedOp> seedBraOps;
+  bool seedMirror = false;
+  TimeAxis timeAxisSpec;
+
+  if (hasTimeAxis) {
+    const auto* ta = std::get_if<TimeAxis>(&plan.code[timeAxisPos]);
+    if (ta->numSteps <= 0) {
+      throw std::invalid_argument("MomentEngine::Run: TimeAxis numSteps must be positive");
+    }
+    for (const AxisStep& ev : ta->evolve) {
+      if (const auto* ed = std::get_if<EvolveDerived>(&ev)) {
+        if (ed->operatorIndex < 0 ||
+            ed->operatorIndex >= static_cast<int>(operators_.size())) {
+          throw std::invalid_argument(
+              "MomentEngine::Run: EvolveDerived operatorIndex out of range");
+        }
+      }
+    }
+    timeAxisSpec = *ta;
+
+    std::vector<SeedOp>* activeSeedOps = &seedKetOps;
+    for (std::size_t pc = 0; pc < timeAxisPos; ++pc) {
+      const Instruction& inst = plan.code[pc];
+      if (const auto* app = std::get_if<ApplyOperator>(&inst)) {
+        if (app->operatorIndex < 0 ||
+            app->operatorIndex >= static_cast<int>(operators_.size())) {
+          throw std::invalid_argument("MomentEngine::Run: operatorIndex out of range");
+        }
+        activeSeedOps->push_back(*app);
+      } else if (const auto* ser = std::get_if<ApplySeries>(&inst)) {
+        activeSeedOps->push_back(*ser);
+      } else if (const auto* dser = std::get_if<ApplyDerivedSeries>(&inst)) {
+        if (dser->operatorIndex < 0 ||
+            dser->operatorIndex >= static_cast<int>(operators_.size())) {
+          throw std::invalid_argument("MomentEngine::Run: operatorIndex out of range");
+        }
+        activeSeedOps->push_back(*dser);
+      } else if (std::holds_alternative<MirrorToBra>(inst)) {
+        if (seedMirror) {
+          throw std::invalid_argument(
+              "MomentEngine::Run: MirrorToBra may appear at most once before TimeAxis");
+        }
+        seedMirror = true;
+        activeSeedOps = &seedBraOps;
+      } else {
+        throw std::invalid_argument(
+            "MomentEngine::Run: Expand and Trace cannot precede TimeAxis");
+      }
+    }
+  }
+
   SideProgram ketProg;
   SideProgram braProg;
   SideProgram* activeSide = &ketProg;
@@ -92,29 +236,42 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   bool seenTrace = false;
   std::vector<Scalar> traceWeights;
 
-  for (std::size_t pc = 0; pc < plan.code.size(); ++pc) {
+  const std::size_t bodyStart = hasTimeAxis ? (timeAxisPos + 1) : 0;
+  for (std::size_t pc = bodyStart; pc < plan.code.size(); ++pc) {
     if (seenTrace) {
       throw std::invalid_argument("MomentEngine::Run: Trace must be the final instruction");
     }
     const Instruction& inst = plan.code[pc];
-    if (std::holds_alternative<ApplySeries>(inst)) {
-      throw std::runtime_error("ApplySeries: not implemented in stage 1");
-    } else if (const auto* app = std::get_if<ApplyOperator>(&inst)) {
+    if (const auto* app = std::get_if<ApplyOperator>(&inst)) {
       if (app->operatorIndex < 0 ||
           app->operatorIndex >= static_cast<int>(operators_.size())) {
         throw std::invalid_argument("MomentEngine::Run: operatorIndex out of range");
       }
       if (!activeSide->hasExpand) {
-        activeSide->preOperators.push_back(app->operatorIndex);
+        activeSide->preOps.push_back(*app);
       } else {
         activeSide->postOperators.push_back(app->operatorIndex);
       }
+    } else if (const auto* ser = std::get_if<ApplySeries>(&inst)) {
+      if (activeSide->hasExpand) {
+        throw std::invalid_argument("MomentEngine::Run: ApplySeries must precede Expand");
+      }
+      activeSide->preOps.push_back(*ser);
+    } else if (const auto* dser = std::get_if<ApplyDerivedSeries>(&inst)) {
+      if (dser->operatorIndex < 0 ||
+          dser->operatorIndex >= static_cast<int>(operators_.size())) {
+        throw std::invalid_argument("MomentEngine::Run: operatorIndex out of range");
+      }
+      if (activeSide->hasExpand) {
+        throw std::invalid_argument("MomentEngine::Run: ApplyDerivedSeries must precede Expand");
+      }
+      activeSide->preOps.push_back(*dser);
     } else if (const auto* exp = std::get_if<Expand>(&inst)) {
       if (exp->numMoments <= 0) {
         throw std::invalid_argument("MomentEngine::Run: Expand numMoments must be positive");
       }
       if (activeSide->hasExpand) {
-        throw std::runtime_error("Expand: rank > 2 not implemented in stage 1");
+        throw std::runtime_error("Expand: rank > 2 not implemented");
       }
       activeSide->hasExpand = true;
       activeSide->numMoments = exp->numMoments;
@@ -141,15 +298,28 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   if (ketProg.hasExpand) {
     dims.push_back(ketProg.numMoments);
   }
+  if (hasTimeAxis) {
+    if (braProg.hasExpand) {
+      throw std::invalid_argument(
+          "MomentEngine::Run: TimeAxis body does not support bra Expand");
+    }
+    dims.push_back(timeAxisSpec.numSteps);
+  }
 
   ChebyshevMoments mu(dims);
   mu.systemSize = rescaledH_->Dimension();
   mu.numberOfStates = static_cast<int>(states_->NumberOfStates());
   mu.stateLabel = states_->Label();
   mu.word = plan.word;
+  if (hasTimeAxis) {
+    mu.numberOfTimeSteps = timeAxisSpec.numSteps;
+  }
 
   const std::size_t tensorSize = mu.Data().size();
-  if (traceWeights.size() != 1 && traceWeights.size() != tensorSize) {
+  const bool validMomentWeights =
+      hasTimeAxis && ketProg.hasExpand &&
+      (traceWeights.size() == static_cast<std::size_t>(ketProg.numMoments));
+  if (traceWeights.size() != 1 && traceWeights.size() != tensorSize && !validMomentWeights) {
     throw std::invalid_argument(
         "MomentEngine::Run: Trace weights size must be 1 or match tensor size");
   }
@@ -159,15 +329,94 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   states_->Reset();
 
   Vector r(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector ketSeed(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector braSeed(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector auxSeed(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector ketInit(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector braInit(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector scratch(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector cheb0(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector cheb1(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector chebx0(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector chebx1(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector phiT(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector postVec(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+
+  if (hasTimeAxis) {
+    ChebyshevRecursion rec(*rescaledH_);
+    while (states_->Next(r)) {
+      linalg::copy(r, auxSeed);
+      ApplySeedOps(*rescaledH_, operators_, seedKetOps, r, ketSeed, scratch, cheb0, cheb1,
+                   chebx0, chebx1);
+      const Vector& braSeedStart = seedMirror ? ketSeed : r;
+      ApplySeedOps(*rescaledH_, operators_, seedBraOps, braSeedStart, braSeed, scratch, cheb0,
+                   cheb1, chebx0, chebx1);
+
+      for (int stepIdx = 0; stepIdx < timeAxisSpec.numSteps; ++stepIdx) {
+        ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, ketSeed, ketInit, scratch, cheb0,
+                     cheb1, chebx0, chebx1);
+        const Vector& braBodyStart = seenMirror ? ketInit : braSeed;
+        ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braBodyStart, braInit, scratch,
+                     cheb0, cheb1, chebx0, chebx1);
+
+        if (ketProg.hasExpand) {
+          const int numMoms = ketProg.numMoments;
+          rec.Start(ketInit);
+          for (int m = 0; m < numMoms; ++m) {
+            const Vector* ketVec = &rec.Current();
+            if (!ketProg.postOperators.empty()) {
+              ApplySingleVectorOperators(operators_, ketProg.postOperators, rec.Current(),
+                                         postVec, scratch);
+              ketVec = &postVec;
+            }
+            std::size_t wIdx = 0;
+            if (validMomentWeights) {
+              wIdx = static_cast<std::size_t>(m);
+            } else if (!scalarWeight) {
+              wIdx = static_cast<std::size_t>(m) *
+                         static_cast<std::size_t>(timeAxisSpec.numSteps) +
+                     static_cast<std::size_t>(stepIdx);
+            }
+            AccumulateWeightedDot(mu.At(m, stepIdx), traceWeights[wIdx], braInit, *ketVec);
+            rec.Step();
+          }
+        } else {
+          const std::size_t wIdx = scalarWeight ? 0 : static_cast<std::size_t>(stepIdx);
+          AccumulateWeightedDot(mu.At(stepIdx), traceWeights[wIdx], braInit, ketInit);
+        }
+
+        for (const AxisStep& ev : timeAxisSpec.evolve) {
+          if (const auto* er = std::get_if<EvolveRegister>(&ev)) {
+            Vector& targetVec = SelectRegister(er->target, ketSeed, braSeed, auxSeed);
+            RunApplySeries(*rescaledH_, er->coeffs, er->scale, targetVec, cheb0, cheb1);
+          } else if (const auto* ed = std::get_if<EvolveDerived>(&ev)) {
+            const Vector& srcVec = SelectRegister(ed->source, ketSeed, braSeed, auxSeed);
+            Vector& targetVec = SelectRegister(ed->target, ketSeed, braSeed, auxSeed);
+            linalg::copy(srcVec, phiT);
+            const LinearOperator& commOp =
+                *operators_[static_cast<std::size_t>(ed->operatorIndex)];
+            RunApplyDerivedSeries(*rescaledH_, commOp, ed->coeffs, ed->scale, phiT, cheb0,
+                                  cheb1, chebx0, chebx1);
+            linalg::axpy(Scalar(1.0, 0.0), phiT, targetVec);
+          } else if (const auto* cp = std::get_if<CopyRegister>(&ev)) {
+            const Vector& fromVec = SelectRegister(cp->from, ketSeed, braSeed, auxSeed);
+            Vector& toVec = SelectRegister(cp->to, ketSeed, braSeed, auxSeed);
+            linalg::copy(fromVec, toVec);
+          }
+        }
+      }
+    }
+    return mu;
+  }
 
   if (!braProg.hasExpand && !ketProg.hasExpand) {
     // Rank 0: neither side opens a Chebyshev index.
     while (states_->Next(r)) {
-      ApplySingleVectorOperators(operators_, ketProg.preOperators, r, ketInit, scratch);
-      ApplySingleVectorOperators(operators_, braProg.preOperators, r, braInit, scratch);
+      ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
+                   chebx0, chebx1);
+      const Vector& braStart = seenMirror ? ketInit : r;
+      ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
+                   cheb1, chebx0, chebx1);
       AccumulateWeightedDot(mu.Data()[0], traceWeights[0], braInit, ketInit);
     }
     return mu;
@@ -179,8 +428,11 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
     if (ketProg.postOperators.empty()) {
       ChebyshevRecursion rec(*rescaledH_);
       while (states_->Next(r)) {
-        ApplySingleVectorOperators(operators_, braProg.preOperators, r, braInit, scratch);
-        ApplySingleVectorOperators(operators_, ketProg.preOperators, r, ketInit, scratch);
+        ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
+                     chebx0, chebx1);
+        const Vector& braStart = seenMirror ? ketInit : r;
+        ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
+                     cheb1, chebx0, chebx1);
         rec.Start(ketInit);
         for (int m = 0; m < numMoms; ++m) {
           const Scalar& w = scalarWeight ? traceWeights[0]
@@ -195,8 +447,11 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
       ChebyshevRecursion rec(*rescaledH_);
       ChebyshevVectors vecR(dim, effBatch);
       while (states_->Next(r)) {
-        ApplySingleVectorOperators(operators_, braProg.preOperators, r, braInit, scratch);
-        ApplySingleVectorOperators(operators_, ketProg.preOperators, r, ketInit, scratch);
+        ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
+                     chebx0, chebx1);
+        const Vector& braStart = seenMirror ? ketInit : r;
+        ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
+                     cheb1, chebx0, chebx1);
         rec.Start(ketInit);
         for (int mR = 0; mR < paddedM; mR += effBatch) {
           vecR.Fill(rec);
@@ -225,8 +480,11 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
     ChebyshevRecursion recL(*rescaledH_);
     ChebyshevVectors vecL(dim, effBatch);
     while (states_->Next(r)) {
-      ApplySingleVectorOperators(operators_, ketProg.preOperators, r, ketInit, scratch);
-      ApplySingleVectorOperators(operators_, braProg.preOperators, r, braInit, scratch);
+      ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
+                   chebx0, chebx1);
+      const Vector& braStart = seenMirror ? ketInit : r;
+      ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
+                   cheb1, chebx0, chebx1);
       recL.Start(braInit);
       for (int mL = 0; mL < paddedM; mL += effBatch) {
         vecL.Fill(recL);
@@ -260,7 +518,11 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   ChebyshevVectors vecR(dim, effBatchR);
 
   while (states_->Next(r)) {
-    ApplySingleVectorOperators(operators_, braProg.preOperators, r, braInit, scratch);
+    ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketSeed, scratch, cheb0, cheb1,
+                 chebx0, chebx1);
+    const Vector& braStart = seenMirror ? ketSeed : r;
+    ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
+                 cheb1, chebx0, chebx1);
     recL.Start(braInit);
     for (int mL = 0; mL < paddedML; mL += effBatchL) {
       vecL.Fill(recL);
@@ -268,7 +530,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
         vecL.ApplyToAll(*operators_[static_cast<std::size_t>(opIdx)]);
       }
 
-      ApplySingleVectorOperators(operators_, ketProg.preOperators, r, ketInit, scratch);
+      linalg::copy(ketSeed, ketInit);
       recR.Start(ketInit);
       for (int mR = 0; mR < paddedMR; mR += effBatchR) {
         vecR.Fill(recR);
