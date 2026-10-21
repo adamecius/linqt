@@ -61,12 +61,15 @@ the report come from Python.
 
 Supercell `N_1 x N_2 x N_3` cells, `W` orbitals per cell, orbital positions `tau_alpha`
 (from `.xyz`, Cartesian), lattice vectors `a_i` (from `.uc`). Real-space index
-`(R, alpha)` with `R = (n_1, n_2, n_3)`, `n_i in [0, N_i)`, flat `iR = n_1 N_2 N_3 + n_2 N_3 + n_3`;
-Bloch index `(k, alpha)` with `k = sum_i (m_i / N_i) b_i`, `m_i in [0, N_i)`, same flat order.
+`(R, alpha)` with `R = (n_1, n_2, n_3)`, `n_i in [0, N_i)`, flat `iR = n_1 + N_1 n_2 + N_1 N_2 n_3`
+(`n_1` fastest: this is the wannier2sparse cell order, so that its supercell CSR is the real
+basis without any permutation; corrected in review 2, the first version of this brief had
+`n_1` slowest); Bloch index `(k, alpha)` with `k = sum_i (m_i / N_i) b_i`, `m_i in [0, N_i)`,
+same flat order (`m_1` fastest).
 
     H(k)_{alpha beta} = sum_R exp(+i k . (R + tau_beta - tau_alpha)) H_{alpha beta}(R)       (atom gauge)
     v_a(k)_{alpha beta} = sum_R i (R + tau_beta - tau_alpha)_a exp(+i k . (R + tau_beta - tau_alpha)) H_{alpha beta}(R)
-    B_{(k,alpha),(R,beta)} = delta_{alpha beta} exp(+i k . (R + tau_alpha)) / sqrt(N_k)        (unitary)
+    B_{(k,alpha),(R,beta)} = delta_{alpha beta} exp(-i k . (R + tau_alpha)) / sqrt(N_k)        (unitary; sign fixed by B H_R B^+ = H(k) above, corrected in review 2)
 
 `B` maps real-space coefficient vectors to Bloch coefficient vectors: `psi_k = B psi_R`,
 `psi_R = B^+ psi_k`. With FFTW: `B^+` is `fftw FORWARD` on the `(N_1, N_2, N_3)` grid with
