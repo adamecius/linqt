@@ -12,7 +12,13 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from . import _core
-from .bases import BlochBasis, EigenBasis, RealBasis, make_basis
+from .bases import (
+    BlochBasis,
+    EigenBasis,
+    RealBasis,
+    make_basis,
+    validate_w2s_csr_dir,
+)
 from .models.wannier import WannierModel, load_wannier_model
 from .moments import run_plan, window_from_gershgorin
 from .reconstruct import (
@@ -1088,6 +1094,33 @@ def execute_runfile(
     out_dir = os.path.abspath(
         out_dir_override if out_dir_override is not None else rf.output["dir"]
     )
+    kind = str(rf.model["kind"])
+    if kind == "wannier":
+        basis_name = str(rf.basis["name"])
+        csr_dir_val = rf.model.get("csr_dir")
+        if basis_name == "real" and csr_dir_val is not None:
+            validate_w2s_csr_dir(
+                str(csr_dir_val),
+                str(rf.model["seed"]),
+                tuple(int(x) for x in rf.basis["supercell"]),
+                model_dir=str(rf.model["dir"]),
+                operators=("VX",),
+            )
+    elif kind == "csr":
+        model_dir = str(rf.model["dir"])
+        label = str(rf.model["label"])
+        ham_path = os.path.join(model_dir, f"{label}.HAM.CSR")
+        if not os.path.isfile(ham_path):
+            raise FileNotFoundError(
+                f"Hamiltonian CSR file not found: {ham_path}"
+            )
+        if str(rf.metric["policy"]) != "orthogonal":
+            s_path = os.path.join(model_dir, f"{label}.S.CSR")
+            if not os.path.isfile(s_path):
+                raise FileNotFoundError(
+                    f"Overlap matrix file required for nonorthogonal metric not found: {s_path}"
+                )
+
     os.makedirs(out_dir, exist_ok=True)
 
     resolved_dict = rf.to_resolved_dict()
@@ -1097,7 +1130,6 @@ def execute_runfile(
         json.dump(resolved_dict, fh, indent=2)
         fh.write("\n")
 
-    kind = str(rf.model["kind"])
     if kind == "generator":
         written_files = _execute_generator_runfile(
             rf, out_dir, repo_root=repo_root
