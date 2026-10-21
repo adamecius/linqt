@@ -126,6 +126,18 @@ Fukui-Hatsugai-Suzuki lattice method on the sectors of `P sigma_z P` (integer; `
 This is the number the KPM plateau is compared with, and the number that must agree
 between the SIESTA route and the Wannier route of the same material.
 
+**Trace for every test of this stage (user, 2026-10-21): random phase in the eigenbasis.**
+In the basis of the generalised eigenvectors `(k, n)` a random-phase vector has unit
+modulus on every `|k n>`, so `<r| A f(H) |r>` equals the exact trace for every word whose
+operators are diagonal in that basis (DOS, `Tr[f(H)]`), and for the rank-2 words the only
+fluctuating terms are the interband cross terms inside one `k` block (`J`, `V` are
+block-diagonal in `k`): `W` terms per block, not `N_k W`. So the eigenbasis random-phase
+trace (stage-5 `EigenBasis.states("random")`, seed 12345) is the trace of the oracle and of
+every self-check and gate comparison; the exact trace is used only on the rotated
+Kane-Mele fixture to show the two agree (report the difference). The production path,
+the Bloch basis with the block engine and the per-block `S^-1`, is compared against that
+eigenbasis result at the gate sizes (section 6), not against an exact trace.
+
 ## 6. The gate program (`python -m lsquant.apps.stage6b_siesta`)
 
 ```
