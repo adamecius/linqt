@@ -1,11 +1,13 @@
 /**
  * @file rescaled_operator.hpp
- * @brief LinearOperator affinely rescaling a Hamiltonian into `[-1, 1]`.
+ * @brief Dimensionless rescaled operators mapping physical spectra into `[-1, 1]`.
  *
  * Precomputes `H~ = window.Scale() * H + window.Shift() * I` via `SparseMatrix::Rescaled`
  * when constructed from a `SparseMatrix` (reproducing the exact IEEE-754 rounding of the
  * legacy in-place `Rescale` path), or evaluates `a * (scale * H + shift * I) * x + b * y`
- * on the fly when constructed from a general matrix-free `LinearOperator`.
+ * on the fly when constructed from a general matrix-free `LinearOperator`. Also provides
+ * `GeneralisedRescaledOperator` owning `scale * H' + shift * S'` in CSR form and applying
+ * an inverse overlap operator on every multiplication.
  */
 #ifndef LSQUANT_CORE_CHEBYSHEV_RESCALED_OPERATOR_HPP_
 #define LSQUANT_CORE_CHEBYSHEV_RESCALED_OPERATOR_HPP_
@@ -79,7 +81,7 @@ public:
   /**
    * @brief Return cached Hermiticity of the rescaled operator.
    *
-   * @return `true` if `H~` is Hermitian within `1e-12`, `false` otherwise.
+   * @return `true` if `H~` is Hermitian, `false` otherwise.
    */
   bool IsHermitian() const override;
 
@@ -98,7 +100,83 @@ private:
   bool isHermitian_ = false;
 };
 
+/**
+ * @brief Generalised rescaled operator `H~ = S^{-1} (Scale * H' + Shift * S')`.
+ *
+ * Solves the problem of mapping the generalised pencil `H' c = E S' c` into the Chebyshev
+ * interval `[-1, 1]` without mutating `H'`. Holds its own compressed CSR copy of the pencil
+ * combination `Scale * H' + Shift * S'` (reproducing legacy `Rescale_nonOrth` arithmetic)
+ * and applies `inverse` (`S^{-1}`) on every `Multiply` call. Construction takes
+ * `O(dim + nnz(H') + nnz(S'))` time and space; each `Multiply` takes
+ * `O(nnz(H' + S') + cost(S^{-1}))` time.
+ *
+ * @warning Always reports `IsHermitian() == false` because `S^{-1} H'` is self-adjoint
+ *          with respect to `S'` rather than the Euclidean inner product.
+ * @par Pitfall
+ *      Never rescale as `S^{-1} (Scale * H' + Shift * I)`; shifting by `I` instead of `S'`
+ *      adds `Shift * S^{-1}` rather than `Shift * I` to `Scale * S^{-1} H'`, corrupting
+ *      every Chebyshev polynomial of order `m >= 1`.
+ */
+class GeneralisedRescaledOperator : public LinearOperator {
+public:
+  /**
+   * @brief Construct `S^{-1} (window.Scale() * H + window.Shift() * S)`.
+   *
+   * @param H       Sparse Hamiltonian matrix `H'` (not modified).
+   * @param S       Sparse overlap matrix `S'` (not modified; must match `H.Dimension()`).
+   * @param inverse Linear operator applying `S^{-1}` (must match `H.Dimension()` and outlive `*this`).
+   * @param window  Spectral window `[lower, upper]` with `upper > lower`.
+   *
+   * @warning Throws `std::invalid_argument` if dimensions differ or if
+   *          `!(window.upper > window.lower)`.
+   * @par Pitfall
+   *      `inverse` is stored by const pointer and must remain valid for the lifetime of this
+   *      instance.
+   */
+  GeneralisedRescaledOperator(const SparseMatrix& H, const SparseMatrix& S,
+                              const LinearOperator& inverse, const SpectralWindow& window);
+
+  /**
+   * @brief Return the operator dimension `N`.
+   *
+   * @return Dimension `N >= 0`.
+   */
+  Index Dimension() const override;
+
+  /**
+   * @brief Compute `y = a * S^{-1} * ((Scale * H' + Shift * S') * x) + b * y`.
+   *
+   * @param a Scalar multiplier for `H~ * x`.
+   * @param x Input vector of length `Dimension()`.
+   * @param b Scalar multiplier for `y`.
+   * @param y Input/output vector of length `Dimension()`.
+   */
+  void Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const override;
+
+  using LinearOperator::Multiply;
+
+  /**
+   * @brief Return `false` because `S^{-1} (Scale * H' + Shift * S')` is not Euclidean-Hermitian.
+   *
+   * @return Always `false`.
+   */
+  bool IsHermitian() const override { return false; }
+
+  /**
+   * @brief Return the spectral window used to build `H~`.
+   *
+   * @return Copy of the `SpectralWindow`.
+   */
+  const SpectralWindow& Window() const { return window_; }
+
+private:
+  SpectralWindow window_;
+  SparseMatrix pencil_;
+  const LinearOperator* inverse_ = nullptr;
+};
+
 namespace chebyshev {
+using lsquant::GeneralisedRescaledOperator;
 using lsquant::RescaledOperator;
 }  // namespace chebyshev
 

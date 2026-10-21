@@ -12,6 +12,8 @@ add_library(lsquant_core STATIC
     core/algebra/linalg.cpp
     core/algebra/state_generator.cpp
     core/algebra/spectral_bounds.cpp
+    core/algebra/metric_policy.cpp
+    core/algebra/overlap_appliers.cpp
     core/chebyshev/rescaled_operator.cpp
     core/chebyshev/chebyshev_recursion.cpp
     core/chebyshev/chebyshev_vectors.cpp
@@ -33,6 +35,11 @@ add_executable(stage1_moments apps/stage1_moments.cpp)
 set_target_properties(stage1_moments PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_options(stage1_moments PRIVATE -Wall -Wextra)
 target_link_libraries(stage1_moments PRIVATE lsquant_core)
+
+add_executable(stage6_nonorth apps/stage6_nonorth.cpp)
+set_target_properties(stage6_nonorth PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+target_compile_options(stage6_nonorth PRIVATE -Wall -Wextra)
+target_link_libraries(stage6_nonorth PRIVATE lsquant_core)
 
 add_executable(stage_1_check "${PROJECT_SOURCE_DIR}/tests/dev/stage_1_check.cpp")
 set_target_properties(stage_1_check PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")

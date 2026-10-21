@@ -217,4 +217,49 @@ void SandwichOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) 
 
 bool SandwichOperator::IsHermitian() const { return v_->IsHermitian(); }
 
+LowdinOperator::LowdinOperator(const LinearOperator& inverseSqrt, const LinearOperator& O)
+    : inverseSqrt_(&inverseSqrt), op_(&O) {
+  if (inverseSqrt.Dimension() != O.Dimension()) {
+    throw std::invalid_argument("LowdinOperator: operator dimensions must match");
+  }
+}
+
+Index LowdinOperator::Dimension() const { return op_->Dimension(); }
+
+void LowdinOperator::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const {
+  const Index dim = Dimension();
+  if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
+    throw std::invalid_argument("LowdinOperator::Multiply: vector dimension mismatch");
+  }
+  Vector t1(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  Vector t2(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  inverseSqrt_->Multiply(Scalar(1.0, 0.0), x, Scalar(0.0, 0.0), t1);
+  op_->Multiply(Scalar(1.0, 0.0), t1, Scalar(0.0, 0.0), t2);
+  inverseSqrt_->Multiply(a, t2, b, y);
+}
+
+bool LowdinOperator::IsHermitian() const {
+  return inverseSqrt_->IsHermitian() && op_->IsHermitian();
+}
+
+MetricInverseProduct::MetricInverseProduct(const LinearOperator& inverse,
+                                           const LinearOperator& O)
+    : inverse_(&inverse), op_(&O) {
+  if (inverse.Dimension() != O.Dimension()) {
+    throw std::invalid_argument("MetricInverseProduct: operator dimensions must match");
+  }
+}
+
+Index MetricInverseProduct::Dimension() const { return op_->Dimension(); }
+
+void MetricInverseProduct::Multiply(Scalar a, const Vector& x, Scalar b, Vector& y) const {
+  const Index dim = Dimension();
+  if (static_cast<Index>(x.size()) != dim || static_cast<Index>(y.size()) != dim) {
+    throw std::invalid_argument("MetricInverseProduct::Multiply: vector dimension mismatch");
+  }
+  Vector temp(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+  op_->Multiply(Scalar(1.0, 0.0), x, Scalar(0.0, 0.0), temp);
+  inverse_->Multiply(a, temp, b, y);
+}
+
 }  // namespace lsquant
