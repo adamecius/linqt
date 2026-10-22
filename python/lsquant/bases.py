@@ -1223,6 +1223,10 @@ class BlochMetricBasis:
         self.eigenvectors = np.ascontiguousarray(Y @ u)  # C^+ S C=I
         self.physical_eigenvalues = self.eigenvalues
         self.physical_eigenvectors = self.eigenvectors
+        # Clean blocks permit the metric composition to be cached once.
+        # Each recursion step then enters one C++ block matvec, rather than
+        # allocating full-size intermediates for two/three metric matvecs.
+        applied_h = lowdin_h if route == "lowdin" else self.inverse_array @ self.hk_array
         if route == "anticommutator":
             # metric_forms.hamiltonian_forms: this is a Hermitian approximation,
             # NOT a similarity transform of the generalised Hamiltonian.
@@ -1230,6 +1234,8 @@ class BlochMetricBasis:
             self._symmetric_h_op = _core.BlockDiagonalOperator(symmetric_h)
             self.eigenvalues, u = np.linalg.eigh(symmetric_h)
             self.eigenvectors = np.ascontiguousarray(u)
+            applied_h = symmetric_h
+        self._applied_h_op = _core.BlockDiagonalOperator(np.ascontiguousarray(applied_h))
         self._lowdin_seed = _core.BlockDiagonalOperator(u)
         self._coefficient_seed = _core.BlockDiagonalOperator(self.eigenvectors)
         identity = np.eye(self.num_wann)
@@ -1254,16 +1260,12 @@ class BlochMetricBasis:
     def rescaled_hamiltonian(self, window):
         """Return ``a Y H Y+b I`` or ``a X H+b I = X(aH+bS)``.
 
+        Symbolic source: metric_forms.hamiltonian_forms. Clean applied blocks
+        are cached once; all per-moment block loops run in C++.
         The shift multiplies the identity in coefficient representation. A
         shift by bX would change every generalised eigenvalue incorrectly.
         """
-        if self.route == "anticommutator":
-            h = self._symmetric_h_op
-        elif self.route == "lowdin":
-            h = _core.LowdinOperator(self.metric.inverse_sqrt_overlap, self._h_op)
-        else:
-            h = _core.MetricInverseProduct(self.metric.inverse_overlap, self._h_op)
-        return _core.RescaledOperator(h, window)
+        return _core.RescaledOperator(self._applied_h_op, window)
 
     def operator_blocks(self, name):
         """Return physical matrices before inserting any metric factors.

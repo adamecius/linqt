@@ -553,7 +553,10 @@ PYBIND11_MODULE(_core, m) {
                     int>(),
            py::arg("rescaled_h"), py::arg("operators"), py::arg("states"), py::arg("batch_size"),
            py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>())
-      .def("run", &MomentEngine::Run, py::arg("plan"));
+      // All registered operators and state generators are native C++.
+      // The complete recursion/trace runs without a Python callback or GIL.
+      .def("run", &MomentEngine::Run, py::arg("plan"),
+           py::call_guard<py::gil_scoped_release>());
 
   py::class_<ChebyshevMoments>(m, "ChebyshevMoments")
       .def(py::init<std::vector<int>>(), py::arg("dims") = std::vector<int>{})

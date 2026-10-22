@@ -363,3 +363,47 @@ plateau claim; it remains only an optional comparison.
 7. Import the detached commits into the writable requested branch from the
    bundle; the read-only Git metadata prevented that final reference update
    here.
+
+## Review 1 item 5: static cost audit (no executable profile here)
+
+The user explicitly substitutes source inspection for profiling in this editing
+sandbox: no network or build. Before: the tester reports 71 minutes at M=1024,
+16 vectors, 2304 blocks of W=72, OMP_NUM_THREADS=48, 264% CPU and 95 threads.
+A short M=128/R=2 cProfile before/after was **not run**; both measurements and
+the after wall time/CPU remain unavailable. These are not inferred speedups.
+
+The inspected path is `stage6b_siesta.prepare_moments` -> word compiler ->
+`MomentEngine.run`, including `BlochMetricBasis.bind_eigen_trace`,
+`EigenMetricBasis.operator/states`, `moments.py`, metric composites, state
+bindings, and `reconstruct.shc/kubo_bastin`. Contrary to the suspected cause,
+there is **no Python per-k loop in the per-moment path at b51a8c6** to remove.
+The Python adapter loops only over plan instructions once when compiling;
+C and S are whole `_core.BlockDiagonalOperator` applications. The cached
+inverse/half-inverse and eigen transforms already operate on full stacked
+arrays outside the recursion. The stage-6 `LowdinOperator` and
+`MetricInverseProduct` call C++ block appliers. `BlockLocalStates` loops over
+k in C++, and reconstruction contracts the moment tensor, with no k axis.
+Python damping/grid loops in reconstruction are over moments/energies, not k.
+No Python loop location or before/after profile numbers have been invented.
+
+The cost removed is in `BlochMetricBasis.rescaled_hamiltonian`: previously
+each Hamiltonian application traversed C++ LowdinOperator (three block
+matvecs and two N-vector temporaries) or MetricInverseProduct (two block
+matvecs and one N-vector temporary). It now reuses the already computed
+Lowdin Hamiltonian, or caches the stacked generalised product once, and
+makes **one existing C++ BlockDiagonalOperator call per Hamiltonian
+application**. Its OpenMP loop owns all k blocks. Observable metric factors
+continue to use the existing stage-6 C++ appliers. `MomentEngine.run` releases
+the GIL for the whole native calculation. No recursion, weighting, seed
+normalisation, or contraction formula was replaced. Caching changes floating
+point association, so numerical agreement must be measured by the tester.
+
+For comparable profiles, use separate writable worktrees at b51a8c6 and the
+review chain, build offline on Aron, and run the same Bi Bloch/berry_connection
+short descriptor with M=128, trace=random, states=2, seed=12345, oracle=false,
+OMP_NUM_THREADS=48 and identical BLAS thread settings. Invoke
+`python -m cProfile -o <unique-output>.prof -m lsquant run <short-run.json>`.
+The phase receipt separates metric/operators, production moments,
+reconstruction and eigen reference; cProfile cannot resolve native C++ costs.
+Report the native run cumulative time, phase seconds, wall time and CPU before
+and after. No performance or golden verdict is asserted here.
