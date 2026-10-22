@@ -357,7 +357,16 @@ PYBIND11_MODULE(_core, m) {
       .def_property_readonly("dimension", &StateGenerator::Dimension)
       .def_property_readonly("number_of_states", &StateGenerator::NumberOfStates)
       .def_property_readonly("label", &StateGenerator::Label)
-      .def("reset", &StateGenerator::Reset);
+      .def("reset", &StateGenerator::Reset)
+      .def("next", [](StateGenerator& states) -> py::object {
+        Vector state;
+        if (!states.Next(state)) {
+          return py::none();
+        }
+        py::array_t<Scalar> result(state.size());
+        std::copy(state.begin(), state.end(), result.mutable_data());
+        return result;
+      }, "Return a copy of the next state, or None; reset before replaying.");
 
   py::class_<RandomPhaseStates, StateGenerator>(m, "RandomPhaseStates")
       .def(py::init<Index, Index, unsigned>(), py::arg("dim"), py::arg("num_states"),

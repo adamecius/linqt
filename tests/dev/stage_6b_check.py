@@ -47,6 +47,56 @@ def kane_mele_arrays():
     return lattice, centres, np.array(vectors), H, S
 
 
+def check_one_vector(original, rotated):
+    """(g) Compare the actual engine stream with one NumPy quadratic form.
+
+    Inspect raw moments BEFORE any trace-cyclic Hermitian projection, then
+    check the unsymmetrised KPM weights separately. No independent random
+    generator is used for the NumPy sample: engine.run resets this stream.
+    """
+    from lsquant import _core
+    from lsquant.apps.stage6b_siesta import prepare_moments, SHC_WORD
+    from lsquant.bases import BlochMetricBasis
+    from lsquant.models.nonorthogonal import adjoint
+
+    M = 8
+    for model in (original, rotated):
+        for route in ("generalised", "lowdin"):
+            bloch = BlochMetricBasis(model, [4, 4, 1], velocity_mode="covariant", route=route)
+            Y, C = bloch.inverse_sqrt_array, bloch.eigenvectors
+            U = bloch.sk_array @ Y @ C
+            A = adjoint(C) @ bloch.operator_blocks("JXSZ") @ C
+            B = adjoint(C) @ bloch.operator_blocks("VY") @ C
+            for basis in (bloch, bloch.eigenbasis()):
+                prepared = prepare_moments(basis, SHC_WORD, moments=M, states=1, seed=12345,
+                                           batch=3)
+                engine, plan, _, generator, window, _, _ = prepared
+                generator.reset()
+                r = generator.next()  # Same vector that run() receives after its Reset().
+                assert r is not None and generator.next() is None
+                r = r.reshape(bloch.num_cells, bloch.num_wann)
+                z = ((adjoint(U) @ r[..., None])[..., 0] if basis.name == "bloch" else r)
+                x = window.scale*bloch.eigenvalues + window.shift
+                polynomials = np.empty((M, *x.shape))
+                polynomials[0], polynomials[1] = 1., x
+                for m in range(2, M):
+                    polynomials[m] = 2*x*polynomials[m-1]-polynomials[m-2]
+                direct = np.empty((M, M), complex)
+                for m in range(M):
+                    for n in range(M):
+                        right = (B @ (polynomials[n]*z)[..., None])[..., 0]
+                        word_r = (A @ (polynomials[m]*right)[..., None])[..., 0]
+                        direct[m, n] = np.vdot(z, word_r)
+                mu = engine.run(plan)
+                residual = float(np.max(np.abs(mu.data-direct)))
+                print(f"(g) {model.seed_name} {route} {basis.name} one-vector quadratic-form residual={residual:.17g}", flush=True)
+                assert residual < 1e-10
+                weights = np.full(M, 2.)
+                weights[0] = 1.
+                _core.ApplyKpmWeights(mu, 1, False)
+                assert np.max(np.abs(mu.data-direct*weights[:, None]*weights[None, :])) < 1e-10
+
+
 def main():
     """Run (a)-(f), exact rank-2 comparisons and production noise diagnostics."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -95,6 +145,7 @@ def main():
     A = midpoint_connection(Q, rotated_S, centres, r_cart)
     original = SiestaModel(lattice, centres, r_int, H, S, np.zeros_like(A), "KM")
     rotated = SiestaModel(lattice, centres, r_int, rotated_H, rotated_S, A, "KM_rotated")
+    check_one_vector(original, rotated)
     rng = np.random.default_rng(12345)
     points = rng.normal(size=(5, 3)) * np.array([1, 1, 0])
     maximum_covariance, maximum_hf, maximum_hermiticity = 0., 0., 0.

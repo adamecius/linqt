@@ -506,3 +506,49 @@ the full G11 moment count, run the same one requested self-check with
 `--noise-samples 100 --noise-moments 1024`; mesh/vector/moment/sample counts are
 printed so a short diagnostic cannot be mistaken for the full production case.
 No stochastic tolerance replaces an exact comparison.
+
+## Review 2: item 1 source localisation, before changing the sampler
+
+Read review-2.md completely, AGENTS.md's word/MirrorToBra instruction and
+stage-6 theory equations (2a)-(2c). Commit 78e0431 is absent locally, so the
+review's quoted tester evidence is the available final-run evidence. No fetch,
+build or numerical execution is attempted. review-1.md is absent here;
+review-2.md remains untracked and neither review is staged.
+
+The suggested bra/ket mismatch is **not found in the rank-2 source**.
+At the review-1 HEAD, moment_engine.cpp:535-540 prepares `ketSeed=K r`, then
+starts the bra from that very same `ketSeed`. The block adapter at
+bases.py:1371-1383 inserts S before the compiler's bra operations. With
+`X=S^-1`, the generalised rank-2 vectors are therefore
+
+```
+right_n = X B T_n K r
+left_m  = S T_m X A X S K r = S T_m X A K r
+<left_m|right_n> = r^+ K^+ S X A T_m X B T_n K r.
+```
+
+Here K=C for exact block-local states, K=Y=S^-1/2 for orbital random
+phases; on the Lowdin route K=U or I and S is absent. These are consistent
+metric duals of a single prepared random vector, and in the eigen
+representation the result is `z^+ A_e T_m(eps) B_e T_n(eps) z`.
+RandomPhaseStates::Next (state_generator.cpp:34-45) draws N independent
+phases in one stream, with amplitude 1/sqrt(N); it does not regenerate
+phases for the bra or repeat them across blocks. ApplyKpmWeights at
+stage6b_siesta.py:76 applies `(2-delta_m0)(2-delta_n0)/R` once. Combined
+with the reconstruction's N factor, its trace normalisation is correct.
+
+Assertion (g) now reads the actual C++ generator vector through the small
+copy-returning StateGenerator.next binding, then engine.run resets and
+replays that same stream. On a 4x4 mesh, M=8, batch=3, it compares EVERY raw
+moment with the NumPy quadratic form (absolute residual <1e-10), for both
+fixtures, both routes and both execution adapters. It separately checks the
+unsymmetrised KPM weights. This is an assertion for Aron, **not a claimed
+local numerical pass**. It is placed before the expensive self-check work.
+
+There is a distinct difference from stage 3: 6b explicitly disables the
+trace-cyclic Hermitian projection of the moment tensor. A single stochastic
+word need not satisfy `mu_mn=conj(mu_nm)`, although its exact trace does for
+Hermitian physical A and B. The noise comparison currently compares two
+different estimators, so the review's Jensen bound does not establish a
+seed mismatch. Item 2 will restore the common estimator and make the
+fresh-state bra semantics explicit; its numerical effect remains for Aron.
