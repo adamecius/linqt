@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include "core/algebra/memory_placement.hpp"
 
 namespace lsquant {
 
@@ -62,6 +63,9 @@ SparseMatrix SparseMatrix::FromCsr(Index dim, Index rowPointersSize, const Index
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  result.PlaceOnThreads();
+#endif
   return result;
 }
 
@@ -98,6 +102,9 @@ SparseMatrix SparseMatrix::FromTriplets(Index dim, const std::vector<Index>& row
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  result.PlaceOnThreads();
+#endif
   return result;
 }
 
@@ -144,6 +151,9 @@ SparseMatrix SparseMatrix::Rescaled(Scalar a, Scalar b) const {
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  result.PlaceOnThreads();
+#endif
   return result;
 }
 
@@ -153,6 +163,9 @@ SparseMatrix SparseMatrix::Adjoint() const {
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  result.PlaceOnThreads();
+#endif
   return result;
 }
 
@@ -166,6 +179,9 @@ SparseMatrix SparseMatrix::HermitianFold() const {
   if (!result.matrix_.isCompressed()) {
     result.matrix_.makeCompressed();
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  result.PlaceOnThreads();
+#endif
   return result;
 }
 
@@ -188,6 +204,29 @@ bool SparseMatrix::IsHermitian(double tol) const {
 const Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index>& SparseMatrix::Eigen() const {
   return matrix_;
 }
+
+#ifdef LSQUANT_NATIVE_BUILD
+void SparseMatrix::PlaceOnThreads() {
+  const Index n = Dimension();
+  const Index nnz = NonZeros();
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index> placed(n, n);
+  placed.makeCompressed();
+  placed.resizeNonZeros(nnz);
+  DiscardInteriorPages(placed.valuePtr(), static_cast<std::size_t>(nnz) * sizeof(Scalar));
+  DiscardInteriorPages(placed.innerIndexPtr(), static_cast<std::size_t>(nnz) * sizeof(Index));
+  DiscardInteriorPages(placed.outerIndexPtr(), static_cast<std::size_t>(n + 1) * sizeof(Index));
+#pragma omp parallel for schedule(static)
+  for (Index row = 0; row < n; ++row) {
+    placed.outerIndexPtr()[row] = matrix_.outerIndexPtr()[row];
+    for (Index p = matrix_.outerIndexPtr()[row]; p < matrix_.outerIndexPtr()[row + 1]; ++p) {
+      placed.innerIndexPtr()[p] = matrix_.innerIndexPtr()[p];
+      placed.valuePtr()[p] = matrix_.valuePtr()[p];
+    }
+  }
+  placed.outerIndexPtr()[n] = nnz;
+  matrix_.swap(placed);
+}
+#endif
 
 SparseMatrixOperator::SparseMatrixOperator(const SparseMatrix& matrix)
     : matrix_(&matrix), isHermitian_(matrix.IsHermitian()) {}

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "core/algebra/linalg.hpp"
+#include "core/algebra/memory_placement.hpp"
 #include "core/chebyshev/chebyshev_recursion.hpp"
 #include "core/chebyshev/chebyshev_vectors.hpp"
 
@@ -328,6 +329,21 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   const Index dim = rescaledH_->Dimension();
   states_->Reset();
 
+#ifdef LSQUANT_NATIVE_BUILD
+  Vector r = MakeZeroVector(dim);
+  Vector ketSeed = MakeZeroVector(dim);
+  Vector braSeed = MakeZeroVector(dim);
+  Vector auxSeed = MakeZeroVector(dim);
+  Vector ketInit = MakeZeroVector(dim);
+  Vector braInit = MakeZeroVector(dim);
+  Vector scratch = MakeZeroVector(dim);
+  Vector cheb0 = MakeZeroVector(dim);
+  Vector cheb1 = MakeZeroVector(dim);
+  Vector chebx0 = MakeZeroVector(dim);
+  Vector chebx1 = MakeZeroVector(dim);
+  Vector phiT = MakeZeroVector(dim);
+  Vector postVec = MakeZeroVector(dim);
+#else
   Vector r(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector ketSeed(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector braSeed(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
@@ -341,6 +357,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   Vector chebx1(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector phiT(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
   Vector postVec(static_cast<std::size_t>(dim), Scalar(0.0, 0.0));
+#endif
 
   if (hasTimeAxis) {
     ChebyshevRecursion rec(*rescaledH_);

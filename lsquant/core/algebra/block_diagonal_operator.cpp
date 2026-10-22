@@ -4,10 +4,12 @@
  */
 #include "core/algebra/block_diagonal_operator.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <complex>
 #include <stdexcept>
 #include <utility>
+#include "core/algebra/memory_placement.hpp"
 
 namespace lsquant {
 
@@ -28,6 +30,18 @@ BlockDiagonalOperator::BlockDiagonalOperator(Index numBlocks, Index blockSize,
 
   const std::size_t w = static_cast<std::size_t>(blockSize_);
   const std::size_t w2 = w * w;
+#ifdef LSQUANT_NATIVE_BUILD
+  // Item 4: initialize contiguous block groups with the same static owners as
+  // Multiply. Tester: compare per-node resident pages and socket recipes.
+  std::vector<Scalar> placed(blocks_.size());
+  DiscardInteriorPages(placed.data(), placed.size() * sizeof(Scalar));
+#pragma omp parallel for schedule(static)
+  for (Index ik = 0; ik < numBlocks_; ++ik) {
+    const std::size_t begin = static_cast<std::size_t>(ik) * w2;
+    std::copy_n(blocks_.data() + begin, w2, placed.data() + begin);
+  }
+  blocks_.swap(placed);
+#endif
   bool herm = true;
   for (Index ik = 0; ik < numBlocks_ && herm; ++ik) {
     const Scalar* blk = blocks_.data() + static_cast<std::size_t>(ik) * w2;

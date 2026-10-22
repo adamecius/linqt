@@ -49,3 +49,31 @@ golden headers are untagged and mean golden. No numeric layout or precision chan
 The reader retains source provenance when a moment file is rewritten by another
 profile. Receipts always name the loaded engine profile and reject replay under a
 different one. Compare moment data only within one profile and one machine.
+
+Item 4: import LSQUANT before another library initializes OpenMP. Defaults fill
+only absent variables: close binding, core places, physical cores in the current
+CPU affinity (so `numactl`/scheduler cpusets constrain the count). Set BLAS threads
+to one to avoid nested teams. A static contiguous block group stays with the same
+thread for initialization and multiplication; keep the team size fixed per process.
+First touch applies to owned native CSR, block and recursion/batch buffers; on
+Linux complete interior pages of newly allocated buffers are discarded before
+the parallel fill. It never discards borrowed data. Allocation reuse and policy
+still matter: record `numastat -p PID` and `/proc/PID/numa_maps`, not just affinity.
+
+```bash
+for threads in 24 48; do
+  OMP_NUM_THREADS=$threads numactl --cpunodebind=0 --membind=0 python bench/profile_run.py "$BI_RUN" --moments 128 --states 2 --out /tmp/stage8/item4-bi-socket0-t$threads
+done
+OMP_NUM_THREADS=96 numactl --cpunodebind=0,1 --membind=0,1 python bench/profile_run.py "$BI_RUN" --moments 128 --states 2 --out /tmp/stage8/item4-bi-dual-t96
+OMP_NUM_THREADS=48 numactl --cpunodebind=0 --membind=0 python bench/profile_run.py "$BI_RUN" --moments 128 --states 2 --out /tmp/stage8/item4-bi-p0 > /tmp/stage8/item4-p0.log 2>&1 &
+echo $! > /tmp/stage8/item4-p0.pid
+OMP_NUM_THREADS=48 numactl --cpunodebind=1 --membind=1 python bench/profile_run.py "$BI_RUN" --moments 128 --states 2 --out /tmp/stage8/item4-bi-p1 > /tmp/stage8/item4-p1.log 2>&1 &
+echo $! > /tmp/stage8/item4-p1.pid
+wait
+```
+
+The last recipe measures two independent jobs and aggregate throughput, not the
+latency of one distributed trace. Keep their outputs separate; do not average
+already normalized moment files to claim one exact trace. Compare the same total
+work (two serial jobs versus these two concurrent jobs). Use the recorded child
+PIDs in each output directory for numastat or stopping work, never a process name.

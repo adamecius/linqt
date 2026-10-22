@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "core/algebra/linalg.hpp"
+#include "core/algebra/memory_placement.hpp"
 
 namespace lsquant {
 
@@ -14,15 +15,23 @@ ChebyshevVectors::ChebyshevVectors(Index dimension, int batchSize)
     : dimension_(dimension),
       batchSize_(batchSize),
       firstOrder_(0),
+#ifdef LSQUANT_NATIVE_BUILD
+      vectors_(static_cast<std::size_t>(batchSize > 0 ? batchSize : 0)),
+      scratch_(MakeZeroVector(dimension)) {
+#else
       vectors_(static_cast<std::size_t>(batchSize > 0 ? batchSize : 0),
                Vector(static_cast<std::size_t>(dimension > 0 ? dimension : 0), Scalar(0.0, 0.0))),
       scratch_(static_cast<std::size_t>(dimension > 0 ? dimension : 0), Scalar(0.0, 0.0)) {
+#endif
   if (dimension <= 0) {
     throw std::invalid_argument("ChebyshevVectors: dimension must be positive");
   }
   if (batchSize <= 0) {
     throw std::invalid_argument("ChebyshevVectors: batchSize must be positive");
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  for (Vector& vector : vectors_) vector = MakeZeroVector(dimension);
+#endif
 }
 
 void ChebyshevVectors::Fill(ChebyshevRecursion& recursion) {

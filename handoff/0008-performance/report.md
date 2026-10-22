@@ -45,3 +45,28 @@ header, no format change and unchanged golden bytes. Native uses a trailing firs
 line comment; golden provenance is implicit in the unchanged historical header.
 This is a backward-readable header extension for native only, not a new numeric
 layout. Older LSQUANT readers need the new reader for the generic native header.
+
+## Item 4 — threads and memory placement
+
+`runtime.py` sets absent OpenMP environment values before `_core` and NumPy import.
+It counts physical cores within Linux process affinity. Explicit caller values win.
+Native `memory_placement.hpp` initializes owned large vectors with static first
+touch; on Linux it discards full interior pages of fresh allocations before the
+fill, avoiding the serial value-initialization trap of `std::vector<complex>`.
+Failure/unavailability of madvise affects placement only. Native CSR builders and
+transformations copy final storage by static rows; block storage by static blocks.
+Chebyshev recursion, vector batches and engine work vectors use the same row fill.
+Golden numerical paths retain their original allocations and schedules.
+
+Expected effect: fewer remote-memory accesses and sensible default occupancy.
+Tester: repeat G5 and Bi profiles, inspect `/proc/PID/numa_maps` and `numastat -p`,
+compare 24/48 threads on one socket and 96 on two, and two independent processes
+bound one per socket. Exact commands and throughput interpretation are in
+`bench/README.md`. All measurements: **pending**. Python defaults cannot change an
+OpenMP runtime that another imported extension has already initialized; launch
+with explicit environment variables in that case. A caller that changes thread
+counts after construction forfeits placement, but not deterministic arithmetic.
+
+Scope limitation: native placement targets final owned operator and engine buffers;
+temporary Eigen assembly storage and Python-owned input arrays retain their library
+allocation policy. This avoids changing the excluded 6b adapters or NumPy itself.

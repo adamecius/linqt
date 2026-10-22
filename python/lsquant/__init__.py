@@ -9,6 +9,10 @@ from __future__ import annotations
 
 import sys as _sys
 
+from .runtime import configure_threads as _configure_threads
+
+_configure_threads()
+
 try:
     from . import _core
 except ImportError:
