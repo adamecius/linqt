@@ -540,6 +540,9 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
           vecR.ApplyToAll(*operators_[static_cast<std::size_t>(opIdx)]);
         }
 
+        // Each row has one owner; dot products and trace-state additions keep
+        // their serial order, so thread count cannot change the moment values.
+#pragma omp parallel for schedule(static)
         for (int m0 = 0; m0 < effBatchL; ++m0) {
           const int row = mL + m0;
           if (row >= numMomsL) {
