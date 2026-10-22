@@ -7,6 +7,8 @@ Only this module imports sisl; array fixtures need neither sisl nor SIESTA.
 """
 from __future__ import annotations
 
+from contextlib import nullcontext
+
 from dataclasses import dataclass, field
 from pathlib import Path
 import numpy as np
@@ -185,7 +187,7 @@ def dipole_quadrature(orbitals, centres, r_cart, overlaps, support, *, order=24,
 
 
 def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=24,
-                      quadrature_tolerance=1e-5, quadrature_max_order=96):
+                      quadrature_tolerance=1e-5, quadrature_max_order=96, phase=None):
     """Read .fdf/.TSHS or .HSX and optional .ion.xml radial functions with sisl.
 
     sisl 0.16.4 SOC storage is (Re Huu,Re Hdd,Re Hud,Im Hud,Im Huu,
@@ -273,28 +275,29 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
             checks[name+gauge+"_anti_relative"] = float(
                 np.linalg.norm(rebuilt-adjoint(rebuilt)) / (2*max(np.linalg.norm(rebuilt), 1e-300)))
     metadata["sisl_public_api_checks"] = checks
-    orbitals = []
-    for ia, atom in enumerate(geometry.atoms):
-        tag = str(atom.tag)
-        ion_path = root / f"{tag}.ion.xml"
-        radial_atom = sisl.get_sile(str(ion_path)).read_basis() if dipoles else atom
-        if radial_atom.no != atom.no:
-            raise ValueError(f"radial orbital count differs for atom {ia} ({tag})")
-        for orbital in radial_atom.orbitals:
-            metadata["orbital_metadata"].append(dict(atom=ia, species=tag, orbital=str(orbital)))
-            orbitals.append(orbital)
-    if dipoles:
-        A, certificate = dipole_quadrature(orbitals, centres, model.r_cart, s_blocks,
-                                          np.asarray(support), order=quadrature_order,
-                                          tolerance=quadrature_tolerance,
-                                          max_order=quadrature_max_order)
-        # Opposite-image pairs are integrated independently. Fold only after
-        # the quadrature error has been certified; record the pre-fold residual.
-        lookup = {tuple(r): i for i, r in enumerate(r_int)}
-        paired = np.stack([adjoint(A[:, lookup[tuple(-r)]] ) for r in r_int], axis=1)
-        certificate["pair_hermiticity_error"] = float(np.max(np.abs(A-paired)))
-        if certificate["pair_hermiticity_error"] > 2*quadrature_tolerance:
-            raise ValueError("dipole quadrature violates opposite-image Hermiticity")
-        model.dipoles = spinor_scalar(0.5*(A+paired))
-        metadata["dipole_quadrature"] = certificate
+    with (phase("dipole quadrature", enabled=dipoles) if phase is not None else nullcontext()):
+        orbitals = []
+        for ia, atom in enumerate(geometry.atoms):
+            tag = str(atom.tag)
+            ion_path = root / f"{tag}.ion.xml"
+            radial_atom = sisl.get_sile(str(ion_path)).read_basis() if dipoles else atom
+            if radial_atom.no != atom.no:
+                raise ValueError(f"radial orbital count differs for atom {ia} ({tag})")
+            for orbital in radial_atom.orbitals:
+                metadata["orbital_metadata"].append(dict(atom=ia, species=tag, orbital=str(orbital)))
+                orbitals.append(orbital)
+        if dipoles:
+            A, certificate = dipole_quadrature(orbitals, centres, model.r_cart, s_blocks,
+                                              np.asarray(support), order=quadrature_order,
+                                              tolerance=quadrature_tolerance,
+                                              max_order=quadrature_max_order)
+            # Opposite-image pairs are integrated independently. Fold only after
+            # the quadrature error has been certified; record the pre-fold residual.
+            lookup = {tuple(r): i for i, r in enumerate(r_int)}
+            paired = np.stack([adjoint(A[:, lookup[tuple(-r)]] ) for r in r_int], axis=1)
+            certificate["pair_hermiticity_error"] = float(np.max(np.abs(A-paired)))
+            if certificate["pair_hermiticity_error"] > 2*quadrature_tolerance:
+                raise ValueError("dipole quadrature violates opposite-image Hermiticity")
+            model.dipoles = spinor_scalar(0.5*(A+paired))
+            metadata["dipole_quadrature"] = certificate
     return model

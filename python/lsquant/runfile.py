@@ -46,6 +46,7 @@ ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
         "time",
         "reconstruction",
         "output",
+        "receipt",
     }
 )
 

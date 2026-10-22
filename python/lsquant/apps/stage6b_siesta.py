@@ -7,6 +7,8 @@ oracle. Nothing is certified as a golden by this program.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
+from time import perf_counter
 import json
 from pathlib import Path
 import numpy as np
@@ -82,6 +84,34 @@ def _write_json(path, data):
     Path(path).write_text(json.dumps(data, indent=2, allow_nan=False)+"\n", encoding="utf-8")
 
 
+class PhaseReceipt:
+    """Flush phase boundaries to the log and persist timings even on failure."""
+
+    def __init__(self, path, resolved):
+        self.path, self.resolved = path, resolved
+        resolved["receipt"] = {"phases": []}
+
+    @contextmanager
+    def phase(self, name, **details):
+        entry = dict(phase=name, status="running", **details)
+        self.resolved["receipt"]["phases"].append(entry)
+        _write_json(self.path, self.resolved)
+        print(f"stage6b: {name} started {details}", flush=True)
+        start = perf_counter()
+        try:
+            yield
+        except BaseException:
+            entry["status"] = "failed"
+            raise
+        else:
+            entry["status"] = "completed"
+        finally:
+            entry["wall_seconds"] = perf_counter()-start
+            _write_json(self.path, self.resolved)
+            print(f"stage6b: {name} {entry['status']} wall_seconds={entry['wall_seconds']:.6f} {details}",
+                  flush=True)
+
+
 def oracle_energies(reconstruction, eigenvalues, broadening_meV):
     """Use an explicit oracle grid, or resolve the Fermi gap plus a margin.
 
@@ -127,14 +157,21 @@ def execute_siesta_runfile(rf, out_dir):
         raise ValueError("stage6b reconstruction supports shc and dos")
     if rf.reconstruction["targets"]:
         raise ValueError("stage6b does not accept legacy tutorial reconstruction targets")
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    resolved = rf.to_resolved_dict()
+    resolved["output"]["dir"] = str(out)
+    timing = PhaseReceipt(out/"run.resolved.json", resolved)
     params = rf.model["params"]
     mode = params.get("velocity_mode", "berry_connection")
     model = load_siesta_model(rf.model["dir"], rf.model["label"], dipoles=mode == "covariant",
                               quadrature_order=int(params.get("quadrature_order", 24)),
                               quadrature_tolerance=float(params.get("quadrature_tolerance", 1e-5)),
-                              quadrature_max_order=int(params.get("quadrature_max_order", 96)))
-    bloch = BlochMetricBasis(model, rf.basis["supercell"], velocity_mode=mode,
-                             route=rf.metric["route"], seed=rf.expansion["seed"])
+                              quadrature_max_order=int(params.get("quadrature_max_order", 96)),
+                              phase=timing.phase)
+    with timing.phase("metric build"):
+        bloch = BlochMetricBasis(model, rf.basis["supercell"], velocity_mode=mode,
+                                 route=rf.metric["route"], seed=rf.expansion["seed"])
     basis = bloch if rf.basis["name"] == "bloch" else bloch.eigenbasis()
     window_spec = rf.expansion["window"]
     if window_spec == "gershgorin":
@@ -143,12 +180,8 @@ def execute_siesta_runfile(rf, out_dir):
     if window.lower > bloch.eigenvalues.min() or window.upper < bloch.eigenvalues.max():
         raise ValueError("explicit window does not enclose the generalised spectrum")
     area = float(np.linalg.norm(np.cross(model.uc[0], model.uc[1])))
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    resolved = rf.to_resolved_dict()
-    resolved["output"]["dir"] = str(out)
     resolved["reconstruction"].update(num_cells=bloch.num_cells, cell_area=area)
-    # Keep resolved JSON valid as a RunFile: extra provenance lives separately.
+    # Receipt is read-only provenance when this resolved RunFile is replayed.
     resolved["expansion"]["window"] = [float(window.lower), float(window.upper)]
     _write_json(out/"run.resolved.json", resolved)
     _write_json(out/"basis.json", dict(model.metadata, metric_residuals=bloch.metric_residuals,
@@ -167,10 +200,12 @@ def execute_siesta_runfile(rf, out_dir):
                    seed=rf.expansion["seed"], window=window, batch=rf.expansion["batch"])
     # Compile every production and reference word before starting any moments,
     # reconstruction or oracle. A late reference failure must not waste a run.
-    prepared = [(word, prepare_moments(basis, word, **options),
-                 prepare_moments(bloch.eigenbasis(), word, **options)) for word in rf.words]
+    with timing.phase("operators"):
+        prepared = [(word, prepare_moments(basis, word, **options),
+                     prepare_moments(bloch.eigenbasis(), word, **options)) for word in rf.words]
     for word, production_plan, reference_plan in prepared:
-        mu, compiled = compute_moments(basis, word, _prepared=production_plan)
+        with timing.phase("moments", word=word):
+            mu, compiled = compute_moments(basis, word, _prepared=production_plan)
         if mu.rank == 2 and parse_word(word).canonical() != parse_word(SHC_WORD).canonical():
             raise ValueError("the shc formula requires the physical JXSZ/VY Bastin word")
         prefix = compiled.reconstruction.legacy_moment_prefix
@@ -187,13 +222,14 @@ def execute_siesta_runfile(rf, out_dir):
         # Preserve full precision unless the run file explicitly requests the legacy round trip.
         reconstruction_mu = (_core.ReadChebmom(str(path))
                              if rf.reconstruction["legacy_text_round_trip"] else mu)
-        if mu.rank == 2:
-            energy, values = shc(reconstruction_mu, broadening, bloch.num_cells, area)
-            curve_name, header = "shc", f"energy_eV sigma_z_xy [{UNITS}]"
-        else:
-            energy, values = dos_curve(reconstruction_mu, broadening)
-            values = values/bloch.num_cells
-            curve_name, header = "dos", "energy_eV DOS [states/eV/cell]"
+        with timing.phase("reconstruction", word=word):
+            if mu.rank == 2:
+                energy, values = shc(reconstruction_mu, broadening, bloch.num_cells, area)
+                curve_name, header = "shc", f"energy_eV sigma_z_xy [{UNITS}]"
+            else:
+                energy, values = dos_curve(reconstruction_mu, broadening)
+                values = values/bloch.num_cells
+                curve_name, header = "dos", "energy_eV DOS [states/eV/cell]"
         if bloch.route == "anticommutator":
             header += "; approximate anticommutator metric"
         curve_path = out/(curve_name+".dat")
@@ -201,44 +237,46 @@ def execute_siesta_runfile(rf, out_dir):
         curve_files.append(str(curve_path))
         # The independent engine comparison uses a diagonal H and C^+ O C,
         # not the covariant matrices passed through a second metric route.
-        reference, _ = compute_moments(bloch.eigenbasis(), word, _prepared=reference_plan)
-        reference_path = out/("eigen_"+curve_name+".chebmom")
-        _core.WriteChebmom(str(reference_path), reference)
-        moment_files.append(str(reference_path))
-        if mu.rank == 2:
-            er, vr = shc(reference, broadening, bloch.num_cells, area)
-        else:
-            er, vr = dos_curve(reference, broadening)
-            vr = vr/bloch.num_cells
-        eigen_curve = out/("eigen_"+curve_name+".dat")
-        np.savetxt(eigen_curve, np.column_stack((er, vr)), fmt="%.17g", header=header)
-        curve_files.append(str(eigen_curve))
+        with timing.phase("eigen reference", word=word):
+            reference, _ = compute_moments(bloch.eigenbasis(), word, _prepared=reference_plan)
+            reference_path = out/("eigen_"+curve_name+".chebmom")
+            _core.WriteChebmom(str(reference_path), reference)
+            moment_files.append(str(reference_path))
+            if mu.rank == 2:
+                er, vr = shc(reference, broadening, bloch.num_cells, area)
+            else:
+                er, vr = dos_curve(reference, broadening)
+                vr = vr/bloch.num_cells
+            eigen_curve = out/("eigen_"+curve_name+".dat")
+            np.savetxt(eigen_curve, np.column_stack((er, vr)), fmt="%.17g", header=header)
+            curve_files.append(str(eigen_curve))
         comparisons.append(dict(word=word, phase_seed=rf.expansion["seed"], states=states,
                                 max_moment_difference=float(np.max(np.abs(mu.data-reference.data))),
                                 max_curve_difference=float(np.max(np.abs(values-vr)))))
     _write_json(out/"eigen_comparison.json", comparisons)
     if params.get("oracle", False):
-        curvature = spin_berry_curvature(bloch.physical_eigenvalues, bloch.physical_eigenvectors,
-                                         bloch.operator_blocks("JXSZ"), bloch.operator_blocks("VY"))
-        energies = oracle_energies(rf.reconstruction, bloch.physical_eigenvalues, broadening)
-        curve = sigma_xy(bloch.physical_eigenvalues, curvature, energies, area, broadening=broadening/1000)
-        _write_json(out/"exact_shc.json", dict(energies=energies.tolist(), values=curve.tolist(), units=UNITS,
-                                              trace="eigenbasis random phase (diagonal curvature trace is exact)",
-                                              states=states, seed=rf.expansion["seed"],
-                                              gaussian_standard_deviation_eV=broadening/1000))
-        ef = (rf.reconstruction["fermi_energies"] or [0.0])[0]
-        try:
-            topology = spin_chern(bloch.physical_eigenvalues, bloch.physical_eigenvectors, bloch.sk_array,
-                                  bloch.operator_blocks("SZ"), ef, bloch.supercell,
-                                  k_points=bloch.k_points, centres=model.tau,
-                                  sqrt_overlap=bloch.sk_array @ bloch.inverse_sqrt_array)
-        except ValueError as error:
-            # A metallic input is a scientific result, not an invented integer.
-            topology = {"defined": False, "reason": str(error)}
-        topology.update(fermi_energy_eV=ef,
-                        sigma_xy=float(sigma_xy(bloch.physical_eigenvalues, curvature, [ef], area,
-                                                 broadening=broadening/1000)[0]), units=UNITS)
-        _write_json(out/"spin_chern.json", topology)
+        with timing.phase("oracle"):
+            curvature = spin_berry_curvature(bloch.physical_eigenvalues, bloch.physical_eigenvectors,
+                                             bloch.operator_blocks("JXSZ"), bloch.operator_blocks("VY"))
+            energies = oracle_energies(rf.reconstruction, bloch.physical_eigenvalues, broadening)
+            curve = sigma_xy(bloch.physical_eigenvalues, curvature, energies, area, broadening=broadening/1000)
+            _write_json(out/"exact_shc.json", dict(energies=energies.tolist(), values=curve.tolist(), units=UNITS,
+                                                  trace="eigenbasis random phase (diagonal curvature trace is exact)",
+                                                  states=states, seed=rf.expansion["seed"],
+                                                  gaussian_standard_deviation_eV=broadening/1000))
+            ef = (rf.reconstruction["fermi_energies"] or [0.0])[0]
+            try:
+                topology = spin_chern(bloch.physical_eigenvalues, bloch.physical_eigenvectors, bloch.sk_array,
+                                      bloch.operator_blocks("SZ"), ef, bloch.supercell,
+                                      k_points=bloch.k_points, centres=model.tau,
+                                      sqrt_overlap=bloch.sk_array @ bloch.inverse_sqrt_array)
+            except ValueError as error:
+                # A metallic input is a scientific result, not an invented integer.
+                topology = {"defined": False, "reason": str(error)}
+            topology.update(fermi_energy_eV=ef,
+                            sigma_xy=float(sigma_xy(bloch.physical_eigenvalues, curvature, [ef], area,
+                                                     broadening=broadening/1000)[0]), units=UNITS)
+            _write_json(out/"spin_chern.json", topology)
     return dict(output_dir=str(out), resolved_runfile=str(out/"run.resolved.json"),
                 moment_files=moment_files, curve_files=curve_files,
                 written_files=[str(p) for p in sorted(out.iterdir()) if p.is_file()])
