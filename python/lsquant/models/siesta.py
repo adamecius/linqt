@@ -165,7 +165,7 @@ def dipole_quadrature(orbitals, centres, r_cart, overlaps, support, *, order=24,
         n = order
         previous = _pair_quadrature(orbitals[i], orbitals[j], d, n)
         while True:
-            n *= 2
+            n = min(2*n, max_order)
             current = _pair_quadrature(orbitals[i], orbitals[j], d, n)
             change = float(np.max(np.abs(current-previous)))
             if change <= tolerance or n >= max_order:
@@ -212,7 +212,9 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
     if binary is None:
         raise FileNotFoundError(f"no {label}.TSHS or {label}.HSX in {root}")
     reader = sisl.get_sile(str(binary))
-    source = reader.read_hamiltonian()
+    # The FDF reader attaches species/orbital metadata from the run files;
+    # the binary-only reader can leave placeholder atomic species behind.
+    source = fdf.read_hamiltonian(order=[binary.suffix.lstrip(".")])
     if source.orthogonal or not source.spin.is_spinorbit:
         raise ValueError("stage6b requires a nonorthogonal SIESTA SOC Hamiltonian")
     geometry = source.geometry

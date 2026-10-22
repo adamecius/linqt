@@ -642,3 +642,17 @@ def time_correlation_curve(
         values[n_idx] = out_val
 
     return times, values
+
+
+def shc(moments, broadening_meV, num_cells, cell_area):
+    """Return sigma^z_xy in ``e^2/h, sigma_z Pauli`` from a Bastin tensor.
+
+    ``sigma=2*pi*KuboBastin(mu)/(N_k*A_cell)``. The stage-3 reconstruction
+    already multiplies the normalised moments by the Hilbert-space size;
+    divide by the number of cells and area, not by the number of orbitals.
+    The physical word is Tr[JXSZ delta VY dG-/dE], with J in Pauli units.
+    """
+    if num_cells <= 0 or cell_area <= 0:
+        raise ValueError("shc requires positive num_cells and cell_area")
+    energies, values = kubo_bastin(moments, broadening_meV)
+    return energies, values * (2*np.pi/(num_cells*cell_area))

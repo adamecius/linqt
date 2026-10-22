@@ -69,6 +69,8 @@ def read_csr_text(path: str | Path, fold_hermitian: bool = True, *, legacy_fold:
         raise ValueError(f"read_csr_text: empty or truncated header in {path}")
     dim = int(text[0])
     nnz = int(text[1])
+    if dim < 0 or nnz < 0:
+        raise ValueError(f"read_csr_text: negative dimension/count in {path}")
     expected_tokens = 2 + 2 * nnz + nnz + (dim + 1)
     if len(text) < expected_tokens:
         raise ValueError(
@@ -84,6 +86,9 @@ def read_csr_text(path: str | Path, fold_hermitian: bool = True, *, legacy_fold:
     rp_offset = col_offset + nnz
     row_pointers = np.array(text[rp_offset : rp_offset + dim + 1], dtype=np.int64)
 
+    if (row_pointers[0] != 0 or row_pointers[-1] != nnz or
+            np.any(np.diff(row_pointers) < 0) or np.any(columns < 0) or np.any(columns >= dim)):
+        raise ValueError(f"read_csr_text: invalid CSR indices in {path}")
     mat = sp.csr_matrix((values, columns, row_pointers), shape=(dim, dim), dtype=np.complex128)
     mat.sum_duplicates()
     mat.sort_indices()
@@ -301,7 +306,7 @@ def bloch_velocity(H: np.ndarray, S: np.ndarray, dH: np.ndarray, dS: np.ndarray,
                    inverse_overlap: np.ndarray | None = None) -> np.ndarray:
     """Return the Hermitian physical velocity matrix, with hbar=1 (eV Angstrom).
 
-    Implements theory.md (4): ``V=dH-(dS X H+H X dS)/2``, ``X=S^-1``.
+    Symbolic source: metric_forms.velocity_forms. Implements theory.md (4): ``V=dH-(dS X H+H X dS)/2``, ``X=S^-1``.
     For ``covariant`` add ``i(H X A-A^+ X H)``. ``A`` is the Hermitian
     midpoint-centred connection, not the unsymmetrised row-centred dipole:
     ``A_ij(R)=<0i|r-(tau_i+tau_j+R)/2|Rj>``. See siesta.py for the conversion.
@@ -343,7 +348,7 @@ def applied_spin_operators(size: int, ordering: str = "interleaved") -> dict[str
 def spin_operators(S: np.ndarray, ordering: str = "interleaved") -> dict[str, np.ndarray]:
     """Return physical matrices ``Sigma_a=S q_a`` with applied form ``q_a``.
 
-    S is the full spinor overlap ``S_orb tensor I_2``, not the spatial overlap.
+    Symbolic source: metric_forms.spin_forms. S is the full spinor overlap ``S_orb tensor I_2``, not the spatial overlap.
     Refuse overlaps that do not commute with all three Pauli operators: those
     need explicitly transformed spin matrices, not a guessed tensor product.
     """
@@ -357,7 +362,7 @@ def spin_operators(S: np.ndarray, ordering: str = "interleaved") -> dict[str, np
 def spin_current(V: np.ndarray, sigma: np.ndarray) -> np.ndarray:
     """Return ``J^b_a=(V_a q_b+q_b V_a)/2``, with applied Pauli ``q_b``.
 
-    This is the matrix of the operator anticommutator because the physical
+    Symbolic source: metric_forms.spin_current_forms. This is the matrix of the operator anticommutator because the physical
     spin matrix is ``Sigma=S q=q S`` and ``AB`` is ``A S^-1 B``. Pauli units
     are used, without hbar/2. For a general transformed spin use
     ``(V S^-1 Sigma+Sigma S^-1 V)/2`` instead.

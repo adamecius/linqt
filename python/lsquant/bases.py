@@ -1183,10 +1183,10 @@ class BlochMetricBasis:
     name = "bloch"
 
     def __init__(self, model, supercell, *, velocity_mode="berry_connection",
-                 route="generalised", seed=12345):
+                 route="lowdin", seed=12345):
         from .models.nonorthogonal import adjoint, exact_block_metric
-        if route not in ("lowdin", "generalised"):
-            raise ValueError("route must be lowdin or generalised")
+        if route not in ("lowdin", "generalised", "anticommutator"):
+            raise ValueError("route must be lowdin, generalised or anticommutator")
         if velocity_mode not in ("bare", "berry_connection", "covariant"):
             raise ValueError("unknown velocity mode")
         if velocity_mode == "covariant" and model.dipoles is None:
@@ -1207,16 +1207,24 @@ class BlochMetricBasis:
         lowdin_h = Y @ self.hk_array @ Y
         self.eigenvalues, u = np.linalg.eigh(lowdin_h)
         self.eigenvectors = np.ascontiguousarray(Y @ u)  # C^+ S C=I
+        self.physical_eigenvalues = self.eigenvalues
+        self.physical_eigenvectors = self.eigenvectors
+        if route == "anticommutator":
+            # metric_forms.hamiltonian_forms: this is a Hermitian approximation,
+            # NOT a similarity transform of the generalised Hamiltonian.
+            symmetric_h = 0.5*(self.inverse_array @ self.hk_array + self.hk_array @ self.inverse_array)
+            self._symmetric_h_op = _core.BlockDiagonalOperator(symmetric_h)
+            self.eigenvalues, u = np.linalg.eigh(symmetric_h)
+            self.eigenvectors = np.ascontiguousarray(u)
         self._lowdin_seed = _core.BlockDiagonalOperator(u)
         self._coefficient_seed = _core.BlockDiagonalOperator(self.eigenvectors)
-        self._dual_seed = _core.BlockDiagonalOperator(self.sk_array @ self.eigenvectors)
         identity = np.eye(self.num_wann)
         self.metric_residuals = {
             "inverse": float(np.max(np.abs(self.sk_array @ self.inverse_array-identity))),
             "inverse_sqrt": float(np.max(np.abs(Y @ self.sk_array @ Y-identity))),
             "inverse_hermiticity": float(np.max(np.abs(self.inverse_array-adjoint(self.inverse_array)))),
             "generalised_eigenvectors": float(np.max(np.abs(
-                adjoint(self.eigenvectors) @ self.sk_array @ self.eigenvectors-identity))),
+                adjoint(self.physical_eigenvectors) @ self.sk_array @ self.physical_eigenvectors-identity))),
         }
         self._blocks, self._op_cache = {}, {}
         self._eigen_basis = None
@@ -1235,7 +1243,9 @@ class BlochMetricBasis:
         The shift multiplies the identity in coefficient representation. A
         shift by bX would change every generalised eigenvalue incorrectly.
         """
-        if self.route == "lowdin":
+        if self.route == "anticommutator":
+            h = self._symmetric_h_op
+        elif self.route == "lowdin":
             h = _core.LowdinOperator(self.metric.inverse_sqrt_overlap, self._h_op)
         else:
             h = _core.MetricInverseProduct(self.metric.inverse_overlap, self._h_op)
@@ -1275,14 +1285,31 @@ class BlochMetricBasis:
         return self._blocks[key]
 
     def operator(self, name):
-        """Return the physical observable as a C++ LinearOperator."""
+        """Return a physical observable, or O_sym on the anticommutator route.
+
+        The latter is already an applied Hermitian matrix. Its compiler uses
+        the orthogonal policy, so no second inverse is inserted.
+        """
         key = name.upper()
         if key in ("1", "I", "IDENTITY"):
             # The matrix of physical identity in a nonorthogonal basis is S.
-            return self._s_op
+            return (_core.IdentityOperator(self.dimension) if self.route == "anticommutator"
+                    else self._s_op)
         if key not in self._op_cache:
-            self._op_cache[key] = _core.BlockDiagonalOperator(self.operator_blocks(key))
+            blocks = self.operator_blocks(key)
+            if self.route == "anticommutator":
+                blocks = self.anticommutator_blocks(blocks)
+            self._op_cache[key] = _core.BlockDiagonalOperator(blocks)
         return self._op_cache[key]
+
+    def anticommutator_blocks(self, blocks):
+        """metric_forms.operator_forms: ``O_sym=(X O+O X)/2``.
+
+        Only the single-operator trace identity is universal. Products and
+        functions of H_sym are generally approximations; no plateau equality
+        with the physical oracle is asserted on this route.
+        """
+        return 0.5*(self.inverse_array @ blocks + blocks @ self.inverse_array)
 
     def states(self, trace_mode="random", num_states=None, seed=None):
         """Generate eigenbasis phases ``r_kn=exp(i theta_kn)/sqrt(N_k W)``.
@@ -1310,7 +1337,10 @@ class BlochMetricBasis:
         """
         operators = list(operators)
         ket = self._coefficient_seed if self.route == "generalised" else self._lowdin_seed
-        bra = self._dual_seed if self.route == "generalised" else self._lowdin_seed
+        # MirrorToBra in the current engine copies the PREPARED ket seed.
+        # Therefore the relative map is S*C*C^-1=S (or I for unitary U),
+        # not SC applied a second time to the already prepared C r.
+        bra = self._s_op if self.route == "generalised" else _core.IdentityOperator(self.dimension)
         ki, bi = len(operators), len(operators)+1
         operators.extend([ket, bra])
         code, mirrored = [_core.ApplyOperator(ki)], False
@@ -1363,7 +1393,9 @@ class EigenMetricBasis:
         if key not in self._op_cache:
             C = self.eigenvectors
             self._op_cache[key] = _core.BlockDiagonalOperator(
-                np.ascontiguousarray(adjoint(C) @ self.bloch.operator_blocks(key) @ C))
+                np.ascontiguousarray(adjoint(C) @ (
+                    self.bloch.anticommutator_blocks(self.bloch.operator_blocks(key))
+                    if self.bloch.route == "anticommutator" else self.bloch.operator_blocks(key)) @ C))
         return self._op_cache[key]
 
     def states(self, trace_mode="random", num_states=None, seed=None):
