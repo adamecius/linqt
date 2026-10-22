@@ -269,17 +269,19 @@ def adjoint(matrix: np.ndarray) -> np.ndarray:
 
 
 def checked_hermitian(matrix: np.ndarray, *, name: str, tolerance: float = 1e-10) -> np.ndarray:
-    """Check ``||(M-M^+)/2||_F / ||M||_F <= tolerance`` per block, then fold.
+    """Check Hermiticity against the largest block norm of this operator.
 
-    Folding only removes accepted input round-off. A zero block has zero error;
-    non-finite matrices are refused. This is not a repair of a wrong operator.
+    Symbolic source: metric_forms.hermiticity. The common operator scale
+    accepts absolute round-off in symmetry-zero blocks (for example a Gamma
+    velocity), while still refusing anti-Hermitian defects at that scale.
+    Folding only removes accepted round-off; non-finite matrices are refused.
     """
     matrix = np.asarray(matrix, dtype=np.complex128)
     if matrix.ndim < 2 or matrix.shape[-2] != matrix.shape[-1]:
         raise ValueError(f"{name}: expected square matrix blocks")
     norm = np.linalg.norm(matrix, axis=(-2, -1))
     error = 0.5 * np.linalg.norm(matrix - adjoint(matrix), axis=(-2, -1))
-    relative = error / np.maximum(norm, np.finfo(float).tiny)
+    relative = error / max(float(np.max(norm)), np.finfo(float).tiny)
     if not np.all(np.isfinite(matrix)) or np.any(relative > tolerance):
         raise ValueError(f"{name}: anti-Hermitian relative norm {np.max(relative):.6g} "
                          f"exceeds {tolerance:g}")
