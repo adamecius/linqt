@@ -142,6 +142,7 @@ PYBIND11_MODULE(_core, m) {
   using namespace lsquant;
 
   m.doc() = "C++ execution engine and zero-copy tensor bindings for LSQUANT.";
+  m.attr("build_profile") = BuildProfileName();
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def(py::init<>())
@@ -581,6 +582,7 @@ PYBIND11_MODULE(_core, m) {
       .def_readwrite("number_of_states", &ChebyshevMoments::numberOfStates)
       .def_readwrite("state_label", &ChebyshevMoments::stateLabel)
       .def_readwrite("word", &ChebyshevMoments::word)
+      .def_readonly("build_profile", &ChebyshevMoments::buildProfile)
       .def_readwrite("kpm_weighted", &ChebyshevMoments::kpmWeighted)
       .def_readwrite("symmetrised", &ChebyshevMoments::symmetrised)
       .def_readwrite("time_step", &ChebyshevMoments::timeStep)

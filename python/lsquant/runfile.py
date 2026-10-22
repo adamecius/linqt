@@ -45,6 +45,7 @@ ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
         "time",
         "reconstruction",
         "output",
+        "build_profile",
     }
 )
 
@@ -337,6 +338,13 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         raise ValueError("Run file must be a JSON object")
 
     _check_keys("top-level", raw, ALLOWED_TOP_KEYS)
+    # Item 3: a resolved receipt cannot silently select a different binary profile.
+    # Tester: replay matching receipts and verify mismatched profiles fail before work.
+    if "build_profile" in raw and raw["build_profile"] != _core.build_profile:
+        raise ValueError(
+            f"Run file build_profile={raw['build_profile']!r} differs from "
+            f"loaded engine profile={_core.build_profile!r}"
+        )
 
     for req in ("model", "word", "expansion"):
         if req not in raw:
@@ -809,6 +817,7 @@ class RunFile:
     def to_resolved_dict(self) -> dict[str, Any]:
         """Return the fully resolved run-file dictionary written to ``run.resolved.json``."""
         out: dict[str, Any] = {
+            "build_profile": _core.build_profile,
             "model": dict(self.model),
             "basis": dict(self.basis),
             "metric": dict(self.metric),

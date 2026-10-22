@@ -6,6 +6,8 @@ from typing import Sequence, Union, overload
 import numpy as np
 import numpy.typing as npt
 
+build_profile: str
+
 class SparseMatrix:
     def __init__(self) -> None: ...
     @staticmethod
@@ -353,6 +355,7 @@ class Plan:
     def __init__(self, code: Sequence[Instruction] = ..., word: str = "") -> None: ...
 
 class ChebyshevMoments:
+    build_profile: str
     window: SpectralWindow
     system_size: int
     number_of_states: int
