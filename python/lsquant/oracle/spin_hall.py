@@ -1,4 +1,4 @@
-"""NumPy-only generalised-eigenproblem spin Hall and spin-Chern oracle.
+"""NumPy/SciPy generalised-eigenproblem spin Hall and spin-Chern oracle.
 
 Pauli sigma_z, e=hbar=1 internally; output sigma in e^2/h. The physical
 spin-current response need not be quantised when spin is not conserved.
@@ -8,8 +8,8 @@ onto an integer or equate it with the sector invariant by construction.
 """
 from __future__ import annotations
 
-from math import erfc
 import numpy as np
+from scipy.special import erfc
 
 UNITS = "e^2/h, sigma_z Pauli"
 
@@ -119,15 +119,18 @@ def sigma_xy(energies, curvature, fermi_energies, cell_area, *, broadening=0.0):
     if cell_area <= 0 or broadening < 0:
         raise ValueError("positive area and nonnegative Gaussian width required")
     E, omega = np.asarray(energies), np.asarray(curvature)
-    result = []
-    for ef in np.atleast_1d(fermi_energies):
-        if broadening == 0:
-            occupied = E < ef
-        else:
-            z = ((E-ef)/(np.sqrt(2)*broadening)).ravel()
-            occupied = np.fromiter((0.5*erfc(float(x)) for x in z), float, z.size).reshape(E.shape)
-        result.append(2*np.pi*np.sum(occupied*omega)/(len(E)*cell_area))
-    return np.array(result)
+    ef = np.atleast_1d(fermi_energies)
+    # One array covers all Fermi energies, k points and bands. Reuse it for
+    # erfc and the occupied curvature to avoid another array of that size.
+    if broadening == 0:
+        occupied = (E[None, :, :] < ef[:, None, None]).astype(float)
+    else:
+        occupied = E[None, :, :]-ef[:, None, None]
+        occupied /= np.sqrt(2)*broadening
+        erfc(occupied, out=occupied)
+        occupied *= 0.5
+    occupied *= omega[None, :, :]
+    return 2*np.pi*np.sum(occupied, axis=(1, 2))/(len(E)*cell_area)
 
 
 def _fhs(frames, *, link_tolerance=1e-12):
