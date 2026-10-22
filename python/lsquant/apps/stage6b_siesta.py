@@ -166,6 +166,9 @@ def execute_siesta_runfile(rf, out_dir):
     resolved["output"]["dir"] = str(out)
     timing = PhaseReceipt(out/"run.resolved.json", resolved)
     params = rf.model["params"]
+    degeneracy_tolerance = float(params.get("oracle_degeneracy_tolerance", 1e-6))
+    if not np.isfinite(degeneracy_tolerance) or degeneracy_tolerance <= 0:
+        raise ValueError("oracle_degeneracy_tolerance must be positive and finite (eV)")
     mode = params.get("velocity_mode", "berry_connection")
     model = load_siesta_model(rf.model["dir"], rf.model["label"], dipoles=mode == "covariant",
                               quadrature_order=int(params.get("quadrature_order", 24)),
@@ -264,12 +267,16 @@ def execute_siesta_runfile(rf, out_dir):
     _write_json(out/"eigen_comparison.json", comparisons)
     if params.get("oracle", False):
         with timing.phase("oracle"):
-            curvature = spin_berry_curvature(bloch.physical_eigenvalues, bloch.physical_eigenvectors,
-                                             bloch.operator_blocks("JXSZ"), bloch.operator_blocks("VY"))
+            curvature, degeneracy = spin_berry_curvature(
+                bloch.physical_eigenvalues, bloch.physical_eigenvectors,
+                bloch.operator_blocks("JXSZ"), bloch.operator_blocks("VY"),
+                degeneracy_tolerance=degeneracy_tolerance,
+                hamiltonian=bloch.hk_array, overlap=bloch.sk_array, return_diagnostics=True)
             energies = oracle_energies(rf.reconstruction, bloch.physical_eigenvalues, broadening)
             curve = sigma_xy(bloch.physical_eigenvalues, curvature, energies, area, broadening=broadening/1000)
             _write_json(out/"exact_shc.json", dict(energies=energies.tolist(), values=curve.tolist(), units=UNITS,
                                                   trace="exact occupied-band sum in eigenbasis",
+                                                  degeneracy=degeneracy,
                                                   gaussian_standard_deviation_eV=broadening/1000))
             ef = (rf.reconstruction["fermi_energies"] or [0.0])[0]
             try:
@@ -281,6 +288,7 @@ def execute_siesta_runfile(rf, out_dir):
                 # A metallic input is a scientific result, not an invented integer.
                 topology = {"defined": False, "reason": str(error)}
             topology.update(fermi_energy_eV=ef,
+                            degeneracy=degeneracy,
                             sigma_xy=float(sigma_xy(bloch.physical_eigenvalues, curvature, [ef], area,
                                                      broadening=broadening/1000)[0]), units=UNITS)
             _write_json(out/"spin_chern.json", topology)
@@ -306,12 +314,15 @@ def main(argv=None):
     parser.add_argument("--broadening-meV", type=float, default=10.)
     parser.add_argument("--out", required=True)
     parser.add_argument("--oracle", action="store_true")
+    parser.add_argument("--oracle-degeneracy-tolerance", type=float, default=1e-6,
+                        help="minimum near-degenerate subspace tolerance in eV")
     parser.add_argument("--quadrature-order", type=int, default=24)
     parser.add_argument("--quadrature-max-order", type=int, default=384)
     parser.add_argument("--quadrature-tolerance", type=float, default=1e-5)
     args = parser.parse_args(argv)
     raw = dict(model=dict(kind="siesta", dir=str(Path(args.siesta).expanduser().resolve()), label=args.label,
                           params=dict(velocity_mode=args.velocity_mode, oracle=args.oracle,
+                                      oracle_degeneracy_tolerance=args.oracle_degeneracy_tolerance,
                                       quadrature_order=args.quadrature_order,
                                       quadrature_max_order=args.quadrature_max_order,
                                       quadrature_tolerance=args.quadrature_tolerance)),

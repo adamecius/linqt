@@ -35,22 +35,59 @@ def generalised_eigh(H, S, *, inverse_sqrt=None):
     return E, inverse_sqrt @ U
 
 
-def spin_berry_curvature(energies, eigenvectors, J, V, *, degeneracy_tolerance=1e-10):
+def spin_berry_curvature(energies, eigenvectors, J, V, *, degeneracy_tolerance=1e-6,
+                         hamiltonian=None, overlap=None, return_diagnostics=False):
     """Return ``Omega_n=-2 Im sum_(m!=n) J_nm V_mn/(E_n-E_m)^2``.
 
     Matrix elements are ``C^+ J C, C^+ V C`` with C^+SC=I. Terms within
     degenerate multiplets are excluded: individual band curvatures there
     depend on gauge, but the occupied multiplet sum is invariant if E_F
     lies in a gap. No artificial eta is inserted in interband denominators.
+    Adjacent sorted energies separated by at most the tolerance form one
+    subspace, including transitive chains. The eV tolerance is at least the
+    requested value, ten times the energy residual ||H c-E S c||/||S c||
+    (when H and S are supplied), and ten times eps*W*max(bandwidth, |E|).
+    Optional diagnostics count unordered intra-subspace pairs, once per k.
     Work O(N_k W^3), scratch O(W^2), result (N_k,W).
     """
+    if not np.isfinite(degeneracy_tolerance) or degeneracy_tolerance <= 0:
+        raise ValueError("oracle degeneracy tolerance must be positive and finite (eV)")
+    if (hamiltonian is None) != (overlap is None):
+        raise ValueError("both H and S are required for the eigensolver residual")
     curvature = np.empty_like(energies, dtype=float)
+    tolerances, residuals, bandwidths = [], [], []
+    merged_pairs = 0
     for k, (E, C) in enumerate(zip(energies, eigenvectors)):
+        bandwidth = float(np.ptp(E))
+        roundoff = np.finfo(float).eps * len(E) * max(bandwidth, float(np.max(np.abs(E))))
+        residual = 0.0
+        if hamiltonian is not None:
+            sc = overlap[k] @ C
+            residual = float(np.max(np.linalg.norm(hamiltonian[k] @ C-sc*E, axis=0) /
+                                    np.maximum(np.linalg.norm(sc, axis=0), np.finfo(float).tiny)))
+            if not np.isfinite(residual):
+                raise ValueError("non-finite oracle eigensolver residual")
+        tolerance = max(degeneracy_tolerance, 10*residual, 10*roundoff)
+        order = np.argsort(E)
+        subspaces = np.empty(len(E), dtype=int)
+        subspaces[order] = np.cumsum(np.r_[True, np.diff(E[order]) > tolerance])
+        same_subspace = subspaces[:, None] == subspaces[None, :]
+        merged_pairs += int(np.count_nonzero(np.triu(same_subspace, k=1)))
+        tolerances.append(tolerance)
+        residuals.append(residual)
+        bandwidths.append(bandwidth)
         j, v = adjoint(C) @ J[k] @ C, adjoint(C) @ V[k] @ C
         gap = E[:, None]-E[None, :]
         inverse_gap = np.zeros_like(gap)
-        np.divide(1.0, gap*gap, out=inverse_gap, where=np.abs(gap) > degeneracy_tolerance)
+        np.divide(1.0, gap*gap, out=inverse_gap, where=~same_subspace)
         curvature[k] = -2*np.imag(np.sum(j*v.T*inverse_gap, axis=1))
+    if return_diagnostics:
+        return curvature, dict(requested_tolerance_eV=float(degeneracy_tolerance),
+                               tolerance_eV=float(max(tolerances)),
+                               tolerance_per_k_eV=[float(t) for t in tolerances],
+                               max_eigensolver_residual_eV=max(residuals),
+                               max_bandwidth_eV=max(bandwidths), merged_pairs=merged_pairs,
+                               pair_count_convention="unordered intra-subspace pairs summed over k")
     return curvature
 
 
