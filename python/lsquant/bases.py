@@ -1412,6 +1412,7 @@ class EigenMetricBasis:
             setattr(self, name, getattr(bloch, name))
         self._h_op = _core.DiagonalOperator(np.asarray(self.eigenvalues.ravel(), complex))
         self._op_cache = {}
+        self.hermiticity_residuals = {}
 
     def hamiltonian(self):
         """Return diag(E), the operator in its exact eigenbasis."""
@@ -1432,8 +1433,16 @@ class EigenMetricBasis:
             blocks = adjoint(C) @ (
                     self.bloch.anticommutator_blocks(self.bloch.operator_blocks(key))
                     if self.bloch.route == "anticommutator" else self.bloch.operator_blocks(key)) @ C
-            self._op_cache[key] = _core.BlockDiagonalOperator(
-                checked_hermitian(blocks, name=f"eigen {key}"))
+            # The physical input was checked by operator_blocks. Only accepted
+            # transform round-off may be folded; report the norm actually removed.
+            anti_norm = float(np.max(0.5*np.linalg.norm(blocks-adjoint(blocks), axis=(-2, -1))))
+            scale = max(float(np.max(np.linalg.norm(blocks, axis=(-2, -1)))), np.finfo(float).tiny)
+            folded = checked_hermitian(blocks, name=f"eigen {key}")
+            self.hermiticity_residuals[key] = dict(removed_anti_hermitian_norm=anti_norm,
+                                                 operator_scale=scale, relative_norm=anti_norm/scale)
+            print(f"eigen {key}: Hermitian fold removed anti-Hermitian norm={anti_norm:.17g} "
+                  f"operator_scale={scale:.17g} relative_norm={anti_norm/scale:.17g}", flush=True)
+            self._op_cache[key] = _core.BlockDiagonalOperator(folded)
         return self._op_cache[key]
 
     def states(self, trace_mode="random", num_states=None, seed=None):

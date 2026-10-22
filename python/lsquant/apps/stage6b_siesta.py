@@ -208,6 +208,7 @@ def execute_siesta_runfile(rf, out_dir):
         prepared = [(word, prepare_moments(basis, word, **options),
                      prepare_moments(bloch.eigenbasis(), word, **dict(options, trace="exact")))
                     for word in rf.words]
+    _write_json(out/"eigen_hermiticity.json", bloch.eigenbasis().hermiticity_residuals)
     for word, production_plan, reference_plan in prepared:
         with timing.phase("moments", word=word):
             mu, compiled = compute_moments(basis, word, _prepared=production_plan)

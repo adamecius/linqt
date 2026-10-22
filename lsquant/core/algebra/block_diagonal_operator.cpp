@@ -4,8 +4,10 @@
  */
 #include "core/algebra/block_diagonal_operator.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <complex>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -28,23 +30,28 @@ BlockDiagonalOperator::BlockDiagonalOperator(Index numBlocks, Index blockSize,
 
   const std::size_t w = static_cast<std::size_t>(blockSize_);
   const std::size_t w2 = w * w;
-  bool herm = true;
-  for (Index ik = 0; ik < numBlocks_ && herm; ++ik) {
+  double largestNorm = 0.0;
+  double largestAntiNorm = 0.0;
+  bool finite = true;
+  for (Index ik = 0; ik < numBlocks_; ++ik) {
     const Scalar* blk = blocks_.data() + static_cast<std::size_t>(ik) * w2;
+    double norm = 0.0;
+    double antiNorm = 0.0;
     for (std::size_t i = 0; i < w; ++i) {
-      for (std::size_t j = i; j < w; ++j) {
+      for (std::size_t j = 0; j < w; ++j) {
+        finite = finite && std::isfinite(blk[i * w + j].real()) &&
+                 std::isfinite(blk[i * w + j].imag());
+        norm = std::hypot(norm, std::abs(blk[i * w + j]));
         const Scalar diff = blk[i * w + j] - std::conj(blk[j * w + i]);
-        if (std::abs(diff) > 1e-12) {
-          herm = false;
-          break;
-        }
-      }
-      if (!herm) {
-        break;
+        antiNorm = std::hypot(antiNorm, 0.5 * std::abs(diff));
       }
     }
+    largestNorm = std::max(largestNorm, norm);
+    largestAntiNorm = std::max(largestAntiNorm, antiNorm);
   }
-  isHermitian_ = herm;
+  // One common operator scale also accepts round-off in symmetry-zero blocks.
+  isHermitian_ = finite && largestAntiNorm <=
+      1e-12 * std::max(largestNorm, std::numeric_limits<double>::min());
 }
 
 Index BlockDiagonalOperator::Dimension() const { return numBlocks_ * blockSize_; }
