@@ -604,3 +604,47 @@ operator scale and relative norm, also saved in eigen_hermiticity.json.
 Physical O is checked before transformation; a genuine transformed defect
 still raises. Both production/reference operators are prepared before any
 moments. Compilation and the Bi residuals still require Aron.
+
+## Review 2 applied
+
+Items 1-4 and this report/docstring item are recorded in separate commits in
+review order; addendum item 6 follows in its own sixth commit. The original
+bra localisation and full algebra are in the item-1 entry above: rank-2
+moment_engine.cpp:535-540 at 2d62c0d copied K r, and the adapter inserted S
+before X, X A, T_m, S. The bra carried `S T_m X A K r`, not an independent
+random sample. RandomPhaseStates draws one full-layout vector, normalised
+by sqrt(N); ApplyKpmWeights supplies the moment and state weights once.
+Assertion (g) checks raw one-vector moments against the same NumPy
+quadratic form to 1e-10 on the orthogonal/rotated fixtures, generalised and
+Lowdin routes, Bloch and eigen adapters. The production projection has a
+separate explicit NumPy comparison, so it cannot hide a raw sampling error.
+
+Static bra preparation now starts from the same original r and inserts K
+explicitly on both sides. The substantive variance correction restores the
+Hermitian trace projection used by stage 3; the prior 6b moments disabled
+it. This is the source-level finding, with numerical confirmation pending.
+The two 20-seed standard deviations requested by review 2 are **unmeasured
+here**, and the tester must fill in this output from Aron:
+
+```text
+(g) KM/KM_rotated generalised/lowdin bloch/eigen one-vector quadratic-form residual=<measured, <1e-10>
+SHC eigenbasis noise orthogonal_KM mesh=60x60 M=512 broadening_meV=30 states=16 seeds=20 mean=<measured> std=<measured> standard_error=<measured> exact_KPM=<measured> stage3_real_space_std=0.0041 (quoted 10-seed baseline)
+SHC orbital-Bloch noise orthogonal_KM mesh=60x60 M=512 broadening_meV=30 states=16 seeds=20 mean=<measured> std=<measured> standard_error=<measured> exact_KPM=<measured> stage3_real_space_std=0.0041 (quoted 10-seed baseline)
+```
+
+No noise threshold is substituted for the exact gate. Review-1 item 6(b)
+remains a measurement decision for Fable. Block Hermiticity now has a
+common relative scale, and transformed physical observables are checked,
+folded and their removed anti-Hermitian norms printed/saved. The oracle
+docstring explicitly states the amended `Z2 = C_s mod 2` convention, with
+`C_s=(C_+-C_-)/2` from Prodan sectors; returned fields and physics are unchanged.
+
+No project code, build, numerical self-check, material calculation, golden
+gate or figure has been run in this environment. Only source/diff inspection
+was performed. The review documents are excluded from every commit. The
+original .git index write failed with a read-only filesystem; six commits
+are therefore recorded with detached metadata at /tmp/lsquant-stage6b-r2.git
+and transported by /tmp/lsquant-stage6b-r2.bundle, based on 2d62c0d. The
+workspace branch remains handoff/0006b-dev at its original HEAD. No other
+branch was created and nothing was pushed. C++ changes target C++17 and
+GCC 9.4/11.4; execution must be checked with NumPy 2.2 and sisl 0.16 on Aron.

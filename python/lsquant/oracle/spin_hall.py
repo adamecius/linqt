@@ -122,9 +122,11 @@ def spin_chern(energies, eigenvectors, overlap, spin_z, fermi_energy, mesh, *,
     A cached ``sqrt_overlap=S Y`` avoids another overlap eigensolve.
     Remove the atom-gauge phase with ``exp(+ik.tau)`` BEFORE periodic
     boundary links. Return the difference ``C_spin=C_+-C_-`` (2 for KM),
-    the usual half-difference ``C_Prodan=(C_+-C_-)/2`` (1 for KM), and
-    ``Z2=C_Prodan mod 2`` when that half-difference is integral.
-    The brief's ``Z2=C_spin mod 2`` cannot hold with its requested KM value 2.
+    the Prodan spin Chern number ``C_s=(C_+-C_-)/2`` (1 for KM), and
+    ``Z2 = C_s mod 2`` when C_s is integral. These are the positive/negative
+    Prodan projected-spin sectors. This convention is retained by the brief's
+    review-2 amendment; the returned spin_chern field remains the full
+    difference (2 for KM), and prodan_half_difference is C_s.
     """
     nx, ny, nz = map(int, mesh)
     if nz != 1 or nx < 2 or ny < 2 or nx*ny != len(energies):
