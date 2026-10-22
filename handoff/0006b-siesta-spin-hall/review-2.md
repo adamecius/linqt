@@ -55,3 +55,25 @@ block trace for tests and goldens); 6(b) is re-measured after this review.
 5. **Report.** Append "Review 2 applied" to `report.md`: the localisation (file, line, what
    the bra carried before), the fix, the self-check assertion (g), and the re-measured
    std that the tester must confirm.
+
+## Addendum from the tester's final report (`handoff/0006b-codex` at `78e0431`, `tests.md`)
+
+- Stage-3 real-space estimator, 10 seeds on the 60 x 60 Kane-Mele: mean 2.0027, spread
+  0.0041; seed 12345 gives 1.9957, which reproduces the day-20 number. The 6b samplers
+  spread 11 on the same problem: 2700 times more. Item 1 and 2 stand as written; a further
+  place to look is `ApplyKpmWeights(mu, nstates, False)` in `apps/stage6b_siesta.py`.
+- Profile of the short Bi run (`M = 128`, 2 vectors, 48 threads, wall 86 s): 60 % of the
+  time (48.7 s) in the serial Python per-k loop `bloch_sum` (`python/lsquant/models/bloch.py:36`);
+  the engine call at most 21 %; `eigh` and the metric 7 %. CPU 567 % of 4800 % during the
+  Python phase and 940 % during the engine phase. So review-1 item 5 has its target:
+  `bloch_sum` vectorised over k (one `einsum`/FFT over the R list, or the C++ Bloch
+  transform of stage 5), the eigen reference optional, and the block engine's own
+  occupancy (940 % of 4800 %) goes to stage 8 item 5(d).
+- The dipole quadrature certificate has no margin: refinement error 9.87e-6 against the
+  1e-5 tolerance reached only at the maximum order 96. Item 6 of this review: raise the
+  maximum order (or use a finer radial grid) so the certificate passes with a factor 10 of
+  margin, and report the cost; and cache the certified `A(R)` per SIESTA run on disk so the
+  256 s are paid once, not once per run file.
+- The Z2 convention deviates from the brief as the developer's report declares: state the
+  convention used (`Z2 = C_s mod 2` with the Prodan sectors) in the oracle docstring and
+  keep it; the brief is amended.
