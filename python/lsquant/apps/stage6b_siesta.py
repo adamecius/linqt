@@ -94,6 +94,12 @@ class PhaseReceipt:
         self.path, self.resolved = path, resolved
         resolved["receipt"] = {"phases": []}
 
+    def skip(self, name, reason, **details):
+        entry = dict(phase=name, status="skipped", reason=reason, wall_seconds=0.0, **details)
+        self.resolved["receipt"]["phases"].append(entry)
+        _write_json(self.path, self.resolved)
+        print(f"stage6b: {name} skipped: {reason} {details}", flush=True)
+
     @contextmanager
     def phase(self, name, **details):
         entry = dict(phase=name, status="running", **details)
@@ -140,9 +146,12 @@ def execute_siesta_runfile(rf, out_dir):
     """Execute a validated Siesta RunFile and persist its resolved provenance.
 
     Normalisation is delegated to reconstruct.shc; DOS is per cell.
-    The eigen reference always uses the exact block trace and the cached
-    metric factorisation. The production and reference moment differences
-    are reported without declaring a tolerance verdict or a gate result.
+    An enabled eigen reference uses the exact block trace and cached metric
+    factorisation. Exact production in the eigen adapter already computes
+    that reference, so it is skipped unless reference=true forces a pass.
+    Random production currently uses orbital Bloch phases in either adapter;
+    it retains the independent exact comparison. Differences are reported
+    without declaring a tolerance verdict or a gate result.
     """
     if rf.basis["name"] not in ("bloch", "eigen"):
         raise ValueError("SIESTA stage6b requires basis.name bloch or eigen")
@@ -206,12 +215,29 @@ def execute_siesta_runfile(rf, out_dir):
     states = rf.expansion["states"] or 16
     options = dict(moments=rf.expansion["moments"], states=states, trace=rf.expansion["trace"],
                    seed=rf.expansion["seed"], window=window, batch=rf.expansion["batch"])
-    # Compile every production and reference word before starting any moments,
+    # Compile every requested production and reference word before moments,
     # reconstruction or oracle. A late reference failure must not waste a run.
     with timing.phase("operators"):
-        prepared = [(word, prepare_moments(basis, word, **options),
-                     prepare_moments(bloch.eigenbasis(), word, **dict(options, trace="exact")))
-                    for word in rf.words]
+        production = [(word, prepare_moments(basis, word, **options)) for word in rf.words]
+        # Check the generator itself: the current eigen adapter transforms
+        # orbital phases, which must retain its exact reference comparison.
+        direct_eigen_phases = (basis.name == "eigen" and rf.expansion["trace"] == "random"
+                               and all(isinstance(plan[3], _core.RandomPhaseStates)
+                                       for _, plan in production))
+        if rf.reference is True:
+            run_reference, reference_reason = True, "explicit reference=true"
+        elif rf.reference is False:
+            run_reference, reference_reason = False, "explicit reference=false"
+        elif basis.name == "eigen" and rf.expansion["trace"] == "exact":
+            run_reference, reference_reason = False, "production already computes the exact eigenbasis trace"
+        elif direct_eigen_phases:
+            run_reference, reference_reason = False, "production phases are drawn directly in the eigenbasis"
+        else:
+            run_reference, reference_reason = True, "independent exact eigenbasis comparison"
+        resolved["receipt"]["reference"] = dict(enabled=run_reference, reason=reference_reason)
+        prepared = [(word, plan, prepare_moments(bloch.eigenbasis(), word,
+                                                **dict(options, trace="exact"))
+                     if run_reference else None) for word, plan in production]
     _write_json(out/"eigen_hermiticity.json", bloch.eigenbasis().hermiticity_residuals)
     for word, production_plan, reference_plan in prepared:
         with timing.phase("moments", word=word):
@@ -245,6 +271,12 @@ def execute_siesta_runfile(rf, out_dir):
         curve_path = out/(curve_name+".dat")
         np.savetxt(curve_path, np.column_stack((energy, values)), fmt="%.17g", header=header)
         curve_files.append(str(curve_path))
+        if reference_plan is None:
+            timing.skip("eigen reference", reference_reason, word=word)
+            comparisons.append(dict(word=word, status="skipped", reason=reference_reason,
+                                    production_trace=rf.expansion["trace"],
+                                    production_states=mu.number_of_states))
+            continue
         # The independent engine comparison uses a diagonal H and C^+ O C,
         # not the covariant matrices passed through a second metric route.
         with timing.phase("eigen reference", word=word):
@@ -260,7 +292,7 @@ def execute_siesta_runfile(rf, out_dir):
             eigen_curve = out/("eigen_"+curve_name+".dat")
             np.savetxt(eigen_curve, np.column_stack((er, vr)), fmt="%.17g", header=header)
             curve_files.append(str(eigen_curve))
-        comparisons.append(dict(word=word, phase_seed=rf.expansion["seed"],
+        comparisons.append(dict(word=word, status="completed", phase_seed=rf.expansion["seed"],
                                 production_trace=rf.expansion["trace"], production_states=mu.number_of_states,
                                 reference_trace="exact", reference_states=reference.number_of_states,
                                 max_moment_difference=float(np.max(np.abs(mu.data-reference.data))),
@@ -315,6 +347,8 @@ def main(argv=None):
     parser.add_argument("--broadening-meV", type=float, default=10.)
     parser.add_argument("--out", required=True)
     parser.add_argument("--oracle", action="store_true")
+    parser.add_argument("--reference", action="store_true", default=None,
+                        help="force the exact eigen reference even for exact eigen production")
     parser.add_argument("--bloch-memory-mb", type=float, default=256.0,
                         help="Bloch sum array workspace limit in MiB (excludes the result)")
     parser.add_argument("--oracle-degeneracy-tolerance", type=float, default=1e-6,
@@ -330,7 +364,7 @@ def main(argv=None):
                                       quadrature_order=args.quadrature_order,
                                       quadrature_max_order=args.quadrature_max_order,
                                       quadrature_tolerance=args.quadrature_tolerance)),
-               basis=dict(name="bloch", supercell=args.supercell),
+               basis=dict(name="bloch", supercell=args.supercell), reference=args.reference,
                metric=dict(policy="nonorthogonal", route=args.route, applier="exact"),
                word=SHC_WORD if args.word == "shc" else DOS_WORD,
                expansion=dict(moments=args.moments, trace=args.trace, states=args.states,

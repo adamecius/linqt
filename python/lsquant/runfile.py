@@ -47,6 +47,7 @@ ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
         "reconstruction",
         "output",
         "receipt",
+        "reference",
     }
 )
 
@@ -353,6 +354,11 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         raise ValueError("Run file 'model' must be a JSON object")
     _check_keys("model", model, ALLOWED_MODEL_KEYS)
     kind = str(_get_or(model, "kind", "csr"))
+    reference = raw.get("reference")
+    if reference is not None and not isinstance(reference, bool):
+        raise ValueError("reference must be a boolean when supplied")
+    if reference is not None and kind != "siesta":
+        raise ValueError("reference is supported only for SIESTA stage6b runs")
     if kind not in ("csr", "wannier", "siesta", "generator"):
         raise ValueError(
             f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', 'siesta', or 'generator'"
@@ -646,6 +652,7 @@ class RunFile:
     reconstruction: dict[str, Any]
     output: dict[str, Any]
     source_path: str | None = field(default=None, repr=False)
+    reference: bool | None = None
 
     @classmethod
     def from_dict(
@@ -834,6 +841,7 @@ class RunFile:
             reconstruction=recon_cfg,
             output=output_cfg,
             source_path=source_path,
+            reference=raw.get("reference"),
         )
 
     @classmethod
@@ -859,6 +867,8 @@ class RunFile:
             "reconstruction": dict(self.reconstruction),
             "output": dict(self.output),
         }
+        if self.reference is not None:
+            out["reference"] = self.reference
         if len(self.words) > 1 or self.words != [self.word]:
             out["words"] = list(self.words)
         return out
