@@ -158,13 +158,15 @@ def dipole_quadrature(orbitals, centres, r_cart, overlaps, support, *, order=24,
 
     Compare orders n and 2n until max absolute change in S and A is below
     tolerance/10 (dimensionless and Angstrom respectively), and require the
-    quadrature overlap to match S(R) with the same factor-ten margin. Include
-    every stored H/S pair, including zero S entries with nonzero dipoles.
+    quadrature overlap to match stored S(R) within its absolute precision
+    (1e-5, independent of refinement tolerance). Include every stored H/S
+    pair, including zero S entries with nonzero dipoles.
     The estimate is a refinement estimate, not a rigorous quadrature bound.
     """
     if order < 2 or max_order < 2*order or not np.isfinite(tolerance) or tolerance <= 0:
         raise ValueError("invalid dipole quadrature order/tolerance")
     target = tolerance/10
+    stored_overlap_tolerance = 1e-5
     if target == 0:
         raise ValueError("dipole quadrature tolerance/10 underflows")
     started = perf_counter()
@@ -189,13 +191,14 @@ def dipole_quadrature(orbitals, centres, r_cart, overlaps, support, *, order=24,
             overlap_error = float(abs(current[0]-overlaps[ir, i, j]))
             if not np.all(np.isfinite(current)):
                 raise ValueError(f"non-finite dipole quadrature at R index {ir}, orbitals {i},{j}")
-            if (change <= target and overlap_error <= target) or n >= max_order:
+            if change <= target or n >= max_order:
                 break
             previous = current
-        if change > target or overlap_error > target:
+        if change > target or overlap_error > stored_overlap_tolerance:
             raise ValueError(f"dipole quadrature uncertified at R index {ir}, orbitals {i},{j}: "
                              f"order={n}, change={change:g}, overlap_error={overlap_error:g}, "
-                             f"required_margin_target={target:g}")
+                             f"refinement_target={target:g}, "
+                             f"stored_overlap_tolerance={stored_overlap_tolerance:g}")
         out[:, ir, i, j] = current[1:]
         worst_change = max(worst_change, change)
         worst_overlap = max(worst_overlap, overlap_error)
@@ -203,7 +206,8 @@ def dipole_quadrature(orbitals, centres, r_cart, overlaps, support, *, order=24,
     return out, dict(method="tensor Gauss-Legendre on cutoff intersection", initial_order=order,
                      largest_order=largest_order, maximum_order=max_order, tolerance=tolerance,
                      certification_target=target, required_margin_factor=10,
-                     achieved_margin_factor=tolerance/max(worst_change, worst_overlap, np.finfo(float).tiny),
+                     stored_overlap_tolerance=stored_overlap_tolerance,
+                     achieved_margin_factor=tolerance/max(worst_change, np.finfo(float).tiny),
                      max_refinement_error=worst_change, max_overlap_error=worst_overlap,
                      pair_evaluations=evaluations, requested_tensor_grid_points=grid_points,
                      wall_seconds=perf_counter()-started)
@@ -222,7 +226,7 @@ def _dipole_cache_key(settings, arrays, radial_paths):
     return digest.hexdigest()
 
 
-def _read_dipole_cache(path, key, shape, target):
+def _read_dipole_cache(path, key, shape, target, stored_overlap_tolerance):
     """Load a finite, margin-certified A(R) without allowing pickle objects."""
     with np.load(path, allow_pickle=False) as saved:
         if str(saved["key"].item()) != key:
@@ -233,13 +237,15 @@ def _read_dipole_cache(path, key, shape, target):
             raise ValueError("cached dipole checksum mismatch")
     if A.shape != shape or not np.all(np.isfinite(A)):
         raise ValueError("invalid cached dipole array")
-    for name, bound in (("max_refinement_error", target), ("max_overlap_error", target),
+    for name, bound in (("max_refinement_error", target), ("max_overlap_error", stored_overlap_tolerance),
                         ("pair_hermiticity_error", 2*target)):
         error = float(certificate[name])
         if not np.isfinite(error) or error < 0 or error > bound:
             raise ValueError(f"cached dipole certificate fails {name}")
     if certificate["required_margin_factor"] != 10 or certificate["certification_target"] != target:
         raise ValueError("cached dipole certificate has a different margin policy")
+    if certificate["stored_overlap_tolerance"] != stored_overlap_tolerance:
+        raise ValueError("cached dipole certificate has a different stored-overlap precision")
     if (not isinstance(certificate["orbital_metadata"], list) or
             not np.isfinite(certificate["wall_seconds"]) or certificate["wall_seconds"] < 0):
         raise ValueError("invalid cached dipole provenance")
@@ -360,8 +366,9 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
         cache_path, cache_key = None, None
         if dipoles:
             cache_started = perf_counter()
-            settings = dict(schema="siesta-midpoint-dipoles-v2-margin10", sisl_version=sisl.__version__,
+            settings = dict(schema="siesta-midpoint-dipoles-v3-separate-overlap", sisl_version=sisl.__version__,
                             label=label, order=quadrature_order, tolerance=quadrature_tolerance,
+                            stored_overlap_tolerance=1e-5,
                             maximum_order=quadrature_max_order,
                             atom_species=[str(atom.tag) for atom in geometry.atoms])
             radial_paths = [root/f"{atom.tag}.ion.xml" for atom in geometry.atoms]
@@ -372,7 +379,7 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
             if cache_path.is_file():
                 try:
                     A, certificate = _read_dipole_cache(cache_path, cache_key, (3, *s_blocks.shape),
-                                                         quadrature_tolerance/10)
+                                                         quadrature_tolerance/10, 1e-5)
                 except (OSError, ValueError, KeyError) as error:
                     print(f"dipole cache rejected {cache_path}: {error}; recertifying", flush=True)
                 else:
@@ -383,6 +390,8 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
                                                    wall_seconds=perf_counter()-cache_started)
                     print(f"dipole cache hit: {cache_path}; reuse_seconds="
                           f"{metadata['dipole_cache']['wall_seconds']:.6f}; "
+                          f"stored_overlap_tolerance={certificate['stored_overlap_tolerance']:.6g}; "
+                          f"max_overlap_error={certificate['max_overlap_error']:.6g}; "
                           f"original_certification_seconds={certificate['wall_seconds']:.6f}", flush=True)
                     return model
         orbitals = []
@@ -416,6 +425,8 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
                                            wall_seconds=perf_counter()-cache_started)
             print(f"dipole quadrature certified: largest_order={certificate['largest_order']} "
                   f"margin_factor={certificate['achieved_margin_factor']:.6g} "
+                  f"stored_overlap_tolerance={certificate['stored_overlap_tolerance']:.6g} "
+                  f"max_overlap_error={certificate['max_overlap_error']:.6g} "
                   f"pair_evaluations={certificate['pair_evaluations']} "
                   f"requested_tensor_grid_points={certificate['requested_tensor_grid_points']} "
                   f"certification_seconds={certificate['wall_seconds']:.6f} "
