@@ -218,3 +218,17 @@ stage-6 list):
 - wannier2sparse (https://github.com/adamecius/wannier2sparse): `include/tbmodel.hpp`
   `createCovariantVelocity_list`, `readPositionMatrix` (the `ndegen` pitfall is in its own
   comment), `hopping_product_R`.
+
+## 11. Binding clarification (user, 2026-10-22): non-orthogonal is the target, not a cross-check
+
+The systems this stage is for cannot be Wannierised. The SIESTA route must therefore stand
+on its own: every operator (`H`, `S`, `dH`, `dS`, the intra-cell dipole matrix `A`, the
+spin and spin-current matrices) comes from the SIESTA output and the SIESTA basis
+functions, never from a Wannier90 file; the oracle (section 5) runs on those same SIESTA
+operators with the generalised eigenproblem; the KPM runs on them with the per-block exact
+`S^-1`. The Wannier route (wannier2sparse, `_r.dat`) is only an optional cross-check on a
+material where both exist, and nothing in `models/siesta.py`, `bases.py` or the oracle may
+import or require it. A `covariant` velocity on the SIESTA route means the dipole matrix
+computed by quadrature of the atomic orbitals (section 3), and the self-check of section 8
+(rotated Kane-Mele with `A' = T^+ R T`) is what proves that formula; it needs no Wannier
+input either.
