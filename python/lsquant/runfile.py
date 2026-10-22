@@ -211,6 +211,8 @@ ALLOWED_RECONSTRUCTION_KEYS: frozenset[str] = frozenset(
         "targets",
         "num_cells",
         "cell_area",
+        "energies",
+        "energy_grid",
     }
 )
 
@@ -520,6 +522,19 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if not isinstance(rec, Mapping):
             raise ValueError("Run file 'reconstruction' must be a JSON object")
         _check_keys("reconstruction", rec, ALLOWED_RECONSTRUCTION_KEYS)
+        if rec.get("energies") is not None and rec.get("energy_grid") is not None:
+            raise ValueError("choose reconstruction.energies or energy_grid, not both")
+        if rec.get("energies") is not None:
+            energies = np.asarray(rec["energies"], dtype=float)
+            if energies.ndim != 1 or energies.size == 0 or not np.all(np.isfinite(energies)):
+                raise ValueError("reconstruction.energies must be a nonempty finite list")
+            if np.any(np.diff(energies) <= 0):
+                raise ValueError("reconstruction.energies must be strictly increasing")
+        if rec.get("energy_grid") is not None:
+            grid = np.asarray(rec["energy_grid"], dtype=float)
+            if (grid.shape != (3,) or not np.all(np.isfinite(grid)) or grid[0] >= grid[1]
+                    or grid[2] < 2 or grid[2] != int(grid[2])):
+                raise ValueError("reconstruction.energy_grid must be [E_min, E_max, n], n >= 2")
         for tgt in rec.get("targets") or ():
             if not isinstance(tgt, Mapping):
                 raise ValueError(
@@ -770,6 +785,7 @@ class RunFile:
             "per_site_dos": bool(_get_or(raw_rec, "per_site_dos", False)),
             "targets": [dict(t) for t in (raw_rec.get("targets") or [])],
             **({key: raw_rec[key] for key in ("num_cells", "cell_area") if key in raw_rec}),
+            **({key: raw_rec[key] for key in ("energies", "energy_grid") if key in raw_rec}),
         }
 
         raw_out = dict(raw.get("output") or {})

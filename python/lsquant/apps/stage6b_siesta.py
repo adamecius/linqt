@@ -82,6 +82,27 @@ def _write_json(path, data):
     Path(path).write_text(json.dumps(data, indent=2, allow_nan=False)+"\n", encoding="utf-8")
 
 
+def oracle_energies(reconstruction, eigenvalues, broadening_meV):
+    """Use an explicit oracle grid, or resolve the Fermi gap plus a margin.
+
+    ``energies`` is an explicit list in eV; ``energy_grid`` is the triplet
+    [E_min, E_max, n]. For a metal the default covers the bands adjacent to
+    the Fermi level and is not labelled an insulating gap.
+    """
+    if reconstruction.get("energies") is not None:
+        return np.asarray(reconstruction["energies"], dtype=float)
+    if reconstruction.get("energy_grid") is not None:
+        lo, hi, count = reconstruction["energy_grid"]
+        return np.linspace(float(lo), float(hi), int(count))
+    ef = (reconstruction["fermi_energies"] or [0.0])[0]
+    below, above = eigenvalues[eigenvalues <= ef], eigenvalues[eigenvalues > ef]
+    if below.size == 0 or above.size == 0:
+        raise ValueError("Fermi level is outside the spectrum; supply reconstruction.energies or energy_grid")
+    lo, hi = float(below.max()), float(above.min())
+    margin = max(0.25*(hi-lo), 5*broadening_meV/1000)
+    return np.linspace(lo-margin, hi+margin, reconstruction["num_points"] or 1001)
+
+
 def execute_siesta_runfile(rf, out_dir):
     """Execute a validated Siesta RunFile and persist its resolved provenance.
 
@@ -199,8 +220,7 @@ def execute_siesta_runfile(rf, out_dir):
     if params.get("oracle", False):
         curvature = spin_berry_curvature(bloch.physical_eigenvalues, bloch.physical_eigenvectors,
                                          bloch.operator_blocks("JXSZ"), bloch.operator_blocks("VY"))
-        energies = np.linspace(float(window.lower), float(window.upper),
-                               rf.reconstruction["num_points"] or 1001)
+        energies = oracle_energies(rf.reconstruction, bloch.physical_eigenvalues, broadening)
         curve = sigma_xy(bloch.physical_eigenvalues, curvature, energies, area, broadening=broadening/1000)
         _write_json(out/"exact_shc.json", dict(energies=energies.tolist(), values=curve.tolist(), units=UNITS,
                                               trace="eigenbasis random phase (diagonal curvature trace is exact)",
