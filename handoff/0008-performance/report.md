@@ -70,3 +70,51 @@ counts after construction forfeits placement, but not deterministic arithmetic.
 Scope limitation: native placement targets final owned operator and engine buffers;
 temporary Eigen assembly storage and Python-owned input arrays retain their library
 allocation policy. This avoids changing the excluded 6b adapters or NumPy itself.
+
+## Item 5 — native kernels and optional FFT contraction
+
+- CSR: native whole-row nnz-balanced static partitions, tunable parallel crossover
+  and multi-vector sweeps. Stored column reduction order is retained. First-touch
+  CSR placement now follows that same partition. `work_partition.hpp` documents
+  the tuning parameters; **the default crossover is a candidate, not measured**.
+- Live vectors: `LinearOperator::MultiplyBatch` provides an adapter fallback;
+  CSR and block operators override it. Native `ChebyshevVectors::ApplyToAll`
+  dispatches a whole window, using a reusable output batch. Golden keeps its
+  original per-vector applications. Existing composite adapters use the fallback.
+- Dense blocks: native single-vector Eigen GEMV and per-block GEMM for live
+  vectors, with static contiguous block ownership and an L2-sized microbatch.
+- Dot table: native rank-2 engine uses `linalg::MomentTable`, packing inputs and
+  computing fixed 16x16 result tiles by GEMM. Full inner products stay with one
+  tile owner. Packing and scratch allocation are included in benchmark timing.
+- Rank-2 reconstruction: native coefficient contraction computes `mu B` by GEMM
+  in fixed 32-point groups, then the diagonal contraction with A. Golden keeps
+  the existing scalar reduction and static schedule.
+- Optional `FftMomentContraction`: collapses the cosine/exponential double series
+  into frequency sums in fixed m,n order and evaluates four single-thread FFTW
+  transforms. It returns polynomial sums only; Python owns damping, Green factors,
+  units and integration. `kubo_fft_grid` selects it explicitly by argument or
+  `LSQUANT_FFT_BACKEND=fft`; default remains table contraction. FFTW planner access
+  is serialized with the existing transform operator through one shared mutex.
+  This generic Fourier polynomial evaluator lives in `core/algebra/`; no FFTW
+  dependency enters `core/chebyshev/` or I/O. Tuning environment variables are
+  translated to numeric settings by Python (or the benchmark), never read by core.
+- `bench/kernel_bench.cpp` and optional CMake target `stage8_kernels` measure
+  CSR/vector batches, W=72 blocks, dot tables and coefficient contraction, with
+  output hashes and explicitly modeled FLOP/byte rates.
+
+Expected effects: less OpenMP launch overhead on small CSR matrices, balanced row
+work, matrix reuse across vectors, and vectorized dense products. FFT reduces
+polynomial evaluation complexity to quadratic coefficient folding plus FFTs.
+No speedup or numerical result has been measured. Tester commands, crossover and
+batch sweeps, byte comparisons across thread counts and stream models are in
+`bench/README.md`. All before/after profiles, residuals and rates: **pending**.
+
+Deviations/open questions for review: (1) no measured crossover is possible in
+this environment; the tester must choose it from the supplied sweep. (2) the L2
+formula selects kernel microbatches, not the storage window: shrinking that window
+would multiply right-side recursions in the current sectioned engine. If even one
+row shard exceeds L2, streaming is unavoidable. (3) fixed GEMM tiles and FFTs
+reassociate sums relative to scalar goldens; native data is profile-tagged, and
+optional FFT equality to historical golden curves is an outstanding measurement,
+not an asserted gate. (4) composite batch forwarding beyond the generic fallback
+is left to a follow-up after profiling; no excluded stage-6b adapter is edited.

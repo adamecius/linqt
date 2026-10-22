@@ -7,6 +7,9 @@ import numpy as np
 import numpy.typing as npt
 
 build_profile: str
+def ConfigurePerformance(spmv_min_nnz: int = 16384, kernel_batch: int = 0) -> None: ...
+
+def FftMomentContraction(moments: npt.NDArray[np.complex128], points: int) -> npt.NDArray[np.complex128]: ...
 
 class SparseMatrix:
     def __init__(self) -> None: ...

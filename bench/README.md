@@ -77,3 +77,67 @@ latency of one distributed trace. Keep their outputs separate; do not average
 already normalized moment files to claim one exact trace. Compare the same total
 work (two serial jobs versus these two concurrent jobs). Use the recorded child
 PIDs in each output directory for numastat or stopping work, never a process name.
+
+Item 5: enable the optional measurement executable in both build directories:
+
+```bash
+cmake -S . -B build-golden -DLSQUANT_BUILD_BENCHMARKS=ON
+cmake --build build-golden -j 24
+cmake -S . -B build-native -DLSQUANT_BUILD_BENCHMARKS=ON
+cmake --build build-native -j 24
+mkdir -p /tmp/stage8/kernels
+for profile in golden native; do
+  for threads in 1 24 48 96; do
+    OMP_NUM_THREADS=$threads build-$profile/lsquant_core/stage8_kernels spmv 1000000 1 100 > /tmp/stage8/kernels/$profile-spmv-t$threads.json
+    OMP_NUM_THREADS=$threads build-$profile/lsquant_core/stage8_kernels spmm 1000000 16 30 > /tmp/stage8/kernels/$profile-spmm-t$threads.json
+    OMP_NUM_THREADS=$threads build-$profile/lsquant_core/stage8_kernels block 2304 32 30 > /tmp/stage8/kernels/$profile-block-t$threads.json
+    OMP_NUM_THREADS=$threads build-$profile/lsquant_core/stage8_kernels dot 165888 128 3 > /tmp/stage8/kernels/$profile-dot-t$threads.json
+    OMP_NUM_THREADS=$threads build-$profile/lsquant_core/stage8_kernels contract 256 7680 3 > /tmp/stage8/kernels/$profile-contract-t$threads.json
+  done
+done
+for cutoff in 0 4096 16384 65536 262144; do
+  for rows in 64 256 1024 4096 16384 65536; do
+    OMP_NUM_THREADS=48 LSQUANT_SPMV_MIN_NNZ=$cutoff numactl --cpunodebind=0 --membind=0 build-native/lsquant_core/stage8_kernels spmv $rows 1 1000 > /tmp/stage8/kernels/cutoff-$cutoff-rows-$rows.json
+  done
+done
+for batch in 1 2 4 8 16 32 64 128; do
+  OMP_NUM_THREADS=48 LSQUANT_KERNEL_BATCH=$batch numactl --cpunodebind=0 --membind=0 build-native/lsquant_core/stage8_kernels block 2304 128 30 > /tmp/stage8/kernels/block-batch-$batch.json
+  OMP_NUM_THREADS=48 LSQUANT_KERNEL_BATCH=$batch numactl --cpunodebind=0 --membind=0 build-native/lsquant_core/stage8_kernels spmm 1000000 128 10 > /tmp/stage8/kernels/csr-batch-$batch.json
+done
+```
+
+Repeat at least three times with distinct output paths; report medians and range.
+The cutoff default is an **unmeasured candidate** until this sweep establishes a
+crossover on Aron. Hashes must agree between thread counts within a profile and
+configuration; report any discrepancy, never bless a tolerance automatically.
+Also compare the full production moment and curve files between thread counts.
+
+Kernel microbatches and storage windows serve different purposes. For a CSR row
+shard `q=ceil(N/T)`, the candidate microbatch is
+`max(1,floor((512 KiB/(2*16)-3*q)/(2*q)))`, capped at the live vector count. If a
+single stream exceeds L2, this returns one and the kernel streams from memory.
+For block size W, the microbatch is
+`max(1,floor((512 KiB/(2*16)-W*W)/(2*W)))`, likewise capped. The half-L2 budget
+leaves space for Eigen packing, stack and other streams; it is a tuning starting
+point. `LSQUANT_KERNEL_BATCH` overrides either for measurement. Chebyshev storage
+windows keep the requested `expansion.batch` (default M), preventing repeated
+right-side recursions merely to satisfy a cache estimate. The moment table packs
+the stored window and evaluates fixed 16x16 output tiles by GEMM; contraction
+uses fixed groups of 32 energy points. Geometry and reduction trees of each dense
+product do not depend on the team size.
+
+FFT is optional via `kubo_fft_grid(..., backend="fft")` or
+`LSQUANT_FFT_BACKEND=fft` for `bastin_fft`/`greenwood_fft` reconstruction. The default
+`tables` uses the historical scalar contraction in golden, GEMM in native. Compare
+FFT and tables on **identical FFT nodes**; uniform-grid curves have a different
+grid and cannot be directly subtracted. Frequency folding uses FFTW already linked
+by the project, with single-thread transforms and deterministic coefficient sums.
+It changes floating-point association, so equality to scalar goldens needs tester
+evidence and reviewer acceptance under AGENTS.md, never a silent tolerance change.
+
+Kernel `modeled_gflops` and `modeled_gbs` use the FLOP/byte counts printed by the
+driver: complex multiply-add = 8 FLOP, CSR value/index = 24 bytes (64-bit index),
+row pointer = 8 bytes, vector scalar = 16 bytes. They exclude setup and include
+packing in timed GEMMs. Bytes are an algorithmic stream model, not measured DRAM
+traffic (cache reuse/write allocation can change hardware traffic). For contraction
+and dots they are lower-bound unique input/output streams; label them accordingly.

@@ -555,6 +555,23 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
           vecR.ApplyToAll(*operators_[static_cast<std::size_t>(opIdx)]);
         }
 
+#ifdef LSQUANT_NATIVE_BUILD
+        std::vector<const Vector*> left, right;
+        const int liveL = std::min(effBatchL, numMomsL - mL);
+        const int liveR = std::min(effBatchR, numMomsR - mR);
+        for (int m = 0; m < liveL; ++m) left.push_back(&vecL.At(m));
+        for (int n = 0; n < liveR; ++n) right.push_back(&vecR.At(n));
+        const auto table = linalg::MomentTable(left, right);
+        for (int m = 0; m < liveL; ++m) {
+          for (int n = 0; n < liveR; ++n) {
+            const std::size_t index = static_cast<std::size_t>(mL + m) * numMomsR + mR + n;
+            const Scalar& weight = scalarWeight ? traceWeights[0] : traceWeights[index];
+            const Scalar& value = table[static_cast<std::size_t>(m) * liveR + n];
+            if (weight.imag() == 0.0) mu.At(mL + m, mR + n) += weight.real() * value;
+            else mu.At(mL + m, mR + n) += weight * value;
+          }
+        }
+#else
         for (int m0 = 0; m0 < effBatchL; ++m0) {
           const int row = mL + m0;
           if (row >= numMomsL) {
@@ -572,6 +589,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
             AccumulateWeightedDot(mu.At(row, col), w, vecL.At(m0), vecR.At(m1));
           }
         }
+#endif
       }
     }
   }

@@ -52,11 +52,19 @@ void ChebyshevVectors::ApplyToAll(const LinearOperator& A) {
   if (A.IsIdentity()) {
     return;
   }
+#ifdef LSQUANT_NATIVE_BUILD
+  if (batchScratch_.empty()) {
+    for (int m = 0; m < batchSize_; ++m) batchScratch_.push_back(MakeZeroVector(dimension_));
+  }
+  A.MultiplyBatch(Scalar(1.0, 0.0), vectors_, Scalar(0.0, 0.0), batchScratch_);
+  vectors_.swap(batchScratch_);
+#else
   for (int m = 0; m < batchSize_; ++m) {
     Vector& vec = vectors_[static_cast<std::size_t>(m)];
     linalg::copy(vec, scratch_);
     A.Multiply(Scalar(1.0, 0.0), scratch_, Scalar(0.0, 0.0), vec);
   }
+#endif
 }
 
 Vector& ChebyshevVectors::At(int m) {

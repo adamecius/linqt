@@ -10,6 +10,7 @@ order of the legacy C++ reconstruction routines.
 from __future__ import annotations
 
 import math
+import os
 import numpy as np
 import numpy.typing as npt
 
@@ -474,6 +475,8 @@ def kubo_fft_grid(
     moments: _core.ChebyshevMoments,
     broadening_meV: float,
     formula: str | bool = "bastin",
+    *,
+    backend: str | None = None,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Reconstruct Kubo-Greenwood or Kubo-Bastin on the Chebyshev FFT-node grid.
 
@@ -521,6 +524,11 @@ def kubo_fft_grid(
     ``shift``; although algebraically equal, they differ by 1 ULP for general
     bandwidths.
     """
+    # Item 5c: opt-in FFT polynomial contraction; same nodes and Python factors.
+    # Tester compares tables (native GEMM/golden scalar) and FFT on identical inputs.
+    backend = backend or os.environ.get("LSQUANT_FFT_BACKEND", "tables")
+    if backend not in ("tables", "fft"):
+        raise ValueError("kubo_fft_grid: backend must be 'tables' or 'fft'")
     if isinstance(formula, bool):
         integrate = formula
     else:
@@ -541,21 +549,38 @@ def kubo_fft_grid(
     x_grid = [
         math.cos(math.pi * (2 * i + disp) / num_div) for i in range(num_div)
     ]
+    order = list(range(num_div))
 
     if integrate:
         orig = list(x_grid)
+        orig_order = list(order)
         for k in range(num_div // 2):
             x_grid[2 * k] = orig[k]
             x_grid[2 * k + 1] = orig[num_div - k - 1]
+            order[2 * k] = orig_order[k]
+            order[2 * k + 1] = orig_order[num_div - k - 1]
         for k in range(num_div // 2):
             t = x_grid[k]
             x_grid[k] = x_grid[num_div - k - 1]
             x_grid[num_div - k - 1] = t
+            order[k], order[num_div - k - 1] = order[num_div - k - 1], order[k]
 
-    delta_tbl = legacy_delta_table(x_grid, m0)
-    green_r_tbl, dgreen_r_tbl = legacy_green_tables(x_grid, m0, m1)
-    b_tbl = dgreen_r_tbl if integrate else green_r_tbl
-    out = _core.ContractRank2Imag(damped, delta_tbl, b_tbl)
+    if backend == "fft":
+        sums = _core.FftMomentContraction(np.ascontiguousarray(damped), num_div)
+        out = np.empty(num_div, dtype=np.float64)
+        for i, j in enumerate(order):
+            x = x_grid[i]
+            sine = math.sqrt(1.0 - x * x)
+            if integrate:
+                green = (-1j * x * complex(sums[0, j]) + sine * complex(sums[1, j])) / sine / sine / sine
+            else:
+                green = -1j * complex(sums[0, j]) / sine
+            out[i] = green.imag() / sine / math.pi
+    else:
+        delta_tbl = legacy_delta_table(x_grid, m0)
+        green_r_tbl, dgreen_r_tbl = legacy_green_tables(x_grid, m0, m1)
+        b_tbl = dgreen_r_tbl if integrate else green_r_tbl
+        out = _core.ContractRank2Imag(damped, delta_tbl, b_tbl)
 
     hw = moments.window.half_width
     bc = moments.window.center

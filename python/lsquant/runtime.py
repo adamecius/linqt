@@ -32,3 +32,10 @@ def configure_threads() -> None:
     os.environ.setdefault("OMP_PLACES", "cores")
     if "OMP_NUM_THREADS" not in os.environ:
         os.environ["OMP_NUM_THREADS"] = str(physical_core_count())
+
+
+def configure_kernels(core) -> None:
+    """Send numeric tuning settings once; the engine never reads the environment."""
+    if core.build_profile == "native":
+        core.ConfigurePerformance(int(os.environ.get("LSQUANT_SPMV_MIN_NNZ", "16384")),
+                                  int(os.environ.get("LSQUANT_KERNEL_BATCH", "0")))
