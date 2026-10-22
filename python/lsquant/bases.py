@@ -20,12 +20,14 @@ import json
 import math
 import os
 import shlex
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
+from types import SimpleNamespace
 import numpy as np
 import numpy.typing as npt
 
 from . import _core
-from .models.wannier import WannierModel
+if TYPE_CHECKING:
+    from .models.wannier import WannierModel
 from .moments import window_from_gershgorin
 from .spectral_functions import GaussianDelta
 
@@ -1166,3 +1168,208 @@ def make_basis(
     raise ValueError(
         f"make_basis: unknown basis '{basis_name}' (expected 'real', 'bloch', or 'eigen')"
     )
+
+
+class BlochMetricBasis:
+    """Clean nonorthogonal Bloch blocks with a single cached exact metric.
+
+    ``X=S^-1`` and ``Y=S^-1/2`` are built once, O(N_k W^3), and exposed as
+    ordinary C++ BlockDiagonalOperators. H and every observable are physical
+    matrices; the word compiler inserts X or Y for the selected route. No
+    iterative solver, sparse supercell inverse, or disorder is used here.
+    The model protocol is Hk, Sk, derivatives, Ak, k_mesh, tau and uc; it has
+    no dependency on a Wannier reader.
+    """
+    name = "bloch"
+
+    def __init__(self, model, supercell, *, velocity_mode="berry_connection",
+                 route="generalised", seed=12345):
+        from .models.nonorthogonal import adjoint, exact_block_metric
+        if route not in ("lowdin", "generalised"):
+            raise ValueError("route must be lowdin or generalised")
+        if velocity_mode not in ("bare", "berry_connection", "covariant"):
+            raise ValueError("unknown velocity mode")
+        if velocity_mode == "covariant" and model.dipoles is None:
+            raise ValueError("covariant velocity requires a dipole matrix")
+        self.model, self.supercell = model, tuple(map(int, supercell))
+        self.velocity_mode, self.route, self.seed = velocity_mode, route, int(seed)
+        self.k_points = model.k_mesh(self.supercell)
+        self.num_cells, self.num_wann = len(self.k_points), model.num_wann
+        self.dimension = self.num_cells*self.num_wann
+        self.hk_array, self.sk_array = model.Hk(self.k_points), model.Sk(self.k_points)
+        self.inverse_array, self.inverse_sqrt_array = exact_block_metric(self.sk_array)
+        self._h_op = _core.BlockDiagonalOperator(self.hk_array)
+        self._s_op = _core.BlockDiagonalOperator(self.sk_array)
+        self.metric = SimpleNamespace(is_orthogonal=False, overlap=self._s_op,
+                                      inverse_overlap=_core.BlockDiagonalOperator(self.inverse_array),
+                                      inverse_sqrt_overlap=_core.BlockDiagonalOperator(self.inverse_sqrt_array))
+        Y = self.inverse_sqrt_array
+        lowdin_h = Y @ self.hk_array @ Y
+        self.eigenvalues, u = np.linalg.eigh(lowdin_h)
+        self.eigenvectors = np.ascontiguousarray(Y @ u)  # C^+ S C=I
+        self._lowdin_seed = _core.BlockDiagonalOperator(u)
+        self._coefficient_seed = _core.BlockDiagonalOperator(self.eigenvectors)
+        self._dual_seed = _core.BlockDiagonalOperator(self.sk_array @ self.eigenvectors)
+        identity = np.eye(self.num_wann)
+        self.metric_residuals = {
+            "inverse": float(np.max(np.abs(self.sk_array @ self.inverse_array-identity))),
+            "inverse_sqrt": float(np.max(np.abs(Y @ self.sk_array @ Y-identity))),
+            "inverse_hermiticity": float(np.max(np.abs(self.inverse_array-adjoint(self.inverse_array)))),
+            "generalised_eigenvectors": float(np.max(np.abs(
+                adjoint(self.eigenvectors) @ self.sk_array @ self.eigenvectors-identity))),
+        }
+        self._blocks, self._op_cache = {}, {}
+        self._eigen_basis = None
+
+    def hamiltonian(self):
+        """Return the physical H(k) matrix, BEFORE the metric policy acts."""
+        return self._h_op
+
+    def overlap(self):
+        """Return S(k) as an ordinary block-diagonal operator."""
+        return self._s_op
+
+    def rescaled_hamiltonian(self, window):
+        """Return ``a Y H Y+b I`` or ``a X H+b I = X(aH+bS)``.
+
+        The shift multiplies the identity in coefficient representation. A
+        shift by bX would change every generalised eigenvalue incorrectly.
+        """
+        if self.route == "lowdin":
+            h = _core.LowdinOperator(self.metric.inverse_sqrt_overlap, self._h_op)
+        else:
+            h = _core.MetricInverseProduct(self.metric.inverse_overlap, self._h_op)
+        return _core.RescaledOperator(h, window)
+
+    def operator_blocks(self, name):
+        """Return physical matrices V, Sigma, or ``J=(Vq+qV)/2`` per k."""
+        from .models.nonorthogonal import bloch_velocity, spin_operators, applied_spin_operators, spin_current
+        key = name.upper()
+        if key in ("H", "HAM"):
+            return self.hk_array
+        if key == "S":
+            return self.sk_array
+        if key not in self._blocks:
+            if key in ("VX", "VY", "VZ"):
+                axis = "XYZ".index(key[1])
+                dH, dS = self.model.derivatives(self.k_points, axis, cell=self.velocity_mode == "bare")
+                A = self.model.Ak(self.k_points, axis) if self.velocity_mode == "covariant" else None
+                self._blocks[key] = bloch_velocity(self.hk_array, self.sk_array, dH, dS, A,
+                                                   self.velocity_mode, inverse_overlap=self.inverse_array)
+            elif key in ("SX", "SY", "SZ"):
+                if self.model.physical_spin is not None:
+                    self._blocks.update(self.model.physical_spin)
+                else:
+                    self._blocks.update(spin_operators(self.sk_array, "interleaved"))
+            elif len(key) == 4 and key[0] == "J" and key[1] in "XYZ" and key[2] == "S" and key[3] in "XYZ":
+                V = self.operator_blocks("V"+key[1])
+                if self.model.physical_spin is None:
+                    q = applied_spin_operators(self.num_wann)["S"+key[3]]
+                    self._blocks[key] = spin_current(V, q)
+                else:
+                    Sigma = self.operator_blocks("S"+key[3])
+                    self._blocks[key] = 0.5*(V @ self.inverse_array @ Sigma +
+                                              Sigma @ self.inverse_array @ V)
+            else:
+                raise ValueError(f"unknown BlochMetricBasis operator {name!r}")
+        return self._blocks[key]
+
+    def operator(self, name):
+        """Return the physical observable as a C++ LinearOperator."""
+        key = name.upper()
+        if key in ("1", "I", "IDENTITY"):
+            # The matrix of physical identity in a nonorthogonal basis is S.
+            return self._s_op
+        if key not in self._op_cache:
+            self._op_cache[key] = _core.BlockDiagonalOperator(self.operator_blocks(key))
+        return self._op_cache[key]
+
+    def states(self, trace_mode="random", num_states=None, seed=None):
+        """Generate eigenbasis phases ``r_kn=exp(i theta_kn)/sqrt(N_k W)``.
+
+        bind_eigen_trace maps the ket and dual bra into the coefficient
+        representation. Using C r on both sides would insert an extra S^-1
+        in the generalised trace. Exact block-local seeds are fixture-only.
+        """
+        if trace_mode == "random":
+            return _core.RandomPhaseStates(self.dimension, 1 if num_states is None else int(num_states),
+                                           self.seed if seed is None else int(seed))
+        if trace_mode == "exact":
+            if num_states is not None and int(num_states) != self.num_wann:
+                raise ValueError("block exact trace requires W states")
+            return _core.BlockLocalStates(self.num_cells, self.num_wann)
+        raise ValueError("trace must be random or exact")
+
+    def bind_eigen_trace(self, plan, operators):
+        """Insert ket C and dual bra SC into a coefficient-representation plan.
+
+        ``(SC r)^+ F_c (C r)=r^+ C^+ S F_c C r`` with C^+SC=I.
+        Thus each realisation equals the corresponding eigenbasis estimator,
+        not merely its ensemble mean. The Lowdin route uses unitary U on
+        both sides. A rank-1 plan gets an explicit unexpanded bra.
+        """
+        operators = list(operators)
+        ket = self._coefficient_seed if self.route == "generalised" else self._lowdin_seed
+        bra = self._dual_seed if self.route == "generalised" else self._lowdin_seed
+        ki, bi = len(operators), len(operators)+1
+        operators.extend([ket, bra])
+        code, mirrored = [_core.ApplyOperator(ki)], False
+        for instruction in plan.code:
+            if isinstance(instruction, _core.MirrorToBra):
+                code.extend([instruction, _core.ApplyOperator(bi)])
+                mirrored = True
+            elif isinstance(instruction, _core.Trace) and not mirrored:
+                code.extend([_core.MirrorToBra(), _core.ApplyOperator(bi), instruction])
+            else:
+                code.append(instruction)
+        return _core.Plan(code, plan.word), operators
+
+    def window(self, pad=0.10):
+        """Return [emin-pad*width,emax+pad*width] from generalised eigenvalues."""
+        if pad < 0:
+            raise ValueError("window padding must be nonnegative")
+        lo, hi = float(self.eigenvalues.min()), float(self.eigenvalues.max())
+        width = max(hi-lo, 1.0)
+        return _core.SpectralWindow(lo-pad*width, hi+pad*width)
+
+    def eigenbasis(self):
+        """Return the cached exact adapter ``diag(E), C^+ O C`` on the SAME blocks."""
+        if self._eigen_basis is None:
+            self._eigen_basis = EigenMetricBasis(self)
+        return self._eigen_basis
+
+
+class EigenMetricBasis:
+    """Generalised eigenbasis oracle adapter, reusing the cached C^+SC=I solve."""
+    name = "eigen"
+
+    def __init__(self, bloch):
+        self.bloch = bloch
+        for name in ("dimension", "num_cells", "num_wann", "eigenvalues", "eigenvectors"):
+            setattr(self, name, getattr(bloch, name))
+        self._h_op = _core.DiagonalOperator(np.asarray(self.eigenvalues.ravel(), complex))
+        self._op_cache = {}
+
+    def hamiltonian(self):
+        """Return diag(E), the operator in its exact eigenbasis."""
+        return self._h_op
+
+    def operator(self, name):
+        """Return ``C^+ O C``; the physical identity is I, not S."""
+        from .models.nonorthogonal import adjoint
+        key = name.upper()
+        if key in ("1", "I", "IDENTITY"):
+            return _core.IdentityOperator(self.dimension)
+        if key not in self._op_cache:
+            C = self.eigenvectors
+            self._op_cache[key] = _core.BlockDiagonalOperator(
+                np.ascontiguousarray(adjoint(C) @ self.bloch.operator_blocks(key) @ C))
+        return self._op_cache[key]
+
+    def states(self, trace_mode="random", num_states=None, seed=None):
+        """Use direct eigenbasis random phases, without FFT/real-space mixing."""
+        return self.bloch.states(trace_mode, num_states, seed)
+
+    def window(self, pad=0.10):
+        """Use the same generalised spectral window as the Bloch calculation."""
+        return self.bloch.window(pad)
