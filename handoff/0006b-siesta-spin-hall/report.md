@@ -407,3 +407,102 @@ The phase receipt separates metric/operators, production moments,
 reconstruction and eigen reference; cProfile cannot resolve native C++ costs.
 Report the native run cumulative time, phase seconds, wall time and CPU before
 and after. No performance or golden verdict is asserted here.
+
+## Review 1 applied
+
+This entry supersedes the earlier eigenphase gate/production description above.
+The complete review was read, then AGENTS.md sections 8, 10, 11 and 12 and the
+available brief sections 5 and 8. The checked-in brief ends at section 10;
+there is no section 12 to re-read. The review and the user's explicit revisions
+are the implementation instructions for this pass. The brief and review were
+not edited or staged. No network, build, full developer self-check, material
+run, profile, golden gate or figure was run here.
+
+1. Gamma tolerance: `checked_hermitian` uses the largest block norm of the
+   operator as its common scale; the tolerance is unchanged and real
+   anti-Hermitian defects are still refused.
+2. Generalised operators: physical observable blocks are checked before metric
+   insertion; the eigen transform is checked/folded for accepted numerical
+   round-off. The compiler's existing physical-operator check remains in place;
+   no Euclidean-Hermiticity demand is added to an applied generalised matrix.
+   Every production and reference word is prepared before any moment run,
+   reconstruction, oracle or eigen-reference execution.
+3. Exact curve grid: `reconstruction.energies` is an explicit finite increasing
+   eV list; `reconstruction.energy_grid` is `[E_min, E_max, n]`. Both survive
+   resolution/replay and are mutually exclusive. The default is the two band
+   edges adjacent to the requested Fermi level, plus a margin (1001 points
+   unless num_points is supplied), rather than the whole spectral window.
+4. Progress/timing: metric build, dipole quadrature, operators, moments,
+   reconstruction, oracle (when enabled), and eigen reference flush phase
+   boundaries and wall seconds to stdout and `run.resolved.json` under
+   `receipt.phases`. Failures retain their phase status and elapsed seconds.
+5. Cost: the static audit and exact replacement are documented above. Tester
+   baseline: 71 min, 264% CPU, 95 threads; short-profile before/after and after
+   runtime are unavailable here. No Python per-k loop existed in the audited
+   per-moment path; metric Hamiltonian composites are now cached as one C++
+   BlockDiagonalOperator application, and the engine releases the GIL.
+6. Trace: `EigenMetricBasis.states("exact")` explicitly exposes the C++
+   BlockLocalStates trace (W states, all k blocks). All 24 G11 descriptors now
+   select basis=eigen and trace=exact, with no stochastic vector count.
+   Every eigen reference is exact. Production random phases are in the
+   orthonormal orbital Bloch representation: generalised seeds are mapped by
+   the cached inverse square root; eigen execution transforms them once by
+   the adjoint cached Lowdin eigenvector operator in C++ TransformedStates.
+   Rank-2 self-check assertions use exact traces; stochastic comparisons are
+   diagnostics. The self-check measures the production plateau standard
+   deviation across independent seeded samples at the gate mesh. Formula
+   docstrings retain their SymPy source citations; the unchanged SHC units
+   now explicitly cite `metric_forms.spin_hall_normalisation`.
+7. Report/transport: this "Review 1 applied" entry records the requested changes
+   without certifying a gate. `.git` is read-only (index.lock creation refused),
+   so seven commits are recorded with detached metadata under
+   `/tmp/lsquant-stage6b-r1.git`, based on b51a8c6. No branch was created or
+   switched; no push was attempted. The requested portable bundle is
+   `/tmp/lsquant-stage6b-r1.bundle`, depending only on b51a8c6. The workspace
+   branch reference remains at b51a8c6 until the maintainer imports the bundle.
+
+Editing checks performed in this pass (not integration/golden evidence):
+
+```text
+Changed Python files: Python 3.10 AST syntax OK
+G11 JSON: 24 descriptors, eigen/exact, no states count
+Hermiticity source-body probe: Gamma accepted; real defect refused
+Source-body probes: explicit/default energy grids and completed/failed receipts OK
+Diff whitespace check: no output
+```
+
+The tiny probes extract the actual function/class bodies into a NumPy namespace;
+they do not import the package or extension. SciPy and SymPy are unavailable.
+The changed C++ binding and the full Python/C++ execution require the tester's
+offline build on Aron. The Hamiltonian cache changes floating point association;
+all exact-route moment residuals and prior goldens must be measured there.
+
+Expected self-check output for the tester (not output obtained in this sandbox):
+
+```text
+(a)-(d) covariance, Hermiticity and Hellmann-Feynman within existing assertions
+(e) sigma_xy=2.000000000000 spin_chern=2.000000000000 Z2=1
+(e) explicit Lowdin oracle plateau=2.000000000000
+SHC exact block Bloch-minus-eigen moments=<measured, required below 1e-10>
+(f) generalised exact KPM M=256 Nk=12x12 plateau=<measured> oracle=<measured>
+(f) Lowdin exact KPM M=256 Nk=12x12 plateau=<measured>
+SHC orbital-phase same-sample Bloch-minus-eigen moments=<measured> ... (diagnostic only)
+anticommutator exact plateau=<measured>; equality is NOT required by the derivation
+DOS single eigenphase-minus-exact=<measured, required below 1e-12>
+SHC orbital-phase noise sample=1/8 plateau=<measured>
+...
+SHC orbital-phase noise mesh=48x48 M=256 states=16 samples=8 mean=<measured> std=<measured> standard_error=<measured> exact_KPM=<measured> [e^2/h, sigma_z Pauli]
+stage_6b_check: developer self-check passed (not a golden gate)
+```
+
+The first tester's pre-review exact 12x12 KPM was 2.0055 against its finite-mesh
+oracle 1.9999; the retained acceptance is absolute error below 1e-2, not those
+rounded numbers. The production standard deviation is deliberately not guessed
+from the earlier eigenphase estimator. Defaults use 8 independent samples of
+16 orbital-phase vectors at 48x48, M=256; the printed std is the sample standard
+deviation of a 16-vector plateau estimate (ddof=1), and standard_error describes
+the mean of those independent estimates. To resolve it more precisely and at
+the full G11 moment count, run the same one requested self-check with
+`--noise-samples 100 --noise-moments 1024`; mesh/vector/moment/sample counts are
+printed so a short diagnostic cannot be mistaken for the full production case.
+No stochastic tolerance replaces an exact comparison.
