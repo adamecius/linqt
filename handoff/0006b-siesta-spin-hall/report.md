@@ -516,7 +516,7 @@ build or numerical execution is attempted. review-1.md is absent here;
 review-2.md remains untracked and neither review is staged.
 
 The suggested bra/ket mismatch is **not found in the rank-2 source**.
-At the review-1 HEAD, moment_engine.cpp:535-540 prepares `ketSeed=K r`, then
+At the review-1 HEAD, moment_engine.cpp:521-525 prepares `ketSeed=K r`, then
 starts the bra from that very same `ketSeed`. The block adapter at
 bases.py:1371-1383 inserts S before the compiler's bra operations. With
 `X=S^-1`, the generalised rank-2 vectors are therefore
@@ -607,10 +607,10 @@ moments. Compilation and the Bi residuals still require Aron.
 
 ## Review 2 applied
 
-Items 1-4 and this report/docstring item are recorded in separate commits in
-review order; addendum item 6 follows in its own sixth commit. The original
+All six items are recorded in separate commits in review order; the
+report/docstring is item 5 and the addendum quadrature/cache is item 6. The original
 bra localisation and full algebra are in the item-1 entry above: rank-2
-moment_engine.cpp:535-540 at 2d62c0d copied K r, and the adapter inserted S
+moment_engine.cpp:521-525 at 2d62c0d copied K r, and the adapter inserted S
 before X, X A, T_m, S. The bra carried `S T_m X A K r`, not an independent
 random sample. RandomPhaseStates draws one full-layout vector, normalised
 by sqrt(N); ApplyKpmWeights supplies the moment and state weights once.
@@ -648,3 +648,47 @@ and transported by /tmp/lsquant-stage6b-r2.bundle, based on 2d62c0d. The
 workspace branch remains handoff/0006b-dev at its original HEAD. No other
 branch was created and nothing was pushed. C++ changes target C++17 and
 GCC 9.4/11.4; execution must be checked with NumPy 2.2 and sisl 0.16 on Aron.
+
+Review 2 item 6: the default maximum dipole quadrature order is now 384
+(previously 96) in the reader and CLI/run-file executor. Certification
+requires both the consecutive-order refinement error and stored-overlap
+residual to be <= tolerance/10 (default 1e-6 against tolerance 1e-5), rather
+than merely being inside tolerance. The loop refines when EITHER condition
+fails and refuses at the requested maximum if the margin is still absent.
+Paired-image Hermiticity must likewise be <=2*(tolerance/10) before folding.
+The certificate remains a refinement estimate, not a rigorous error bound.
+
+Cost is reported by the program rather than guessed here: certificate
+wall_seconds, pair_evaluations, requested_tensor_grid_points (a work upper
+bound including pairs whose cutoff boxes may not intersect), largest_order,
+required/achieved margin and maximum_order are printed/saved. Tensor work
+per evaluated pair is O(n^3) with O(n^2) scratch; moving an individual
+integration from n=96 to n=192 or 384 costs up to 8 or 64 times as many grid
+points, respectively. Adaptive pairs stop as soon as both targets pass.
+The tester's earlier cost was 256 s without margin; the new initial cost
+and margin **must be measured on Aron**. No new timing is claimed.
+
+Each SIESTA run now stores its certified, paired-image-folded midpoint A(R)
+in `.lsquant-cache/dipoles-<sha256>.npz` under the input run directory. The
+key includes the loaded cell, centres, orbital-to-atom map, R list, spatial
+S(R), union H/S sparse support, ordered species tags, radial .ion.xml file
+names/contents, sisl version and quadrature/certificate policy. Changing
+those inputs invalidates the entry; changing only the k mesh, metric,
+word, reconstruction or output run file reuses it. The array and certificate
+are written atomically via a same-directory temporary file, fsync and
+replace. Reads use allow_pickle=False, check the key, shape, finiteness,
+array checksum and factor-ten certificate. A rejected entry is recertified.
+Only certified arrays are published to the cache. The input run directory
+must be writable on the first certification.
+
+A hit restores A(R) and orbital provenance without radial integration or
+read_basis calls; hit/path/key and lookup/load wall_seconds are saved in
+basis.json, alongside the original certification cost. The stdout receipt
+explicitly distinguishes initial certification from cache reuse. Aron
+should run two descriptors against the same covariant SIESTA input and
+confirm miss then hit, equal dipoles/curves, measured factor-ten margin,
+and the initial/reuse costs. No cache entry is created in this sandbox.
+
+Final source review corrected the item-1 engine line reference above to
+521-525 at the supplied 2d62c0d HEAD. Git diff whitespace checks are clean;
+these are editing checks only, with no compilation or numerical execution.

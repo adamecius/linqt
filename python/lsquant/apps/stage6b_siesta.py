@@ -170,7 +170,7 @@ def execute_siesta_runfile(rf, out_dir):
     model = load_siesta_model(rf.model["dir"], rf.model["label"], dipoles=mode == "covariant",
                               quadrature_order=int(params.get("quadrature_order", 24)),
                               quadrature_tolerance=float(params.get("quadrature_tolerance", 1e-5)),
-                              quadrature_max_order=int(params.get("quadrature_max_order", 96)),
+                              quadrature_max_order=int(params.get("quadrature_max_order", 384)),
                               phase=timing.phase)
     with timing.phase("metric build"):
         bloch = BlochMetricBasis(model, rf.basis["supercell"], velocity_mode=mode,
@@ -307,7 +307,7 @@ def main(argv=None):
     parser.add_argument("--out", required=True)
     parser.add_argument("--oracle", action="store_true")
     parser.add_argument("--quadrature-order", type=int, default=24)
-    parser.add_argument("--quadrature-max-order", type=int, default=96)
+    parser.add_argument("--quadrature-max-order", type=int, default=384)
     parser.add_argument("--quadrature-tolerance", type=float, default=1e-5)
     args = parser.parse_args(argv)
     raw = dict(model=dict(kind="siesta", dir=str(Path(args.siesta).expanduser().resolve()), label=args.label,

@@ -10,7 +10,12 @@ from __future__ import annotations
 from contextlib import nullcontext
 
 from dataclasses import dataclass, field
+import hashlib
+import json
+import os
 from pathlib import Path
+import tempfile
+from time import perf_counter
 import numpy as np
 
 from .bloch import bloch_sum, k_mesh, reciprocal_lattice
@@ -148,46 +153,120 @@ def _pair_quadrature(orbital_i, orbital_j, displacement, order):
 
 
 def dipole_quadrature(orbitals, centres, r_cart, overlaps, support, *, order=24,
-                      tolerance=1e-5, max_order=96):
+                      tolerance=1e-5, max_order=384):
     """Build A(R) once, certifying refinement and agreement with stored S(R).
 
     Compare orders n and 2n until max absolute change in S and A is below
-    tolerance (dimensionless and Angstrom respectively), and require the
-    quadrature overlap to match S(R) to that same absolute tolerance. Include
+    tolerance/10 (dimensionless and Angstrom respectively), and require the
+    quadrature overlap to match S(R) with the same factor-ten margin. Include
     every stored H/S pair, including zero S entries with nonzero dipoles.
     The estimate is a refinement estimate, not a rigorous quadrature bound.
     """
-    if order < 2 or max_order < 2*order or tolerance <= 0:
+    if order < 2 or max_order < 2*order or not np.isfinite(tolerance) or tolerance <= 0:
         raise ValueError("invalid dipole quadrature order/tolerance")
+    target = tolerance/10
+    if target == 0:
+        raise ValueError("dipole quadrature tolerance/10 underflows")
+    started = perf_counter()
     shape = overlaps.shape
     out = np.zeros((3, *shape), complex)
     worst_change, worst_overlap, largest_order = 0.0, 0.0, order
+    evaluations, grid_points = 0, 0
     for ir, i, j in np.argwhere(support):
         d = r_cart[ir] + centres[j] - centres[i]
         n = order
         previous = _pair_quadrature(orbitals[i], orbitals[j], d, n)
+        if not np.all(np.isfinite(previous)):
+            raise ValueError(f"non-finite dipole quadrature at R index {ir}, orbitals {i},{j}")
+        evaluations += 1
+        grid_points += n**3
         while True:
             n = min(2*n, max_order)
             current = _pair_quadrature(orbitals[i], orbitals[j], d, n)
+            evaluations += 1
+            grid_points += n**3
             change = float(np.max(np.abs(current-previous)))
-            if change <= tolerance or n >= max_order:
+            overlap_error = float(abs(current[0]-overlaps[ir, i, j]))
+            if not np.all(np.isfinite(current)):
+                raise ValueError(f"non-finite dipole quadrature at R index {ir}, orbitals {i},{j}")
+            if (change <= target and overlap_error <= target) or n >= max_order:
                 break
             previous = current
-        overlap_error = float(abs(current[0]-overlaps[ir, i, j]))
-        if change > tolerance or overlap_error > tolerance:
+        if change > target or overlap_error > target:
             raise ValueError(f"dipole quadrature uncertified at R index {ir}, orbitals {i},{j}: "
-                             f"order={n}, change={change:g}, overlap_error={overlap_error:g}")
+                             f"order={n}, change={change:g}, overlap_error={overlap_error:g}, "
+                             f"required_margin_target={target:g}")
         out[:, ir, i, j] = current[1:]
         worst_change = max(worst_change, change)
         worst_overlap = max(worst_overlap, overlap_error)
         largest_order = max(largest_order, n)
     return out, dict(method="tensor Gauss-Legendre on cutoff intersection", initial_order=order,
-                     largest_order=largest_order, tolerance=tolerance,
-                     max_refinement_error=worst_change, max_overlap_error=worst_overlap)
+                     largest_order=largest_order, maximum_order=max_order, tolerance=tolerance,
+                     certification_target=target, required_margin_factor=10,
+                     achieved_margin_factor=tolerance/max(worst_change, worst_overlap, np.finfo(float).tiny),
+                     max_refinement_error=worst_change, max_overlap_error=worst_overlap,
+                     pair_evaluations=evaluations, requested_tensor_grid_points=grid_points,
+                     wall_seconds=perf_counter()-started)
+
+
+def _dipole_cache_key(settings, arrays, radial_paths):
+    """Hash the loaded geometry/S/pattern, radial file contents and certificate policy."""
+    digest = hashlib.sha256(json.dumps(settings, sort_keys=True, allow_nan=False).encode("utf-8"))
+    for value in arrays:
+        array = np.ascontiguousarray(value)
+        digest.update(str((array.shape, array.dtype.str)).encode("ascii"))
+        digest.update(array.tobytes())
+    for path in sorted(set(radial_paths)):
+        digest.update(path.name.encode("utf-8"))
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def _read_dipole_cache(path, key, shape, target):
+    """Load a finite, margin-certified A(R) without allowing pickle objects."""
+    with np.load(path, allow_pickle=False) as saved:
+        if str(saved["key"].item()) != key:
+            raise ValueError("dipole cache key mismatch")
+        A = np.asarray(saved["dipoles"], dtype=np.complex128)
+        certificate = json.loads(str(saved["certificate"].item()))
+        if hashlib.sha256(A.tobytes()).hexdigest() != str(saved["dipoles_sha256"].item()):
+            raise ValueError("cached dipole checksum mismatch")
+    if A.shape != shape or not np.all(np.isfinite(A)):
+        raise ValueError("invalid cached dipole array")
+    for name, bound in (("max_refinement_error", target), ("max_overlap_error", target),
+                        ("pair_hermiticity_error", 2*target)):
+        error = float(certificate[name])
+        if not np.isfinite(error) or error < 0 or error > bound:
+            raise ValueError(f"cached dipole certificate fails {name}")
+    if certificate["required_margin_factor"] != 10 or certificate["certification_target"] != target:
+        raise ValueError("cached dipole certificate has a different margin policy")
+    if (not isinstance(certificate["orbital_metadata"], list) or
+            not np.isfinite(certificate["wall_seconds"]) or certificate["wall_seconds"] < 0):
+        raise ValueError("invalid cached dipole provenance")
+    return A, certificate
+
+
+def _write_dipole_cache(path, key, A, certificate):
+    """Atomically replace one certified cache entry; readers see a complete NPZ."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".dipoles-", suffix=".npz",
+                                         delete=False) as stream:
+            temporary = Path(stream.name)
+            np.savez_compressed(stream, key=np.array(key), dipoles=A,
+                                dipoles_sha256=np.array(hashlib.sha256(A.tobytes()).hexdigest()),
+                                certificate=np.array(json.dumps(certificate, allow_nan=False)))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=24,
-                      quadrature_tolerance=1e-5, quadrature_max_order=96, phase=None):
+                      quadrature_tolerance=1e-5, quadrature_max_order=384, phase=None):
     """Read .fdf/.TSHS or .HSX and optional .ion.xml radial functions with sisl.
 
     sisl 0.16.4 SOC storage is (Re Huu,Re Hdd,Re Hud,Im Hud,Im Huu,
@@ -196,6 +275,8 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
     fail on an unknown layout rather than permuting or silently folding it.
     Round-off up to 1e-7 relative from TSHS is measured, recorded and folded
     in Bloch sums (notes section 11); no CSR tolerance is relaxed.
+    Certified A(R) is cached under the SIESTA run's .lsquant-cache directory,
+    independently of the k mesh/metric/word, with content-based invalidation.
     """
     import sisl
 
@@ -276,6 +357,34 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
                 np.linalg.norm(rebuilt-adjoint(rebuilt)) / (2*max(np.linalg.norm(rebuilt), 1e-300)))
     metadata["sisl_public_api_checks"] = checks
     with (phase("dipole quadrature", enabled=dipoles) if phase is not None else nullcontext()):
+        cache_path, cache_key = None, None
+        if dipoles:
+            cache_started = perf_counter()
+            settings = dict(schema="siesta-midpoint-dipoles-v2-margin10", sisl_version=sisl.__version__,
+                            label=label, order=quadrature_order, tolerance=quadrature_tolerance,
+                            maximum_order=quadrature_max_order,
+                            atom_species=[str(atom.tag) for atom in geometry.atoms])
+            radial_paths = [root/f"{atom.tag}.ion.xml" for atom in geometry.atoms]
+            cache_key = _dipole_cache_key(settings, (cell, centres, atom_indices, r_int,
+                                                    s_blocks, np.asarray(support)),
+                                          radial_paths)
+            cache_path = root/".lsquant-cache"/f"dipoles-{cache_key}.npz"
+            if cache_path.is_file():
+                try:
+                    A, certificate = _read_dipole_cache(cache_path, cache_key, (3, *s_blocks.shape),
+                                                         quadrature_tolerance/10)
+                except (OSError, ValueError, KeyError) as error:
+                    print(f"dipole cache rejected {cache_path}: {error}; recertifying", flush=True)
+                else:
+                    model.dipoles = spinor_scalar(A)
+                    metadata["dipole_quadrature"] = certificate
+                    metadata["orbital_metadata"] = certificate["orbital_metadata"]
+                    metadata["dipole_cache"] = dict(hit=True, path=str(cache_path), key=cache_key,
+                                                   wall_seconds=perf_counter()-cache_started)
+                    print(f"dipole cache hit: {cache_path}; reuse_seconds="
+                          f"{metadata['dipole_cache']['wall_seconds']:.6f}; "
+                          f"original_certification_seconds={certificate['wall_seconds']:.6f}", flush=True)
+                    return model
         orbitals = []
         for ia, atom in enumerate(geometry.atoms):
             tag = str(atom.tag)
@@ -296,8 +405,20 @@ def load_siesta_model(directory, label=None, *, dipoles=False, quadrature_order=
             lookup = {tuple(r): i for i, r in enumerate(r_int)}
             paired = np.stack([adjoint(A[:, lookup[tuple(-r)]] ) for r in r_int], axis=1)
             certificate["pair_hermiticity_error"] = float(np.max(np.abs(A-paired)))
-            if certificate["pair_hermiticity_error"] > 2*quadrature_tolerance:
+            if certificate["pair_hermiticity_error"] > 2*certificate["certification_target"]:
                 raise ValueError("dipole quadrature violates opposite-image Hermiticity")
-            model.dipoles = spinor_scalar(0.5*(A+paired))
+            A = 0.5*(A+paired)
+            certificate["orbital_metadata"] = metadata["orbital_metadata"]
+            _write_dipole_cache(cache_path, cache_key, A, certificate)
+            model.dipoles = spinor_scalar(A)
             metadata["dipole_quadrature"] = certificate
+            metadata["dipole_cache"] = dict(hit=False, path=str(cache_path), key=cache_key,
+                                           wall_seconds=perf_counter()-cache_started)
+            print(f"dipole quadrature certified: largest_order={certificate['largest_order']} "
+                  f"margin_factor={certificate['achieved_margin_factor']:.6g} "
+                  f"pair_evaluations={certificate['pair_evaluations']} "
+                  f"requested_tensor_grid_points={certificate['requested_tensor_grid_points']} "
+                  f"certification_seconds={certificate['wall_seconds']:.6f} "
+                  f"total_cache_miss_seconds={metadata['dipole_cache']['wall_seconds']:.6f}; "
+                  f"cache={cache_path}", flush=True)
     return model
