@@ -88,6 +88,14 @@ def execute_siesta_runfile(rf, out_dir):
         raise ValueError("nonorthogonal disorder belongs to stage6c")
     if rf.expansion["trace"] != "random":
         raise ValueError("material comparisons require eigenbasis random-phase trace")
+    supported = {parse_word(SHC_WORD).canonical(), parse_word(DOS_WORD).canonical()}
+    if any(parse_word(word).canonical() not in supported for word in rf.words):
+        raise ValueError("stage6b run files accept the physical SHC word or identity DOS word")
+    allowed_formulas = {"shc", "dos", "dos_curve"}
+    if rf.reconstruction["formulas"] and not set(rf.reconstruction["formulas"]) <= allowed_formulas:
+        raise ValueError("stage6b reconstruction supports shc and dos")
+    if rf.reconstruction["targets"]:
+        raise ValueError("stage6b does not accept legacy tutorial reconstruction targets")
     params = rf.model["params"]
     mode = params.get("velocity_mode", "berry_connection")
     model = load_siesta_model(rf.model["dir"], rf.model["label"], dipoles=mode == "covariant",
@@ -124,14 +132,6 @@ def execute_siesta_runfile(rf, out_dir):
     if broadening is None:
         raise ValueError("stage6b requires reconstruction.broadening_meV")
     states = rf.expansion["states"] or 16
-    supported = {parse_word(SHC_WORD).canonical(), parse_word(DOS_WORD).canonical()}
-    if any(parse_word(word).canonical() not in supported for word in rf.words):
-        raise ValueError("stage6b run files accept the physical SHC word or identity DOS word")
-    allowed_formulas = {"shc", "dos", "dos_curve"}
-    if rf.reconstruction["formulas"] and not set(rf.reconstruction["formulas"]) <= allowed_formulas:
-        raise ValueError("stage6b reconstruction supports shc and dos")
-    if rf.reconstruction["targets"]:
-        raise ValueError("stage6b does not accept legacy tutorial reconstruction targets")
     for word in rf.words:
         mu, compiled = compute_moments(basis, word, moments=rf.expansion["moments"], states=states,
                                        seed=rf.expansion["seed"], window=window, batch=rf.expansion["batch"])
@@ -197,7 +197,8 @@ def execute_siesta_runfile(rf, out_dir):
         try:
             topology = spin_chern(bloch.physical_eigenvalues, bloch.physical_eigenvectors, bloch.sk_array,
                                   bloch.operator_blocks("SZ"), ef, bloch.supercell,
-                                  k_points=bloch.k_points, centres=model.tau)
+                                  k_points=bloch.k_points, centres=model.tau,
+                                  sqrt_overlap=bloch.sk_array @ bloch.inverse_sqrt_array)
         except ValueError as error:
             # A metallic input is a scientific result, not an invented integer.
             topology = {"defined": False, "reason": str(error)}

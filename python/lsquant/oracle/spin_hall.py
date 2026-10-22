@@ -114,11 +114,12 @@ def _fhs(frames, *, link_tolerance=1e-12):
 
 
 def spin_chern(energies, eigenvectors, overlap, spin_z, fermi_energy, mesh, *,
-               k_points=None, centres=None, spin_gap_tolerance=1e-7):
+               k_points=None, centres=None, spin_gap_tolerance=1e-7, sqrt_overlap=None):
     """Prodan's P sigma_z P sectors, independently integrated by FHS.
 
     Within occupied C_o, diagonalise ``C_o^+ Sigma_z C_o`` and separate
     positive/negative eigenvalues. Use Lowdin frames ``S^1/2 C_o W_+/-``.
+    A cached ``sqrt_overlap=S Y`` avoids another overlap eigensolve.
     Remove the atom-gauge phase with ``exp(+ik.tau)`` BEFORE periodic
     boundary links. Return the difference ``C_spin=C_+-C_-`` (2 for KM),
     the usual half-difference ``C_Prodan=(C_+-C_-)/2`` (1 for KM), and
@@ -134,10 +135,16 @@ def spin_chern(energies, eigenvectors, overlap, spin_z, fermi_energy, mesh, *,
     count = int(occupied[0])
     if np.min(energies[:, count])-np.max(energies[:, count-1]) <= 0:
         raise ValueError("no global insulating energy gap")
-    s, u = np.linalg.eigh(overlap)
-    if np.any(s <= 0):
-        raise ValueError("spin Chern overlap must be positive definite")
-    sqrt_s = (u*np.sqrt(s)[..., None, :]) @ adjoint(u)
+    if sqrt_overlap is None:
+        s, u = np.linalg.eigh(overlap)
+        if np.any(s <= 0):
+            raise ValueError("spin Chern overlap must be positive definite")
+        sqrt_s = (u*np.sqrt(s)[..., None, :]) @ adjoint(u)
+    else:
+        # The basis already built Y=S^-1/2 once: S^1/2=S Y. Reuse it.
+        sqrt_s = np.asarray(sqrt_overlap)
+        if sqrt_s.shape != np.asarray(overlap).shape:
+            raise ValueError("cached overlap square root has the wrong shape")
     C = eigenvectors[..., :count]
     projected_spin = adjoint(C) @ spin_z @ C
     eigen_spin, w = np.linalg.eigh(0.5*(projected_spin+adjoint(projected_spin)))

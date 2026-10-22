@@ -150,7 +150,8 @@ def main():
     plateau = float(sigma_xy(dense.eigenvalues, curvature, [0.], area)[0])
     topology = spin_chern(dense.eigenvalues, dense.eigenvectors, dense.sk_array,
                           dense.operator_blocks("SZ"), 0., dense.supercell,
-                          k_points=dense.k_points, centres=centres)
+                          k_points=dense.k_points, centres=centres,
+                          sqrt_overlap=dense.sk_array @ dense.inverse_sqrt_array)
     print(f"(e) sigma_xy={plateau:.12f} spin_chern={topology['spin_chern']:.12f} Z2={topology['z2']}")
     Y = dense.inverse_sqrt_array
     U = Y @ dense.sk_array @ dense.physical_eigenvectors

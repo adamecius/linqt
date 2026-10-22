@@ -367,6 +367,8 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
     elif kind == "siesta":
         if not model.get("dir") or not model.get("label"):
             raise ValueError("SIESTA model requires dir and label")
+        if model.get("params") is not None and not isinstance(model["params"], Mapping):
+            raise ValueError("SIESTA model.params must be a JSON object")
         _check_keys("model.params (siesta)", model.get("params") or {}, frozenset({
             "velocity_mode", "oracle", "quadrature_order", "quadrature_max_order", "quadrature_tolerance"}))
         if (model.get("params") or {}).get("velocity_mode", "berry_connection") not in (
