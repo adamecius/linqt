@@ -1,103 +1,55 @@
 #!/usr/bin/env python3
 """lsqhall - Hall and longitudinal conductivity of the Haldane model, over LSQUANT.
 
-The heavy work stays in C++, driven through the single `lsquant` binary:
+The heavy work runs through the unified run-file engine (`lsquant.runfile.execute_runfile`),
+which evaluates the two-operator Kubo words
 
-    lsquant compute --config run.json the two-operator Chebyshev moments
-                                      (VX-VY for the Hall response, VX-VX for the
-                                      longitudinal response); bounds come from
-                                      the operators/haldane.HAM.desc sidecar
-    lsquant reconstruct ... bastin    the Kubo-Bastin sum    -> sigma_xy(E)
-    lsquant reconstruct ... greenwood the Kubo-Greenwood sum -> sigma_xx(E)
-    inline_kuboBastinSea/SurfFromChebmom   the Fermi-sea and Fermi-surface parts
+    Tr[VX delta(E-H) VY dG-(E)/dE]
+    Tr[VX delta(E-H) VX delta(E-H)]
 
-Python stages the operators, launches the kernels, reads the small reconstructed
-curves, reads the Chern number off the gap plateau, and plots.
+and reconstructs `bastin`, `sea`, `surf` (from VX-VY) and `greenwood` (from VX-VX).
 
 The Haldane model (t1 = -1, t2 = 0.15, phi = pi/2) is a Chern insulator with
-C = +1. The committed operators in test/golden/haldane are the verified model;
-copy them into ./operators (see README). Units follow the golden: e = hbar = 1,
-so e^2/h = 1/(2 pi).
-
-Run from inside the example folder, after LSQUANT is built and installed
-(executables on PATH, or LSQUANT_BIN set to the build directory).
+C = +1. Units follow the golden: e = hbar = 1, so e^2/h = 1/(2 pi).
 """
 
 import os
 import sys
-import json
 import glob
-import shutil
 import tempfile
-import subprocess
 
 import numpy as np
 
 # Shared publication (APS/PRL) plot style: examples/prl_style.py.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_EX_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT = os.path.dirname(_EX_DIR)
+for _p in (
+    _EX_DIR,
+    os.path.join(_REPO_ROOT, "python"),
+    os.path.join(_REPO_ROOT, "build", "lsquant_core"),
+    os.path.join(_REPO_ROOT, "build"),
+):
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
 import prl_style as prl
+from lsquant.runfile import execute_runfile
 
 A_CELL = 3 * np.sqrt(3) / 2          # honeycomb unit-cell area
 E2_OVER_H = 1.0 / (2 * np.pi)        # conductance quantum in e = hbar = 1 units
 
 
-def _bin(name):
-    root = os.environ.get("LSQUANT_BIN", "")
-    if root and os.path.exists(os.path.join(root, name)):
-        return os.path.join(root, name)
-    found = shutil.which(name)
-    if found:
-        return found
-    raise FileNotFoundError(
-        f"could not find '{name}'. Build and install LSQUANT, or set LSQUANT_BIN.")
-
-
-def _stage(wd, opdir, label, ops):
-    """Stage the operators and the exact-trace state into a run directory.
-
-    The Hamiltonian descriptor (operators/<label>.HAM.desc) travels with the operators, so
-    `lsquant compute` reads the spectral bounds straight from the sidecar -- no BOUNDS file.
-    """
-    os.makedirs(os.path.join(wd, "operators"), exist_ok=True)
-    for op in ops:
-        shutil.copy(os.path.join(opdir, f"{label}.{op}.CSR"),
-                    os.path.join(wd, "operators", f"{label}.{op}.CSR"))
-    shutil.copy(os.path.join(opdir, f"{label}.HAM.desc"),
-                os.path.join(wd, "operators", f"{label}.HAM.desc"))
-    dim = int(open(os.path.join(opdir, f"{label}.HAM.CSR")).readline().split()[0])
-    with open(os.path.join(wd, "exact"), "w") as f:        # exact trace
-        f.write("local\n" + f"{dim}\n" + "\n".join(map(str, range(dim))) + "\n")
-    return dim
-
-
-def _moments(wd, label, opr, opl, M):
-    """Compute the two-operator moments through the single binary: lsquant compute --config.
-
-    The run.json carries the run; compute reads the spectral bounds from the staged .desc. This
-    is byte-identical to the legacy `inline_compute-kpm-nonEqOp <label> <opr> <opl> <M> exact`.
-    """
-    cfg = os.path.join(wd, f"run_{opr}_{opl}.json")
-    with open(cfg, "w") as f:
-        json.dump({"label": label, "operator_right": opr, "operator_left": opl,
-                   "num_moments": M, "kernel": "jackson", "state": "exact"}, f, indent=2)
-    subprocess.run([_bin("lsquant"), "compute", "--config", cfg],
-                   cwd=wd, check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return os.path.basename(sorted(
-        glob.glob(os.path.join(wd, f"NonEqOp{opr}-{opl}{label}*chebmom2D")))[-1])
-
-
-def _reconstruct(wd, mom, argv, out_glob, kernel=None):
-    """Run a reconstruction kernel. `kernel` is set for the single-binary path
-    (lsquant reconstruct <mom> <kernel> <broad>); the inline drivers take
-    <mom> <broad> only."""
-    full = list(argv) + ([mom, kernel, "10"] if kernel else [mom, "10"])
-    subprocess.run(full, cwd=wd, check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    dat = sorted(glob.glob(os.path.join(wd, out_glob)))[-1]
-    d = np.loadtxt(dat)
-    os.remove(dat)
-    return d[:, 0], d[:, 1]
+def _read_bounds(opdir, label):
+    desc_path = os.path.join(opdir, f"{label}.HAM.desc")
+    if os.path.isfile(desc_path):
+        vals = {}
+        with open(desc_path, encoding="utf-8") as fh:
+            for line in fh:
+                if ":" in line and not line.lstrip().startswith("#"):
+                    k, v = line.split(":", 1)
+                    vals[k.strip()] = v.strip()
+        if "spectral_min" in vals and "spectral_max" in vals:
+            return [float(vals["spectral_min"]), float(vals["spectral_max"])]
+    return [-4.5, 4.5]
 
 
 def haldane_conductivities(opdir, label="haldane", M=128):
@@ -107,21 +59,49 @@ def haldane_conductivities(opdir, label="haldane", M=128):
     fine 30*M grid, while Kubo-Greenwood (sigma_xx) uses an M-point grid, so they are not the
     same length.
     """
-    lsq = [_bin("lsquant"), "reconstruct"]
+    dim = int(open(os.path.join(opdir, f"{label}.HAM.CSR")).readline().split()[0])
+    win = _read_bounds(opdir, label)
     with tempfile.TemporaryDirectory() as wd:
-        dim = _stage(wd, opdir, label, ["HAM", "VX", "VY"])
-        xy = _moments(wd, label, "VX", "VY", M)                       # Hall moments
-        Exy, sxy = _reconstruct(wd, xy, lsq, "KuboBastin*haldane*.dat", "bastin")
-        Esea, sea = _reconstruct(wd, xy, [_bin("inline_kuboBastinSeaFromChebmom")],
-                                 "KuboBastin*haldane*.dat")
-        Esurf, surf = _reconstruct(wd, xy, [_bin("inline_kuboBastinSurfFromChebmom")],
-                                   "KuboBastin*haldane*.dat")
-
-        _stage(wd, opdir, label, ["HAM", "VX"])                       # longitudinal
-        xx = _moments(wd, label, "VX", "VX", M)
-        Exx, sxx = _reconstruct(wd, xx, lsq, "KuboGreenWood*haldane*.dat", "greenwood")
-    return dim, {"sigma_xy": (Exy, sxy), "sea": (Esea, sea),
-                 "surf": (Esurf, surf), "sigma_xx": (Exx, sxx)}
+        execute_runfile(
+            {
+                "model": {
+                    "kind": "csr",
+                    "dir": os.path.abspath(opdir),
+                    "label": label,
+                    "operators": ["VX", "VY"],
+                },
+                "word": "Tr[VX delta(E-H) VY dG-(E)/dE]",
+                "words": [
+                    "Tr[VX delta(E-H) VY dG-(E)/dE]",
+                    "Tr[VX delta(E-H) VX delta(E-H)]",
+                ],
+                "expansion": {
+                    "moments": int(M),
+                    "window": win,
+                    "trace": "exact",
+                },
+                "reconstruction": {
+                    "kernel": "jackson",
+                    "broadening_meV": 10.0,
+                    "formulas": ["bastin", "sea", "surf", "greenwood"],
+                },
+                "output": {
+                    "dir": wd,
+                    "legacy_names": True,
+                    "legacy_layout": True,
+                },
+            }
+        )
+        d_xy = np.loadtxt(sorted(glob.glob(os.path.join(wd, f"KuboBastin_NonEqOpVX-VY{label}*.dat")))[-1])
+        d_sea = np.loadtxt(sorted(glob.glob(os.path.join(wd, f"KuboBastinSea_NonEqOpVX-VY{label}*.dat")))[-1])
+        d_surf = np.loadtxt(sorted(glob.glob(os.path.join(wd, f"KuboBastinSurf_NonEqOpVX-VY{label}*.dat")))[-1])
+        d_xx = np.loadtxt(sorted(glob.glob(os.path.join(wd, f"KuboGreenWood_NonEqOpVX-VX{label}*.dat")))[-1])
+    return dim, {
+        "sigma_xy": (d_xy[:, 0], d_xy[:, 1]),
+        "sea": (d_sea[:, 0], d_sea[:, 1]),
+        "surf": (d_surf[:, 0], d_surf[:, 1]),
+        "sigma_xx": (d_xx[:, 0], d_xx[:, 1]),
+    }
 
 
 def chern_from_plateau(dim, E, sigma_xy, gap_halfwidth=0.5):

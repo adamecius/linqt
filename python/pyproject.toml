@@ -13,6 +13,9 @@ dependencies = [
     "sympy",
 ]
 
+[project.scripts]
+lsquant = "lsquant.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["lsquant*"]

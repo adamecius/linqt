@@ -24,7 +24,7 @@ place; each driver is a thin wrapper that picks a formula (and grid backend) and
 
 | driver | formula / route | gated by |
 |---|---|---|
-| `inline_kpm-DOS-standalone` | DOS, `reconstruct_density_grid` | `dos_reconstructed`, `recon_kernel_oracle` |
+| `lsquant reconstruct ... --formula dos` | DOS, `dos_curve` | `dos_reconstructed`, `recon_kernel_oracle` |
 | `spectralFunctionFromChebmom` | spectral, density grid | byte-identity (1-D moments) |
 | `spectralFunctionFromChebmom_Lorentz` | spectral + Lorentz kernel | byte-identity |
 | `kuboGreenwoodFromChebmom` | `reconstruct_kubo(KUBO_GREENWOOD, UNIFORM)` | `greenwood_regression` |

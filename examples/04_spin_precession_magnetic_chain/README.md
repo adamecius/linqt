@@ -65,17 +65,13 @@ For the spin started along $+x$ (the `PX` projector), evolve the state and recor
 each spin component over a 95 fs window, about four and a half precession periods:
 
 ```bash
-for OP in SX SY SZ; do
-  inline_compute-kpm-TimeEvProjetedOp chain1d_mag $OP PX 32 96 95 exact   # (soon: a unified `lsquant compute` time-evolution mode)
-done
+python -m lsquant run ../../runs/goldens/g7.json --out .
 ```
 
-> **Entry points.** Projected real-time evolution has no `lsquant compute` mode
-> yet, so this tutorial uses the `inline_compute-kpm-TimeEvProjetedOp` driver; a
-> unified time-evolution verb is planned and will replace it.
-
-This realises $|\phi(t)\rangle = U(t)\,P_x|\phi_r\rangle$ and records
-$\langle\phi(t)|S_\alpha|\phi(t)\rangle$ over 96 time steps with 32 Chebyshev
+This evaluates the projected time-evolution words
+`Tr[P:PX U(t)^+ SX U(t) delta(E-H) P:PX]`, `Tr[P:PX U(t)^+ SY U(t) delta(E-H) P:PX]`,
+and `Tr[P:PX U(t)^+ SZ U(t) delta(E-H) P:PX]`, realising $|\phi(t)\rangle = U(t)\,P_x|\phi_r\rangle$
+and recording $\langle\phi(t)|S_\alpha|\phi(t)\rangle$ over 96 time steps with 32 Chebyshev
 moments, by exact trace over the full basis (deterministic, no random vectors). It
 writes one time-dependent moment file per component:
 

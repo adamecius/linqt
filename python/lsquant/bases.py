@@ -195,6 +195,261 @@ def _parse_w2s_command_line(
     return cmd_label, explicit_seed, cmd_sc, cmd_ops, None
 
 
+class W2sCsrError(ValueError, FileNotFoundError):
+    """Raised when a ``wannier2sparse`` CSR directory is missing or disagrees with the requested supercell/seed."""
+
+
+def format_w2s_command(
+    model_dir: str | None,
+    seed_name: str,
+    supercell: Sequence[int],
+    csr_dir: str,
+    operators: Sequence[str] = ("VX",),
+) -> str:
+    """Return the exact ``wannier2sparse`` command that produces ``csr_dir``."""
+    n1, n2, n3 = int(supercell[0]), int(supercell[1]), int(supercell[2])
+    ops = [str(op) for op in operators if str(op).strip().upper() not in ("", "1", "HAM")]
+    ops_str = " ".join(ops) if ops else "VX"
+    proj_dir = os.path.abspath(model_dir) if model_dir else "<model_dir>"
+    out_dir = os.path.abspath(csr_dir)
+    return f"wannier2sparse {seed_name} {n1} {n2} {n3} {ops_str} -p {proj_dir} -o {out_dir}"
+
+
+def validate_w2s_csr_dir(
+    csr_dir: str,
+    seed_name: str,
+    supercell: Sequence[int],
+    *,
+    model_dir: str | None = None,
+    operators: Sequence[str] = ("VX",),
+) -> set[str]:
+    """Validate ``csr_dir`` for ``<seed>.HAM.CSR`` and ``<seed>.out`` before any load.
+
+    Refuses with a message naming ``csr_dir``, the mismatch, and the exact
+    ``wannier2sparse`` command that produces it.
+    """
+    sc_tup = (int(supercell[0]), int(supercell[1]), int(supercell[2]))
+    w2s_cmd = format_w2s_command(
+        model_dir, seed_name, sc_tup, csr_dir, operators=operators
+    )
+    ham_path = os.path.join(csr_dir, f"{seed_name}.HAM.CSR")
+    if not os.path.isfile(ham_path):
+        raise W2sCsrError(
+            f"RealBasis: csr_dir '{csr_dir}' lacks '{seed_name}.HAM.CSR' for supercell {sc_tup}; "
+            f"generate it with: {w2s_cmd}"
+        )
+
+    out_path = os.path.join(csr_dir, f"{seed_name}.out")
+    if not os.path.isfile(out_path):
+        raise W2sCsrError(
+            f"RealBasis: csr_dir '{csr_dir}' has '{seed_name}.HAM.CSR' but lacks receipt '{out_path}'; "
+            f"generate it with: {w2s_cmd}"
+        )
+    try:
+        with open(out_path, encoding="utf-8") as fh:
+            meta = json.load(fh)
+    except Exception as exc:
+        raise W2sCsrError(
+            f"RealBasis: failed to read wannier2sparse receipt '{out_path}' in csr_dir '{csr_dir}': {exc}; "
+            f"generate it with: {w2s_cmd}"
+        ) from exc
+    if not isinstance(meta, dict):
+        raise W2sCsrError(
+            f"RealBasis: wannier2sparse receipt '{out_path}' in csr_dir '{csr_dir}' must be a JSON object; "
+            f"generate it with: {w2s_cmd}"
+        )
+
+    if "status" in meta and meta["status"] != "success":
+        raise W2sCsrError(
+            f"RealBasis: wannier2sparse receipt '{out_path}' in csr_dir '{csr_dir}' has status {meta['status']!r} (expected 'success'); "
+            f"generate it with: {w2s_cmd}"
+        )
+
+    inv = meta.get("invocation")
+    if inv is not None and not isinstance(inv, dict):
+        raise W2sCsrError(
+            f"RealBasis: wannier2sparse receipt '{out_path}' in csr_dir '{csr_dir}' field 'invocation' must be an object; "
+            f"generate it with: {w2s_cmd}"
+        )
+    inv_dict = inv if isinstance(inv, dict) else {}
+    if "mode" in inv_dict and inv_dict["mode"] != "sparse":
+        raise W2sCsrError(
+            f"RealBasis: wannier2sparse receipt '{out_path}' in csr_dir '{csr_dir}' has mode {inv_dict['mode']!r} (expected 'sparse'); "
+            f"generate it with: {w2s_cmd}"
+        )
+
+    cmd_label: str | None = None
+    cmd_seed: str | None = None
+    cmd_sc: tuple[int, int, int] | None = None
+    cmd_ops: set[str] | None = None
+    if "command_line" in inv_dict and inv_dict["command_line"] is not None:
+        if (
+            not isinstance(inv_dict["command_line"], str)
+            or not inv_dict["command_line"].strip()
+        ):
+            raise W2sCsrError(
+                f"RealBasis: wannier2sparse receipt '{out_path}' in csr_dir '{csr_dir}' has invalid 'command_line'; "
+                f"generate it with: {w2s_cmd}"
+            )
+        cmd_label, cmd_seed, cmd_sc, cmd_ops, _ = _parse_w2s_command_line(
+            inv_dict["command_line"], out_path
+        )
+
+    labels_found: list[str] = []
+    if "label" in meta:
+        if not isinstance(meta["label"], str) or not meta["label"].strip():
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has invalid 'label'; "
+                f"generate it with: {w2s_cmd}"
+            )
+        labels_found.append(meta["label"].strip())
+    if "label" in inv_dict:
+        if not isinstance(inv_dict["label"], str) or not inv_dict["label"].strip():
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has invalid invocation 'label'; "
+                f"generate it with: {w2s_cmd}"
+            )
+        labels_found.append(inv_dict["label"].strip())
+    if cmd_label is not None:
+        labels_found.append(cmd_label)
+    if not labels_found:
+        raise W2sCsrError(
+            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' does not specify a label; "
+            f"generate it with: {w2s_cmd}"
+        )
+    for lbl in labels_found:
+        if lbl != seed_name:
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' label {lbl!r} does not match model seed {seed_name!r}; "
+                f"generate it with: {w2s_cmd}"
+            )
+    if cmd_seed is not None and cmd_seed != seed_name:
+        raise W2sCsrError(
+            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' --seed {cmd_seed!r} does not match model seed {seed_name!r}; "
+            f"generate it with: {w2s_cmd}"
+        )
+
+    supercells_found: list[tuple[int, int, int]] = []
+    for sc_raw in (meta.get("supercell"), inv_dict.get("supercell")):
+        if sc_raw is not None:
+            if not isinstance(sc_raw, (list, tuple)) or len(sc_raw) != 3:
+                raise W2sCsrError(
+                    f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has invalid 'supercell' {sc_raw!r}; "
+                    f"generate it with: {w2s_cmd}"
+                )
+            try:
+                sc_item = (int(sc_raw[0]), int(sc_raw[1]), int(sc_raw[2]))
+            except (TypeError, ValueError) as exc:
+                raise W2sCsrError(
+                    f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has non-integer 'supercell' {sc_raw!r}; "
+                    f"generate it with: {w2s_cmd}"
+                ) from exc
+            supercells_found.append(sc_item)
+    if cmd_sc is not None:
+        supercells_found.append(cmd_sc)
+    if not supercells_found:
+        raise W2sCsrError(
+            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' does not specify a supercell; "
+            f"generate it with: {w2s_cmd}"
+        )
+    for sc_item in supercells_found:
+        if sc_item != sc_tup:
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' supercell {sc_item} does not match requested supercell {sc_tup}; "
+                f"generate it with: {w2s_cmd}"
+            )
+
+    op_sets_found: list[set[str]] = []
+    if "outputs" in meta:
+        outputs_raw = meta["outputs"]
+        if not isinstance(outputs_raw, list) or not outputs_raw:
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' field 'outputs' must be a non-empty list; "
+                f"generate it with: {w2s_cmd}"
+            )
+        out_ops: set[str] = set()
+        for entry in outputs_raw:
+            if isinstance(entry, dict):
+                op_nm = entry.get("name")
+                if not isinstance(op_nm, str) or not op_nm.strip():
+                    raise W2sCsrError(
+                        f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has an output entry without a valid 'name'; "
+                        f"generate it with: {w2s_cmd}"
+                    )
+                op_key = op_nm.strip().upper()
+                op_path = entry.get("path")
+                if isinstance(op_path, str) and op_path.strip():
+                    expected_base = f"{seed_name}.{op_key}.CSR"
+                    if os.path.basename(op_path.strip()) != expected_base:
+                        raise W2sCsrError(
+                            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' output '{op_key}' path '{op_path}' does not match '{expected_base}'; "
+                            f"generate it with: {w2s_cmd}"
+                        )
+                out_ops.add(op_key)
+            elif isinstance(entry, str) and entry.strip():
+                out_ops.add(entry.strip().upper())
+            else:
+                raise W2sCsrError(
+                    f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has invalid entry in 'outputs'; "
+                    f"generate it with: {w2s_cmd}"
+                )
+        op_sets_found.append(out_ops)
+
+    if "operators" in meta:
+        ops_raw = meta["operators"]
+        if not isinstance(ops_raw, list) or not ops_raw:
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' field 'operators' must be a non-empty list; "
+                f"generate it with: {w2s_cmd}"
+            )
+        op_list_set: set[str] = set()
+        for item in ops_raw:
+            if not isinstance(item, str) or not item.strip():
+                raise W2sCsrError(
+                    f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has invalid operator name in 'operators'; "
+                    f"generate it with: {w2s_cmd}"
+                )
+            op_list_set.add(item.strip().upper())
+        op_sets_found.append(op_list_set)
+
+    if cmd_ops is not None:
+        op_sets_found.append(cmd_ops)
+
+    if not op_sets_found:
+        raise W2sCsrError(
+            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' does not specify an operator list; "
+            f"generate it with: {w2s_cmd}"
+        )
+
+    canonical_ops = op_sets_found[0]
+    if "HAM" not in canonical_ops:
+        raise W2sCsrError(
+            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' operator list {sorted(canonical_ops)} does not include 'HAM'; "
+            f"generate it with: {w2s_cmd}"
+        )
+    for other_ops in op_sets_found[1:]:
+        if other_ops != canonical_ops:
+            raise W2sCsrError(
+                f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' has inconsistent operator lists: {sorted(canonical_ops)} vs {sorted(other_ops)}; "
+                f"generate it with: {w2s_cmd}"
+            )
+
+    prefix = f"{seed_name}."
+    suffix = ".CSR"
+    disk_ops: set[str] = set()
+    for fname in os.listdir(csr_dir):
+        if fname.startswith(prefix) and fname.endswith(suffix):
+            op_part = fname[len(prefix) : -len(suffix)].strip().upper()
+            if op_part:
+                disk_ops.add(op_part)
+    if disk_ops != canonical_ops:
+        raise W2sCsrError(
+            f"RealBasis: receipt '{out_path}' in csr_dir '{csr_dir}' operator list {sorted(canonical_ops)} does not match CSR files on disk {sorted(disk_ops)}; "
+            f"generate it with: {w2s_cmd}"
+        )
+    return canonical_ops
+
+
 def make_anderson_disorder(
     dimension: int, disorder_w: float, seed: int = 12345
 ) -> npt.NDArray[np.complex128]:
@@ -268,11 +523,6 @@ class RealBasis:
         if self._use_w2s_csr:
             seed_name = self.model.seed_name
             if self._csr_dir is not None:
-                ham_candidate = os.path.join(self._csr_dir, f"{seed_name}.HAM.CSR")
-                if not os.path.isfile(ham_candidate):
-                    raise FileNotFoundError(
-                        f"RealBasis: '{ham_candidate}' not found in csr_dir '{self._csr_dir}'"
-                    )
                 self._w2s_active_dir = self._csr_dir
             elif self.model.model_dir is not None:
                 ham_candidate = os.path.join(
@@ -315,187 +565,13 @@ class RealBasis:
         self._op_cache: dict[str, _core.LinearOperator] = {}
 
     def _validate_w2s_receipt(self, d: str) -> set[str]:
-        """Strictly validate ``<seed>.out`` in ``d`` for label, supercell, and operator list."""
-        seed = self.model.seed_name
-        out_path = os.path.join(d, f"{seed}.out")
-        if not os.path.isfile(out_path):
-            raise FileNotFoundError(
-                f"RealBasis: found '{seed}.HAM.CSR' in '{d}', but wannier2sparse receipt '{out_path}' is missing"
-            )
-        try:
-            with open(out_path, encoding="utf-8") as fh:
-                meta = json.load(fh)
-        except Exception as exc:
-            raise ValueError(
-                f"RealBasis: failed to read wannier2sparse receipt '{out_path}': {exc}"
-            ) from exc
-        if not isinstance(meta, dict):
-            raise ValueError(
-                f"RealBasis: wannier2sparse receipt '{out_path}' must be a JSON object"
-            )
-
-        if "status" in meta and meta["status"] != "success":
-            raise ValueError(
-                f"RealBasis: wannier2sparse receipt '{out_path}' has status {meta['status']!r} (expected 'success')"
-            )
-
-        inv = meta.get("invocation")
-        if inv is not None and not isinstance(inv, dict):
-            raise ValueError(
-                f"RealBasis: wannier2sparse receipt '{out_path}' field 'invocation' must be an object"
-            )
-        inv_dict = inv if isinstance(inv, dict) else {}
-        if "mode" in inv_dict and inv_dict["mode"] != "sparse":
-            raise ValueError(
-                f"RealBasis: wannier2sparse receipt '{out_path}' has mode {inv_dict['mode']!r} (expected 'sparse')"
-            )
-
-        cmd_label: str | None = None
-        cmd_seed: str | None = None
-        cmd_sc: tuple[int, int, int] | None = None
-        cmd_ops: set[str] | None = None
-        if "command_line" in inv_dict and inv_dict["command_line"] is not None:
-            if (
-                not isinstance(inv_dict["command_line"], str)
-                or not inv_dict["command_line"].strip()
-            ):
-                raise ValueError(
-                    f"RealBasis: wannier2sparse receipt '{out_path}' has invalid 'command_line'"
-                )
-            cmd_label, cmd_seed, cmd_sc, cmd_ops, _ = _parse_w2s_command_line(
-                inv_dict["command_line"], out_path
-            )
-
-        labels_found: list[str] = []
-        if "label" in meta:
-            if not isinstance(meta["label"], str) or not meta["label"].strip():
-                raise ValueError(f"RealBasis: receipt '{out_path}' has invalid 'label'")
-            labels_found.append(meta["label"].strip())
-        if "label" in inv_dict:
-            if not isinstance(inv_dict["label"], str) or not inv_dict["label"].strip():
-                raise ValueError(
-                    f"RealBasis: receipt '{out_path}' has invalid invocation 'label'"
-                )
-            labels_found.append(inv_dict["label"].strip())
-        if cmd_label is not None:
-            labels_found.append(cmd_label)
-        if not labels_found:
-            raise ValueError(f"RealBasis: receipt '{out_path}' does not specify a label")
-        for lbl in labels_found:
-            if lbl != seed:
-                raise ValueError(
-                    f"RealBasis: receipt '{out_path}' label {lbl!r} does not match model seed {seed!r}"
-                )
-        if cmd_seed is not None and cmd_seed != seed:
-            raise ValueError(
-                f"RealBasis: receipt '{out_path}' --seed {cmd_seed!r} does not match model seed {seed!r}"
-            )
-
-        supercells_found: list[tuple[int, int, int]] = []
-        for sc_raw in (meta.get("supercell"), inv_dict.get("supercell")):
-            if sc_raw is not None:
-                if not isinstance(sc_raw, (list, tuple)) or len(sc_raw) != 3:
-                    raise ValueError(
-                        f"RealBasis: receipt '{out_path}' has invalid 'supercell' {sc_raw!r}"
-                    )
-                try:
-                    sc_tup = (int(sc_raw[0]), int(sc_raw[1]), int(sc_raw[2]))
-                except (TypeError, ValueError) as exc:
-                    raise ValueError(
-                        f"RealBasis: receipt '{out_path}' has non-integer 'supercell' {sc_raw!r}"
-                    ) from exc
-                supercells_found.append(sc_tup)
-        if cmd_sc is not None:
-            supercells_found.append(cmd_sc)
-        if not supercells_found:
-            raise ValueError(
-                f"RealBasis: receipt '{out_path}' does not specify a supercell"
-            )
-        for sc_tup in supercells_found:
-            if sc_tup != self.supercell:
-                raise ValueError(
-                    f"RealBasis: receipt '{out_path}' supercell {sc_tup} does not match requested supercell {self.supercell}"
-                )
-
-        op_sets_found: list[set[str]] = []
-        if "outputs" in meta:
-            outputs_raw = meta["outputs"]
-            if not isinstance(outputs_raw, list) or not outputs_raw:
-                raise ValueError(
-                    f"RealBasis: receipt '{out_path}' field 'outputs' must be a non-empty list"
-                )
-            out_ops: set[str] = set()
-            for entry in outputs_raw:
-                if isinstance(entry, dict):
-                    op_nm = entry.get("name")
-                    if not isinstance(op_nm, str) or not op_nm.strip():
-                        raise ValueError(
-                            f"RealBasis: receipt '{out_path}' has an output entry without a valid 'name'"
-                        )
-                    op_key = op_nm.strip().upper()
-                    op_path = entry.get("path")
-                    if isinstance(op_path, str) and op_path.strip():
-                        expected_base = f"{seed}.{op_key}.CSR"
-                        if os.path.basename(op_path.strip()) != expected_base:
-                            raise ValueError(
-                                f"RealBasis: receipt '{out_path}' output '{op_key}' path '{op_path}' does not match '{expected_base}'"
-                            )
-                    out_ops.add(op_key)
-                elif isinstance(entry, str) and entry.strip():
-                    out_ops.add(entry.strip().upper())
-                else:
-                    raise ValueError(
-                        f"RealBasis: receipt '{out_path}' has invalid entry in 'outputs'"
-                    )
-            op_sets_found.append(out_ops)
-
-        if "operators" in meta:
-            ops_raw = meta["operators"]
-            if not isinstance(ops_raw, list) or not ops_raw:
-                raise ValueError(
-                    f"RealBasis: receipt '{out_path}' field 'operators' must be a non-empty list"
-                )
-            op_list_set: set[str] = set()
-            for item in ops_raw:
-                if not isinstance(item, str) or not item.strip():
-                    raise ValueError(
-                        f"RealBasis: receipt '{out_path}' has invalid operator name in 'operators'"
-                    )
-                op_list_set.add(item.strip().upper())
-            op_sets_found.append(op_list_set)
-
-        if cmd_ops is not None:
-            op_sets_found.append(cmd_ops)
-
-        if not op_sets_found:
-            raise ValueError(
-                f"RealBasis: receipt '{out_path}' does not specify an operator list"
-            )
-
-        canonical_ops = op_sets_found[0]
-        if "HAM" not in canonical_ops:
-            raise ValueError(
-                f"RealBasis: receipt '{out_path}' operator list {sorted(canonical_ops)} does not include 'HAM'"
-            )
-        for other_ops in op_sets_found[1:]:
-            if other_ops != canonical_ops:
-                raise ValueError(
-                    f"RealBasis: receipt '{out_path}' has inconsistent operator lists: {sorted(canonical_ops)} vs {sorted(other_ops)}"
-                )
-
-        prefix = f"{seed}."
-        suffix = ".CSR"
-        disk_ops: set[str] = set()
-        for fname in os.listdir(d):
-            if fname.startswith(prefix) and fname.endswith(suffix):
-                op_part = fname[len(prefix) : -len(suffix)].strip().upper()
-                if op_part:
-                    disk_ops.add(op_part)
-        if disk_ops != canonical_ops:
-            raise ValueError(
-                f"RealBasis: receipt '{out_path}' operator list {sorted(canonical_ops)} does not match CSR files on disk {sorted(disk_ops)} in '{d}'"
-            )
-        return canonical_ops
+        """Strictly validate ``<seed>.HAM.CSR`` and ``<seed>.out`` in ``d``."""
+        return validate_w2s_csr_dir(
+            d,
+            self.model.seed_name,
+            self.supercell,
+            model_dir=self.model.model_dir,
+        )
 
     def _load_w2s_csr(self, op_name: str) -> tuple[_core.SparseMatrix, str]:
         """Load ``<seed>.<op_name>.CSR`` from the validated ``wannier2sparse`` directory and return ``(mat, source_str)``."""

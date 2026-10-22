@@ -1,85 +1,100 @@
 #!/usr/bin/env python3
-"""lsqloc - localization study on the 1D Anderson chain, over compiled LSQUANT.
+"""lsqloc - localization study on the 1D Anderson chain, over LSQUANT.
 
-The heavy work stays in C++:
+The heavy work runs through the unified run-file engine (`lsquant.runfile.execute_runfile`),
+which evaluates the mean-square displacement word
 
-    inline_compute-kpm-MeanSquareDisplacement   the time-dependent Chebyshev
-                                                moments of the spreading
-    inline_timeCorrelationsFromChebmom          the reconstruction sum that
-                                                returns MSD(E, t)
+    Tr[[X, U(t)]^+ delta(E-H) [X, U(t)]]
 
-Python builds each disorder realisation, launches the two kernels, averages
-MSD(E, t) over realisations, reads the localization length from the late-time
-plateau, and plots. Reading and averaging the small reconstructed curves is
-light, so that part is in Python; both sums stay compiled.
+and reconstructs MSD(E, t) via `time_correlation`.
+
+Python builds each disorder realisation, runs the word evaluation and
+reconstruction, averages MSD(E, t) over realisations, reads the localization
+length from the late-time plateau, and plots.
 
 The clean chain spreads ballistically, MSD ~ t^2. Disorder localizes every
 state, so MSD(E, t) rises and then settles on a plateau set by the localization
 length xi(E). The relative size sqrt(MSD_plateau) follows the localization
 length, so its energy profile and its 1/W^2 scaling can be read directly; the
 overall prefactor is fixed once against the clean ballistic reference.
-
-Run from inside the example folder, after LSQUANT is built and installed
-(executables on PATH, or LSQUANT_BIN set to the build directory).
 """
 
 import os
 import sys
 import glob
-import shutil
 import tempfile
-import subprocess
 
 import numpy as np
 
 import make_disordered_chain as gen
 
 # Shared publication (APS/PRL) plot style: examples/prl_style.py.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_EX_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT = os.path.dirname(_EX_DIR)
+for _p in (
+    _EX_DIR,
+    os.path.join(_REPO_ROOT, "python"),
+    os.path.join(_REPO_ROOT, "build", "lsquant_core"),
+    os.path.join(_REPO_ROOT, "build"),
+):
+    if os.path.isdir(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
 import prl_style as prl
-
-
-# ----------------------------------------------------------------------
-# compiled kernels
-# ----------------------------------------------------------------------
-def _bin(name):
-    root = os.environ.get("LSQUANT_BIN", "")
-    if root and os.path.exists(os.path.join(root, name)):
-        return os.path.join(root, name)
-    found = shutil.which(name)
-    if found:
-        return found
-    raise FileNotFoundError(
-        f"could not find '{name}'. Build and install LSQUANT, or set LSQUANT_BIN.")
+from lsquant.runfile import execute_runfile
 
 
 def msd_curve(N, W, energies, seed, M=256, num_times=128, tmax=600, broad=10):
     """One disorder realisation. Return {E: (t, MSD)} for each Fermi energy.
 
-    A fresh random vector (KPM_SEED) traces the spreading, so each realisation
+    A fresh random vector (seed) traces the spreading, so each realisation
     averages over disorder and over the starting vector together.
     """
     out = {}
     with tempfile.TemporaryDirectory() as wd:
         label = gen.build_chain(N, W, seed, outdir=wd)
-        env = dict(os.environ, KPM_SEED=str(seed))
-        subprocess.run([_bin("inline_compute-kpm-MeanSquareDisplacement"),
-                        label, "VX", str(M), str(num_times), str(tmax)],
-                       cwd=wd, env=env, check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        mom = sorted(glob.glob(os.path.join(wd, f"Correlation*{label}*chebmomTD")))
-        if not mom:
-            raise RuntimeError(f"MSD produced no moments for {label}")
-        mom = mom[-1]
+        with open(os.path.join(wd, "BOUNDS"), encoding="utf-8") as fh:
+            b_lo, b_hi = (float(x) for x in fh.readline().split()[:2])
+        execute_runfile(
+            {
+                "model": {
+                    "kind": "csr",
+                    "dir": os.path.join(wd, "operators"),
+                    "label": label,
+                    "operators": ["VX"],
+                },
+                "word": "Tr[[X, U(t)]^+ delta(E-H) [X, U(t)]]",
+                "expansion": {
+                    "moments": int(M),
+                    "window": [b_lo, b_hi],
+                    "trace": "random_phase",
+                    "states": 1,
+                    "seed": int(seed),
+                },
+                "time": {
+                    "steps": int(num_times),
+                    "tmax": float(tmax),
+                    "bessel": "legacy",
+                },
+                "reconstruction": {
+                    "kernel": "jackson",
+                    "broadening_meV": float(broad),
+                    "fermi_energies": [float(e) for e in energies],
+                    "formulas": ["time_correlation"],
+                    "legacy_text_round_trip": True,
+                },
+                "output": {
+                    "dir": wd,
+                    "legacy_names": True,
+                    "legacy_layout": True,
+                },
+            }
+        )
         for E in energies:
-            subprocess.run([_bin("inline_timeCorrelationsFromChebmom"),
-                            os.path.basename(mom), str(broad), str(E)],
-                           cwd=wd, check=True,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            dat = sorted(glob.glob(os.path.join(wd, "mean*EF*.dat")))[-1]
+            dat = sorted(
+                glob.glob(os.path.join(wd, f"mean*{label}*EF{float(E):.6f}*.dat"))
+            )[-1]
             d = np.loadtxt(dat)
             out[E] = (d[:, 0], d[:, 1])
-            os.remove(dat)
     return out
 
 

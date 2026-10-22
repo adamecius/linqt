@@ -68,12 +68,19 @@ def time_evolution_series(
     return coeffs, phase
 
 
-def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
+def dos_plan(
+    num_moments: int,
+    num_states: int,
+    word: str,
+    *,
+    operator_index: int | None = None,
+) -> _core.Plan:
     """Build the rank-1 density-of-states bytecode :class:`~lsquant._core.Plan`.
 
-    Solves the problem of expressing ``Tr[1 * delta(E - H)]`` as a ket-only
-    Chebyshev expansion ``Expand(M)`` followed by ``Trace(w)`` with the legacy
-    per-state KPM weights ``w[0] = 1 / num_states`` and
+    Solves the problem of expressing ``Tr[A * delta(E - H)]`` as a ket-only
+    Chebyshev expansion ``Expand(M)`` (optionally followed by
+    ``ApplyOperator(operator_index)`` when ``A != 1``) and ``Trace(w)`` with the
+    legacy per-state KPM weights ``w[0] = 1 / num_states`` and
     ``w[m] = 2 / num_states`` for ``m > 0``. Complexity is ``O(num_moments)``.
 
     Parameters
@@ -85,6 +92,8 @@ def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
     word : str
         Symbolic correlator word recorded in the plan and moment tensor metadata
         (e.g. ``"1 delta"``).
+    operator_index : int or None, optional
+        Optional post-expansion operator index for ``Tr[A delta(E-H)]``.
 
     Returns
     -------
@@ -93,8 +102,8 @@ def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
 
     Warnings
     --------
-    Raises ``ValueError`` if ``num_moments <= 0``, ``num_states <= 0``, or
-    ``word`` is empty.
+    Raises ``ValueError`` if ``num_moments <= 0``, ``num_states <= 0``,
+    ``operator_index < 0``, or ``word`` is empty.
 
     Notes
     -----
@@ -108,6 +117,8 @@ def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
         raise ValueError("dos_plan: num_states must be positive")
     if not word:
         raise ValueError("dos_plan: word must be non-empty")
+    if operator_index is not None and operator_index < 0:
+        raise ValueError("dos_plan: operator_index must be non-negative")
 
     weights: list[complex] = []
     base = 2.0 / float(num_states)
@@ -115,10 +126,10 @@ def dos_plan(num_moments: int, num_states: int, word: str) -> _core.Plan:
         scal = base * 0.5 if m == 0 else base
         weights.append(complex(scal, 0.0))
 
-    code = [
-        _core.Expand(num_moments),
-        _core.Trace(weights),
-    ]
+    code: list[object] = [_core.Expand(num_moments)]
+    if operator_index is not None:
+        code.append(_core.ApplyOperator(operator_index))
+    code.append(_core.Trace(weights))
     return _core.Plan(code, word)
 
 

@@ -16,8 +16,9 @@ except ImportError:
 
     _sys.modules[f"{__name__}._core"] = _core
 
-from . import bases, kernels, models, moments, reconstruct, spectral_functions
+from . import bases, cli, kernels, models, moments, reconstruct, runfile, spectral_functions, words
 from .bases import BlochBasis, EigenBasis, RealBasis, make_basis
+from .runfile import RunFile, execute_runfile, inspect_target, reconstruct_target
 from .kernels import jackson_damping, jackson_damping_2d
 from .moments import (
     HBAR,
@@ -61,7 +62,14 @@ __all__ = [
     "models",
     "moments",
     "reconstruct",
+    "runfile",
     "spectral_functions",
+    "words",
+    "cli",
+    "RunFile",
+    "execute_runfile",
+    "reconstruct_target",
+    "inspect_target",
     "RealBasis",
     "BlochBasis",
     "EigenBasis",

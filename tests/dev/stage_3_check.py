@@ -101,7 +101,7 @@ def main() -> int:
 
     # (0) Item 0: SparseMatrix.from_csr from scipy CSR arrays without intermediate copies
     chain_csr_path = os.path.join(
-        repo_root, "test", "golden", "chain1d", "operators", "chain1d.HAM.CSR"
+        repo_root, "goldens", "stage0", "chain1d", "operators", "chain1d.HAM.CSR"
     )
     sp_ham = _load_csr_as_scipy(chain_csr_path)
     indptr_64 = np.ascontiguousarray(sp_ham.indptr, dtype=np.int64)
