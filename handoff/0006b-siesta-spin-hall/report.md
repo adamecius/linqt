@@ -692,3 +692,48 @@ and the initial/reuse costs. No cache entry is created in this sandbox.
 Final source review corrected the item-1 engine line reference above to
 521-525 at the supplied 2d62c0d HEAD. Git diff whitespace checks are clean;
 these are editing checks only, with no compilation or numerical execution.
+
+Review 3 applied
+
+1. The spin-Hall oracle now groups adjacent near-degenerate levels into
+   subspaces and excludes all intra-subspace terms, including transitive
+   pairs. `model.params.oracle_degeneracy_tolerance` (CLI
+   `--oracle-degeneracy-tolerance`) sets the minimum tolerance in eV,
+   default 1e-6. Each k block uses the maximum of that value, ten times
+   the generalised eigenproblem energy residual
+   `max_n ||H c_n - E_n S c_n|| / ||S c_n||`, and ten times the floating
+   point scale `eps * W * max(bandwidth, max(abs(E)))`. The oracle JSON
+   files report the requested and effective tolerances, per-k tolerances,
+   maximum energy residual and bandwidth, and merged unordered pairs
+   summed over k. Existing curvature callers still receive an array unless
+   they request diagnostics. The run-file schema accepts and validates the
+   new field; committed run files use its default without editing.
+
+2. Dipole certification keeps the factor-ten refinement target
+   `quadrature_tolerance/10`. The independent agreement check against
+   stored SIESTA S now uses absolute precision 1e-5 and refuses a residual
+   above that value. The achieved margin measures refinement alone.
+   Certificates and stdout report the stored-overlap tolerance and observed
+   residual; paired-image Hermiticity retains the refinement target.
+   Cache schema v3 invalidates the previous coupled certificate policy,
+   and cache reads validate the two criteria separately. The committed
+   covariant descriptors retain their default settings; their material
+   calculations remain to be checked by the tester on Aron.
+
+3. The rank-2 contraction in `moment_engine.cpp` now uses
+   `#pragma omp parallel for schedule(static)` over the outer moment index
+   of each block pair. Each row has one owner. The sequential dot product,
+   inner-column order, and accumulation order across trace states stay the
+   same. No reduction, intrinsics, new dependencies or language features
+   beyond C++17 are introduced; GCC 9.4/11.4 compilation and G5 byte
+   identity at 1 versus 16 threads must be measured on Aron.
+
+4. No build, project program, self-check, numerical gate or figure was run
+   here, as instructed. Source inspection and `git diff --check` are the
+   only local checks. Review files remain uncommitted, and nothing was
+   pushed. The original Git index is read-only (`index.lock` creation
+   failed), so the four ordered commits are recorded with detached
+   metadata at `/tmp/lsquant-stage6b-r3.git` and delivered in
+   `/tmp/lsquant-stage6b-r3.bundle`, based on
+   `99cbda7b9fdb2cb777e87ae3d11da5cfd55755ec`. The workspace branch remains
+   `handoff/0006b-dev` at that original HEAD; no other branch was created.
