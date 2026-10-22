@@ -11,6 +11,7 @@ transformed representation ``S' = R^+ R`` and ``O' = R^+ O R``. Also provides AS
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse as sp
@@ -40,7 +41,7 @@ def hermitian_fold(matrix: sp.csr_matrix) -> sp.csr_matrix:
     return folded
 
 
-def read_csr_text(path: str | Path, fold_hermitian: bool = True) -> sp.csr_matrix:
+def read_csr_text(path: str | Path, fold_hermitian: bool = True, *, legacy_fold: bool = False) -> sp.csr_matrix:
     """Read an LSQUANT ASCII ``.CSR`` operator file into a ``scipy.sparse.csr_matrix``.
 
     Parses ``dim nnz``, followed by ``nnz`` pairs of ``(re, im)`` floating-point values,
@@ -52,6 +53,11 @@ def read_csr_text(path: str | Path, fold_hermitian: bool = True) -> sp.csr_matri
         Path to the ``.CSR`` file.
     fold_hermitian : bool, default True
         When True, applies ``0.5 * (M^+ + M)`` to match ``lsquant::ReadCsrText``.
+
+    legacy_fold : bool, default False
+        Permit relative ``||(M-M^+)/2||_F / ||M||_F > 1e-10``. The norm is
+        reported even when ``fold_hermitian=False``; that option controls only
+        the final fold, not validation.
 
     Returns
     -------
@@ -79,7 +85,16 @@ def read_csr_text(path: str | Path, fold_hermitian: bool = True) -> sp.csr_matri
     row_pointers = np.array(text[rp_offset : rp_offset + dim + 1], dtype=np.int64)
 
     mat = sp.csr_matrix((values, columns, row_pointers), shape=(dim, dim), dtype=np.complex128)
+    mat.sum_duplicates()
     mat.sort_indices()
+    anti_norm = 0.5 * float(sp.linalg.norm(mat - mat.conj().T))
+    norm = float(sp.linalg.norm(mat))
+    relative = anti_norm / max(norm, np.finfo(float).tiny)
+    print(f"read_csr_text: {path} anti_hermitian_norm={anti_norm:.17g} "
+          f"relative={relative:.17g} legacy_fold={legacy_fold}", file=sys.stderr)
+    if not np.isfinite(norm) or not np.isfinite(relative) or (relative > 1e-10 and not legacy_fold):
+        raise ValueError(f"read_csr_text: non-Hermitian operator {path}; "
+                         "use legacy_fold only to reproduce legacy inputs")
     if fold_hermitian:
         return hermitian_fold(mat)
     return mat
@@ -241,3 +256,110 @@ def rotate_basis(
         rotated = (r_dag @ op_csr @ r_csr).tocsr()
         result[key] = hermitian_fold(rotated)
     return result
+
+
+def adjoint(matrix: np.ndarray) -> np.ndarray:
+    """Return ``M^+`` on the last two axes, preserving any block axes."""
+    return np.asarray(matrix).swapaxes(-1, -2).conj()
+
+
+def checked_hermitian(matrix: np.ndarray, *, name: str, tolerance: float = 1e-10) -> np.ndarray:
+    """Check ``||(M-M^+)/2||_F / ||M||_F <= tolerance`` per block, then fold.
+
+    Folding only removes accepted input round-off. A zero block has zero error;
+    non-finite matrices are refused. This is not a repair of a wrong operator.
+    """
+    matrix = np.asarray(matrix, dtype=np.complex128)
+    if matrix.ndim < 2 or matrix.shape[-2] != matrix.shape[-1]:
+        raise ValueError(f"{name}: expected square matrix blocks")
+    norm = np.linalg.norm(matrix, axis=(-2, -1))
+    error = 0.5 * np.linalg.norm(matrix - adjoint(matrix), axis=(-2, -1))
+    relative = error / np.maximum(norm, np.finfo(float).tiny)
+    if not np.all(np.isfinite(matrix)) or np.any(relative > tolerance):
+        raise ValueError(f"{name}: anti-Hermitian relative norm {np.max(relative):.6g} "
+                         f"exceeds {tolerance:g}")
+    return np.ascontiguousarray(0.5 * (matrix + adjoint(matrix)))
+
+
+def exact_block_metric(overlap: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Build ``X=U diag(1/s) U^+`` and ``Y=U diag(1/sqrt(s)) U^+`` once.
+
+    ``S=U diag(s) U^+`` must be positive definite; no eigenvalue clipping or
+    iterative solve is allowed. Work is O(N_k W^3), storage O(N_k W^2).
+    """
+    overlap = checked_hermitian(overlap, name="overlap")
+    values, vectors = np.linalg.eigh(overlap)
+    if np.any(values <= 0):
+        raise ValueError(f"overlap is not positive definite: lambda_min={values.min():.17g}")
+    inverse = (vectors * (1.0 / values)[..., None, :]) @ adjoint(vectors)
+    inverse_sqrt = (vectors * (1.0 / np.sqrt(values))[..., None, :]) @ adjoint(vectors)
+    return np.ascontiguousarray(inverse), np.ascontiguousarray(inverse_sqrt)
+
+
+def bloch_velocity(H: np.ndarray, S: np.ndarray, dH: np.ndarray, dS: np.ndarray,
+                   A: np.ndarray | None = None, mode: str = "berry_connection", *,
+                   inverse_overlap: np.ndarray | None = None) -> np.ndarray:
+    """Return the Hermitian physical velocity matrix, with hbar=1 (eV Angstrom).
+
+    Implements theory.md (4): ``V=dH-(dS X H+H X dS)/2``, ``X=S^-1``.
+    For ``covariant`` add ``i(H X A-A^+ X H)``. ``A`` is the Hermitian
+    midpoint-centred connection, not the unsymmetrised row-centred dipole:
+    ``A_ij(R)=<0i|r-(tau_i+tau_j+R)/2|Rj>``. See siesta.py for the conversion.
+    ``bare`` requires cell derivatives expressed in the SAME gauge as H and S;
+    the other modes require atom derivatives. The caller supplies the derivative
+    pair, so the numerical formula occurs only here. In particular no derivative
+    of the Lowdin Hamiltonian is substituted for the velocity.
+    """
+    if mode not in ("bare", "berry_connection", "covariant"):
+        raise ValueError(f"unknown velocity mode {mode!r}")
+    if mode == "covariant" and A is None:
+        raise ValueError("covariant velocity requires an intra-cell dipole matrix")
+    X = exact_block_metric(S)[0] if inverse_overlap is None else inverse_overlap
+    velocity = dH - 0.5 * (dS @ X @ H + H @ X @ dS)
+    if mode == "covariant":
+        A = checked_hermitian(A, name="midpoint connection")
+        velocity = velocity + 1j * (H @ X @ A - adjoint(A) @ X @ H)
+    return checked_hermitian(velocity, name=f"{mode} velocity")
+
+
+def applied_spin_operators(size: int, ordering: str = "interleaved") -> dict[str, np.ndarray]:
+    """Return Pauli operators ``q_a=I_orb tensor sigma_a`` (eigenvalues +/-1).
+
+    ``interleaved`` orders (orbital up, orbital down); ``blocked`` orders
+    (all up, all down). ``size`` includes spin and must be even.
+    """
+    if size <= 0 or size % 2:
+        raise ValueError("spinor dimension must be positive and even")
+    pauli = (np.array([[0, 1], [1, 0]]), np.array([[0, -1j], [1j, 0]]),
+             np.diag([1, -1]))
+    if ordering not in ("interleaved", "blocked"):
+        raise ValueError("spin ordering must be 'interleaved' or 'blocked'")
+    identity = np.eye(size // 2)
+    return {f"S{a}": np.asarray(np.kron(identity, p) if ordering == "interleaved"
+                                else np.kron(p, identity), dtype=np.complex128)
+            for a, p in zip("XYZ", pauli)}
+
+
+def spin_operators(S: np.ndarray, ordering: str = "interleaved") -> dict[str, np.ndarray]:
+    """Return physical matrices ``Sigma_a=S q_a`` with applied form ``q_a``.
+
+    S is the full spinor overlap ``S_orb tensor I_2``, not the spatial overlap.
+    Refuse overlaps that do not commute with all three Pauli operators: those
+    need explicitly transformed spin matrices, not a guessed tensor product.
+    """
+    applied = applied_spin_operators(S.shape[-1], ordering)
+    for name, q in applied.items():
+        if not np.allclose(S @ q, q @ S, atol=1e-12, rtol=1e-10):
+            raise ValueError(f"overlap is not spin scalar for {name}; provide physical spin matrices")
+    return {name: checked_hermitian(S @ q, name=name) for name, q in applied.items()}
+
+
+def spin_current(V: np.ndarray, sigma: np.ndarray) -> np.ndarray:
+    """Return ``J^b_a=(V_a q_b+q_b V_a)/2``, with applied Pauli ``q_b``.
+
+    This is the matrix of the operator anticommutator because the physical
+    spin matrix is ``Sigma=S q=q S`` and ``AB`` is ``A S^-1 B``. Pauli units
+    are used, without hbar/2. For a general transformed spin use
+    ``(V S^-1 Sigma+Sigma S^-1 V)/2`` instead.
+    """
+    return checked_hermitian(0.5 * (V @ sigma + sigma @ V), name="spin current")

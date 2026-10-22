@@ -4,14 +4,18 @@
  */
 #include "io/csr_text.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <fstream>
+#include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
 namespace lsquant {
 
-SparseMatrix ReadCsrText(const std::string& filename) {
+SparseMatrix ReadCsrText(const std::string& filename, bool legacyFold) {
   std::ifstream file(filename);
   if (!file.is_open()) {
     throw std::runtime_error("ReadCsrText: cannot open file: " + filename);
@@ -51,9 +55,23 @@ SparseMatrix ReadCsrText(const std::string& filename) {
     rowPointers[static_cast<std::size_t>(i)] = rp;
   }
 
-  return SparseMatrix::FromCsr(dim, std::move(rowPointers), std::move(columns),
-                               std::move(values))
-      .HermitianFold();
+  auto matrix = SparseMatrix::FromCsr(dim, std::move(rowPointers), std::move(columns),
+                                      std::move(values));
+  // Report ||(M-M^+)/2||_F / ||M||_F before the legacy round-off fold.
+  const auto& stored = matrix.Eigen();
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index> adjoint = stored.adjoint();
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor, Index> difference = stored - adjoint;
+  const double norm = stored.norm();
+  const double antiNorm = 0.5 * difference.norm();
+  const double relative = antiNorm / std::max(norm, std::numeric_limits<double>::min());
+  std::clog << "ReadCsrText: " << filename << " anti_hermitian_norm=" << antiNorm
+            << " relative=" << relative << " legacy_fold=" << legacyFold << "\n";
+  if (!std::isfinite(norm) || !std::isfinite(relative) ||
+      (!legacyFold && relative > 1e-10)) {
+    throw std::runtime_error("ReadCsrText: non-Hermitian operator: " + filename +
+                             "; use legacy_fold only to reproduce legacy inputs");
+  }
+  return matrix.HermitianFold();
 }
 
 void WriteCsrText(const std::string& filename, const SparseMatrix& matrix) {

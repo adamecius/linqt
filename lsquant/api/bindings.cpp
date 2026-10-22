@@ -589,7 +589,7 @@ PYBIND11_MODULE(_core, m) {
   m.def("ApplyKpmWeights", &ApplyKpmWeights, py::arg("moments"), py::arg("num_states"),
         py::arg("symmetrise"));
 
-  m.def("ReadCsrText", &ReadCsrText, py::arg("path"));
+  m.def("ReadCsrText", &ReadCsrText, py::arg("path"), py::arg("legacy_fold") = false);
   m.def("ReadChebmom", &ReadChebmom, py::arg("path"));
   m.def("WriteChebmom", &WriteChebmom, py::arg("path"), py::arg("moments"));
   m.def("WriteLegacyChebmom1D", &WriteLegacyChebmom1D, py::arg("path"), py::arg("moments"));

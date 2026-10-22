@@ -20,11 +20,16 @@ namespace lsquant {
  *
  * Parses `dim` and `nnz`, followed by `nnz` complex value pairs `(re, im)`, `nnz` column
  * indices, and `dim + 1` row offsets, assembles the matrix via `SparseMatrix::FromCsr`, and
- * unconditionally applies `SparseMatrix::HermitianFold()` (`0.5 * (M + M^+)`) to match the
+ * checks the anti-Hermitian norm and applies `SparseMatrix::HermitianFold()` (`0.5 * (M + M^+)`) to match the
  * legacy `SparseMatrixType::ConvertFromCSR` reader convention (which also normalises `-0.0`
  * to `+0.0`). Complexity is `O(dim + nnz)` in time and memory.
  *
+ * Reports `||(M-M^+)/2||_F / ||M||_F` for every operator before folding. Refuses
+ * relative values above `1e-10` unless `legacyFold` is explicitly true. The
+ * final fold preserves the established rounding of accepted Hermitian inputs.
+ *
  * @param filename Path to the `.CSR` text file.
+ * @param legacyFold Permit a non-Hermitian input for legacy reproduction only.
  * @return         Compressed `SparseMatrix` built from the file contents and folded with
  *                 `HermitianFold()`.
  *
@@ -34,7 +39,7 @@ namespace lsquant {
  *      In the LSQUANT `.CSR` text layout, the values array comes first, followed by column
  *      indices, and the `dim + 1` row pointer array comes last.
  */
-SparseMatrix ReadCsrText(const std::string& filename);
+SparseMatrix ReadCsrText(const std::string& filename, bool legacyFold = false);
 
 /**
  * @brief Write a `SparseMatrix` to an ASCII `.CSR` operator file.

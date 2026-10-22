@@ -538,6 +538,46 @@ class WannierModel:
         """Evaluate atom-gauge velocity ``v_d(k)`` blocks for ``k_points``."""
         return dhk_blocks(self.r_cart, self.tau, self.hoppings, k_points, direction)
 
+    def velocity_blocks(self, k_points, direction, mode="berry_connection"):
+        """Build Wannier velocity with the established stage-5 minus sign.
+
+        ``V=-dH`` in the bare/cell or centre/atom convention. Covariant mode
+        implements ``V=-dH_cell-i[H,A_full]``, with folded, weighted A loaded
+        before the commutator. This preserves the historical Wannier sign;
+        SIESTA uses the explicit +dH convention of brief section 3. A Hall
+        word has two velocities, so their simultaneous reversal cancels.
+        """
+        from .bloch import bloch_sum
+        from .nonorthogonal import bloch_velocity
+
+        axis = _DIRECTION_MAP.get(direction, -1)
+        if axis not in (0, 1, 2):
+            raise ValueError(f"unknown velocity direction {direction!r}")
+        H = self.Hk(k_points)
+        S = np.broadcast_to(np.eye(self.num_wann), H.shape)
+        # Cell derivatives are dressed into the atom gauge of H.
+        dH = bloch_sum(self.r_cart, np.zeros_like(self.tau), self.hoppings,
+                      k_points, derivative=axis)
+        phases = np.exp(1j * (np.atleast_2d(k_points) @ self.tau.T))
+        if np.asarray(k_points).ndim == 1:
+            phases = phases[0]
+        dH = phases.conj()[..., :, None] * dH * phases[..., None, :]
+        if mode == "berry_connection":
+            dH = -self.dHk(k_points, direction)
+        A = None
+        if mode == "covariant":
+            if self.model_dir is None:
+                raise ValueError("covariant Wannier velocity requires a model directory with _r.dat")
+            if not hasattr(self, "_position_cache"):
+                seed = os.path.join(self.model_dir, self.seed_name)
+                self._position_cache = read_position_matrix(seed + "_r.dat", seed + "_hr.dat")
+            r, positions = self._position_cache
+            # Here A is the FULL position matrix, so use cell derivatives;
+            # atom dressing changes representation but adds no centre term.
+            A = bloch_sum(r @ self.uc, self.tau, positions[axis], k_points)
+        return -bloch_velocity(H, S, dH, np.zeros_like(dH), A, mode,
+                               inverse_overlap=S)
+
     def k_mesh(self, supercell: Sequence[int]) -> npt.NDArray[np.float64]:
         """Return the ``(N_k, 3)`` k-mesh for ``supercell``."""
         return k_mesh(self.uc, supercell)
@@ -631,3 +671,74 @@ def load_wannier_model(model_dir: str, seed: str | None = None) -> WannierModel:
         seed_name=seed_name,
         model_dir=os.path.abspath(base_dir),
     )
+
+
+def read_position_matrix(path: str, hr_path: str, wsvec_path: str | None = None
+                         ) -> tuple[np.ndarray, np.ndarray]:
+    """Read ``_r.dat`` and return Hermitian, ndegen-normalised ``A_a(R)``.
+
+    Implements notes section 11: ``A_a(R) <- [A_a(R)+A_a(-R)^+]/(2 ndegen(R))``
+    BEFORE any Fourier sum or commutator. Degeneracies come from the matching
+    ``_hr.dat`` (``_r.dat`` has no degeneracy block). Opposite R must have equal
+    weights. Optional wsvec image splitting uses the SAME weights as H, after
+    this fold; the split result is checked for real-space Hermiticity.
+    Returns ``(r_int, A)`` with A shaped ``(3,N_R,W,W)`` in Angstrom.
+    """
+    from .nonorthogonal import adjoint
+
+    with open(hr_path, encoding="utf-8") as fh:
+        lines = [ln.strip() for ln in fh.read().splitlines()[1:] if ln.strip()]
+    width, count = int(lines[0]), int(lines[1])
+    weights, index = [], 2
+    while len(weights) < count:
+        weights.extend(map(int, lines[index].split()))
+        index += 1
+    order = list(dict.fromkeys(tuple(map(int, ln.split()[:3])) for ln in lines[index:]))
+    if len(weights) != count or len(order) != count or any(w <= 0 for w in weights):
+        raise ValueError("position matrix: invalid matching hr degeneracy table")
+    degeneracy = dict(zip(order, weights))
+    with open(path, encoding="utf-8") as fh:
+        records = [ln.strip() for ln in fh.read().splitlines()[1:] if ln.strip()]
+    if int(records[0]) != width or int(records[1]) != count:
+        raise ValueError("position matrix dimensions differ from hr")
+    raw = {r: np.zeros((3, width, width), complex) for r in order}
+    seen = set()
+    for line in records[2:]:
+        fields = line.split()
+        if len(fields) != 11:
+            raise ValueError(f"malformed position matrix record: {line}")
+        r = tuple(map(int, fields[:3]))
+        i, j = int(fields[3])-1, int(fields[4])-1
+        if r not in raw or not (0 <= i < width and 0 <= j < width) or (r, i, j) in seen:
+            raise ValueError("position matrix has unknown R/index or duplicate record")
+        seen.add((r, i, j))
+        values = np.array(fields[5:], float).reshape(3, 2)
+        raw[r][:, i, j] = values[:, 0] + 1j * values[:, 1]
+    if len(seen) != count * width * width:
+        raise ValueError("truncated position matrix")
+    folded = {}
+    for r in order:
+        opposite = tuple(-x for x in r)
+        if opposite not in raw or degeneracy[opposite] != degeneracy[r]:
+            raise ValueError("position matrix requires paired R with equal ndegen")
+        folded[r] = 0.5 * (raw[r] + adjoint(raw[opposite])) / degeneracy[r]
+    if wsvec_path is None:
+        candidate = str(hr_path).removesuffix("_hr.dat") + "_wsvec.dat"
+        wsvec_path = candidate if os.path.isfile(candidate) else None
+    if wsvec_path:
+        lut = _parse_wsvec(wsvec_path)
+        split = {}
+        for r, matrix in folded.items():
+            for i in range(width):
+                for j in range(width):
+                    shifts = lut.get((*r, i, j), [(0, 0, 0)])
+                    for shift in shifts:
+                        key = tuple(r[a] + shift[a] for a in range(3))
+                        split.setdefault(key, np.zeros_like(matrix))[:, i, j] += matrix[:, i, j] / len(shifts)
+        folded = split
+    for r, matrix in folded.items():
+        opposite = tuple(-x for x in r)
+        if opposite not in folded or not np.allclose(matrix, adjoint(folded[opposite]), atol=1e-12, rtol=1e-10):
+            raise ValueError("position matrix image splitting violates Hermiticity")
+    keys = sorted(folded)
+    return np.array(keys, dtype=int), np.stack([folded[r] for r in keys], axis=1)
