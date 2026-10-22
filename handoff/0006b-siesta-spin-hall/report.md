@@ -737,3 +737,84 @@ Review 3 applied
    `/tmp/lsquant-stage6b-r3.bundle`, based on
    `99cbda7b9fdb2cb777e87ae3d11da5cfd55755ec`. The workspace branch remains
    `handoff/0006b-dev` at that original HEAD; no other branch was created.
+
+Review 4 applied
+
+1. `models/bloch.py` factors the atom-gauge phase into lattice phases
+   `exp(+i k.R)` and orbital phases, contracts all R and each k chunk in one
+   NumPy einsum, and dresses the result by the orbital phases. Cartesian
+   derivatives weight the stacked blocks by `i(R+tau_j-tau_i)_a` before
+   that same contraction; cell derivatives retain the existing atom-dressed
+   SIESTA convention. No per-k Python loop or `(N_k,N_R,W,W)` phase array
+   remains. `model.params.bloch_memory_mb` (CLI `--bloch-memory-mb`, default
+   256 MiB) limits array workspace through a conservative stack/phase/chunk
+   budget. Caller inputs and the full returned block array are excluded;
+   this is not a process RSS limit or a BLAS-internal workspace limit.
+   A limit too small for the reserved stack plus one k point raises.
+
+2. `oracle/spin_hall.py:sigma_xy` broadcasts all Fermi energies, k points
+   and bands into one occupation array and calls `scipy.special.erfc` once,
+   in place. The strict occupied sum at zero broadening also uses an array.
+   There is no per-energy or per-band Python generator. SciPy is now an
+   explicit Python package dependency. The occupation workspace is
+   O(N_E N_k W), and it is reused for the curvature-weighted sum; it is
+   separate from the Bloch workspace limit.
+
+3. The SIESTA executor skips preparation, moment execution and reconstruction
+   of the exact eigen reference when production already uses exact trace
+   in the eigen adapter. It also recognises a direct RandomPhaseStates
+   generator in that adapter as the eigen-phase skip condition requested
+   by the review. The existing sampler is unchanged: random production in
+   both adapters currently draws orbital Bloch phases, with a transform
+   in the eigen adapter. That transformed generator keeps its independent
+   exact comparison. A top-level run-file `"reference": true` forces the
+   exact pass (CLI `--reference`); false explicitly disables it, and omission
+   uses the automatic policy. The choice and reason are saved under
+   `receipt.reference`; each skipped word has a zero-time `skipped` phase
+   entry and an `eigen_comparison.json` entry without invented residuals.
+   Skipped runs do not write a second set of eigen moments/curves. The
+   separately requested physical oracle still runs.
+
+The supplied review 4 item 3 is the Python reference policy above. The C++
+rank-2 contraction optimisation is review 3 item 3, already at the supplied
+HEAD in commit d1b4202. It is retained unchanged: plain OpenMP, static row
+scheduling, serial dot products and trace-state accumulation, C++17, with
+no intrinsics or new compiler requirements. No extra C++ optimisation or
+sampler change is included in these four review-4 items.
+
+What the tester must measure on Aron (no timings are claimed here):
+
+- Time Bloch construction on the short Bi run (48x48, W=72, M=128), compared
+  with the reported 48.9 s baseline, and on PdSe2 (W=220). Compare H, S,
+  all Cartesian derivatives and dipole Bloch sums against 5c54542 to
+  round-off, including a single k point, cell/atom gauges and two workspace
+  limits that force different chunk sizes. Record peak memory, separating
+  the final block arrays from the configured array workspace.
+- Time `sigma_xy` alone on the same energy grid as the reported 82.6 s
+  baseline. Compare against 5c54542 at zero and nonzero Gaussian width,
+  including energies outside the bands and a single Fermi energy. Record
+  peak memory for the all-energy occupation array, especially for PdSe2.
+- Time a complete exact eigen run with reference omitted, then with
+  `"reference": true`, using distinct output directories. Confirm identical
+  production moments/curves, a skipped reference with an explicit reason
+  in the first receipt, and a completed exact comparison in the second.
+  Also check that ordinary random orbital-phase production retains the
+  exact reference and that an explicit false disables it. Record metric,
+  operators, moments, reconstruction, oracle, reference and total wall time.
+- Compile with GCC 9.4 and 11.4 under C++17; check existing G5 and material
+  moments at 1 versus 16 OpenMP threads for byte identity. Measure the
+  inherited rank-2 C++ contraction separately (reported baseline about
+  270 s/vector at M=1024), and the full Bi 48x48, M=1024, 16-vector run
+  against the reported 72 minutes. The tester owns the golden gates and
+  numerical/performance verdicts.
+
+No build, project program, self-check, numerical gate or figure was run
+here, as instructed. Local validation consists only of source inspection
+and Git whitespace checks. No tests, goldens, figures or review files were
+edited or committed. The repository index is read-only (`index.lock`
+creation failed), so the four ordered commits are recorded with detached
+metadata at `/tmp/lsquant-stage6b-r4.git` and delivered in
+`/tmp/lsquant-stage6b-r4.bundle`, based on
+`5c54542eb2d50b1aab8e7efb844f2187227a2526`. The workspace branch remains
+`handoff/0006b-dev` at that supplied HEAD. No other branch was created and
+nothing was pushed.
