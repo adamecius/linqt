@@ -64,7 +64,10 @@ def compute_moments(basis, word, *, _prepared=None, **options):
     """Run a prevalidated word through the unchanged C++ moment engine.
 
     Symbolic source: metric_forms.trace_equivalence. Rank-2 KPM weights are
-    applied once, without imposing symmetry on a stochastic trace.
+    applied once with the trace-cyclic Hermitian projection used by stage 3.
+    For Hermitian physical A and B the exact trace obeys mu_mn=conj(mu_nm).
+    A raw stochastic word does not; imposing this exact trace identity before
+    the Bastin contraction removes its large cancelling stochastic terms.
     """
     prepared = prepare_moments(basis, word, **options) if _prepared is None else _prepared
     engine, plan, compiled, generator, window, engine_ops, h = prepared
@@ -73,7 +76,7 @@ def compute_moments(basis, word, *, _prepared=None, **options):
     mu.window, mu.system_size = window, basis.dimension
     mu.number_of_states, mu.state_label, mu.word = nstates, generator.label, compiled.plan.word
     if mu.rank == 2:
-        _core.ApplyKpmWeights(mu, nstates, False)
+        _core.ApplyKpmWeights(mu, nstates, True)
     else:
         mu.kpm_weighted = True
     return mu, compiled

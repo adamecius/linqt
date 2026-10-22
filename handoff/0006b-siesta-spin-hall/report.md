@@ -552,3 +552,22 @@ Hermitian physical A and B. The noise comparison currently compares two
 different estimators, so the review's Jensen bound does not establish a
 seed mismatch. Item 2 will restore the common estimator and make the
 fresh-state bra semantics explicit; its numerical effect remains for Aron.
+
+Review 2 item 2: static MirrorToBra now starts its bra program from the
+original r for ranks 0, 1 and 2. bind_eigen_trace explicitly applies K on
+BOTH copies, then S on the generalised bra, rather than depending on the
+old implicit prepared-ket copy. Thus equations (2a)-(2c) hold with the dual
+metric of the common K r; no phases are redrawn. This is a semantic repair,
+not a claim that the earlier rank-2 adapter used two different samples.
+The pre-existing TimeAxis register-copy extension is documented separately
+and retained for the stage-4 projected/MSD words.
+
+The actual estimator change is ApplyKpmWeights(..., True): stage 3 and 6b
+now use the same exact trace-cyclic identity for Hermitian physical A,B,
+`mu <- (mu+mu^+)/2`, with weights and state count applied once. In general
+the raw per-vector word does not obey that identity. Keeping its unwanted
+part through the Bastin contraction can expose large cancelling noise;
+the tester must quantify how much this change removes. Assertion (g) still
+checks the raw quadratic form, and additionally compares compute_moments
+with the explicitly projected NumPy tensor. Exact block traces remain the
+gate/reference; no stochastic threshold or measured result is invented.

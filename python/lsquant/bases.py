@@ -1368,19 +1368,21 @@ class BlochMetricBasis:
                    else _core.IdentityOperator(self.dimension))
         else:
             raise ValueError("trace must be random or exact")
-        # MirrorToBra in the current engine copies the PREPARED ket seed.
-        # Therefore the relative map is S*C*C^-1=S (or I for unitary U),
-        # not SC applied a second time to the already prepared C r.
+        # MirrorToBra starts from the SAME original r, not the prepared ket.
+        # Prepare K r explicitly on both sides, then insert S on the bra.
+        # With the compiler's X, X*A, T_m, S this gives equations (2a-c)
+        # in the metric dual of K r: left_m = S*T_m*X*A*K*r.
         bra = self._s_op if self.route == "generalised" else _core.IdentityOperator(self.dimension)
         ki, bi = len(operators), len(operators)+1
         operators.extend([ket, bra])
         code, mirrored = [_core.ApplyOperator(ki)], False
         for instruction in plan.code:
             if isinstance(instruction, _core.MirrorToBra):
-                code.extend([instruction, _core.ApplyOperator(bi)])
+                code.extend([instruction, _core.ApplyOperator(ki), _core.ApplyOperator(bi)])
                 mirrored = True
             elif isinstance(instruction, _core.Trace) and not mirrored:
-                code.extend([_core.MirrorToBra(), _core.ApplyOperator(bi), instruction])
+                code.extend([_core.MirrorToBra(), _core.ApplyOperator(ki),
+                             _core.ApplyOperator(bi), instruction])
             else:
                 code.append(instruction)
         return _core.Plan(code, plan.word), operators

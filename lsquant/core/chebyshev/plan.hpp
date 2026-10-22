@@ -100,11 +100,13 @@ struct ApplyDerivedSeries {
 };
 
 /**
- * @brief Instruction switching execution from the ket side to the bra side on a copy of the current ket seed.
+ * @brief Switch a static word to the bra side on a fresh copy of the same trace state.
  *
- * Sets the active bra seed to a copy of the current ket seed at the moment `MirrorToBra`
- * is encountered, and directs subsequent seed-level instructions in the current scope
- * (seed preparation or `TimeAxis` body) to the bra side.
+ * In a static word, subsequent instructions start from the original `|r>`,
+ * independently of ket-side preparation. No new trace state is drawn. Shared
+ * transforms must be written explicitly on both sides.
+ * The legacy `TimeAxis` register program uses its established copy semantics:
+ * seed preparation copies ketSeed; its body copies the current step's ketInit.
  *
  * @warning May appear at most once in seed preparation and at most once inside a `TimeAxis` body.
  * @par Pitfall

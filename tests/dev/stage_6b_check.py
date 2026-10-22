@@ -55,7 +55,7 @@ def check_one_vector(original, rotated):
     generator is used for the NumPy sample: engine.run resets this stream.
     """
     from lsquant import _core
-    from lsquant.apps.stage6b_siesta import prepare_moments, SHC_WORD
+    from lsquant.apps.stage6b_siesta import prepare_moments, compute_moments, SHC_WORD
     from lsquant.bases import BlochMetricBasis
     from lsquant.models.nonorthogonal import adjoint
 
@@ -95,6 +95,10 @@ def check_one_vector(original, rotated):
                 weights[0] = 1.
                 _core.ApplyKpmWeights(mu, 1, False)
                 assert np.max(np.abs(mu.data-direct*weights[:, None]*weights[None, :])) < 1e-10
+                projected = 0.5*(direct+direct.conj().T)*weights[:, None]*weights[None, :]
+                production, _ = compute_moments(basis, SHC_WORD, _prepared=prepared)
+                assert production.symmetrised
+                assert np.max(np.abs(production.data-projected)) < 1e-10
 
 
 def main():

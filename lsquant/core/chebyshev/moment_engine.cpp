@@ -414,7 +414,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
     while (states_->Next(r)) {
       ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
                    chebx0, chebx1);
-      const Vector& braStart = seenMirror ? ketInit : r;
+      const Vector& braStart = r;
       ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
                    cheb1, chebx0, chebx1);
       AccumulateWeightedDot(mu.Data()[0], traceWeights[0], braInit, ketInit);
@@ -430,7 +430,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
       while (states_->Next(r)) {
         ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
                      chebx0, chebx1);
-        const Vector& braStart = seenMirror ? ketInit : r;
+        const Vector& braStart = r;
         ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
                      cheb1, chebx0, chebx1);
         rec.Start(ketInit);
@@ -449,7 +449,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
       while (states_->Next(r)) {
         ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
                      chebx0, chebx1);
-        const Vector& braStart = seenMirror ? ketInit : r;
+        const Vector& braStart = r;
         ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
                      cheb1, chebx0, chebx1);
         rec.Start(ketInit);
@@ -482,7 +482,7 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
     while (states_->Next(r)) {
       ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketInit, scratch, cheb0, cheb1,
                    chebx0, chebx1);
-      const Vector& braStart = seenMirror ? ketInit : r;
+      const Vector& braStart = r;
       ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
                    cheb1, chebx0, chebx1);
       recL.Start(braInit);
@@ -520,7 +520,9 @@ ChebyshevMoments MomentEngine::Run(const Plan& plan) {
   while (states_->Next(r)) {
     ApplySeedOps(*rescaledH_, operators_, ketProg.preOps, r, ketSeed, scratch, cheb0, cheb1,
                  chebx0, chebx1);
-    const Vector& braStart = seenMirror ? ketSeed : r;
+    // Static words build both sides independently from the SAME trace state.
+    // Any shared preparation must be explicit on each side of MirrorToBra.
+    const Vector& braStart = r;
     ApplySeedOps(*rescaledH_, operators_, braProg.preOps, braStart, braInit, scratch, cheb0,
                  cheb1, chebx0, chebx1);
     recL.Start(braInit);
