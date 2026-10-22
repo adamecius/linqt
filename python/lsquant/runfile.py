@@ -46,6 +46,7 @@ ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
         "reconstruction",
         "output",
         "build_profile",
+        "runtime",
     }
 )
 
@@ -818,6 +819,12 @@ class RunFile:
         """Return the fully resolved run-file dictionary written to ``run.resolved.json``."""
         out: dict[str, Any] = {
             "build_profile": _core.build_profile,
+            # Item 6: record effective launch choices, never use receipt values
+            # to override the caller's environment. Tester archives with timings.
+            "runtime": {key: os.environ.get(key) for key in (
+                "OMP_NUM_THREADS", "OMP_PROC_BIND", "OMP_PLACES", "OMP_DYNAMIC",
+                "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "LSQUANT_SPMV_MIN_NNZ",
+                "LSQUANT_KERNEL_BATCH", "LSQUANT_FFT_BACKEND")},
             "model": dict(self.model),
             "basis": dict(self.basis),
             "metric": dict(self.metric),

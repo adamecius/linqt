@@ -141,3 +141,131 @@ row pointer = 8 bytes, vector scalar = 16 bytes. They exclude setup and include
 packing in timed GEMMs. Bytes are an algorithmic stream model, not measured DRAM
 traffic (cache reuse/write allocation can change hardware traffic). For contraction
 and dots they are lower-bound unique input/output streams; label them accordingly.
+
+Item 6 production workloads (run on Aron; no input generation is timed):
+
+```bash
+export CONDA_PREFIX="$HOME/lsq-env"
+export PATH="$CONDA_PREFIX/bin:$PATH"
+export OMP_DYNAMIC=FALSE OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 KPM_SEED=12345
+export OMP_PROC_BIND=close OMP_PLACES=cores
+mkdir -p /tmp/stage8/inputs /tmp/stage8/results
+export W2S_BIN="$HOME/wannier2sparse/build/wannier2sparse"
+git -C "$HOME/wannier2sparse" rev-parse HEAD > /tmp/stage8/inputs/w2s-revision.txt
+"$W2S_BIN" graphene 2000 2000 1 VX -p "$PWD/goldens/stage0/bases/graphene/model" -o /tmp/stage8/inputs/graphene
+python bench/prepare_runs.py --repo "$PWD" --graphene-csr /tmp/stage8/inputs/graphene --bi-run "$BI_RUN" --out /tmp/stage8/inputs/runs
+sha256sum /tmp/stage8/inputs/graphene/graphene.HAM.CSR /tmp/stage8/inputs/graphene/graphene.out "$BI_RUN" > /tmp/stage8/inputs/checksums.txt
+cp -a bench /tmp/stage8/drivers
+```
+
+Require wannier2sparse revision `26cab4affff8266f8a76ec73f3201e6c063a1ba6` from
+the brief; use the tester's existing binary and inputs, no fetching in the driver.
+The graphene CSR has 8,000,000 orbitals and is generated from the committed two
+orbital nearest-neighbor model. It runs through the CSR front end to avoid building
+a clean eigen reference at that size. M=2048, R=1; the moment computation is timed
+separately from input parsing and output. Haldane uses 48x48 Bloch blocks, M=256,
+R=16 random vectors, explicit window, Greenwood on both uniform and FFT nodes.
+Bi keeps the supplied 6b word/metric/reference/oracle settings and uses 2304 blocks,
+M=1024, R=16 in the orbital Bloch representation. Supply absolute paths for any
+6b model fields other than `dir`/`csr_dir`; those two are resolved by the preparer.
+The 6b implementation is absent from this base checkout; Bi measurements require
+the owning branch to be integrated by Fable first. Profile the short Bi run with
+M=128, R=2 as well. Report reference/oracle costs separately and keep their settings
+the same before/after; do not silently remove them to claim a kernel improvement.
+
+For each built checkout, set `PYTHONPATH` to **that checkout's** package and build.
+These commands write new artifacts per workload, profile, thread count and repeat:
+
+```bash
+revision=$(git rev-parse HEAD)
+for profile in golden native; do
+  export PYTHONPATH="$PWD/python:$PWD/build-$profile/lsquant_core"
+  for threads in 24 48 96; do
+    if [ "$threads" -eq 96 ]; then nodes=0,1; else nodes=0; fi
+    for repeat in 1 2 3; do
+      for workload in graphene haldane bi; do
+        dest=/tmp/stage8/results/$revision-$profile-t$threads-r$repeat-$workload
+        OMP_NUM_THREADS=$threads numactl --cpunodebind=$nodes --membind=$nodes python /tmp/stage8/drivers/benchmark_run.py /tmp/stage8/inputs/runs/$workload.json --revision "$revision" --out "$dest" > "$dest.log" 2>&1 &
+        job=$!
+        echo "$job" > "$dest.launcher.pid"
+        wait "$job" || exit 1
+      done
+    done
+  done
+done
+```
+
+Before item 3, build and measure golden only. Record the active engine profile
+from the benchmark, not just the build-directory name. To reconstruct before/after
+evidence, the tester uses separate detached worktrees at `a6db913`, item 1, item 3,
+item 4, item 5, and item 6 commits listed in the delivery. Copy the final `bench/`
+drivers outside those worktrees as above; the production timing driver supports
+the pre-stage-8 API. Keep the Bi integration revision identical in each comparison
+and record it; any conflicts when combining branches belong to Fable's integration.
+The optional kernel target and FFT comparison are available only after item 5.
+Repeat item-1 profiling at every milestone, using separate output paths.
+
+For one process per socket, run two independent copies of the same workload
+concurrently, with disjoint output paths:
+
+```bash
+export PYTHONPATH="$PWD/python:$PWD/build-native/lsquant_core"
+for socket in 0 1; do
+  dest=/tmp/stage8/results/$revision-native-socket$socket-bi
+  OMP_NUM_THREADS=48 numactl --cpunodebind=$socket --membind=$socket python /tmp/stage8/drivers/benchmark_run.py /tmp/stage8/inputs/runs/bi.json --revision "$revision" --out "$dest" > "$dest.log" 2>&1 &
+  echo $! > "$dest.launcher.pid"
+done
+wait
+```
+
+Repeat the socket recipe for graphene and Haldane, three times under distinct
+destinations. Record pair makespan and jobs/hour alongside individual latency.
+For a single socket comparison, run these same two jobs sequentially first.
+Inspect memory placement during a run with the PID in its `run.pid`:
+
+```bash
+numastat -p PID
+cat /proc/PID/numa_maps
+```
+
+Record total wall time, moment-engine wall time, reconstruction wall time, CPU
+seconds, peak RSS, thread occupancy, NUMA pages, per-profile output hashes, compiler
+and dependency versions, flags, process affinity, host load and governor. The
+driver calculates modeled GFLOP/s/GB/s from measured phase time and explicit
+leading-work formulas. Rank 1 uses input CSR actions and dots (omits any added
+rescaling diagonal and scalar updates); rank 2 uses dot-table work only (omits
+Hamiltonian, metric and static-operator work), with a unique-stream byte lower
+bound. These are comparable workload rates, **not measured hardware FLOP or DRAM
+traffic**. Read the `model` field of each phase. Actual rates need architecture
+counters with their event definitions archived. FFT actual FLOPs stay null: do
+not divide a cubic table-contraction work estimate by FFT time and call it GFLOP/s.
+
+Reference one-socket roofline uses the brief's approximate 48x35 GFLOP/s and
+190 GB/s: `min(1680,190*modeled_intensity)` GFLOP/s. It is a hardware specification
+reference, not a measured ceiling. Report 96-thread results as two-socket work,
+even when quoting their ratio to this one-socket reference. If STREAM/compute
+ceilings are measured on Aron, archive those separately instead of substituting
+numbers from the older `run_graphene_scaling.sh` (which targets a different node).
+
+Compare both contraction backends on an output rank-2 moment file (the tester
+sets `MOMENT_FILE` to the exact produced pathname; do not pick an arbitrary glob):
+
+```bash
+OMP_NUM_THREADS=48 python bench/compare_contraction.py "$MOMENT_FILE" --formula greenwood --out /tmp/stage8/fft-haldane-t48
+OMP_NUM_THREADS=24 python bench/compare_contraction.py "$MOMENT_FILE" --formula greenwood --out /tmp/stage8/fft-haldane-t24
+OMP_NUM_THREADS=96 python bench/compare_contraction.py "$MOMENT_FILE" --formula greenwood --out /tmp/stage8/fft-haldane-t96
+OMP_NUM_THREADS=48 python bench/compare_contraction.py "$HALL_MOMENT_FILE" --formula bastin --out /tmp/stage8/fft-hall-t48
+```
+
+For the FFT/scalar golden comparison, use committed G4/G5 moment files under the
+golden engine and record first differing element, max absolute/relative difference
+and whether bytes match; no tolerance is set by these benchmark drivers. The
+default golden gate runs on the fat node (not Aron), by the tester:
+
+```bash
+KPM_SEED=12345 scripts/check_goldens.sh 7 build-golden > /tmp/stage8/gate7.log 2>&1
+```
+
+The tester owns the stage-8 gate extension and figure; these drivers do not edit
+the harness, figures or goldens. Skip optional item 7 until the requested gcc
+profiles have measurements; no oneAPI profile or dependency is added here.
