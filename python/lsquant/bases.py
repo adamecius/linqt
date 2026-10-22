@@ -1266,8 +1266,15 @@ class BlochMetricBasis:
         return _core.RescaledOperator(h, window)
 
     def operator_blocks(self, name):
-        """Return physical matrices V, Sigma, or ``J=(Vq+qV)/2`` per k."""
-        from .models.nonorthogonal import bloch_velocity, spin_operators, applied_spin_operators, spin_current
+        """Return physical matrices before inserting any metric factors.
+
+        Symbolic sources: metric_forms.velocity_forms, spin_forms and
+        spin_current_forms. Hermiticity is checked in this physical form;
+        the generalised applied form is only S-Hermitian.
+        """
+        from .models.nonorthogonal import (bloch_velocity, spin_operators,
+                                           applied_spin_operators, spin_current,
+                                           checked_hermitian)
         key = name.upper()
         if key in ("H", "HAM"):
             return self.hk_array
@@ -1296,6 +1303,7 @@ class BlochMetricBasis:
                                               Sigma @ self.inverse_array @ V)
             else:
                 raise ValueError(f"unknown BlochMetricBasis operator {name!r}")
+            self._blocks[key] = checked_hermitian(self._blocks[key], name=f"physical {key}")
         return self._blocks[key]
 
     def operator(self, name):
@@ -1399,17 +1407,22 @@ class EigenMetricBasis:
         return self._h_op
 
     def operator(self, name):
-        """Return ``C^+ O C``; the physical identity is I, not S."""
-        from .models.nonorthogonal import adjoint
+        """Return the Hermitian eigen representation of a physical operator.
+
+        Symbolic source: metric_forms.operator_forms. Validate before the
+        metric transform and remove only accepted transform round-off.
+        """
+        from .models.nonorthogonal import adjoint, checked_hermitian
         key = name.upper()
         if key in ("1", "I", "IDENTITY"):
             return _core.IdentityOperator(self.dimension)
         if key not in self._op_cache:
             C = self.eigenvectors
-            self._op_cache[key] = _core.BlockDiagonalOperator(
-                np.ascontiguousarray(adjoint(C) @ (
+            blocks = adjoint(C) @ (
                     self.bloch.anticommutator_blocks(self.bloch.operator_blocks(key))
-                    if self.bloch.route == "anticommutator" else self.bloch.operator_blocks(key)) @ C))
+                    if self.bloch.route == "anticommutator" else self.bloch.operator_blocks(key)) @ C
+            self._op_cache[key] = _core.BlockDiagonalOperator(
+                checked_hermitian(blocks, name=f"eigen {key}"))
         return self._op_cache[key]
 
     def states(self, trace_mode="random", num_states=None, seed=None):

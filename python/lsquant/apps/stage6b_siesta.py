@@ -23,15 +23,12 @@ SHC_WORD = "Tr[JXSZ delta(E-H) VY dG-(E)/dE]"
 DOS_WORD = "Tr[delta(E-H)]"
 
 
-def compute_moments(basis, word, *, moments=1024, trace="random", states=16,
+def prepare_moments(basis, word, *, moments=1024, trace="random", states=16,
                     seed=12345, window=None, batch=None):
-    """Compile the physical word and run the unchanged C++ moment engine.
+    """Validate physical operators and compile before any moment execution.
 
-    For a nonorthogonal Bloch calculation the compiler builds the stage-6
-    adjoint bra ``S T_m X A X r`` and ket ``X B T_n r``. bind_eigen_trace
-    replaces the two seeds by SC r and C r, respectively, so each sample
-    equals the eigenbasis random-phase sample. Rank-2 weights are applied
-    once without imposing moment symmetry on a finite stochastic trace.
+    Symbolic source: metric_forms.operator_forms. The compiler checks the
+    physical matrices before it constructs the generalised applied forms.
     """
     eigen = basis.name == "eigen"
     parsed = parse_word(word)
@@ -57,6 +54,19 @@ def compute_moments(basis, word, *, moments=1024, trace="random", states=16,
         h = basis.rescaled_hamiltonian(window)
         plan, engine_ops = basis.bind_eigen_trace(plan, engine_ops)
     engine = _core.MomentEngine(h, engine_ops, generator, moments if batch is None else batch)
+    # Keep all operator owners alive until the prepared engine has run.
+    return engine, plan, compiled, generator, window, engine_ops, h
+
+
+def compute_moments(basis, word, *, _prepared=None, **options):
+    """Run a prevalidated word through the unchanged C++ moment engine.
+
+    Symbolic source: metric_forms.trace_equivalence. Rank-2 KPM weights are
+    applied once, without imposing symmetry on a stochastic trace.
+    """
+    prepared = prepare_moments(basis, word, **options) if _prepared is None else _prepared
+    engine, plan, compiled, generator, window, engine_ops, h = prepared
+    nstates = int(generator.number_of_states)
     mu = engine.run(plan)
     mu.window, mu.system_size = window, basis.dimension
     mu.number_of_states, mu.state_label, mu.word = nstates, generator.label, compiled.plan.word
@@ -132,9 +142,14 @@ def execute_siesta_runfile(rf, out_dir):
     if broadening is None:
         raise ValueError("stage6b requires reconstruction.broadening_meV")
     states = rf.expansion["states"] or 16
-    for word in rf.words:
-        mu, compiled = compute_moments(basis, word, moments=rf.expansion["moments"], states=states,
-                                       seed=rf.expansion["seed"], window=window, batch=rf.expansion["batch"])
+    options = dict(moments=rf.expansion["moments"], states=states,
+                   seed=rf.expansion["seed"], window=window, batch=rf.expansion["batch"])
+    # Compile every production and reference word before starting any moments,
+    # reconstruction or oracle. A late reference failure must not waste a run.
+    prepared = [(word, prepare_moments(basis, word, **options),
+                 prepare_moments(bloch.eigenbasis(), word, **options)) for word in rf.words]
+    for word, production_plan, reference_plan in prepared:
+        mu, compiled = compute_moments(basis, word, _prepared=production_plan)
         if mu.rank == 2 and parse_word(word).canonical() != parse_word(SHC_WORD).canonical():
             raise ValueError("the shc formula requires the physical JXSZ/VY Bastin word")
         prefix = compiled.reconstruction.legacy_moment_prefix
@@ -165,9 +180,7 @@ def execute_siesta_runfile(rf, out_dir):
         curve_files.append(str(curve_path))
         # The independent engine comparison uses a diagonal H and C^+ O C,
         # not the covariant matrices passed through a second metric route.
-        reference, _ = compute_moments(bloch.eigenbasis(), word, moments=rf.expansion["moments"],
-                                        states=states, seed=rf.expansion["seed"], window=window,
-                                        batch=rf.expansion["batch"])
+        reference, _ = compute_moments(bloch.eigenbasis(), word, _prepared=reference_plan)
         reference_path = out/("eigen_"+curve_name+".chebmom")
         _core.WriteChebmom(str(reference_path), reference)
         moment_files.append(str(reference_path))
