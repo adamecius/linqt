@@ -23,6 +23,7 @@ from .models.wannier import WannierModel, load_wannier_model
 from .moments import run_plan, window_from_gershgorin
 from .reconstruct import (
     dos_curve,
+    shc,
     kubo_bastin,
     kubo_bastin_sea,
     kubo_bastin_surf,
@@ -208,6 +209,8 @@ ALLOWED_RECONSTRUCTION_KEYS: frozenset[str] = frozenset(
         "legacy_text_round_trip",
         "per_site_dos",
         "targets",
+        "num_cells",
+        "cell_area",
     }
 )
 
@@ -347,9 +350,9 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         raise ValueError("Run file 'model' must be a JSON object")
     _check_keys("model", model, ALLOWED_MODEL_KEYS)
     kind = str(_get_or(model, "kind", "csr"))
-    if kind not in ("csr", "wannier", "generator"):
+    if kind not in ("csr", "wannier", "siesta", "generator"):
         raise ValueError(
-            f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', or 'generator'"
+            f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', 'siesta', or 'generator'"
         )
     if kind == "csr":
         if not model.get("dir") or not model.get("label"):
@@ -361,6 +364,14 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             raise ValueError(
                 "Run file with model.kind='wannier' requires 'dir' and 'seed'"
             )
+    elif kind == "siesta":
+        if not model.get("dir") or not model.get("label"):
+            raise ValueError("SIESTA model requires dir and label")
+        _check_keys("model.params (siesta)", model.get("params") or {}, frozenset({
+            "velocity_mode", "oracle", "quadrature_order", "quadrature_max_order", "quadrature_tolerance"}))
+        if (model.get("params") or {}).get("velocity_mode", "berry_connection") not in (
+                "bare", "berry_connection", "covariant"):
+            raise ValueError("unknown SIESTA velocity_mode")
     elif kind == "generator":
         gen_name = model.get("name")
         if not gen_name or not isinstance(gen_name, str):
@@ -439,10 +450,12 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
                 f"Unknown metric.policy '{pol}'; expected 'orthogonal' or 'nonorthogonal'"
             )
         rte = str(_get_or(metric, "route", "lowdin"))
-        if rte not in ("lowdin", "generalised"):
+        if rte not in ("lowdin", "generalised", "anticommutator"):
             raise ValueError(
-                f"Unknown metric.route '{rte}'; expected 'lowdin' or 'generalised'"
+                f"Unknown metric.route '{rte}'; expected 'lowdin', 'generalised' or 'anticommutator'"
             )
+        if rte == "anticommutator" and kind != "siesta":
+            raise ValueError("anticommutator metric is an explicitly approximate SIESTA route")
         app = str(_get_or(metric, "applier", "exact"))
         if app not in ("exact", "chebyshev", "ischo"):
             raise ValueError(
@@ -631,6 +644,7 @@ class RunFile:
         def _resolve_path(p: str | None) -> str | None:
             if p is None:
                 return None
+            p = os.path.expanduser(p)
             if os.path.isabs(p):
                 return p
             cand = os.path.abspath(os.path.join(root, p))
@@ -753,6 +767,7 @@ class RunFile:
             ),
             "per_site_dos": bool(_get_or(raw_rec, "per_site_dos", False)),
             "targets": [dict(t) for t in (raw_rec.get("targets") or [])],
+            **({key: raw_rec[key] for key in ("num_cells", "cell_area") if key in raw_rec}),
         }
 
         raw_out = dict(raw.get("output") or {})
@@ -854,12 +869,19 @@ def _reconstruct_single_formula(
     *,
     fermi_energies: Sequence[float] = (),
     num_points: int | None = None,
+    num_cells: int | None = None,
+    cell_area: float | None = None,
 ) -> list[tuple[str, str, np.ndarray, np.ndarray]]:
     """Run one named reconstruction formula on ``mu``.
 
     Returns a list of ``(legacy_prefix, legacy_suffix, x_grid, values)`` tuples.
     """
     f = formula.lower()
+    if f == "shc":
+        if num_cells is None or cell_area is None:
+            raise ValueError("shc reconstruction requires num_cells and cell_area in the resolved run file")
+        energies, values = shc(mu, broadening_meV, num_cells, cell_area)
+        return [("SpinHall_", "JACKSON.dat", energies, values)]
     if f in ("dos", "dos_curve"):
         energies, values = dos_curve(mu, broadening_meV)
         return [("mean", "JACKSON.dat", energies, values)]
@@ -1095,6 +1117,9 @@ def execute_runfile(
         out_dir_override if out_dir_override is not None else rf.output["dir"]
     )
     kind = str(rf.model["kind"])
+    if kind == "siesta":
+        from .apps.stage6b_siesta import execute_siesta_runfile
+        return execute_siesta_runfile(rf, out_dir)
     if kind == "wannier":
         basis_name = str(rf.basis["name"])
         csr_dir_val = rf.model.get("csr_dir")
@@ -1813,12 +1838,22 @@ def reconstruct_target(
         else:
             formula = "dos"
 
+    shc_metadata = {}
+    resolved_path = os.path.join(os.path.dirname(abs_target), "run.resolved.json")
+    if formula == "shc" and os.path.isfile(resolved_path):
+        with open(resolved_path, encoding="utf-8") as fh:
+            reconstruction = json.load(fh).get("reconstruction", {})
+        shc_metadata = {key: reconstruction.get(key) for key in ("num_cells", "cell_area")}
     written_curves: list[str] = []
     for c_pref, c_suf, x_arr, y_arr in _reconstruct_single_formula(
-        formula, mu, eff_broad, fermi_energies=eff_fermi
+        formula, mu, eff_broad, fermi_energies=eff_fermi, **shc_metadata
     ):
         c_path = os.path.join(dest_dir, f"{c_pref}{stem}{c_suf}")
-        _core.WriteCurveText(c_path, x_arr, y_arr)
+        if formula == "shc":
+            np.savetxt(c_path, np.column_stack((x_arr, y_arr)), fmt="%.17g",
+                       header="energy_eV sigma_z_xy [e^2/h, sigma_z Pauli]")
+        else:
+            _core.WriteCurveText(c_path, x_arr, y_arr)
         written_curves.append(c_path)
 
     return {

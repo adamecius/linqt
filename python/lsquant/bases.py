@@ -20,16 +20,30 @@ import json
 import math
 import os
 import shlex
-from typing import Sequence, TYPE_CHECKING
+from typing import Sequence, Protocol
 from types import SimpleNamespace
 import numpy as np
 import numpy.typing as npt
 
 from . import _core
-if TYPE_CHECKING:
-    from .models.wannier import WannierModel
 from .moments import window_from_gershgorin
 from .spectral_functions import GaussianDelta
+
+class TightBindingModel(Protocol):
+    """Structural model interface; no file format is required by an adapter."""
+    num_wann: int
+    seed_name: str
+    model_dir: str | None
+    uc: np.ndarray
+    tau: np.ndarray
+
+    def Hk(self, k_points): ...
+    def dHk(self, k_points, direction): ...
+    def k_mesh(self, supercell): ...
+    def bloch_phases(self, k_points): ...
+    def hamiltonian_csr(self, supercell): ...
+    def velocity_csr(self, supercell, direction): ...
+
 
 _W2S_ALL_OPERATORS: tuple[str, ...] = (
     "VX",
@@ -495,7 +509,7 @@ class RealBasis:
 
     def __init__(
         self,
-        model: WannierModel,
+        model: TightBindingModel,
         supercell: Sequence[int],
         *,
         disorder_w: float = 0.0,
@@ -719,7 +733,7 @@ class BlochBasis:
 
     def __init__(
         self,
-        model: WannierModel,
+        model: TightBindingModel,
         supercell: Sequence[int],
         *,
         disorder_w: float = 0.0,
@@ -903,7 +917,7 @@ class EigenBasis:
 
     def __init__(
         self,
-        model: WannierModel,
+        model: TightBindingModel,
         supercell: Sequence[int],
         *,
         disorder_w: float = 0.0,
@@ -1133,7 +1147,7 @@ class EigenBasis:
 
 def make_basis(
     basis_name: str,
-    model: WannierModel,
+    model: TightBindingModel,
     supercell: Sequence[int],
     *,
     disorder_w: float = 0.0,

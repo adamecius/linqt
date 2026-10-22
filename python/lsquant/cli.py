@@ -60,7 +60,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--formula",
         "-f",
         default=None,
-        help="Reconstruction formula ('dos', 'greenwood', 'bastin', 'sea', 'surf', 'greenwood_fft', 'bastin_fft', 'time_correlation').",
+        help="Reconstruction formula ('shc', 'dos', 'greenwood', 'bastin', 'sea', 'surf', 'greenwood_fft', 'bastin_fft', 'time_correlation').",
     )
     p_rec.add_argument(
         "--broadening-meV",

@@ -134,6 +134,7 @@ SHAPE_ALLOWED_FORMULAS: dict[str, frozenset[str]] = {
     ),
     "kubo_bastin": frozenset(
         {
+            "shc",
             "bastin",
             "kubo_bastin",
             "sea",
