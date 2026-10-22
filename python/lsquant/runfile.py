@@ -373,11 +373,14 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         if model.get("params") is not None and not isinstance(model["params"], Mapping):
             raise ValueError("SIESTA model.params must be a JSON object")
         _check_keys("model.params (siesta)", model.get("params") or {}, frozenset({
-            "velocity_mode", "oracle", "oracle_degeneracy_tolerance",
+            "velocity_mode", "oracle", "oracle_degeneracy_tolerance", "bloch_memory_mb",
             "quadrature_order", "quadrature_max_order", "quadrature_tolerance"}))
         degeneracy_tolerance = float((model.get("params") or {}).get("oracle_degeneracy_tolerance", 1e-6))
         if not np.isfinite(degeneracy_tolerance) or degeneracy_tolerance <= 0:
             raise ValueError("oracle_degeneracy_tolerance must be positive and finite (eV)")
+        bloch_memory_mb = float((model.get("params") or {}).get("bloch_memory_mb", 256.0))
+        if not np.isfinite(bloch_memory_mb) or bloch_memory_mb <= 0:
+            raise ValueError("bloch_memory_mb must be positive and finite (MiB)")
         if (model.get("params") or {}).get("velocity_mode", "berry_connection") not in (
                 "bare", "berry_connection", "covariant"):
             raise ValueError("unknown SIESTA velocity_mode")

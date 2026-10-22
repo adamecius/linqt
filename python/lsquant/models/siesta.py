@@ -63,6 +63,7 @@ class SiestaModel:
     metadata: dict = field(default_factory=dict)
     input_tolerance: float = 1e-10
     physical_spin: dict | None = None
+    bloch_memory_mb: float = 256.0
 
     def __post_init__(self):
         self.uc = np.asarray(self.uc, float)
@@ -92,9 +93,10 @@ class SiestaModel:
         """
         if cell_derivative:
             weighted = 1j * self.r_cart[:, derivative, None, None] * matrices
-            out = bloch_sum(self.r_cart, self.tau, weighted, k)
+            out = bloch_sum(self.r_cart, self.tau, weighted, k, memory_mb=self.bloch_memory_mb)
         else:
-            out = bloch_sum(self.r_cart, self.tau, matrices, k, derivative=derivative)
+            out = bloch_sum(self.r_cart, self.tau, matrices, k, derivative=derivative,
+                            memory_mb=self.bloch_memory_mb)
         return checked_hermitian(out, name="SIESTA Bloch sum", tolerance=self.input_tolerance)
 
     def Hk(self, k):

@@ -175,6 +175,7 @@ def execute_siesta_runfile(rf, out_dir):
                               quadrature_tolerance=float(params.get("quadrature_tolerance", 1e-5)),
                               quadrature_max_order=int(params.get("quadrature_max_order", 384)),
                               phase=timing.phase)
+    model.bloch_memory_mb = float(params.get("bloch_memory_mb", 256.0))
     with timing.phase("metric build"):
         bloch = BlochMetricBasis(model, rf.basis["supercell"], velocity_mode=mode,
                                  route=rf.metric["route"], seed=rf.expansion["seed"])
@@ -314,6 +315,8 @@ def main(argv=None):
     parser.add_argument("--broadening-meV", type=float, default=10.)
     parser.add_argument("--out", required=True)
     parser.add_argument("--oracle", action="store_true")
+    parser.add_argument("--bloch-memory-mb", type=float, default=256.0,
+                        help="Bloch sum array workspace limit in MiB (excludes the result)")
     parser.add_argument("--oracle-degeneracy-tolerance", type=float, default=1e-6,
                         help="minimum near-degenerate subspace tolerance in eV")
     parser.add_argument("--quadrature-order", type=int, default=24)
@@ -322,6 +325,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     raw = dict(model=dict(kind="siesta", dir=str(Path(args.siesta).expanduser().resolve()), label=args.label,
                           params=dict(velocity_mode=args.velocity_mode, oracle=args.oracle,
+                                      bloch_memory_mb=args.bloch_memory_mb,
                                       oracle_degeneracy_tolerance=args.oracle_degeneracy_tolerance,
                                       quadrature_order=args.quadrature_order,
                                       quadrature_max_order=args.quadrature_max_order,

@@ -18,22 +18,51 @@ def k_mesh(lattice, supercell):
                      for j in range(n2) for i in range(n1)]) @ reciprocal_lattice(lattice)
 
 
-def bloch_sum(r_cart, centres, matrices, k_points, *, derivative=None, cell=False):
+def bloch_sum(r_cart, centres, matrices, k_points, *, derivative=None, cell=False,
+              memory_mb=256.0):
     """Sum ``exp(+ik.(R+tau_j-tau_i)) M_ij(R)`` and optional Cartesian derivative.
 
     For ``cell=True`` omit tau from the phase and derivative. A derivative
-    multiplies by ``+i (R+tau_j-tau_i)_a``. Work is O(N_k N_R W^2), keeping
-    only a single k block of phases at a time (no N_k N_R W^2 temporary).
+    multiplies by ``+i (R+tau_j-tau_i)_a``. Factor the phase into a lattice
+    sum and orbital phases, with O(N_k N_R W^2) work. Chunk k to bound array
+    workspace by memory_mb MiB, excluding caller inputs and the final result.
     """
     points = np.asarray(k_points, dtype=float)
-    displacement = np.asarray(r_cart)[:, None, None, :] + np.zeros(
-        (1, len(centres), len(centres), 3))
-    if not cell:
-        displacement += np.asarray(centres)[None, None, :, :] - np.asarray(centres)[None, :, None, :]
-    data = np.asarray(matrices)
+    r_cart, centres = np.asarray(r_cart), np.asarray(centres)
+    if not np.isfinite(memory_mb) or memory_mb <= 0:
+        raise ValueError("Bloch workspace memory_mb must be positive and finite")
+    data = np.asarray(matrices, dtype=np.complex128, order="C")
+    nr, width, _ = data.shape
+    # Reserve block stacks for conversion and derivative weights, plus
+    # phase construction, orbital dressing and contraction output per k.
+    fixed_bytes = 3*data.nbytes
+    bytes_per_k = 32*nr + 48*width + 32*width*width
+    chunk = int((memory_mb*1024**2-fixed_bytes)//bytes_per_k)
+    if chunk < 1:
+        raise ValueError("Bloch workspace limit cannot hold the block stack and one k point")
     if derivative is not None:
-        data = 1j * displacement[..., derivative] * data
-    blocks = [np.sum(np.exp(1j * (displacement @ k)) * data, axis=0)
-              for k in np.atleast_2d(points)]
-    out = np.ascontiguousarray(blocks, dtype=np.complex128)
+        displacement = r_cart[:, derivative, None, None]
+        if not cell:
+            displacement = (displacement + centres[None, None, :, derivative]
+                            - centres[None, :, None, derivative])
+        data = (1j*displacement)*data
+        del displacement
+    points_2d = np.atleast_2d(points)
+    out = np.empty((len(points_2d), width, width), dtype=np.complex128)
+    for start in range(0, len(points_2d), chunk):
+        stop = min(start+chunk, len(points_2d))
+        k = points_2d[start:stop]
+        phase = np.asarray(k @ r_cart.T, dtype=np.complex128)
+        phase *= 1j
+        np.exp(phase, out=phase)
+        blocks = out[start:stop]
+        np.einsum("kr,rij->kij", phase, data, out=blocks, optimize=True)
+        if not cell:
+            orbital = np.asarray(k @ centres.T, dtype=np.complex128)
+            orbital *= 1j
+            np.exp(orbital, out=orbital)
+            blocks *= orbital[:, None, :]
+            blocks *= orbital.conj()[:, :, None]
+            del orbital
+        del phase
     return out[0] if points.ndim == 1 else out
