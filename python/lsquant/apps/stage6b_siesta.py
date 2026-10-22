@@ -1,7 +1,7 @@
 """Stage-6b gate executor; the CLI only constructs a stage-7 RunFile.
 
 No material data or expected plateau is embedded here. The same loaded
-SIESTA matrices feed the Bloch engine, eigenphase reference, and NumPy
+SIESTA matrices feed the Bloch engine, exact eigen reference, and NumPy
 oracle. Nothing is certified as a golden by this program.
 """
 from __future__ import annotations
@@ -54,7 +54,7 @@ def prepare_moments(basis, word, *, moments=1024, trace="random", states=16,
         h = _core.RescaledOperator(basis.hamiltonian(), window)
     else:
         h = basis.rescaled_hamiltonian(window)
-        plan, engine_ops = basis.bind_eigen_trace(plan, engine_ops)
+        plan, engine_ops = basis.bind_eigen_trace(plan, engine_ops, trace)
     engine = _core.MomentEngine(h, engine_ops, generator, moments if batch is None else batch)
     # Keep all operator owners alive until the prepared engine has run.
     return engine, plan, compiled, generator, window, engine_ops, h
@@ -136,9 +136,9 @@ def oracle_energies(reconstruction, eigenvalues, broadening_meV):
 def execute_siesta_runfile(rf, out_dir):
     """Execute a validated Siesta RunFile and persist its resolved provenance.
 
-    Normalisation: ``SHC=2*pi*Bastin/(N_k*A_cell)``; DOS is per cell.
-    The eigen reference uses identical phase seed/count and the same exact
-    S^-1/2 factorisation. The production and reference moment differences
+    Normalisation is delegated to reconstruct.shc; DOS is per cell.
+    The eigen reference always uses the exact block trace and the cached
+    metric factorisation. The production and reference moment differences
     are reported without declaring a tolerance verdict or a gate result.
     """
     if rf.basis["name"] not in ("bloch", "eigen"):
@@ -147,8 +147,8 @@ def execute_siesta_runfile(rf, out_dir):
         raise ValueError("SIESTA stage6b requires nonorthogonal metric with exact per-block applier")
     if rf.basis["disorder"]["W"] != 0:
         raise ValueError("nonorthogonal disorder belongs to stage6c")
-    if rf.expansion["trace"] != "random":
-        raise ValueError("material comparisons require eigenbasis random-phase trace")
+    if rf.expansion["trace"] not in ("random", "exact"):
+        raise ValueError("SIESTA trace must be random or exact")
     supported = {parse_word(SHC_WORD).canonical(), parse_word(DOS_WORD).canonical()}
     if any(parse_word(word).canonical() not in supported for word in rf.words):
         raise ValueError("stage6b run files accept the physical SHC word or identity DOS word")
@@ -188,21 +188,23 @@ def execute_siesta_runfile(rf, out_dir):
                                       window=[float(window.lower), float(window.upper)],
                                       velocity_mode=mode, route=bloch.route,
                                       metric_approximation=bloch.route == "anticommutator",
-                                      trace_basis="generalised eigenvectors" if bloch.route != "anticommutator"
-                                      else "eigenvectors of the approximate anticommutator Hamiltonian",
+                                      trace=rf.expansion["trace"],
+                                      trace_basis=("exact block trace in eigenbasis" if rf.expansion["trace"] == "exact"
+                                                   else "orbital Bloch phases (Lowdin representation)"),
                                       units=UNITS, num_cells=bloch.num_cells, cell_area=area))
     moment_files, curve_files, comparisons = [], [], []
     broadening = rf.reconstruction["broadening_meV"]
     if broadening is None:
         raise ValueError("stage6b requires reconstruction.broadening_meV")
     states = rf.expansion["states"] or 16
-    options = dict(moments=rf.expansion["moments"], states=states,
+    options = dict(moments=rf.expansion["moments"], states=states, trace=rf.expansion["trace"],
                    seed=rf.expansion["seed"], window=window, batch=rf.expansion["batch"])
     # Compile every production and reference word before starting any moments,
     # reconstruction or oracle. A late reference failure must not waste a run.
     with timing.phase("operators"):
         prepared = [(word, prepare_moments(basis, word, **options),
-                     prepare_moments(bloch.eigenbasis(), word, **options)) for word in rf.words]
+                     prepare_moments(bloch.eigenbasis(), word, **dict(options, trace="exact")))
+                    for word in rf.words]
     for word, production_plan, reference_plan in prepared:
         with timing.phase("moments", word=word):
             mu, compiled = compute_moments(basis, word, _prepared=production_plan)
@@ -250,7 +252,9 @@ def execute_siesta_runfile(rf, out_dir):
             eigen_curve = out/("eigen_"+curve_name+".dat")
             np.savetxt(eigen_curve, np.column_stack((er, vr)), fmt="%.17g", header=header)
             curve_files.append(str(eigen_curve))
-        comparisons.append(dict(word=word, phase_seed=rf.expansion["seed"], states=states,
+        comparisons.append(dict(word=word, phase_seed=rf.expansion["seed"],
+                                production_trace=rf.expansion["trace"], production_states=mu.number_of_states,
+                                reference_trace="exact", reference_states=reference.number_of_states,
                                 max_moment_difference=float(np.max(np.abs(mu.data-reference.data))),
                                 max_curve_difference=float(np.max(np.abs(values-vr)))))
     _write_json(out/"eigen_comparison.json", comparisons)
@@ -261,8 +265,7 @@ def execute_siesta_runfile(rf, out_dir):
             energies = oracle_energies(rf.reconstruction, bloch.physical_eigenvalues, broadening)
             curve = sigma_xy(bloch.physical_eigenvalues, curvature, energies, area, broadening=broadening/1000)
             _write_json(out/"exact_shc.json", dict(energies=energies.tolist(), values=curve.tolist(), units=UNITS,
-                                                  trace="eigenbasis random phase (diagonal curvature trace is exact)",
-                                                  states=states, seed=rf.expansion["seed"],
+                                                  trace="exact occupied-band sum in eigenbasis",
                                                   gaussian_standard_deviation_eV=broadening/1000))
             ef = (rf.reconstruction["fermi_energies"] or [0.0])[0]
             try:
@@ -293,7 +296,7 @@ def main(argv=None):
     parser.add_argument("--route", choices=["lowdin", "generalised", "anticommutator"], default="lowdin")
     parser.add_argument("--word", choices=["shc", "dos"], default="shc")
     parser.add_argument("--moments", type=int, default=1024)
-    parser.add_argument("--trace", choices=["random"], default="random")
+    parser.add_argument("--trace", choices=["random", "exact"], default="random")
     parser.add_argument("--states", type=int, default=16)
     parser.add_argument("--seed", type=int, default=12345)
     parser.add_argument("--broadening-meV", type=float, default=10.)

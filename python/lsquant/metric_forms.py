@@ -125,6 +125,13 @@ def spin_current_forms():
     return operator_forms((V*q+q*V)/2)
 
 
+def spin_hall_normalisation():
+    """Symbolic source for reconstruct.shc's Pauli-spin Bastin units."""
+    bastin = sp.Symbol("KuboBastin", real=True)
+    num_cells, cell_area = sp.symbols("N_k A_cell", positive=True)
+    return 2*sp.pi*bastin/(num_cells*cell_area)
+
+
 def hermiticity(forms):
     """Return Euclidean and S-Hermiticity verdicts via symbolic reduction."""
     result = {}

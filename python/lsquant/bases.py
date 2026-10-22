@@ -1336,11 +1336,12 @@ class BlochMetricBasis:
         return 0.5*(self.inverse_array @ blocks + blocks @ self.inverse_array)
 
     def states(self, trace_mode="random", num_states=None, seed=None):
-        """Generate eigenbasis phases ``r_kn=exp(i theta_kn)/sqrt(N_k W)``.
+        """Generate orbital Bloch phases, or an exact block-local trace.
 
-        bind_eigen_trace maps the ket and dual bra into the coefficient
-        representation. Using C r on both sides would insert an extra S^-1
-        in the generalised trace. Exact block-local seeds are fixture-only.
+        Symbolic source: metric_forms.trace_equivalence. Random phases live
+        in the orthonormal orbital (Lowdin) representation; the adapter maps
+        them to coefficient vectors on the generalised route. Exact seeds
+        span all bands at once in every independent k block, using W states.
         """
         if trace_mode == "random":
             return _core.RandomPhaseStates(self.dimension, 1 if num_states is None else int(num_states),
@@ -1351,16 +1352,22 @@ class BlochMetricBasis:
             return _core.BlockLocalStates(self.num_cells, self.num_wann)
         raise ValueError("trace must be random or exact")
 
-    def bind_eigen_trace(self, plan, operators):
-        """Insert ket C and dual bra SC into a coefficient-representation plan.
+    def bind_eigen_trace(self, plan, operators, trace_mode="exact"):
+        """Prepare an exact trace or an orbital-phase production estimator.
 
-        ``(SC r)^+ F_c (C r)=r^+ C^+ S F_c C r`` with C^+SC=I.
-        Thus each realisation equals the corresponding eigenbasis estimator,
-        not merely its ensemble mean. The Lowdin route uses unitary U on
-        both sides. A rank-1 plan gets an explicit unexpanded bra.
+        Symbolic source: metric_forms.trace_equivalence. Exact seeds use C
+        on the ket and SC on the dual bra, with C^+SC=I. Orbital phases use
+        Y and SY instead, where Y=S^-1/2; Lowdin needs no seed transform.
+        A rank-1 plan gets an explicit unexpanded bra.
         """
         operators = list(operators)
-        ket = self._coefficient_seed if self.route == "generalised" else self._lowdin_seed
+        if trace_mode == "exact":
+            ket = self._coefficient_seed if self.route == "generalised" else self._lowdin_seed
+        elif trace_mode == "random":
+            ket = (self.metric.inverse_sqrt_overlap if self.route == "generalised"
+                   else _core.IdentityOperator(self.dimension))
+        else:
+            raise ValueError("trace must be random or exact")
         # MirrorToBra in the current engine copies the PREPARED ket seed.
         # Therefore the relative map is S*C*C^-1=S (or I for unitary U),
         # not SC applied a second time to the already prepared C r.
@@ -1428,8 +1435,21 @@ class EigenMetricBasis:
         return self._op_cache[key]
 
     def states(self, trace_mode="random", num_states=None, seed=None):
-        """Use direct eigenbasis random phases, without FFT/real-space mixing."""
-        return self.bloch.states(trace_mode, num_states, seed)
+        """Expose exact block trace, or transform orbital Bloch phases once.
+
+        Symbolic source: metric_forms.trace_equivalence. Exact uses W
+        block-local states with diagonal H. Random uses U^+ r, where r has
+        orbital Bloch phases and U is the cached Lowdin eigenvector matrix.
+        The transform and all k loops execute inside C++ TransformedStates.
+        """
+        if trace_mode == "exact":
+            if num_states is not None and int(num_states) != self.num_wann:
+                raise ValueError("block exact trace requires W states")
+            return _core.BlockLocalStates(self.num_cells, self.num_wann)
+        if trace_mode == "random":
+            orbital = self.bloch.states("random", num_states, seed)
+            return _core.TransformedStates(self.bloch._lowdin_seed.adjoint(), orbital)
+        raise ValueError("trace must be random or exact")
 
     def window(self, pad=0.10):
         """Use the same generalised spectral window as the Bloch calculation."""

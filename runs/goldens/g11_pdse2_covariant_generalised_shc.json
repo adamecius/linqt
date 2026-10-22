@@ -9,7 +9,7 @@
     }
   },
   "basis": {
-    "name": "bloch",
+    "name": "eigen",
     "supercell": [
       48,
       48,
@@ -25,8 +25,7 @@
   "expansion": {
     "moments": 1024,
     "window": "eigen",
-    "trace": "random",
-    "states": 16,
+    "trace": "exact",
     "seed": 12345
   },
   "reconstruction": {

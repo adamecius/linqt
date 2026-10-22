@@ -647,6 +647,7 @@ def time_correlation_curve(
 def shc(moments, broadening_meV, num_cells, cell_area):
     """Return sigma^z_xy in ``e^2/h, sigma_z Pauli`` from a Bastin tensor.
 
+    Symbolic source: metric_forms.spin_hall_normalisation.
     ``sigma=2*pi*KuboBastin(mu)/(N_k*A_cell)``. The stage-3 reconstruction
     already multiplies the normalised moments by the Hilbert-space size;
     divide by the number of cells and area, not by the number of orbitals.

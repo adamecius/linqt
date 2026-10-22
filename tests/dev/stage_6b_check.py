@@ -7,6 +7,7 @@ No SIESTA, Wannier, or material files are needed. This is not a golden gate.
 """
 from __future__ import annotations
 
+import argparse
 import os
 from pathlib import Path
 import sys
@@ -47,7 +48,15 @@ def kane_mele_arrays():
 
 
 def main():
-    """Run (a)-(f), plus the requested eigenbasis random-phase comparisons."""
+    """Run (a)-(f), exact rank-2 comparisons and production noise diagnostics."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--noise-samples", type=int, default=8)
+    parser.add_argument("--noise-states", type=int, default=16)
+    parser.add_argument("--noise-mesh", type=int, default=48)
+    parser.add_argument("--noise-moments", type=int, default=256)
+    args = parser.parse_args()
+    if args.noise_samples < 2 or min(args.noise_states, args.noise_mesh, args.noise_moments) < 1:
+        parser.error("noise requires at least two samples and positive states/mesh/moments")
     root = Path(__file__).resolve().parents[2]
     build = Path(os.environ.get("LSQUANT_BUILD_DIR", root/"build"))
     for path in (root/"python", build, build/"lsquant_core"):
@@ -176,34 +185,59 @@ def main():
     small_curvature = spin_berry_curvature(small.eigenvalues, small.eigenvectors,
                                            small.operator_blocks("JXSZ"), small.operator_blocks("VY"))
     small_oracle = float(sigma_xy(small.eigenvalues, small_curvature, [0.], area)[0])
-    exact, _ = compute_moments(small, SHC_WORD, moments=256, trace="exact")
+    exact, _ = compute_moments(small.eigenbasis(), SHC_WORD, moments=256, trace="exact")
+    bloch_exact, _ = compute_moments(small, SHC_WORD, moments=256, trace="exact")
+    exact_difference = float(np.max(np.abs(bloch_exact.data-exact.data)))
+    print(f"SHC exact block Bloch-minus-eigen moments={exact_difference:.17g}")
+    assert exact_difference < 1e-10
     energies, curve = shc(exact, 10., small.num_cells, area)
     value = float(np.interp(0., energies, curve))
     print(f"(f) generalised exact KPM M=256 Nk=12x12 plateau={value:.12f} oracle={small_oracle:.12f}")
     assert abs(value-small_oracle) < 1e-2
     random, _ = compute_moments(small, SHC_WORD, moments=256, states=16, seed=12345)
-    eigen, _ = compute_moments(small.eigenbasis(), SHC_WORD, moments=256, states=16, seed=12345)
-    residual = float(np.max(np.abs(random.data-eigen.data)))
-    print(f"SHC eigenphase Bloch-minus-eigen moments={residual:.17g}; random-minus-exact={np.max(np.abs(random.data-exact.data)):.17g}")
-    assert residual < 1e-10
+    eigen_random, _ = compute_moments(small.eigenbasis(), SHC_WORD, moments=256, states=16, seed=12345)
+    residual = float(np.max(np.abs(random.data-eigen_random.data)))
+    print(f"SHC orbital-phase same-sample Bloch-minus-eigen moments={residual:.17g}; random-minus-exact={np.max(np.abs(random.data-exact.data)):.17g} (diagnostic only)")
     lowdin = BlochMetricBasis(rotated, [12, 12, 1], velocity_mode="covariant", route="lowdin")
-    lowdin_mu, _ = compute_moments(lowdin, SHC_WORD, moments=256, states=16, seed=12345)
-    assert np.max(np.abs(lowdin_mu.data-eigen.data)) < 1e-10
-    el, vl = shc(lowdin_mu, 10., small.num_cells, area)
-    eg, vg = shc(random, 10., small.num_cells, area)
-    print(f"random phase plateaus generalised={np.interp(0.,eg,vg):.12f} Lowdin={np.interp(0.,el,vl):.12f}")
     lowdin_exact, _ = compute_moments(lowdin, SHC_WORD, moments=256, trace="exact")
+    assert np.max(np.abs(lowdin_exact.data-exact.data)) < 1e-10
     el, vl = shc(lowdin_exact, 10., small.num_cells, area)
+    print(f"(f) Lowdin exact KPM M=256 Nk=12x12 plateau={np.interp(0.,el,vl):.12f}")
     assert abs(float(np.interp(0., el, vl))-small_oracle) < 1e-2
     approximate = BlochMetricBasis(rotated, [12, 12, 1], velocity_mode="covariant", route="anticommutator")
-    approx_mu, _ = compute_moments(approximate, SHC_WORD, moments=256, states=16, seed=12345)
+    approx_mu, _ = compute_moments(approximate.eigenbasis(), SHC_WORD, moments=256, trace="exact")
     ea, va = shc(approx_mu, 10., approximate.num_cells, area)
-    print(f"anticommutator plateau={np.interp(0.,ea,va):.12f}; equality is NOT required by the derivation")
-    dos_random, _ = compute_moments(small, DOS_WORD, moments=64, states=1, seed=12345)
-    dos_exact, _ = compute_moments(small, DOS_WORD, moments=64, trace="exact")
-    dos_difference = float(np.max(np.abs(dos_random.data-dos_exact.data)))
+    print(f"anticommutator exact plateau={np.interp(0.,ea,va):.12f}; equality is NOT required by the derivation")
+
+    # A direct eigenphase still traces a diagonal DOS exactly. This diagnostic
+    # deliberately bypasses the production orbital-phase state adapter.
+    from lsquant import _core
+    from lsquant.moments import dos_plan, run_plan
+    eigen_basis = small.eigenbasis()
+    dos_eigenphase = run_plan(dos_plan(64, 1, DOS_WORD), eigen_basis.hamiltonian(),
+                              small.window(), _core.RandomPhaseStates(small.dimension, 1, 12345))
+    dos_exact, _ = compute_moments(eigen_basis, DOS_WORD, moments=64, trace="exact")
+    dos_difference = float(np.max(np.abs(dos_eigenphase.data-dos_exact.data)))
     print(f"DOS single eigenphase-minus-exact={dos_difference:.17g}")
     assert dos_difference < 1e-12
+
+    # Measure the actual production estimator, including the KPM reconstruction,
+    # at the gate mesh. There is no stochastic pass/fail tolerance or golden.
+    gate_mesh = [args.noise_mesh, args.noise_mesh, 1]
+    noise_basis = BlochMetricBasis(rotated, gate_mesh, velocity_mode="covariant", route="lowdin")
+    reference, _ = compute_moments(noise_basis.eigenbasis(), SHC_WORD,
+                                    moments=args.noise_moments, trace="exact")
+    en, vn = shc(reference, 10., noise_basis.num_cells, area)
+    exact_plateau = float(np.interp(0., en, vn))
+    samples = []
+    for sample in range(args.noise_samples):
+        mu, _ = compute_moments(noise_basis, SHC_WORD, moments=args.noise_moments,
+                                 trace="random", states=args.noise_states, seed=12345+sample)
+        en, vn = shc(mu, 10., noise_basis.num_cells, area)
+        samples.append(float(np.interp(0., en, vn)))
+        print(f"SHC orbital-phase noise sample={sample+1}/{args.noise_samples} plateau={samples[-1]:.12f}", flush=True)
+    deviation = float(np.std(samples, ddof=1))
+    print(f"SHC orbital-phase noise mesh={args.noise_mesh}x{args.noise_mesh} M={args.noise_moments} states={args.noise_states} samples={args.noise_samples} mean={np.mean(samples):.12f} std={deviation:.12f} standard_error={deviation/np.sqrt(args.noise_samples):.12f} exact_KPM={exact_plateau:.12f} [e^2/h, sigma_z Pauli]", flush=True)
     print("stage_6b_check: developer self-check passed (not a golden gate)")
 
 
