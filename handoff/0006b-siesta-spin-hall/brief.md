@@ -180,3 +180,41 @@ plateau to 1e-2. Not a gate, not extended.
 estimate); the self-check output; one `stage6b_siesta` run per material and mode with the
 oracle numbers; deviations; open questions. No "done", no gate comparison beyond the
 self-check, no push.
+
+## 10. Goal restated (user, 2026-10-22) and references
+
+The user's instruction: verify and correct the velocity operator, on both routes, until the
+spin Hall plateau of a topological insulator comes out of the KPM; the rotated Kane-Mele
+fixture is the exact check, Bi(111) and PdSe2 the materials. Evidence already in hand
+(`notes-2026-10-21.md`, sections 8 to 11): the SIESTA eq. (4) velocity is Hermitian and
+passes Hellmann-Feynman; the wannier2sparse `covariant` velocity is non-Hermitian because
+`_r.dat` is used raw (not hermitised, not divided by `ndegen`), and becomes Hermitian to
+1e-16 once `A(R) <- 1/2 [A(R) + A(-R)^+] / ndegen(R)`; the PdSe2 4 x 4 Wannier model shows
+no plateau in any mode and the exact reference agrees, so PdSe2 needs a denser NSCF grid
+before it can be a test; the legacy one-sided velocity is non-Hermitian by 20 to 30 eV A on
+Bi while its diagonal is right. Developer for this stage: Codex (effort high) while Agi's
+quota is out; tester: an Opus agent on Aron; Fable reviews.
+
+References (read before coding; `../0006-nonorthogonal-metric/literature.md` has the
+stage-6 list):
+- X. Wang, J. R. Yates, I. Souza, D. Vanderbilt, Phys. Rev. B 74, 195118 (2006): the
+  Wannier-interpolated velocity and Berry curvature; the covariant velocity
+  `v_a = dH/dk_a - i [H, A_a]` with the Wannier position matrix `A_a(R) = <0n| r_a |R m>`,
+  and the sum rules it must satisfy (Hermiticity, `A_a(R) = A_a(-R)^+`).
+- D. Vanderbilt, Berry Phases in Electronic Structure Theory (CUP 2018), chapter 5 on
+  Wannier functions and the position operator in a non-orthogonal basis.
+- E. Prodan, Phys. Rev. B 80, 125327 (2009): the spin Chern number from `P sigma_z P` when
+  `S_z` is not conserved (the oracle of section 5).
+- T. Fukui, Y. Hatsugai, H. Suzuki, J. Phys. Soc. Jpn. 74, 1674 (2005): the lattice
+  Chern number (integer by construction) used for the oracle.
+- C. L. Kane, E. J. Mele, Phys. Rev. Lett. 95, 226801 (2005): the model of the self-check
+  (`sigma^z_xy = 2 e^2/h` with Pauli `sigma_z`, section 3 units).
+- A. Weisse, G. Wellein, A. Alvermann, H. Fehske, Rev. Mod. Phys. 78, 275 (2006): KPM,
+  Jackson kernel, the Kubo-Bastin expansion; and `theory.md` of stage 6 for the
+  non-orthogonal trace (`S`-weighted inner product, operators as `S^-1 O`).
+- N. Papior et al., sisl (doi 10.5281/zenodo.597181): `Hamiltonian.Hk/Sk/dHk/dSk`, gauge
+  `atomic` versus `lattice`, spin-orbit block layout; SIESTA basis functions from
+  `.ion.xml` for the dipole quadrature.
+- wannier2sparse (https://github.com/adamecius/wannier2sparse): `include/tbmodel.hpp`
+  `createCovariantVelocity_list`, `readPositionMatrix` (the `ndegen` pitfall is in its own
+  comment), `hopping_product_R`.
