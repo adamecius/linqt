@@ -259,6 +259,12 @@ PYBIND11_MODULE(_core, m) {
       .def(py::init<const LinearOperator&, const LinearOperator&>(), py::arg("inverse"),
            py::arg("operator"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>());
 
+  py::class_<HermitianTripleProduct, LinearOperator>(m, "HermitianTripleProduct")
+      .def(py::init<const LinearOperator&, const LinearOperator&, const LinearOperator&, Scalar>(),
+           py::arg("first"), py::arg("middle"), py::arg("last"),
+           py::arg("coefficient") = Scalar(0.5, 0.0),
+           py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>());
+
   py::class_<MetricPolicy>(m, "MetricPolicy")
       .def_property_readonly("is_orthogonal", &MetricPolicy::IsOrthogonal)
       .def_property_readonly("overlap", &MetricPolicy::Overlap,
