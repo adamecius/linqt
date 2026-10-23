@@ -259,6 +259,10 @@ def spectral_projection_proof():
     HP, Hs = forms["hard"]["physical"], forms["shift"]["physical"]
     # Adjoint expressions use C^+=Cd, W^+=W, D^+=D, Ds^+=Ds.
     Oprojected = Pd*O*P
+    def projection_dagger(expression):
+        return dagger(expression).xreplace({sp.adjoint(C): Cd, sp.adjoint(Cd): C,
+                                             sp.adjoint(D): D, sp.adjoint(W): W,
+                                             sp.adjoint(Ds): Ds, sp.adjoint(O): O})
     identities = {
         "idempotent": P*P-P,
         "s_self_adjoint": Pd*S-S*P,
@@ -269,7 +273,27 @@ def spectral_projection_proof():
         "projected_identity": Pd*S*P-S*P,
         "hard_from_coefficient_hamiltonian": HP-S*P*(C*D*Cd*S)*P,
         "shift_as_update": Hs-(S*C*D*Cd*S+S*C*(Ds-D)*Cd*S),
-        "hard_physical_hermitian": HP-S*C*D*W*Cd*S,
-        "projected_physical_hermitian": Oprojected-Pd*O*P,
+        "hard_physical_hermitian": HP-projection_dagger(HP),
+        "shift_physical_hermitian": Hs-projection_dagger(Hs),
+        "projected_physical_hermitian": Oprojected-projection_dagger(Oprojected),
     }
     return {name: reduce(expression) for name, expression in identities.items()}
+
+
+def orthogonal_projection_forms():
+    """Polar reduced-coordinate forms and the Fourier convention of 6d.
+
+    C_W^+ S C_W=I, U unitary => Q=C_W U, Q^+ S Q=I.
+    H_W=U^+ diag(E_W) U, O_W=Q^+ O Q. The retained metric is
+    identity only in this optional reduced tool; hard/shift retain S.
+    The scalar phase and FFT sign below are the source of real_space.py's
+    conversion before calling the unchanged origin Model.
+    """
+    Cw, Cwd, U, Ud, D, O = sp.symbols("C_W C_W_dagger U U_dagger E_W O", commutative=False)
+    k, R, tau_i, tau_j = sp.symbols("k R tau_i tau_j", real=True)
+    phase = sp.exp(sp.I*k*(R+tau_j-tau_i))
+    cell = sp.simplify(sp.exp(sp.I*k*tau_i)*phase*sp.exp(-sp.I*k*tau_j))
+    return dict(isometry=Cw*U, overlap=Ud*(Cwd*S*Cw)*U,
+                hamiltonian=Ud*D*U, operator=Ud*Cwd*O*Cw*U,
+                cell_phase=cell, cell_phase_residual=sp.simplify(cell-sp.exp(sp.I*k*R)),
+                inverse_fourier_phase=sp.exp(-sp.I*k*R))
