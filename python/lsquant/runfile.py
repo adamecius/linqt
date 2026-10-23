@@ -12,6 +12,7 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from . import _core
+from .projection.spectral import resolve_projection
 from .bases import (
     BlochBasis,
     EigenBasis,
@@ -40,6 +41,7 @@ ALLOWED_TOP_KEYS: frozenset[str] = frozenset(
         "model",
         "basis",
         "metric",
+        "projection",
         "word",
         "words",
         "expansion",
@@ -343,6 +345,7 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         raise ValueError("Run file must be a JSON object")
 
     _check_keys("top-level", raw, ALLOWED_TOP_KEYS)
+    projection = resolve_projection(raw.get("projection"))
 
     for req in ("model", "word", "expansion"):
         if req not in raw:
@@ -353,6 +356,8 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
         raise ValueError("Run file 'model' must be a JSON object")
     _check_keys("model", model, ALLOWED_MODEL_KEYS)
     kind = str(_get_or(model, "kind", "csr"))
+    if projection["kind"] != "none" and kind != "siesta":
+        raise ValueError("stage6d run-file projection requires a SIESTA model")
     if kind not in ("csr", "wannier", "siesta", "generator"):
         raise ValueError(
             f"Unknown model.kind '{kind}'; expected 'csr', 'wannier', 'siesta', or 'generator'"
@@ -643,6 +648,7 @@ class RunFile:
     reconstruction: dict[str, Any]
     output: dict[str, Any]
     source_path: str | None = field(default=None, repr=False)
+    projection: dict[str, Any] = field(default_factory=lambda: {"kind": "none", "window": None, "radius": None})
 
     @classmethod
     def from_dict(
@@ -831,6 +837,7 @@ class RunFile:
             reconstruction=recon_cfg,
             output=output_cfg,
             source_path=source_path,
+            projection=resolve_projection(raw.get("projection")),
         )
 
     @classmethod
@@ -858,6 +865,8 @@ class RunFile:
         }
         if len(self.words) > 1 or self.words != [self.word]:
             out["words"] = list(self.words)
+        if self.projection["kind"] != "none":
+            out["projection"] = dict(self.projection)
         return out
 
 
@@ -1141,6 +1150,9 @@ def execute_runfile(
     )
     kind = str(rf.model["kind"])
     if kind == "siesta":
+        if rf.projection["kind"] != "none":
+            from .projection.runfile import execute_projection_runfile
+            return execute_projection_runfile(rf, out_dir)
         from .apps.stage6b_siesta import execute_siesta_runfile
         return execute_siesta_runfile(rf, out_dir)
     if kind == "wannier":
