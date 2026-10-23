@@ -25,10 +25,17 @@ class ProjectedEigenBasis(EigenMetricBasis):
     """
 
     def operator(self, name):
-        if name.upper() in ("1", "I", "IDENTITY"):
+        if name.upper() in ("1", "I", "IDENTITY", "WINDOW"):
             blocks = adjoint(self.eigenvectors) @ self.bloch.operator_blocks("1") @ self.eigenvectors
             return _core.BlockDiagonalOperator(physical_blocks(blocks, name="selected identity"))
         return super().operator(name)
+
+    def states(self, trace_mode="random", num_states=None, seed=None):
+        """Use eigenbasis phases as requested by the stage-6d material study."""
+        if trace_mode == "random":
+            return _core.RandomPhaseStates(self.dimension, 16 if num_states is None else int(num_states),
+                                            self.bloch.seed if seed is None else int(seed))
+        return super().states(trace_mode, num_states, seed)
 
 
 class ProjectedBlochBasis(BlochMetricBasis):
@@ -45,7 +52,12 @@ class ProjectedBlochBasis(BlochMetricBasis):
             raise ValueError("use the source basis for projection none")
         if source.route == "anticommutator":
             raise ValueError("spectral projection supports the exact lowdin/generalised metric routes")
-        self.__dict__.update(source.__dict__)
+        self.model, self.supercell = source.model, source.supercell
+        self.velocity_mode, self.route, self.seed = source.velocity_mode, source.route, source.seed
+        self.k_points, self.num_cells = source.k_points, source.num_cells
+        self.num_wann, self.dimension = source.num_wann, source.dimension
+        self.sk_array = source.sk_array
+        self.inverse_array, self.inverse_sqrt_array = source.inverse_array, source.inverse_sqrt_array
         self.source, self.config = source, cfg
         self._blocks, self._op_cache, self.local_matrices = {}, {}, {}
         self._eigen_basis = None
@@ -95,7 +107,7 @@ class ProjectedBlochBasis(BlochMetricBasis):
         if key == "S":
             return self.sk_array
         if key not in self._blocks:
-            original = (self.source.sk_array if key in ("1", "I", "IDENTITY")
+            original = (self.source.sk_array if key in ("1", "I", "IDENTITY", "WINDOW")
                         else self.source.operator_blocks(key))
             projected = self.projection.project_operator(original)
             self._blocks[key] = (self._local(key, projected).blocks(self.k_points) if self.config["radius"] is not None

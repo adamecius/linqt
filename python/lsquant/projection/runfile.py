@@ -10,8 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from .. import _core
-from ..apps.stage6b_siesta import (PhaseReceipt, _write_json, prepare_moments,
-                                   compute_moments, oracle_energies, SHC_WORD)
+from ..apps.stage6b_siesta import (PhaseReceipt, _write_json, oracle_energies, SHC_WORD)
 from ..bases import BlochMetricBasis
 from ..models.siesta import load_siesta_model
 from ..oracle.spin_hall import spin_berry_curvature, sigma_xy, UNITS
@@ -20,6 +19,7 @@ from ..words import parse as parse_word
 from ..words.grammar import OperatorSlot
 from .bases import ProjectedBlochBasis
 from .spectral import adjoint, word_error
+from .words import prepare_projection_moments, compute_projection_moments
 
 
 def exact_word_curve(basis, word, energies, *, broadening, cell_area,
@@ -41,8 +41,13 @@ def exact_word_curve(basis, word, energies, *, broadening, cell_area,
     operators = [slot.operator_key for slot in parsed.slots if isinstance(slot, OperatorSlot)]
     if len(operators) > 1:
         raise ValueError("stage6d oracle supports SHC and single-slot spectral words")
-    weights = (np.ones_like(E) if not operators else
-               np.diagonal(adjoint(C) @ basis.operator_blocks(operators[0]) @ C, axis1=-2, axis2=-1).real)
+    operator = None
+    if operators:
+        key = operators[0].upper()
+        operator = (basis.sk_array if key in ("1", "WINDOW") and not isinstance(basis, ProjectedBlochBasis)
+                    else basis.operator_blocks(key))
+    weights = (np.ones_like(E) if operator is None else
+               np.diagonal(adjoint(C) @ operator @ C, axis1=-2, axis2=-1).real)
     values = []
     # Bound scratch by 16*N_k*W real numbers, including on large PdSe2 meshes.
     for start in range(0, len(energies), 16):
@@ -83,7 +88,7 @@ def off_grid_errors(projected, operator_names, *, count=16, seed=1):
     result = dict(points=count, seed=seed, matrices={})
     targets = {"H": exact.hamiltonian}
     for name in operator_names:
-        original = source.sk_array if name in ("1", "I", "IDENTITY") else source.operator_blocks(name)
+        original = source.sk_array if name in ("1", "I", "IDENTITY", "WINDOW") else source.operator_blocks(name)
         targets[name] = exact.project_operator(original)
     for name, target in targets.items():
         matrix = projected.local_matrices[name]
@@ -147,6 +152,9 @@ def execute_projection_runfile(rf, out_dir):
     area = float(np.linalg.norm(np.cross(model.uc[0], model.uc[1])))
     resolved["expansion"]["window"] = [float(window.lower), float(window.upper)]
     resolved["reconstruction"].update(num_cells=projected.num_cells, cell_area=area)
+    resolved["receipt"]["trace_basis"] = ("exact block trace" if rf.expansion["trace"] == "exact" else
+                                             "independent eigenbasis phases" if rf.basis["name"] == "eigen" else
+                                             "orthonormal orbital Bloch phases")
     options = dict(moments=rf.expansion["moments"], trace=rf.expansion["trace"],
                    states=rf.expansion["states"] or 16, seed=rf.expansion["seed"],
                    batch=rf.expansion["batch"], window=window)
@@ -155,16 +163,19 @@ def execute_projection_runfile(rf, out_dir):
     with timing.phase("operators"):
         prepared = []
         for word in rf.words:
-            production = prepare_moments(basis, word, **options)
+            production = prepare_projection_moments(basis, word, **options)
             if (production[2].match.entry.shape_id == "kubo_bastin" and
                     parse_word(word).canonical() != parse_word(SHC_WORD).canonical()):
                 raise ValueError("stage6d rank-two oracle requires the physical JXSZ/VY SHC word")
             # Validate source operators before any oracle or moments run.
             for slot in parse_word(word).slots:
                 if isinstance(slot, OperatorSlot):
-                    original.operator(slot.operator_key)
+                    if slot.operator_key.upper() != "WINDOW":
+                        original.operator(slot.operator_key)
             prepared.append((word, production))
     with timing.phase("projection diagnostics"):
+        for name in names:
+            projected.operator_blocks(name)
         receipt = projected.projection_receipt()
         receipt["off_grid"] = off_grid_errors(projected, names)
         receipt["words"] = []
@@ -189,7 +200,7 @@ def execute_projection_runfile(rf, out_dir):
                                    projected=after.tolist(), **error))
             curves.append(str(path))
         with timing.phase("moments", word=word):
-            mu, compiled = compute_moments(basis, word, _prepared=plan)
+            mu, compiled = compute_projection_moments(basis, word, _prepared=plan)
             path = out/f"word_{index}.chebmom"
             _core.WriteChebmom(str(path), mu)
             moments.append(str(path))
