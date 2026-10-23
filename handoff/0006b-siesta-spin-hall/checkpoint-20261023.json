@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "handoff/0006b-siesta-spin-hall/tests.md",
-      "sha256": "ec918d27879f6fec79b1b17f11aadee2cb15f2d1844588b15e286bf4f32b9de7",
+      "sha256": "7f1a800ceb762d8d3679dbd0e63cfadb57d943eb84a6c0bc09347d300d3cca4f",
       "original_source_sha256": "b783f3536f23286d2a2b5735bc1bc93f61e133344bd82224192a4c2ebcdde43f"
     },
     {
@@ -80,5 +80,17 @@
     "hostname": "fatnode-tacn",
     "utc": "2026-10-23T13:30:58.907528Z",
     "summary": "GATE PASS (stage 3)"
+  },
+  "sha256_convention": "SHA-256 of bytes stored in Git, after configured text line-ending normalization. original_source_sha256 records the original local snapshot bytes.",
+  "metadata_followup_validation": {
+    "returncode": 0,
+    "seed": 12345,
+    "seconds": 769.7430469989777,
+    "commit": "2c790f19320ad41abfee3043b00ee379f2fe35ac",
+    "note": "Fresh same-implementation regression before metadata-only follow-up; no source changes",
+    "hostname": "fatnode-tacn",
+    "summary": "47 files compared; failures: 0; GATE PASS (stage 3)",
+    "log_sha256": "3f7940e57004fe555e7174196fd02f70eedf38ad2355f2de7776cac525c35b1f",
+    "log_local_archive": "C:\\Users\\adame\\LSQUANT\\checkpoints\\20261023\\gate-receipts.tar.gz"
   }
 }
