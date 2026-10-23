@@ -374,7 +374,11 @@ def validate_runfile_dict(raw: Mapping[str, Any]) -> None:
             raise ValueError("SIESTA model.params must be a JSON object")
         _check_keys("model.params (siesta)", model.get("params") or {}, frozenset({
             "velocity_mode", "oracle", "oracle_degeneracy_tolerance",
-            "quadrature_order", "quadrature_max_order", "quadrature_tolerance"}))
+            "quadrature_order", "quadrature_max_order", "quadrature_tolerance",
+            "nonorthogonal_disorder"}))
+        if "nonorthogonal_disorder" in (model.get("params") or {}) and not isinstance(
+                model["params"]["nonorthogonal_disorder"], bool):
+            raise ValueError("model.params.nonorthogonal_disorder must be a boolean")
         degeneracy_tolerance = float((model.get("params") or {}).get("oracle_degeneracy_tolerance", 1e-6))
         if not np.isfinite(degeneracy_tolerance) or degeneracy_tolerance <= 0:
             raise ValueError("oracle_degeneracy_tolerance must be positive and finite (eV)")
@@ -1141,6 +1145,10 @@ def execute_runfile(
     )
     kind = str(rf.model["kind"])
     if kind == "siesta":
+        if (rf.model["params"].get("nonorthogonal_disorder", False) or
+                rf.basis["name"] == "real" or rf.basis["disorder"]["W"] != 0):
+            from .apps.stage6c_disorder import execute_disorder_runfile
+            return execute_disorder_runfile(rf, out_dir)
         from .apps.stage6b_siesta import execute_siesta_runfile
         return execute_siesta_runfile(rf, out_dir)
     if kind == "wannier":
