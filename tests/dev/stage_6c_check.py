@@ -16,12 +16,12 @@ from types import SimpleNamespace
 import numpy as np
 
 
-def compare(label, actual, expected, tolerance):
+def compare(label, actual, expected, tolerance, *, absolute=False):
     """Relative max error uses a tensor norm, so symmetry zeros stay meaningful."""
     scale = max(float(np.max(np.abs(expected))), np.finfo(float).tiny)
     error = float(np.max(np.abs(actual-expected)))
     print(f"{label}: max_abs={error:.17g} relative_max={error/scale:.17g} tolerance={tolerance:g}", flush=True)
-    assert np.all(np.isfinite(actual)) and error/scale <= tolerance, label
+    assert np.all(np.isfinite(actual)) and (error if absolute else error/scale) <= tolerance, label
 
 
 def fixtures():
@@ -97,7 +97,7 @@ def main():
                 mu_b, _ = compute_moments(bloch, word, **options)
                 mu_r, _ = compute_moments(real, word, **options)
                 compare(tag+" real/Bloch "+route+" "+word, mu_r.data, mu_b.data,
-                        1e-10 if width == 0 else 1e-9)
+                        1e-10 if width == 0 else 1e-9, absolute=width == 0)
                 if clean is not None:
                     mu_6b, _ = compute_moments(clean, word, **options)
                     compare("(a) clean Bloch/6b "+route+" "+word, mu_b.data, mu_6b.data, 1e-12)

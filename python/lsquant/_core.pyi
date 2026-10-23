@@ -84,6 +84,12 @@ class LowdinOperator(LinearOperator):
 class MetricInverseProduct(LinearOperator):
     def __init__(self, inverse: LinearOperator, operator: LinearOperator) -> None: ...
 
+class HermitianTripleProduct(LinearOperator):
+    def __init__(
+        self, first: LinearOperator, middle: LinearOperator, last: LinearOperator,
+        coefficient: complex = 0.5,
+    ) -> None: ...
+
 class MetricPolicy:
     # Bound via pybind11 def_property_readonly (read-only properties, not methods).
     @property

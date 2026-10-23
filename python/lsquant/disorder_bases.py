@@ -168,13 +168,21 @@ class DisorderedBlochMetricBasis(BlochMetricBasis):
                     A = _core.BlockDiagonalOperator(self.model.Ak(self.k_points, axis))
                     correction = _core.OperatorSum(correction, _triple(
                         self._potential, self.metric.inverse_overlap, A, 1j))
-                self._disordered_ops[key] = _core.OperatorSum(super().operator(key), correction)
+                clean_velocity = _core.BlockDiagonalOperator(BlochMetricBasis.operator_blocks(self, key))
+                self._disordered_ops[key] = _core.OperatorSum(clean_velocity, correction)
             elif len(key) == 4 and key[0] == "J" and key[1] in "XYZ" and key[2] == "S" and key[3] in "XYZ":
                 self._disordered_ops[key] = _triple(self.operator("V"+key[1]), self.metric.inverse_overlap,
                                                     self.operator("S"+key[3]))
             else:
                 raise ValueError(f"unknown stage6c operator {name!r}")
         return self._disordered_ops[key]
+
+    def operator_blocks(self, name):
+        """Only S/spin stay block diagonal; never return clean disorder operators."""
+        key = name.upper()
+        if self.has_disorder and key not in ("S", "SX", "SY", "SZ"):
+            raise ValueError("disordered H, velocity and spin current have no per-k blocks; use operator()")
+        return super().operator_blocks(key)
 
     def states(self, trace_mode="random", num_states=None, seed=None):
         """Whole-layout orbital Bloch phases, as in 6b review 2."""
