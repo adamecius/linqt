@@ -190,3 +190,86 @@ def describe():
     forms = {"V": velocity_forms(), "Sigma_z": spin_forms(), "J": spin_current_forms()}
     return {name: {"forms": {route: str(normal_form(expr)) for route, expr in item.items()},
                    "hermiticity": hermiticity(item)} for name, item in forms.items()}
+
+
+def spectral_projection_forms():
+    """Derive stage-6d forms in a complete S-normalised eigenframe.
+
+    C^+ S C=I, C C^+=X, H=S C D C^+ S. W is the diagonal
+    0/1 window mask, D_s agrees with D on W and clips its complement.
+    O denotes a PHYSICAL matrix; its coefficient action is X O.
+    Thus the brief's S P O_c P is P^+ O P, not S P O P.
+    No derivative of the modified H is substituted for a projected velocity.
+    """
+    C, Cd, D, W, Ds, O = sp.symbols("C C_dagger D W D_shift O", commutative=False)
+    P = C*W*Cd*S
+    Pd = S*C*W*Cd
+    hard = S*C*W*D*Cd*S
+    shift = S*C*Ds*Cd*S
+    projected = Pd*O*P
+    return dict(projector=P, projector_adjoint=Pd,
+                hard=operator_forms(hard), shift=operator_forms(shift),
+                operator=operator_forms(projected),
+                shift_update=H+S*C*(Ds-D)*Cd*S,
+                identity=Pd*S*P, coefficient_operator=X*O,
+                symbols=dict(C=C, Cd=Cd, D=D, W=W, Ds=Ds, O=O))
+
+
+def spectral_projection_proof():
+    """Symbolic identities for arbitrary dimension, not a numeric fixture.
+
+    Reduce NC words with completeness C C^+=X and C^+ S C=I.
+    The sole diagonal identity needed for retained eigenpairs is
+    D_s W=D W; W D=D W and W^2=W express spectral selection.
+    The tester executes these reductions before running numerical checks.
+    """
+    forms = spectral_projection_forms()
+    C, Cd, D, W, Ds, O = (forms["symbols"][n] for n in ("C", "Cd", "D", "W", "Ds", "O"))
+
+    def reduce(expression):
+        rules = {(Cd, S, C): [], (C, Cd): [X], (S, X): [],
+                 (X, S): [], (W, W): [W], (W, D): [D, W],
+                 (Ds, W): [D, W]}
+        terms = {}
+        for term in sp.Add.make_args(sp.expand(expression)):
+            scalar, word = sp.Integer(1), []
+            for factor in sp.Mul.make_args(term):
+                if factor.is_commutative:
+                    scalar *= factor
+                elif factor.is_Pow and factor.exp.is_Integer and factor.exp >= 0:
+                    word.extend([factor.base]*int(factor.exp))
+                else:
+                    word.append(factor)
+            changed = True
+            while changed:
+                changed = False
+                for i in range(len(word)):
+                    for pattern, replacement in rules.items():
+                        if tuple(word[i:i+len(pattern)]) == pattern:
+                            word[i:i+len(pattern)] = replacement
+                            changed = True
+                            break
+                    if changed:
+                        break
+            key = tuple(word)
+            terms[key] = terms.get(key, 0)+scalar
+        return sp.expand(sum(value*sp.Mul(*key) for key, value in terms.items()))
+
+    P, Pd = forms["projector"], forms["projector_adjoint"]
+    HP, Hs = forms["hard"]["physical"], forms["shift"]["physical"]
+    # Adjoint expressions use C^+=Cd, W^+=W, D^+=D, Ds^+=Ds.
+    Oprojected = Pd*O*P
+    identities = {
+        "idempotent": P*P-P,
+        "s_self_adjoint": Pd*S-S*P,
+        "hard_retained_eigenpairs": HP*C*W-S*C*D*W,
+        "shift_retained_eigenpairs": Hs*C*W-S*C*D*W,
+        "hard_complement_zero": HP*C*(1-W),
+        "physical_operator_equals_coefficient_form": Oprojected-S*P*X*O*P,
+        "projected_identity": Pd*S*P-S*P,
+        "hard_from_coefficient_hamiltonian": HP-S*P*(C*D*Cd*S)*P,
+        "shift_as_update": Hs-(S*C*D*Cd*S+S*C*(Ds-D)*Cd*S),
+        "hard_physical_hermitian": HP-S*C*D*W*Cd*S,
+        "projected_physical_hermitian": Oprojected-Pd*O*P,
+    }
+    return {name: reduce(expression) for name, expression in identities.items()}
