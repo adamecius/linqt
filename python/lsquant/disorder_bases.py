@@ -135,9 +135,12 @@ class DisorderedBlochMetricBasis(BlochMetricBasis):
         self.overlap_bounds = (float(overlap_eigenvalues.min()), float(overlap_eigenvalues.max()))
         if self.has_disorder:
             self._h_op = _core.OperatorSum(self._clean_h_op, self._potential)
-            self._applied_h_op = (_core.LowdinOperator(self.metric.inverse_sqrt_overlap, self._h_op)
-                                  if route == "lowdin" else
-                                  _core.MetricInverseProduct(self.metric.inverse_overlap, self._h_op))
+            if self._orthogonal_overlap:
+                self._applied_h_op = self._h_op
+            elif route == "lowdin":
+                self._applied_h_op = _core.LowdinOperator(self.metric.inverse_sqrt_overlap, self._h_op)
+            else:
+                self._applied_h_op = _core.MetricInverseProduct(self.metric.inverse_overlap, self._h_op)
         self._disordered_ops = {}
 
     def potential(self):
@@ -179,6 +182,8 @@ class DisorderedBlochMetricBasis(BlochMetricBasis):
 
     def bind_eigen_trace(self, plan, operators, trace_mode="random"):
         """Keep the 6b prepare_moments interface; there is no per-k eigentrace."""
+        if self._orthogonal_overlap and self.route == "lowdin":
+            return plan, operators
         return _bind_metric_trace(self, plan, operators, trace_mode)
 
     def window(self, pad=0.10):
