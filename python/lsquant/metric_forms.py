@@ -243,3 +243,24 @@ def disorder_velocity_forms(mode="covariant"):
                 correction=correction,
                 substitution_residual=normal_form(substituted-clean-correction),
                 hermitian=normal_form(dagger(clean+correction)-clean-correction) == 0)
+
+
+def periodic_position_velocity_proof():
+    """Reduce theory.md (3) to (4) plus the midpoint connection.
+
+    P denotes unwrapped orbital coordinates; delta(M)=i[M,P]. Therefore
+    PH=HP+i*dH, PS=SP+i*dS, PX=XP-i*X*dS*X. These rules are the product
+    rule for the periodic hopping derivative, including inverse overlaps.
+    """
+    P = sp.Symbol("position", commutative=False)
+    R = (P*S+S*P)/2+A
+    commutator = sp.I*(H*X*R-R*X*H)
+    expanded = normal_form(commutator)
+    while True:
+        previous = expanded
+        expanded = normal_form(expanded.subs(P*H, H*P+sp.I*dH).subs(
+            P*S, S*P+sp.I*dS).subs(P*X, X*P-sp.I*X*dS*X))
+        if expanded == previous:
+            break
+    return dict(position=R, commutator=commutator,
+                residual=normal_form(expanded-velocity_forms("covariant")["physical"]))
