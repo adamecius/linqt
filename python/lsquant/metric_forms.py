@@ -13,6 +13,8 @@ import sympy as sp
 H, S, X, Y, Z, V, A, B, q, dH, dS, dH_cell, dS_cell = sp.symbols(
     "H S X Y Z V A B sigma_z dH dS dH_cell dS_cell", commutative=False)
 HERMITIAN = {H, S, X, Y, Z, V, A, B, q, dH, dS, dH_cell, dS_cell}
+D = sp.Symbol("D", commutative=False)
+HERMITIAN.add(D)
 
 
 def dagger(expression):
@@ -190,3 +192,54 @@ def describe():
     forms = {"V": velocity_forms(), "Sigma_z": spin_forms(), "J": spin_current_forms()}
     return {name: {"forms": {route: str(normal_form(expr)) for route, expr in item.items()},
                    "hermiticity": hermiticity(item)} for name, item in forms.items()}
+
+
+def anderson_forms():
+    """Derive the symmetric on-site approximation V_ij=(w_i+w_j) S_ij/2.
+
+    Assigning w_j to the ket orbital gives SD; the adjoint assigns w_i to
+    the bra and gives DS. Their equal-weight average is the Hermitian
+    approximation to a local scalar potential. It is a modelling ansatz,
+    not the exact integral of an arbitrary continuum random potential.
+    A constant potential must give w*S, since physical identity has matrix
+    S. D alone would give w*I and change the generalized spectrum by w*S^-1.
+    """
+    alpha = sp.Symbol("alpha", real=True)
+    trial = alpha*D*S+(1-alpha)*S*D
+    # Independent NC words DS and SD have equal real coefficients iff alpha=1/2.
+    coefficient = sp.solve(sp.Eq(alpha, 1-alpha), alpha)[0]
+    physical = sp.expand(trial.subs(alpha, coefficient))
+    w = sp.Symbol("w", real=True)
+    forms = operator_forms(physical)
+    return dict(forms=forms, hermiticity=hermiticity(forms),
+                symmetric_weight=coefficient,
+                constant_residual=normal_form(physical.subs(D, w)-w*S),
+                orthogonal_residual=sp.expand(physical.subs(S, 1)-D),
+                incorrect_diagonal_constant_residual=w-w*S)
+
+
+def disorder_velocity_forms(mode="covariant"):
+    """Insert H+V into the SAME position/velocity ladder as stage 6b.
+
+    The periodic derivative is the derivation delta(M)_ij=i*d_ij*M_ij
+    before wrapping hopping translations. D commutes with the orbital
+    coordinates, so delta(V)=(D*dS+dS*D)/2. On the infinite covering lattice
+    R={position,S}/2+A, and i(H X R-R X H), using the product rule,
+    equals delta(H)-{delta(S) X H+H X delta(S)}/2+i(H X A-A X H).
+    This is equation (3) with the dipoles, including boundary bonds; a
+    commutator with wrapped supercell coordinates would cut those bonds.
+    """
+    clean = velocity_forms(mode)["physical"]
+    ds = dS_cell if mode == "bare" else dS
+    potential = anderson_forms()["forms"]["physical"]
+    derivative = (D*ds+ds*D)/2
+    correction = derivative-(ds*X*potential+potential*X*ds)/2
+    if mode == "covariant":
+        correction += sp.I*(potential*X*A-A*X*potential)
+    substituted = velocity_forms(mode)["physical"].subs(
+        {H: H+potential, dH_cell if mode == "bare" else dH:
+         (dH_cell if mode == "bare" else dH)+derivative}, simultaneous=True)
+    return dict(forms=operator_forms(clean+correction), derivative=derivative,
+                correction=correction,
+                substitution_residual=normal_form(substituted-clean-correction),
+                hermitian=normal_form(dagger(clean+correction)-clean-correction) == 0)
